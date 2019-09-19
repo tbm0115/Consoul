@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Consoul.Attributes;
+using System;
 
 namespace Consoul.Test.Views
 {

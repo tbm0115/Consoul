@@ -1,11 +1,13 @@
-﻿using System;
+﻿using Consoul.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Consoul.Views;
 
 namespace Consoul.Test.Views
 {
-    public class Welcome : View
+    public class Welcome : StaticView
     {
         public Story Story { get; set; }
 

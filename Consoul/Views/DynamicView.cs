@@ -2,41 +2,51 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using Consoul.Entry;
+using Consoul.Attributes;
 
-namespace Consoul
+namespace Consoul.Views
 {
-    public delegate void ChoiceCallback(int choiceIndex);
-
-    public abstract class View
+    public abstract class DynamicView<T> : IView
     {
-        public string Title { get; set; }
-        public List<ViewOption> Options { get; set; } = new List<ViewOption>();
-        private bool goBackRequested { get; set; } = false;
+        private bool _goBackRequested = false;
 
-        public View()
+        public string Title { get; set; }
+        public List<DynamicOption<T>> Options { get; set; } = new List<DynamicOption<T>>();
+        public bool GoBackRequested => _goBackRequested;
+        public T Source { get; set; }
+
+        public DynamicView()
         {
             Type thisType = this.GetType();
+
+            Type viewType = typeof(ViewAttribute);
+            ViewAttribute viewAttr = thisType.GetCustomAttribute(viewType) as ViewAttribute;
+            if (viewAttr != null)
+            {
+                Title = viewAttr.Title;
+            }
 
             // Build the options from local methods decorated with ViewOption
             Type viewOptionType = typeof(ViewOptionAttribute);
             IEnumerable<MethodInfo> viewOptionMethods = thisType.GetMethods().Where(o => o.GetCustomAttribute(viewOptionType) != null);
             foreach (MethodInfo method in viewOptionMethods)
             {
-                ViewOptionAttribute attr = method.GetCustomAttribute(viewOptionType) as ViewOptionAttribute;
+                DynamicViewOptionAttribute attr = method.GetCustomAttribute(viewOptionType) as DynamicViewOptionAttribute;
                 if (attr != null)
                 {
-                    Options.Add(new ViewOption(attr.Message, () => method.Invoke(this, null), attr.Color));
+                    MethodInfo messageBuilder = thisType.GetMethod(attr.BuildMethod);
+                    Options.Add(new DynamicOption<T>(o => messageBuilder.Invoke(Source, null).ToString(), () => method.Invoke(this, null), attr.Color));
                 }
             }
         }
 
-        public View(string title) : this()
+        public void GoBack()
         {
-            Title = title;
+            _goBackRequested = true;
         }
 
-        public virtual void Run(ChoiceCallback callback = null)
+        public void Run(ChoiceCallback callback = null)
         {
             int idx = -1;
             do
@@ -44,7 +54,7 @@ namespace Consoul
                 Prompt prompt = new Prompt(Title, true);
                 foreach (var option in Options)
                 {
-                    prompt.Add(option.Message, option.Color);
+                    prompt.Add(option.BuildMessage(Source), option.Color);
                 }
                 prompt.Add($"<==\tGo Back", ConsoleColor.Gray);
 
@@ -69,23 +79,7 @@ namespace Consoul
                 {
                     Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", ConsoleColor.Red);
                 }
-            } while (idx < 0 && !goBackRequested);
-        }
-
-        public void GoBack()
-        {
-            goBackRequested = true;
-        }
-    }
-    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-    public class ViewOptionAttribute : Attribute
-    {
-        public string Message { get; set; }
-        public ConsoleColor Color { get; set; } = ConsoleColor.White;
-
-        public ViewOptionAttribute(string message)
-        {
-            Message = message;
+            } while (idx < 0 && !GoBackRequested);
         }
     }
 }

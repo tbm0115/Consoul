@@ -1,12 +1,13 @@
-﻿using System;
+﻿using Consoul.Attributes;
+using System;
 
 namespace Consoul.Test.Views
 {
+    [View("As you proceed further into the cave, you see a small glowing object.")]
     public class GlowingObject : StoryView
     {
         public GlowingObject(Story story) : base(story)
         {
-            Title = "As you proceed further into the cave, you see a small glowing object.";
         }
 
         [ViewOption("What is this? (proceed)")]

@@ -65,7 +65,7 @@ namespace Consoul
             return (new Prompt(message, clear, options)).Run();
 
         }
-        public static int prompt(string message, PromptOption[] options, bool clear = false)
+        public static int Prompt(string message, PromptOption[] options, bool clear = false)
         {
             return (new Prompt(message, clear, options)).Run();
         }

@@ -1,8 +1,10 @@
-﻿using System;
+﻿using Consoul.Attributes;
+using System;
 using System.Linq;
 
 namespace Consoul.Test.Views
 {
+    [View("Do you try to fight it?")]
     public class ApproachSpider : StoryView
     {
         public ApproachSpider(Story story) : base(story)
