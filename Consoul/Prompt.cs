@@ -47,6 +47,10 @@ namespace Consoul
             _options.Clear();
         }
 
+        /// <summary>
+        /// Displays the options for this prompt. Loops until the user "selects" the appropriate option.
+        /// </summary>
+        /// <returns>Zero-based index of the selected option.</returns>
         public int Run()
         {
             string input = "";
@@ -65,7 +69,7 @@ namespace Consoul
                     Consoul.Write(option.ToString(), option.Color);
                     i++;
                 }
-
+                Console.ForegroundColor = ConsoleColor.White;
                 input = Console.ReadLine();
                 Int32.TryParse(input, out selection);
                 if (selection <= 0 || selection > (_options.Count + 1))

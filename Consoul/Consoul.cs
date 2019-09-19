@@ -4,6 +4,11 @@ namespace Consoul
 {
     public static class Consoul
     {
+        public static void Wait()
+        {
+            Consoul.Write("Press enter to continue...", ConsoleColor.Gray);
+            Console.ReadLine();
+        }
         public static string Input(string message, ConsoleColor color = ConsoleColor.White, bool allowEmpty = false)
         {
             string output = string.Empty;
