@@ -7,8 +7,16 @@ namespace Consoul.Test
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-            View view1 = new Welcome();
+            // **************************************************************************
+            // **********************************Credit**********************************
+            //
+            // Notes:
+            //     
+            //     https://codereview.stackexchange.com/questions/36768/tiny-text-adventure 
+            //
+            // **************************************************************************
+
+            var view1 = new Welcome();
             view1.Run();
         }
     }

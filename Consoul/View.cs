@@ -6,12 +6,13 @@ using System.Text;
 
 namespace Consoul
 {
-    public delegate void OptionAction();
+    public delegate void ChoiceCallback(int choiceIndex);
 
     public abstract class View
     {
         public string Title { get; set; }
         public List<ViewOption> Options { get; set; } = new List<ViewOption>();
+        private bool goBackRequested { get; set; } = false;
 
         public View()
         {
@@ -35,7 +36,7 @@ namespace Consoul
             Title = title;
         }
 
-        public virtual void Run()
+        public virtual void Run(ChoiceCallback callback = null)
         {
             int idx = -1;
             do
@@ -53,19 +54,27 @@ namespace Consoul
                     if (idx >= 0 && idx < Options.Count)
                     {
                         Options[idx].Action.Compile().Invoke();
+                        if (callback != null)
+                        {
+                            callback(idx);
+                        }
                         idx = -1;
                     }
                     else if (idx == Options.Count)
                     {
                         idx = int.MaxValue;
-                        //PreviousView.Run(); // Displays the previous View
                     }
                 }
                 catch (Exception ex)
                 {
                     Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", ConsoleColor.Red);
                 }
-            } while (idx < 0);
+            } while (idx < 0 && !goBackRequested);
+        }
+
+        public void GoBack()
+        {
+            goBackRequested = true;
         }
     }
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
