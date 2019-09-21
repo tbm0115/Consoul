@@ -2,12 +2,11 @@
 
 namespace Consoul.Test.Views
 {
-    public abstract class StoryView : StaticView{
-        public Story Story { get; set; }
+    public abstract class StoryView : DynamicView<Story>{
 
         public StoryView(Story story) : base()
         {
-
+            Source = story;
         }
     }
 }

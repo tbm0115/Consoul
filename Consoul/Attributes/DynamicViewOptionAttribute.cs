@@ -5,12 +5,19 @@ namespace Consoul.Attributes
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class DynamicViewOptionAttribute : Attribute
     {
-        public string BuildMethod { get; set; }
-        public ConsoleColor Color { get; set; } = ConsoleColor.White;
+        /// <summary>
+        /// Name of the local method used to dynamically build the message string.
+        /// </summary>
+        public string MessageMethod { get; set; }
+        /// <summary>
+        /// Name of the local method used to dynamically determine the 
+        /// </summary>
+        public string ColorMethod { get; set; }
 
-        public DynamicViewOptionAttribute(string buildMethodName)
+        public DynamicViewOptionAttribute(string messageMethodName, string colorMethodName)
         {
-            BuildMethod = buildMethodName;
+            MessageMethod = messageMethodName;
+            ColorMethod = colorMethodName;
         }
     }
 }

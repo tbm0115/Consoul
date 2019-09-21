@@ -28,15 +28,48 @@ namespace Consoul.Views
             }
 
             // Build the options from local methods decorated with ViewOption
-            Type viewOptionType = typeof(ViewOptionAttribute);
-            IEnumerable<MethodInfo> viewOptionMethods = thisType.GetMethods().Where(o => o.GetCustomAttribute(viewOptionType) != null);
+            Type viewOptionType = typeof(DynamicViewOptionAttribute);
+            IEnumerable<MethodInfo> allMethods = thisType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            IEnumerable<MethodInfo> viewOptionMethods = allMethods.Where(o => o.GetCustomAttribute(viewOptionType) != null);
             foreach (MethodInfo method in viewOptionMethods)
             {
                 DynamicViewOptionAttribute attr = method.GetCustomAttribute(viewOptionType) as DynamicViewOptionAttribute;
                 if (attr != null)
                 {
-                    MethodInfo messageBuilder = thisType.GetMethod(attr.BuildMethod);
-                    Options.Add(new DynamicOption<T>(o => messageBuilder.Invoke(Source, null).ToString(), () => method.Invoke(this, null), attr.Color));
+                    MethodInfo messageBuilder = allMethods.FirstOrDefault(o => o.Name == attr.MessageMethod);
+                    MethodInfo colorBuilder = null;
+                    if (!string.IsNullOrEmpty(attr.ColorMethod))
+                    {
+                        colorBuilder = allMethods.FirstOrDefault(o => o.Name == attr.ColorMethod);
+                    }
+                    if (messageBuilder != null)
+                    {
+                        Options.Add(new DynamicOption<T>(
+                            o => thisType.InvokeMember(
+                                attr.MessageMethod, 
+                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod, 
+                                null,
+                                this,
+                                null
+                            ).ToString(),
+                            () => thisType.InvokeMember(
+                                method.Name,
+                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
+                                null,
+                                this,
+                                null
+                            ),
+                            o => colorBuilder != null 
+                                ? (ConsoleColor)thisType.InvokeMember(
+                                        attr.ColorMethod,
+                                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
+                                        null,
+                                        this,
+                                        null
+                                    )
+                                : ConsoleColor.White
+                        ));
+                    }
                 }
             }
         }
@@ -54,7 +87,7 @@ namespace Consoul.Views
                 Prompt prompt = new Prompt(Title, true);
                 foreach (var option in Options)
                 {
-                    prompt.Add(option.BuildMessage(Source), option.Color);
+                    prompt.Add(option.BuildMessage(Source), option.BuildColor(Source));
                 }
                 prompt.Add($"<==\tGo Back", ConsoleColor.Gray);
 

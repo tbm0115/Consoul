@@ -9,6 +9,5 @@ namespace Consoul.Entry
     public interface IOption
     {
         Expression<Func<object>> Action { get; set; }
-        ConsoleColor Color { get; set; }
     }
 }

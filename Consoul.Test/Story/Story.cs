@@ -26,7 +26,7 @@ namespace Consoul.Test.Views
             var nextStage = Stages.FirstOrDefault(o => o.GetType() == viewType);
             if (nextStage != null)
             {
-                nextStage.Story = this;
+                nextStage.Source = this;
                 nextStage.Run();
             }
             else

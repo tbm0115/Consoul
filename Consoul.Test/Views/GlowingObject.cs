@@ -19,7 +19,7 @@ namespace Consoul.Test.Views
             Consoul.Wait();
             Consoul.Write("The eye belongs to a giant spider!");
             Consoul.Wait();
-            Story.Progress(typeof(ApproachSpider));
+            Source.Progress(typeof(ApproachSpider));
         }
 
         [ViewOption("Do not proceed (Leave the cave)")]

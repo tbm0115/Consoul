@@ -13,14 +13,7 @@ namespace Consoul.Test.Views
 
         public Welcome() : base()
         {
-            string message = "Welcome to the cavern of secrets!";
-            int padding = 5;
-            Title = $"{String.Join("", Enumerable.Repeat("*", (padding * 2) + message.Length))}\r\n" +
-                $"{String.Join("", Enumerable.Repeat(" ", padding))}" + 
-                $"{message}" +
-                $"{String.Join("", Enumerable.Repeat(" ", padding))}\r\n" + 
-                $"{String.Join("", Enumerable.Repeat("*", (padding * 2) + message.Length))}\r\n\r\nWould you like to begin?";
-
+            Title = (new Entry.BannerEntry("Welcome to the cavern of secrets!")).Message + "\r\nWould you like to begin";
         }
 
         [ViewOption("Yes, let's start!")]

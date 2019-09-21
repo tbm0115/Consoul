@@ -29,13 +29,24 @@ namespace Consoul.Views
 
             // Build the options from local methods decorated with ViewOption
             Type viewOptionType = typeof(ViewOptionAttribute);
-            IEnumerable<MethodInfo> viewOptionMethods = thisType.GetMethods().Where(o => o.GetCustomAttribute(viewOptionType) != null);
+            IEnumerable<MethodInfo> allOptionMethods = thisType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            IEnumerable<MethodInfo> viewOptionMethods = allOptionMethods.Where(o => o.GetCustomAttribute(viewOptionType) != null);
             foreach (MethodInfo method in viewOptionMethods)
             {
                 ViewOptionAttribute attr = method.GetCustomAttribute(viewOptionType) as ViewOptionAttribute;
                 if (attr != null)
                 {
-                    Options.Add(new Option(attr.Message, () => method.Invoke(this, null), attr.Color));
+                    Options.Add(new Option(
+                        attr.Message, 
+                        () => thisType.InvokeMember(
+                            method.Name,
+                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
+                                null,
+                                this,
+                                null
+                            ),
+                        attr.Color)
+                    );
                 }
             }
         }

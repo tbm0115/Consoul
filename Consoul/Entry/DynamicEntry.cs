@@ -6,12 +6,15 @@ namespace Consoul.Entry
     public class DynamicEntry<T> : IDynamicEntry<T>
     {
         public Expression<Func<T, string>> MessageExpression { get; set; }
-        public ConsoleColor Color { get; set; } = ConsoleColor.White;
+        public Expression<Func<T, ConsoleColor>> ColorExpression { get; set; } = o => ConsoleColor.White;
 
-        public DynamicEntry(Expression<Func<T,string>> messageExpression, ConsoleColor color = ConsoleColor.White)
+        public DynamicEntry(Expression<Func<T,string>> messageExpression, Expression<Func<T,ConsoleColor>> colorExpression = null)
         {
             MessageExpression = messageExpression;
-            Color = color;
+            if (colorExpression != null)
+            {
+                ColorExpression = colorExpression;
+            }
         }
     }
 }
