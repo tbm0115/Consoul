@@ -2,6 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>A Console UI library for quickly building view-like Console Apps.</Description>
+    <PackageProjectUrl>https://github.com/tbm0115/Consoul</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tbm0115/Consoul</RepositoryUrl>
+    <PackageTags>Console</PackageTags>
+    <Authors>tbm0115</Authors>
+    <Company />
   </PropertyGroup>
 
 </Project>
