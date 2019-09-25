@@ -11,4 +11,8 @@
     <Company />
   </PropertyGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy /Y &quot;$(TargetDir)..\$(ProjectName)*.nupkg&quot; &quot;C:\Nuget\Packages\$(ProjectName).nupkg&quot;" />
+  </Target>
+
 </Project>
