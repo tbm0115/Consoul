@@ -67,7 +67,7 @@ namespace Consoul.Views
                                         this,
                                         null
                                     )
-                                : ConsoleColor.White
+                                : RenderOptions.DefaultColor
                         ));
                     }
                 }
@@ -89,7 +89,7 @@ namespace Consoul.Views
                 {
                     prompt.Add(option.BuildMessage(Source), option.BuildColor(Source));
                 }
-                prompt.Add($"<==\tGo Back", ConsoleColor.Gray);
+                prompt.Add($"<==\tGo Back", RenderOptions.SubnoteColor);
 
                 try
                 {
@@ -110,7 +110,7 @@ namespace Consoul.Views
                 }
                 catch (Exception ex)
                 {
-                    Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", ConsoleColor.Red);
+                    Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", RenderOptions.InvalidColor);
                 }
             } while (idx < 0 && !GoBackRequested);
         }

@@ -22,13 +22,13 @@ namespace Consoul.Entry
                 _message = value;
             }
         }
-        public ConsoleColor Color { get; set; } = ConsoleColor.White;
+        public ConsoleColor Color { get; set; } = RenderOptions.DefaultColor;
 
-        public BannerEntry(string message, ConsoleColor color = ConsoleColor.White)
+        public BannerEntry(string message, ConsoleColor? color = null)
         {
             _message = message;
             Width = Math.Max(Console.BufferWidth, _message.Length);
-            Color = color;
+            Color = color ?? RenderOptions.DefaultColor;
         }
     }
 }

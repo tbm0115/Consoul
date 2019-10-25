@@ -10,9 +10,11 @@ namespace Consoul.Views
         public Expression<Func<object>> Action { get; set; }
         public ConsoleColor Color { get; set; }
 
-        public Option(string message, Expression<Func<object>> action, ConsoleColor color = ConsoleColor.White)
+        public Option(string message, Expression<Func<object>> action, ConsoleColor? color = null)
         {
-            Entry = new LineEntry(message, color);
+            if (color == null)
+                color = RenderOptions.DefaultColor;
+            Entry = new LineEntry(message, (ConsoleColor)color);
             Action = action;
             Color = Entry.Color;
         }

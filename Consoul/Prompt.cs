@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using Options = Consoul.RenderOptions;
 namespace Consoul
 {
     public delegate void PromptChoiceCallback<TTarget>(TTarget choice);
@@ -37,9 +37,11 @@ namespace Consoul
             }
         }
 
-        public void Add(string label, ConsoleColor color = ConsoleColor.DarkYellow)
+        public void Add(string label, ConsoleColor? color = null)
         {
-            _options.Add(new PromptOption(_options.Count, label, color));
+            if (color == null)
+                color = RenderOptions.OptionColor;
+            _options.Add(new PromptOption(_options.Count, label, (ConsoleColor)color));
         }
 
         public void Clear()
@@ -61,20 +63,20 @@ namespace Consoul
                 {
                     Console.Clear();
                 }
-                Consoul.Write(Message, ConsoleColor.Yellow);
-                Consoul.Write("Choose the corresponding number from the options below:", ConsoleColor.Gray);
+                Consoul._write(Message, RenderOptions.PromptColor);
+                Consoul._write("Choose the corresponding number from the options below:", RenderOptions.SubnoteColor);
                 int i = 0;
                 foreach (PromptOption option in Options)
                 {
-                    Consoul.Write(option.ToString(), option.Color);
+                    Consoul._write(option.ToString(), option.Color);
                     i++;
                 }
-                Console.ForegroundColor = ConsoleColor.White;
+                Console.ForegroundColor = RenderOptions.DefaultColor;
                 input = Console.ReadLine();
                 Int32.TryParse(input, out selection);
                 if (selection <= 0 || selection > (_options.Count + 1))
                 {
-                    Consoul.Write("Invalid selection!", ConsoleColor.Red);
+                    Consoul._write("Invalid selection!", RenderOptions.InvalidColor);
                     selection = -1;
                 }
                 else
@@ -96,10 +98,10 @@ namespace Consoul
             return $"{Index + 1}) {Label}";
         }
 
-        public PromptOption(string label, ConsoleColor color = ConsoleColor.DarkYellow)
+        public PromptOption(string label, ConsoleColor? color = null)
         {
             Label = label;
-            Color = color;
+            Color = color ?? RenderOptions.OptionColor;
         }
         public PromptOption(int index, string label, ConsoleColor color) : this(label, color)
         {

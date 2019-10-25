@@ -15,7 +15,6 @@ namespace Consoul.Test
             //     https://codereview.stackexchange.com/questions/36768/tiny-text-adventure 
             //
             // **************************************************************************
-
             var view1 = new Welcome();
             view1.Run();
         }

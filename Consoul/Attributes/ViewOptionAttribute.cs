@@ -6,7 +6,7 @@ namespace Consoul.Attributes
     public class ViewOptionAttribute : Attribute
     {
         public string Message { get; set; }
-        public ConsoleColor Color { get; set; } = ConsoleColor.White;
+        public ConsoleColor Color { get; set; } = RenderOptions.DefaultColor;
 
         public ViewOptionAttribute(string message)
         {

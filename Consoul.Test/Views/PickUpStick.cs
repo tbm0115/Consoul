@@ -12,15 +12,9 @@ namespace Consoul.Test.Views
                 "Do you take it?";
         }
 
-        private string _takeItMessage()
-        {
-            return "Take it with you";
-        }
-        private ConsoleColor _takeItColor()
-        {
-            return ConsoleColor.White;
-        }
-        [DynamicViewOption("_takeItMessage", "_takeItColor")]
+        private string _takeItMessage() => "Take it with you";
+        private ConsoleColor _takeItColor() => ConsoleColor.White;
+        [DynamicViewOption(nameof(_takeItMessage), nameof(_takeItColor))]
         public void TakeIt()
         {
             Consoul.Write("You have taken the stick!", ConsoleColor.Green);
@@ -29,15 +23,9 @@ namespace Consoul.Test.Views
             Source.Progress(typeof(GlowingObject));
         }
 
-        private string _leaveItMessage()
-        {
-            return "Leave it alone.";
-        }
-        private ConsoleColor _leaveItColor()
-        {
-            return ConsoleColor.White;
-        }
-        [DynamicViewOption("_leaveItMessage", "_leaveItColor")]
+        private string _leaveItMessage() => "Leave it alone.";
+        private ConsoleColor _leaveItColor() => ConsoleColor.White;
+        [DynamicViewOption(nameof(_leaveItMessage), nameof(_leaveItColor))]
         public void LeaveIt()
         {
             Consoul.Write("You did not take the stick!");

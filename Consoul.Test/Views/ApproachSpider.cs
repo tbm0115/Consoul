@@ -12,7 +12,9 @@ namespace Consoul.Test.Views
             Title = "Do you try to fight it?";
         }
 
-        [ViewOption("\"Death to Spider!\"")]
+        private string _fightMessage() => "\"Death to Spider!\"";
+        private ConsoleColor _fightColor() => ConsoleColor.White;
+        [DynamicViewOption(nameof(_fightMessage), nameof(_fightColor))]
         public void Fight()
         {
             int hitThreshold = 5;
@@ -47,7 +49,9 @@ namespace Consoul.Test.Views
             Consoul.Wait();
         }
 
-        [ViewOption("Run Away", Color = ConsoleColor.Yellow)]
+        private string _runMessage() => "Run Away";
+        private ConsoleColor _runColor() => ConsoleColor.Yellow;
+        [DynamicViewOption(nameof(_runMessage), nameof(_runColor))]
         public void RunAway()
         {
             Consoul.Write("As you turn away, it ambushes you and impales you with its fangs!!!", ConsoleColor.Red);

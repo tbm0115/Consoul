@@ -10,7 +10,9 @@ namespace Consoul.Test.Views
         {
         }
 
-        [ViewOption("What is this? (proceed)")]
+        private string _approachMessage() => "What is this? (proceed)";
+        private ConsoleColor _approachColor() => ConsoleColor.White;
+        [DynamicViewOption(nameof(_approachMessage), nameof(_approachColor))]
         public void Approach()
         {
             Consoul.Write("You approach the object...");
@@ -22,7 +24,9 @@ namespace Consoul.Test.Views
             Source.Progress(typeof(ApproachSpider));
         }
 
-        [ViewOption("Do not proceed (Leave the cave)")]
+        private string _leaveMessage() => "Do not proceed (Leave the cave)";
+        private ConsoleColor _leaveColor() => ConsoleColor.White;
+        [DynamicViewOption(nameof(_leaveMessage), nameof(_leaveColor))]
         public void Leave()
         {
             Consoul.Write("You turn away from the glowing object, and attempt to leave the cave...");
