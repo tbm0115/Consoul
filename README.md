@@ -15,12 +15,12 @@ A Console application will typically consist of a few inputs, some messages, all
 
  - Main Menu
  - First Dungeon
-  - First Room
-  - Second Room
-  - Hidden Room
-  - Boss Room
+   - First Room
+   - Second Room
+   - Hidden Room
+   - Boss Room
  - Last Dungeon
-  - {Insert lots of rooms}
+   - {Insert lots of rooms}
  - You Win Screen
  - You Lose Screen
 
