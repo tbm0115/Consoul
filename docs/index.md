@@ -1,3 +1,15 @@
+# Consoul
+Provides GUI-like extensions for interacting with Console.
+
+# The Basics
+Almost every Console application will have some form of methods that simplify the ability to prompt for input or write to the screen. Consoul provides a few of these basic methods:
+
+ - **Write**: A spin on the typical `Console.WriteLine()` that allows you to specify a color for the specific content you're writing
+ - **Wait**: Synchronously wait for the user to acknowledge continuation of the process with a more human-readable command
+ - **Input**: Prompt the user to respond with a raw string value using the same methods as the `Consoul.Write()` method. Optionally provide a safety net for yourself by not allowing null or empty responses, for those users that just try to blow past prompts
+ - **Ask**: Similar to `Consoul.Input()`, but prompts the user to safely provide a Yes or No response that results in a boolean. Optionally allow users to blow past the prompt by allowing null or empty responses instead of the Yes or No input.
+ - **Prompt**: A basic version of a *View* (see below) that prompts the user to select from a list of options by choosing the corresponding number.
+
 # Views
 A Console application will typically consist of a few inputs, some messages, all primarily driven from a series of cascading methods and user choices. So, Consoul focuses on allowing you to build "views" with the premise that there will be one or more "choices" that the user must make in order to perform an action. For example, in a text-based RPG game, you will have a high-level "view" structure:
 
