@@ -22,5 +22,8 @@ Clone, build, and copy the assembly to your project.
 
 # Acknowledgements
  - [Elliott Rhys](https://codereview.stackexchange.com/users/33091/elliott-rhys)'s [Tiny Text Adventure](https://codereview.stackexchange.com/questions/36768/tiny-text-adventure). It was the first text-based script I could find.
+
+If you've created a game out of this library, please share it by [submitting an issue](https://github.com/tbm0115/Consoul/issues/new?assignees=tbm0115&labels=Game+Attribution&template=acknowledgement.md&title=Acknowledge Me)
+
 # License
 This project is licensed under the GNU Lesser General Public License v3.0 - see the LICENSE.md file for details
