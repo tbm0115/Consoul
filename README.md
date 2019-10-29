@@ -17,3 +17,6 @@ Clone, build, and copy the assembly to your project.
  - Clean and consistent User navigation
  - Dynamic messages and color scheming
  - Useful console input and output methods help cleanup your project
+
+# License
+This project is licensed under the GNU Lesser General Public License v3.0 - see the LICENSE.md file for details
