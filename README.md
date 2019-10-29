@@ -18,5 +18,7 @@ Clone, build, and copy the assembly to your project.
  - Dynamic messages and color scheming
  - Useful console input and output methods help cleanup your project
 
+# Acknowledgements
+ - [Elliott Rhys](https://codereview.stackexchange.com/users/33091/elliott-rhys)'s [Tiny Text Adventure](https://codereview.stackexchange.com/questions/36768/tiny-text-adventure). It was the first text-based script I could find.
 # License
 This project is licensed under the GNU Lesser General Public License v3.0 - see the LICENSE.md file for details
