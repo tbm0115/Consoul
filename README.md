@@ -1,6 +1,8 @@
 # Consoul
 Provides GUI-like extensions for interacting with Console.
 
+![Tiny Text Adventures](/Consoul_1.png)
+
 # Getting Started
 Visit [consoul.dev](https://consoul.dev) for the latest documentation and examples of usage.
 
