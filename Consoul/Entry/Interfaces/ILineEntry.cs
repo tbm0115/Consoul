@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Consoul.Entry
+namespace ConsoulLibrary.Entry
 {
     public interface ILineEntry : IEntry
     {

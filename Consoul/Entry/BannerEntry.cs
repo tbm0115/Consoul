@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace Consoul.Entry
+namespace ConsoulLibrary.Entry
 {
     public class BannerEntry : ILineEntry
     {

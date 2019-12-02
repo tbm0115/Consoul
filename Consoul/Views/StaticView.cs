@@ -2,17 +2,20 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Consoul.Entry;
-using Consoul.Attributes;
+using ConsoulLibrary.Entry;
+using ConsoulLibrary.Attributes;
 
-namespace Consoul.Views
+namespace ConsoulLibrary.Views
 {
     public abstract class StaticView : IView
     {
         private bool _goBackRequested = false;
+        private string _goBackMessage = RenderOptions.DefaultGoBackMessage;
 
         public string Title { get; set; }
+
         public List<Option> Options { get; set; } = new List<Option>();
+
         public bool GoBackRequested => _goBackRequested;
 
 
@@ -25,6 +28,7 @@ namespace Consoul.Views
             if (viewAttr != null)
             {
                 Title = viewAttr.Title;
+                _goBackMessage = viewAttr.GoBackMessage;
             }
 
             // Build the options from local methods decorated with ViewOption
@@ -66,7 +70,7 @@ namespace Consoul.Views
                 {
                     prompt.Add(option.BuildMessage(), option.Color);
                 }
-                prompt.Add($"<==\tGo Back", RenderOptions.SubnoteColor);
+                prompt.Add(_goBackMessage, RenderOptions.SubnoteColor);
 
                 try
                 {

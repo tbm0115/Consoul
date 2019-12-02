@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Consoul.Test.Views
+namespace ConsoulLibrary.Test.Views
 {
     public class Story
     {

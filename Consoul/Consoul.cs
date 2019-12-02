@@ -1,18 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 
-namespace Consoul
-{
+namespace ConsoulLibrary {
     public static class Consoul
     {
-        //public static Options Options { get; set; } = new Options();
-
+        /// <summary>
+        /// Waits for the user to press "Enter". Performs Console.ReadLine()
+        /// </summary>
         public static void Wait()
         {
             Consoul._write("Press enter to continue...", RenderOptions.SubnoteColor);
             Console.ReadLine();
         }
+
+        /// <summary>
+        /// Prompts the user to provide a string input.
+        /// </summary>
+        /// <param name="message">Prompt Message</param>
+        /// <param name="color">Override the Prompt Message color</param>
+        /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Can result in string.Empty</param>
+        /// <returns>User response (string)</returns>
         public static string Input(string message, ConsoleColor? color = null, bool allowEmpty = false)
         {
             string output = string.Empty;
@@ -33,6 +40,13 @@ namespace Consoul
             } while (!valid);
             return output;
         }
+
+        /// <summary>
+        /// Internal Console.WriteLine() wrapper
+        /// </summary>
+        /// <param name="message">Display message</param>
+        /// <param name="color">Color for Message</param>
+        /// <param name="writeLine">Specifies whether to use Console.WriteLine() or Console.Write().</param>
         internal static void _write(string message, ConsoleColor color, bool writeLine = true)
         {
             Console.ForegroundColor = color;
@@ -45,6 +59,13 @@ namespace Consoul
                 Console.Write(message);
             }
         }
+
+        /// <summary>
+        /// Writes a message to the Console. Rendering depends on RenderOptions.WriteMode
+        /// </summary>
+        /// <param name="message">Display message</param>
+        /// <param name="color">Color for Message. Defaults to RenderOptions.DefaultColor</param>
+        /// <param name="writeLine">Specifies whether to use Console.WriteLine() or Console.Write()</param>
         public static void Write(string message, ConsoleColor? color = null, bool writeLine = true)
         {
             switch (RenderOptions.WriteMode)
@@ -63,9 +84,25 @@ namespace Consoul
                     break;
             }
         }
-        public static bool Ask(string message, bool clear = false, bool allowEmpty = false)
+
+        /// <summary>
+        /// Prompts the user to acknowledge a Prompt.
+        /// </summary>
+        /// <param name="message">Display message</param>
+        /// <param name="clear">Option to clear the Console buffer. If true, can make the prompt more prominant.</param>
+        /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Default is typically the 'No', but can be overriden</param>
+        /// <param name="defaultIsNo">Specifies whether the default entry should be 'No'. This only applies if 'allowEmpty' is true.</param>
+        /// <returns>Boolean of users response relative to 'Yes' or 'No'</returns>
+        public static bool Ask(string message, bool clear = false, bool allowEmpty = false, bool defaultIsNo = true)
         {
             string input = "";
+            string orEmpty = $" or Press Enter";
+            string[] options = new string[] {
+                $"Y{(allowEmpty && !defaultIsNo ? orEmpty : string.Empty)}=Yes",
+                $"N{(allowEmpty && defaultIsNo ? orEmpty : string.Empty)}=No"
+            };
+            string optionMessage = $"({string.Join(", ", options)})";
+
             do
             {
                 if (clear)
@@ -73,13 +110,15 @@ namespace Consoul
                     Console.Clear();
                 }
                 Consoul._write(message, RenderOptions.PromptColor);
-                Consoul._write("(Y=Yes, N" + (allowEmpty ? " or Press Enter" : "") + "=No)", RenderOptions.SubnoteColor);
+                Consoul._write(optionMessage, RenderOptions.SubnoteColor);
                 input = Console.ReadLine();
                 if (input.ToLower() != "y" && input.ToLower() != "n" && !string.IsNullOrEmpty(input))
                 {
                     Consoul._write("Invalid input!", RenderOptions.InvalidColor);
                 }
             } while ((allowEmpty ? false : string.IsNullOrEmpty(input)) && input.ToLower() != "y" && input.ToLower() != "n");
+            if (allowEmpty && string.IsNullOrEmpty(input))
+                input = defaultIsNo ? "n" : "y";
             return input.ToLower() == "y";
         }
         public static int Prompt(string message, bool clear = false, params string[] options)
@@ -92,29 +131,5 @@ namespace Consoul
             return (new Prompt(message, clear, options)).Run();
         }
 
-    }
-    public static class RenderOptions
-    {
-        public static ConsoleColor DefaultColor { get; set; } = ConsoleColor.White;
-        public static ConsoleColor PromptColor { get; set; } = ConsoleColor.Yellow;
-        public static ConsoleColor SubnoteColor { get; set; } = ConsoleColor.Gray;
-        public static ConsoleColor InvalidColor { get; set; } = ConsoleColor.Red;
-        public static ConsoleColor OptionColor { get; set; } = ConsoleColor.DarkYellow;
-        public static List<ConsoleColor> BlacklistColors { get; set; } = new List<ConsoleColor>();
-        public static WriteModes WriteMode { get; set; } = WriteModes.WriteAll;
-
-        public enum WriteModes
-        {
-            WriteAll,
-            SuppressAll,
-            SuppressBlacklist
-        }
-
-        public static ConsoleColor GetColor(ConsoleColor? color = null)
-        {
-            if (color == null)
-                color = DefaultColor;
-            return (ConsoleColor)color;
-        }
     }
 }

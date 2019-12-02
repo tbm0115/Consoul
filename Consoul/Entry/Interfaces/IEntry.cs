@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Consoul.Entry
+namespace ConsoulLibrary.Entry
 {
     public interface IEntry
     {

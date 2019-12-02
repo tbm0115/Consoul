@@ -1,7 +1,7 @@
 ﻿using System;
-using Consoul.Test.Views;
+using ConsoulLibrary.Test.Views;
 
-namespace Consoul.Test
+namespace ConsoulLibrary.Test
 {
     class Program
     {

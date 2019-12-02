@@ -1,6 +1,6 @@
-﻿using Consoul.Views;
+﻿using ConsoulLibrary.Views;
 
-namespace Consoul.Test.Views
+namespace ConsoulLibrary.Test.Views
 {
     public abstract class StoryView : DynamicView<Story>{
 

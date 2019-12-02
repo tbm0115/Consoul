@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace Consoul.Entry
+namespace ConsoulLibrary.Entry
 {
     public class DynamicEntry<T> : IDynamicEntry<T>
     {

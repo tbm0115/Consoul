@@ -1,7 +1,7 @@
-﻿using Consoul.Attributes;
+﻿using ConsoulLibrary.Attributes;
 using System;
 
-namespace Consoul.Test.Views
+namespace ConsoulLibrary.Test.Views
 {
     [View("As you proceed further into the cave, you see a small glowing object.")]
     public class GlowingObject : StoryView

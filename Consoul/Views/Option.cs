@@ -1,8 +1,8 @@
-﻿using Consoul.Entry;
+﻿using ConsoulLibrary.Entry;
 using System;
 using System.Linq.Expressions;
 
-namespace Consoul.Views
+namespace ConsoulLibrary.Views
 {
     public class Option : IOption
     {

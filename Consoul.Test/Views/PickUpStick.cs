@@ -1,7 +1,7 @@
-﻿using Consoul.Attributes;
+﻿using ConsoulLibrary.Attributes;
 using System;
 
-namespace Consoul.Test.Views
+namespace ConsoulLibrary.Test.Views
 {
     public class PickUpStick : StoryView
     {

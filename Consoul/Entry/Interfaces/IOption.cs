@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
-namespace Consoul.Entry
+namespace ConsoulLibrary.Entry
 {
     public interface IOption
     {
