@@ -1,11 +1,11 @@
-﻿using Consoul.Attributes;
+﻿using ConsoulLibrary.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Consoul.Views;
+using ConsoulLibrary.Views;
 
-namespace Consoul.Test.Views
+namespace ConsoulLibrary.Test.Views
 {
     public class Welcome : StaticView
     {

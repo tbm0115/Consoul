@@ -1,4 +1,4 @@
-﻿namespace Consoul.Test.Views
+﻿namespace ConsoulLibrary.Test.Views
 {
     public class Enemy : Actor
     {

@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace Consoul.Views
+namespace ConsoulLibrary.Views
 {
     public delegate void ChoiceCallback(int choiceIndex);
 

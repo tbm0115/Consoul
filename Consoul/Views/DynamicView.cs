@@ -2,18 +2,23 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Consoul.Entry;
-using Consoul.Attributes;
+using ConsoulLibrary.Entry;
+using ConsoulLibrary.Attributes;
 
-namespace Consoul.Views
+namespace ConsoulLibrary.Views
 {
     public abstract class DynamicView<T> : IView
     {
         private bool _goBackRequested = false;
+        private string _goBackMessage = RenderOptions.DefaultGoBackMessage;
 
         public string Title { get; set; }
+
+
         public List<DynamicOption<T>> Options { get; set; } = new List<DynamicOption<T>>();
+
         public bool GoBackRequested => _goBackRequested;
+
         public T Source { get; set; }
 
         public DynamicView()
@@ -25,6 +30,7 @@ namespace Consoul.Views
             if (viewAttr != null)
             {
                 Title = viewAttr.Title;
+                _goBackMessage = viewAttr.GoBackMessage;
             }
 
             // Build the options from local methods decorated with ViewOption
@@ -89,7 +95,7 @@ namespace Consoul.Views
                 {
                     prompt.Add(option.BuildMessage(Source), option.BuildColor(Source));
                 }
-                prompt.Add($"<==\tGo Back", RenderOptions.SubnoteColor);
+                prompt.Add(_goBackMessage, RenderOptions.SubnoteColor);
 
                 try
                 {

@@ -1,8 +1,8 @@
-﻿using Consoul.Attributes;
+﻿using ConsoulLibrary.Attributes;
 using System;
 using System.Linq;
 
-namespace Consoul.Test.Views
+namespace ConsoulLibrary.Test.Views
 {
     [View("Do you try to fight it?")]
     public class ApproachSpider : StoryView

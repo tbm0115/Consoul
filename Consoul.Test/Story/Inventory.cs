@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Consoul.Test.Views
+namespace ConsoulLibrary.Test.Views
 {
     public class Inventory
     {

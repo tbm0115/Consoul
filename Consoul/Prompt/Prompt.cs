@@ -1,17 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
-using Options = Consoul.RenderOptions;
-namespace Consoul
-{
+using System.Linq;
+using Options = ConsoulLibrary.RenderOptions;
+namespace ConsoulLibrary {
     public delegate void PromptChoiceCallback<TTarget>(TTarget choice);
     public class Prompt
     {
+        /// <summary>
+        /// Display message for the prompt
+        /// </summary>
         public string Message { get; set; }
+
+        /// <summary>
+        /// Flags whether to clear the console window upon prompt (and reprompt)
+        /// </summary>
         public bool ClearConsole { get; set; }
+
         private List<PromptOption> _options { get; set; }
         public IEnumerable<PromptOption> Options => _options;
+
         public string this[int index] => _options[index].Label;
+
         public int Count => _options.Count;
+
 
         public Prompt(string message, bool clear = false)
         {
@@ -19,6 +30,7 @@ namespace Consoul
             ClearConsole = clear;
             _options = new List<PromptOption>();
         }
+
         public Prompt(string message, bool clear = false, params string[] options) : this(message, clear)
         {
             foreach (string option in options)
@@ -26,6 +38,7 @@ namespace Consoul
                 Add(option);
             }
         }
+
         public Prompt(string message, bool clear = false, params PromptOption[] options) : this(message, clear)
         {
             int i = 0;
@@ -37,11 +50,11 @@ namespace Consoul
             }
         }
 
-        public void Add(string label, ConsoleColor? color = null)
+        public void Add(string label, ConsoleColor? color = null, bool isDefault = false, OptionRenderStyle renderStyle = OptionRenderStyle.Indexable)
         {
             if (color == null)
                 color = RenderOptions.OptionColor;
-            _options.Add(new PromptOption(_options.Count, label, (ConsoleColor)color));
+            _options.Add(new PromptOption(_options.Count, label, (ConsoleColor)color, isDefault, renderStyle));
         }
 
         public void Clear()
@@ -57,6 +70,9 @@ namespace Consoul
         {
             string input = "";
             int selection = -1;
+            PromptOption defaultOption = _options.FirstOrDefault(o => o.IsDefault);
+            if (defaultOption != null)
+                _options.Where(o => o.Index != defaultOption.Index && o.IsDefault).ToList().ForEach(o => o.IsDefault = false);
             do
             {
                 if (ClearConsole)
@@ -73,39 +89,25 @@ namespace Consoul
                 }
                 Console.ForegroundColor = RenderOptions.DefaultColor;
                 input = Console.ReadLine();
-                Int32.TryParse(input, out selection);
-                if (selection <= 0 || selection > (_options.Count + 1))
+                if (string.IsNullOrEmpty(input) && defaultOption != null)
                 {
-                    Consoul._write("Invalid selection!", RenderOptions.InvalidColor);
-                    selection = -1;
+                    selection = defaultOption.Index;
                 }
-                else
+                else 
                 {
-                    selection--;
+                    Int32.TryParse(input, out selection);
+                    if (selection <= 0 || selection > (_options.Count + 1)) {
+                        Consoul._write("Invalid selection!", RenderOptions.InvalidColor);
+                        selection = -1;
+                    } else {
+                        selection--;
+                    }
                 }
             } while (selection < 0);
+
+            _options[selection].Selected = true;
+
             return selection;
-        }
-    }
-    public class PromptOption
-    {
-        public string Label { get; set; }
-        public ConsoleColor Color { get; set; }
-        public int Index { get; set; }
-
-        public override string ToString()
-        {
-            return $"{Index + 1}) {Label}";
-        }
-
-        public PromptOption(string label, ConsoleColor? color = null)
-        {
-            Label = label;
-            Color = color ?? RenderOptions.OptionColor;
-        }
-        public PromptOption(int index, string label, ConsoleColor color) : this(label, color)
-        {
-            Index = index;
         }
     }
 

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Consoul.Test.Views
+namespace ConsoulLibrary.Test.Views
 {
     public abstract class Weapon : Item
     {

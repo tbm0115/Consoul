@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
 
-namespace Consoul
+namespace ConsoulLibrary
 {
     public class ModalFlag<T>
     {
