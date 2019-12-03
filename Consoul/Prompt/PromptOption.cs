@@ -45,11 +45,11 @@ namespace ConsoulLibrary
         }
 
         public override string ToString() {
-            string prefix = (IsDefault ? "default " : "        ");
-            string formattedLabel = $"{Index + 1}) {Label}";
+            string suffix = (IsDefault ? "\t(default) " : string.Empty);
+            string formattedLabel = $"{Index + 1}) {Label}{suffix}";
             switch (Style) {
                 case OptionRenderStyle.Checkbox:
-                    return $"[{(Selected ? "x" : " ")}] - {prefix}{formattedLabel}";
+                    return $"[{(Selected ? "x" : " ")}] - {formattedLabel}";
                 default:
                     return formattedLabel;
             }
