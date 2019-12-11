@@ -6,6 +6,10 @@ namespace ConsoulLibrary {
     public delegate void PromptChoiceCallback<TTarget>(TTarget choice);
     public class Prompt
     {
+        private List<PromptOption> _options { get; set; }
+
+        public string this[int index] => _options[index].Label;
+
         /// <summary>
         /// Display message for the prompt
         /// </summary>
@@ -16,10 +20,7 @@ namespace ConsoulLibrary {
         /// </summary>
         public bool ClearConsole { get; set; }
 
-        private List<PromptOption> _options { get; set; }
         public IEnumerable<PromptOption> Options => _options;
-
-        public string this[int index] => _options[index].Label;
 
         public int Count => _options.Count;
 

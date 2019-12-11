@@ -7,7 +7,9 @@ namespace ConsoulLibrary.Views
     public class Option : IOption
     {
         public LineEntry Entry { get; set; }
+
         public Expression<Func<object>> Action { get; set; }
+
         public ConsoleColor Color { get; set; }
 
         public Option(string message, Expression<Func<object>> action, ConsoleColor? color = null)

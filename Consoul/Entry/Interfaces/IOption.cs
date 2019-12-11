@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ConsoulLibrary.Entry
 {
-    public interface IOption
+    internal interface IOption
     {
         Expression<Func<object>> Action { get; set; }
     }

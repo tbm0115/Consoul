@@ -14,7 +14,6 @@ namespace ConsoulLibrary.Views
 
         public string Title { get; set; }
 
-
         public List<DynamicOption<T>> Options { get; set; } = new List<DynamicOption<T>>();
 
         public bool GoBackRequested => _goBackRequested;

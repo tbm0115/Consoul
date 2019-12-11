@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ConsoulLibrary.Entry
 {
-    public interface IEntry
+    internal interface IEntry
     {
         ConsoleColor Color { get; set; }
     }

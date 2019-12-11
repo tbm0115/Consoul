@@ -75,14 +75,30 @@ namespace ConsoulLibrary {
                     break;
                 case RenderOptions.WriteModes.SuppressBlacklist:
                     if (!RenderOptions.BlacklistColors.Any(c => c == color))
-                    {
                         _write(message, RenderOptions.GetColor(color), writeLine);
-                    }
                     break;
                 default: // Include WriteAll
                     _write(message, RenderOptions.GetColor(color), writeLine);
                     break;
             }
+        }
+
+        public static void Center(string message, int maxWidth, ConsoleColor? color = null, bool writeLine = true)
+        {
+            string text = message.Length > maxWidth ? message.Substring(0, maxWidth - 3) + "..." : message;
+
+
+            int remainder = maxWidth - text.Length - 1;
+            int left, right;
+            right = remainder / 2;
+            left = right;
+            if (remainder % 2 != 0)
+                left = (remainder + 1) / 2;
+
+
+            text = $"{(new string(' ', left))}{text}{(new string(' ', right))}";
+
+            Write(text, color, writeLine);
         }
 
         /// <summary>

@@ -7,9 +7,11 @@ namespace ConsoulLibrary.Views
     public interface IView
     {
         string Title { get; set; }
+
         bool GoBackRequested { get; }
 
         void Run(ChoiceCallback callback = null);
+
         void GoBack();
     }
 }

@@ -6,7 +6,9 @@ namespace ConsoulLibrary.Entry
     public class BannerEntry : ILineEntry
     {
         public int Width { get; set; }
+
         private string _message { get; set; }
+
         public string Message
         {
             get
@@ -22,6 +24,7 @@ namespace ConsoulLibrary.Entry
                 _message = value;
             }
         }
+
         public ConsoleColor Color { get; set; } = RenderOptions.DefaultColor;
 
         public BannerEntry(string message, ConsoleColor? color = null)
