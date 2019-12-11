@@ -18,26 +18,27 @@ namespace ConsoulLibrary.Test
             //
             // **************************************************************************
 
+            // Person info from https://avatar.fandom.com/wiki
             Person[] people = new Person[]{
                 new Person(){
-                    FirstName = "Trais",
-                    LastName = "McAllister",
-                    Age = 28
+                    FirstName = "Aang",
+                    LastName = "",
+                    Age = 112
                 },
                 new Person(){
-                    FirstName = "Samantha",
-                    LastName = "McAllister",
-                    Age = 27
+                    FirstName = "Katara",
+                    LastName = "",
+                    Age = 14
                 },
                 new Person(){
-                    FirstName = "Taran",
-                    LastName = "McAllister",
-                    Age = 18
+                    FirstName = "Sokka",
+                    LastName = "",
+                    Age = 15
                 },
                 new Person(){
-                    FirstName = "Scott",
-                    LastName = "McAllister",
-                    Age = 52
+                    FirstName = "Zuko",
+                    LastName = "",
+                    Age = 16
                 }
             };
 
@@ -49,7 +50,7 @@ namespace ConsoulLibrary.Test
                     nameof(Person.Age)
                 },
                 new Table.TableRenderOptions(){
-                    IncludeChoices = true,
+                    IncludeChoices = false,
                     SelectionColor = ConsoleColor.Green,
                     HeaderColor = ConsoleColor.DarkCyan,
                     ContentColor1 = ConsoleColor.White,
@@ -59,8 +60,15 @@ namespace ConsoulLibrary.Test
                     }
                 }
             );
-            table.Selection = 2;
-            table.Run();
+            table.Append(
+                new Person() {
+                    FirstName = "Toph",
+                    LastName = "Beifong",
+                    Age = 12
+                }, 
+                true
+            );
+            Consoul.Wait();
 
             var view1 = new Welcome();
             view1.Run();
