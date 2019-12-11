@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConsoulLibrary.Attributes
+namespace ConsoulLibrary.Views
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class ViewAttribute : Attribute

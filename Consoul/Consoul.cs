@@ -6,10 +6,12 @@ namespace ConsoulLibrary {
     {
         /// <summary>
         /// Waits for the user to press "Enter". Performs Console.ReadLine()
+        /// <paramref name="silent">Flags whether or not to show continue message.</paramref>
         /// </summary>
-        public static void Wait()
+        public static void Wait(bool silent = false)
         {
-            Consoul._write("Press enter to continue...", RenderOptions.SubnoteColor);
+            if (!silent)
+                Consoul._write(RenderOptions.ContinueMessage, RenderOptions.SubnoteColor);
             Console.ReadLine();
         }
 
@@ -137,11 +139,12 @@ namespace ConsoulLibrary {
                 input = defaultIsNo ? "n" : "y";
             return input.ToLower() == "y";
         }
+
         public static int Prompt(string message, bool clear = false, params string[] options)
         {
             return (new Prompt(message, clear, options)).Run();
-
         }
+
         public static int Prompt(string message, PromptOption[] options, bool clear = false)
         {
             return (new Prompt(message, clear, options)).Run();

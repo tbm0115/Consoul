@@ -1,5 +1,4 @@
-﻿using ConsoulLibrary.Attributes;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,7 +12,7 @@ namespace ConsoulLibrary.Test.Views
 
         public Welcome() : base()
         {
-            Title = (new Entry.BannerEntry("Welcome to the cavern of secrets!")).Message + "\r\nWould you like to begin";
+            Title = (new BannerEntry("Welcome to the cavern of secrets!")).Message + "\r\nWould you like to begin";
         }
 
         [ViewOption("Yes, let's start!")]

@@ -44,6 +44,8 @@ namespace ConsoulLibrary {
         /// </summary>
         public static string DefaultGoBackMessage { get; set; } = "<==\tGo Back";
 
+        public static string ContinueMessage { get; set; } = "Press enter to continue...";
+
         public enum WriteModes
         {
             WriteAll,

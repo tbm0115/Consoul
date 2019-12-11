@@ -1,5 +1,5 @@
-﻿using ConsoulLibrary.Attributes;
-using System;
+﻿using System;
+using ConsoulLibrary.Views;
 
 namespace ConsoulLibrary.Test.Views
 {
