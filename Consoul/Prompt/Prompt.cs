@@ -89,7 +89,7 @@ namespace ConsoulLibrary {
                     i++;
                 }
                 Console.ForegroundColor = RenderOptions.DefaultColor;
-                input = Console.ReadLine();
+                input = Consoul.Read();// Console.ReadLine();
                 if (string.IsNullOrEmpty(input) && defaultOption != null)
                 {
                     selection = defaultOption.Index;

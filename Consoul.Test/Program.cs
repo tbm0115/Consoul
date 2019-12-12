@@ -18,6 +18,8 @@ namespace ConsoulLibrary.Test
             //
             // **************************************************************************
 
+            Routines.InitializeRoutine(args);
+
             // Person info from https://avatar.fandom.com/wiki
             Person[] people = new Person[]{
                 new Person(){
@@ -42,36 +44,60 @@ namespace ConsoulLibrary.Test
                 }
             };
 
-            var table = new Table.TableView(
-                people.ToList(), 
-                new string[]{
+            if (Consoul.Ask("Would you like to view the people of Avatar: The Last Airbender?"))
+            {
+                var table = new Table.TableView(
+                    people.ToList(),
+                    new string[]{
                     nameof(Person.FirstName),
                     nameof(Person.LastName),
                     nameof(Person.Age)
-                },
-                new Table.TableRenderOptions(){
-                    IncludeChoices = false,
-                    SelectionColor = ConsoleColor.Green,
-                    HeaderColor = ConsoleColor.DarkCyan,
-                    ContentColor1 = ConsoleColor.White,
-                    ContentColor2 = ConsoleColor.Gray,
-                    Lines = new Table.TableRenderOptions.TableLineDisplayOptions(){
-                        ContentVertical = false
+                    },
+                    new Table.TableRenderOptions()
+                    {
+                        IncludeChoices = false,
+                        SelectionColor = ConsoleColor.Green,
+                        HeaderColor = ConsoleColor.DarkCyan,
+                        ContentColor1 = ConsoleColor.White,
+                        ContentColor2 = ConsoleColor.Gray,
+                        Lines = new Table.TableRenderOptions.TableLineDisplayOptions()
+                        {
+                            ContentVertical = false
+                        }
                     }
-                }
-            );
-            table.Append(
-                new Person() {
-                    FirstName = "Toph",
-                    LastName = "Beifong",
-                    Age = 12
-                }, 
-                true
-            );
-            Consoul.Wait();
+                );
+                table.Append(
+                    new Person()
+                    {
+                        FirstName = "Toph",
+                        LastName = "Beifong",
+                        Age = 12
+                    },
+                    true
+                );
+                Consoul.Wait();
+            }
 
             var view1 = new Welcome();
             view1.Run();
+        }
+
+        public class TestRoutine : Routine
+        {
+            public TestRoutine() : base(new string[]
+            {
+                "y", // Yes, show list of Persons
+                string.Empty, // Skip Wait,
+                "1", // Yes, let's start!
+                "1", // Take it with you
+                string.Empty, // Skip message
+                "1", // What is this?
+                string.Empty, // Skip message
+                "1" // "Death to Spider!"
+            })
+            {
+                // Should land on begining of Text game
+            }
         }
 
         public class Person{

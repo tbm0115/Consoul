@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Consoul.Test": {
+      "commandName": "Project",
+      "commandLineArgs": "-Routine TestRoutine"
+    }
+  }
+}

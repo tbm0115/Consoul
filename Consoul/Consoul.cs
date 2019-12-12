@@ -12,6 +12,8 @@ namespace ConsoulLibrary {
         {
             if (!silent)
                 Consoul._write(RenderOptions.ContinueMessage, RenderOptions.SubnoteColor);
+            if (Routines.HasBuffer() && string.IsNullOrEmpty(Routines.Peek()))
+                return; // Skip mandatory readline
             Console.ReadLine();
         }
 
@@ -28,9 +30,8 @@ namespace ConsoulLibrary {
             bool valid = false;
             do
             {
-                //Console.Clear();
                 Consoul._write(message, RenderOptions.GetColor(color));
-                output = Console.ReadLine();
+                output = Read();
                 if (allowEmpty)
                 {
                     valid = true;
@@ -85,6 +86,18 @@ namespace ConsoulLibrary {
             }
         }
 
+        public static string Read()
+        {
+            if (Routines.HasBuffer())
+            {
+                return Routines.Next();
+            }
+            else
+            {
+                return Console.ReadLine();
+            }
+        }
+
         public static void Center(string message, int maxWidth, ConsoleColor? color = null, bool writeLine = true)
         {
             string text = message.Length > maxWidth ? message.Substring(0, maxWidth - 3) + "..." : message;
@@ -129,7 +142,7 @@ namespace ConsoulLibrary {
                 }
                 Consoul._write(message, RenderOptions.PromptColor);
                 Consoul._write(optionMessage, RenderOptions.SubnoteColor);
-                input = Console.ReadLine();
+                input = Read();// Console.ReadLine();
                 if (input.ToLower() != "y" && input.ToLower() != "n" && !string.IsNullOrEmpty(input))
                 {
                     Consoul._write("Invalid input!", RenderOptions.InvalidColor);
