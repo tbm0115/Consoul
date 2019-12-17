@@ -16,17 +16,17 @@ namespace ConsoulLibrary.Progress
         {
             _total = total;
             BlockCharacter = (char)0x2588;
+            Initialize();
+        }
+
+        public void Initialize()
+        {
             _message = new FixedMessage.FixedMessage();
             _message.Update(string.Empty);
             Console.WriteLine();// Create Line Break
             _bar = new FixedMessage.FixedMessage();
             _bar.Update(string.Empty);
             Console.WriteLine();// Create Line Break;
-        }
-
-        public void Start()
-        {
-            Consoul.Write(string.Empty);
         }
 
         public void Update(int index, string message = null, ConsoleColor? color = null)
@@ -39,8 +39,8 @@ namespace ConsoulLibrary.Progress
                 color = ConsoleColor.Green;
             int width = (int)(percent * (double)Console.BufferWidth);
 
-            _message.Update(message, RenderOptions.SubnoteColor);
-            _bar.Update(new string(BlockCharacter, width), color);
+            _message.Update(message, color);
+            _bar.Update(new string(BlockCharacter, width), RenderOptions.SubnoteColor);
         }
     }
 }
