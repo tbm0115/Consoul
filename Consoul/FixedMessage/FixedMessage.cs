@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ConsoulLibrary.FixedMessage
+namespace ConsoulLibrary
 {
     public class FixedMessage
     {

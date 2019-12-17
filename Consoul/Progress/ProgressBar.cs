@@ -2,15 +2,17 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ConsoulLibrary.Progress
+namespace ConsoulLibrary
 {
     public class ProgressBar
     {
-        private FixedMessage.FixedMessage _message { get; set; }
-        private FixedMessage.FixedMessage _bar { get; set; }
+        private FixedMessage _message { get; set; }
+        private FixedMessage _bar { get; set; }
         private int _total;
+        private double _percent = 0.0;
         public int Total => _total;
         public Char BlockCharacter { get; set; }
+        public double Percent => _percent;
 
         public ProgressBar(int total)
         {
@@ -21,12 +23,20 @@ namespace ConsoulLibrary.Progress
 
         public void Initialize()
         {
-            _message = new FixedMessage.FixedMessage();
+            _message = new FixedMessage();
             _message.Update(string.Empty);
             Console.WriteLine();// Create Line Break
-            _bar = new FixedMessage.FixedMessage();
+            _bar = new FixedMessage();
             _bar.Update(string.Empty);
             Console.WriteLine();// Create Line Break;
+        }
+
+        public void Reset(int total, bool reAffix = false)
+        {
+            _total = total;
+            _percent = 0.0;
+            if (reAffix)
+                Initialize();
         }
 
         public void Update(int index, string message = null, ConsoleColor? color = null)
@@ -35,9 +45,10 @@ namespace ConsoulLibrary.Progress
         }
         public void Update(double percent, string message = null, ConsoleColor? color = null)
         {
+            _percent = percent;
             if (color == null)
                 color = ConsoleColor.Green;
-            int width = (int)(percent * (double)Console.BufferWidth);
+            int width = (int)(_percent * (double)Console.BufferWidth);
 
             _message.Update(message, color);
             _bar.Update(new string(BlockCharacter, width), RenderOptions.SubnoteColor);
