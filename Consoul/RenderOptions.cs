@@ -93,6 +93,11 @@ namespace ConsoulLibrary {
         public static ConsoleColor OptionColor { get; set; } = ConsoleColor.DarkYellow;
 
         /// <summary>
+        /// Default color for rendering Routine input values
+        /// </summary>
+        public static ConsoleColor RoutineInputColor { get; set; } = ConsoleColor.Cyan;
+
+        /// <summary>
         /// Messages colored with this will not be rendered
         /// </summary>
         public static List<ConsoleColor> BlacklistColors { get; set; } = new List<ConsoleColor>();

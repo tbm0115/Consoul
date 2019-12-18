@@ -160,6 +160,9 @@ namespace ConsoulLibrary.Table {
             }
             Append(row, addToCache);
         }
+
+
+
     }
     public class TableRenderOptions{
         public bool IncludeChoices { get; set; } = false;

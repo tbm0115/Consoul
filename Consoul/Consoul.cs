@@ -12,8 +12,10 @@ namespace ConsoulLibrary {
         {
             if (!silent)
                 Consoul._write(RenderOptions.ContinueMessage, RenderOptions.SubnoteColor);
-            if (Routines.HasBuffer() && string.IsNullOrEmpty(Routines.Peek()))
-                return; // Skip mandatory readline
+            if (Routines.HasBuffer() && string.IsNullOrEmpty(Routines.Peek())) {
+                Routines.Next(); // Pop string.Empty
+                return; // Skip mandatory readline   
+            }
             Console.ReadLine();
         }
 
@@ -88,14 +90,17 @@ namespace ConsoulLibrary {
 
         public static string Read()
         {
+            string input = string.Empty;
             if (Routines.HasBuffer())
             {
-                return Routines.Next();
+                input = Routines.Next();
+                Write(input, ConsoleColor.Cyan);
             }
             else
             {
-                return Console.ReadLine();
+                input = Console.ReadLine();
             }
+            return input;
         }
 
         public static void Center(string message, int maxWidth, ConsoleColor? color = null, bool writeLine = true)

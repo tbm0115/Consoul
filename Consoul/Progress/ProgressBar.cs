@@ -39,19 +39,22 @@ namespace ConsoulLibrary
                 Initialize();
         }
 
-        public void Update(int index, string message = null, ConsoleColor? color = null)
+        public void Update(int index, string message = null, ConsoleColor? messageColor = null, ConsoleColor? barColor = null)
         {
-            Update((double)index / (double)_total, message, color);
+            Update((double)index / (double)_total, message, messageColor, barColor);
         }
-        public void Update(double percent, string message = null, ConsoleColor? color = null)
+        public void Update(double percent, string message = null, ConsoleColor? messageColor = null, ConsoleColor? barColor = null)
         {
             _percent = percent;
-            if (color == null)
-                color = ConsoleColor.Green;
+            if (messageColor == null)
+                messageColor = RenderOptions.DefaultColor;
             int width = (int)(_percent * (double)Console.BufferWidth);
 
-            _message.Update(message, color);
-            _bar.Update(new string(BlockCharacter, width), RenderOptions.SubnoteColor);
+            _message.Update(message, messageColor);
+
+            if (barColor == null)
+                barColor = RenderOptions.SubnoteColor;
+            _bar.Update(new string(BlockCharacter, width), barColor);
         }
     }
 }
