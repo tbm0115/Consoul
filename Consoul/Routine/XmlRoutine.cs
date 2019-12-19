@@ -12,7 +12,7 @@ namespace ConsoulLibrary {
             _xml = new XmlDocument();
         }
 
-        public XmlRoutine(string filepath) : base() {
+        public XmlRoutine(string filepath) : this() {
             _xml.Load(filepath);
             read();
         }
