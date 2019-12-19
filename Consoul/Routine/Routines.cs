@@ -11,26 +11,30 @@ namespace ConsoulLibrary {
 
         public static void InitializeRoutine(string[] args)
         {
-            int idxRoutineFlag = args.ToList().IndexOf("-Routine");
-            if (idxRoutineFlag >= 0 && (idxRoutineFlag + 1) > args.Length - 1) {
-                _loadRoutine(args[idxRoutineFlag + 1]);
-                return; // Continue without error
-            }
-
-            int idxXmlRoutineFlag = args.ToList().IndexOf("-XmlRoutine");
-            if (idxXmlRoutineFlag >= 0 && (idxXmlRoutineFlag + 1) > args.Length - 1) {
-                _loadXmlRoutine(args[idxXmlRoutineFlag + 1]);
+            if (_checkRoutine(args))
                 return;
-            }
+            if (_checkXmlRoutine(args))
+                return;
 
         }
-        private static void _loadXmlRoutine(string filepath){
-            if (!System.IO.File.Exists(filepath))
-                return; // Continue without error
-            XmlRoutine xRoutine = new XmlRoutine(filepath);
-            Routines.InitializeRoutine(xRoutine);
+        private static bool _checkXmlRoutine(string[] args) {
+            string filePath = string.Empty;
+            int idxXmlRoutineFlag = args.ToList().IndexOf("-XmlRoutine");
+            if (idxXmlRoutineFlag < 0 || (idxXmlRoutineFlag + 1) >= args.Length)
+                return false;
+            filePath = args[idxXmlRoutineFlag + 1];
+            if (!System.IO.File.Exists(filePath))
+                throw new System.IO.FileNotFoundException("Cannot find file.", filePath);
+            XmlRoutine xRoutine = new XmlRoutine(filePath);
+            InitializeRoutine(xRoutine);
+            return true;
         }
-        private static void _loadRoutine(string assemblyName) {
+        private static bool _checkRoutine(string[] args) {
+            string assemblyName = string.Empty;
+            int idxRoutineFlag = args.ToList().IndexOf("-Routine");
+            if (idxRoutineFlag < 0 || (idxRoutineFlag + 1) >= args.Length)
+                return false; // Continue without error
+            assemblyName = args[idxRoutineFlag + 1];
             Assembly assembly = Assembly.GetCallingAssembly();
 
             Type[] allTypes = assembly.GetTypes();
@@ -47,6 +51,8 @@ namespace ConsoulLibrary {
             if (routine == null)
                 throw new TypeLoadException();
             InitializeRoutine(routine);
+
+            return true;
         }
 
         public static string Next()

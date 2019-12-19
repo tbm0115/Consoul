@@ -17,7 +17,7 @@ namespace ConsoulLibrary.Test
             //     https://codereview.stackexchange.com/questions/36768/tiny-text-adventure 
             //
             // **************************************************************************
-
+            Routines.MonitorInputs = true;
             Routines.InitializeRoutine(args);
 
             // Person info from https://avatar.fandom.com/wiki
@@ -80,6 +80,9 @@ namespace ConsoulLibrary.Test
 
             var view1 = new Welcome();
             view1.Run();
+
+            var xRoutine = new XmlRoutine();
+            xRoutine.SaveInputs("Test.xml");
         }
 
         public class TestRoutine : Routine

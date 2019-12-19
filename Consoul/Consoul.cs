@@ -16,7 +16,8 @@ namespace ConsoulLibrary {
                 Routines.Next(); // Pop string.Empty
                 return; // Skip mandatory readline   
             }
-            Console.ReadLine();
+            Read();
+            //Console.ReadLine();
         }
 
         /// <summary>

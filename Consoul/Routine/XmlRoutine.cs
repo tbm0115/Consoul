@@ -8,8 +8,11 @@ namespace ConsoulLibrary {
     {
         private XmlDocument _xml { get; set; }
 
+        public string Name { get; set; }
+
         public XmlRoutine() {
             _xml = new XmlDocument();
+            Name = Guid.NewGuid().ToString("n");
         }
 
         public XmlRoutine(string filepath) : this() {
@@ -18,7 +21,7 @@ namespace ConsoulLibrary {
         }
 
         private void read(){
-            XmlNodeList xInputs = _xml.SelectNodes("//Input");
+            XmlNodeList xInputs = _xml.SelectNodes("//Input/Value");
             foreach (XmlNode xInput in xInputs) {
                 base.Enqueue(xInput.InnerText);
             }
@@ -27,12 +30,18 @@ namespace ConsoulLibrary {
         public void SaveInputs(string filepath){
             _xml = new XmlDocument();
             _xml.AppendChild(_xml.CreateXmlDeclaration("1.0", "UTF-8", "yes"));
-            XmlNode xRoot = _xml.AppendChild(_xml.CreateElement("Inputs"));
+            XmlNode xRoot = _xml.AppendChild(_xml.CreateElement("Routine"));
+            XmlNode xMeta = xRoot.AppendChild(_xml.CreateElement("Meta"));
+            xMeta.AppendChild(_xml.CreateElement("DateCreated")).InnerText = DateTime.UtcNow.ToString();
+            xMeta.AppendChild(_xml.CreateElement("Name")).InnerText = Name;
 
+            XmlNode xRoutines = xRoot.AppendChild(_xml.CreateElement("Routines"));
+            XmlNode xRoutine = xRoutines.AppendChild(_xml.CreateElement("Routine"));
             string[] userInputs = Routines.UserInputs.ToArray().Reverse().ToArray();
             foreach (string userInput in userInputs) {
-                XmlNode xInput = xRoot.AppendChild(_xml.CreateElement("Input"));
-                xInput.InnerText = userInput;
+                XmlNode xInput = xRoutine.AppendChild(_xml.CreateElement("Input"));
+                // TODO: Add Description and Groupings
+                xInput.AppendChild(_xml.CreateElement("Value")).InnerText = userInput;
             }
 
             _xml.Save(filepath);
