@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Xml;
 
 namespace ConsoulLibrary {
@@ -28,7 +29,7 @@ namespace ConsoulLibrary {
             _xml.AppendChild(_xml.CreateXmlDeclaration("1.0", "UTF-8", "yes"));
             XmlNode xRoot = _xml.AppendChild(_xml.CreateElement("Inputs"));
 
-            string[] userInputs = Routines.UserInputs.ToArray();
+            string[] userInputs = Routines.UserInputs.ToArray().Reverse().ToArray();
             foreach (string userInput in userInputs) {
                 XmlNode xInput = xRoot.AppendChild(_xml.CreateElement("Input"));
                 xInput.InnerText = userInput;
