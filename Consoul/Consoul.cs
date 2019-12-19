@@ -100,6 +100,11 @@ namespace ConsoulLibrary {
             {
                 input = Console.ReadLine();
             }
+
+            // Check if we should save the input to the Routine Stack
+            if (Routines.MonitorInputs)
+                Routines.UserInputs.Push(input);
+
             return input;
         }
 
