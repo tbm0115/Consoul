@@ -1,7 +1,9 @@
 # Consoul
-Provides GUI-like extensions for interacting with Console.
+Add some life to your Console project!
 
 ![Tiny Text Adventures](/Consoul_1.png)
+
+The Consoul library provides more convenient methods of rendering in a traditional Console application.
 
 # Getting Started
 Visit [consoul.dev](https://consoul.dev) for the latest documentation and examples of usage.
@@ -19,6 +21,14 @@ Clone, build, and copy the assembly to your project.
  - Clean and consistent User navigation
  - Dynamic messages and color scheming
  - Useful console input and output methods help cleanup your project
+ - Advanced rendering:
+   - Fixed Messages
+   - Tables
+   - Progress Bars
+   - Selection Prompts
+   - Banners
+ - Automated Routines
+ - Startup Argument processes
 
 # Acknowledgements
  - [Elliott Rhys](https://codereview.stackexchange.com/users/33091/elliott-rhys)'s [Tiny Text Adventure](https://codereview.stackexchange.com/questions/36768/tiny-text-adventure). It was the first text-based script I could find.
