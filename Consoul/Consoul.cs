@@ -12,12 +12,7 @@ namespace ConsoulLibrary {
         {
             if (!silent)
                 Consoul._write(RenderOptions.ContinueMessage, RenderOptions.SubnoteColor);
-            if (Routines.HasBuffer() && string.IsNullOrEmpty(Routines.Peek())) {
-                Routines.Next(); // Pop string.Empty
-                return; // Skip mandatory readline   
-            }
             Read();
-            //Console.ReadLine();
         }
 
         /// <summary>
@@ -91,22 +86,30 @@ namespace ConsoulLibrary {
 
         public static string Read()
         {
-            string input = string.Empty;
+            RoutineInput input = new RoutineInput();
             if (Routines.HasBuffer())
             {
                 input = Routines.Next();
-                Write(input, ConsoleColor.Cyan);
+
+                long delayTicks = 0;
+                if (Routines.UseDelays && input.Delay.Value != null)
+                    delayTicks = input.Delay.Value.Ticks / 2;
+                TimeSpan delay = new TimeSpan(delayTicks);
+
+                System.Threading.Thread.Sleep(delay);
+                Write(input.Value, ConsoleColor.Cyan);
+                System.Threading.Thread.Sleep(delay);
             }
             else
             {
-                input = Console.ReadLine();
+                input.Value = Console.ReadLine();
             }
 
             // Check if we should save the input to the Routine Stack
             if (Routines.MonitorInputs)
                 Routines.UserInputs.Push(input);
 
-            return input;
+            return input.Value;
         }
 
         public static void Center(string message, int maxWidth, ConsoleColor? color = null, bool writeLine = true)

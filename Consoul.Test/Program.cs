@@ -19,6 +19,7 @@ namespace ConsoulLibrary.Test
             // **************************************************************************
             Routines.MonitorInputs = true;
             Routines.InitializeRoutine(args);
+            //Routines.UseDelays = true; // Showcases the usecase of reusing input delays to simulate user response
 
             // Person info from https://avatar.fandom.com/wiki
             Person[] people = new Person[]{

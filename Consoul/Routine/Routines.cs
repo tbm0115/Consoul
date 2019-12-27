@@ -5,9 +5,12 @@ using System.Linq;
 
 namespace ConsoulLibrary {
     public static class Routines {
-        public static Queue<string> InputBuffer { get; private set; } = new Queue<string>();
+        public static Queue<RoutineInput> InputBuffer { get; private set; } = new Queue<RoutineInput>();
 
-        public static void InitializeRoutine(Routine routine) => InputBuffer = routine;
+        public static void InitializeRoutine(Routine routine) {
+            InputBuffer = routine;
+            UseDelays = routine.UseDelays;
+        }
 
         public static void InitializeRoutine(string[] args)
         {
@@ -55,7 +58,7 @@ namespace ConsoulLibrary {
             return true;
         }
 
-        public static string Next()
+        public static RoutineInput Next()
         {
             if (InputBuffer.Count <= 0)
                 throw new IndexOutOfRangeException();
@@ -66,13 +69,15 @@ namespace ConsoulLibrary {
         {
             if (InputBuffer.Count <= 0)
                 throw new IndexOutOfRangeException();
-            return InputBuffer.Peek();
+            return InputBuffer.Peek().Value;
         }
 
         public static bool HasBuffer() => InputBuffer.Any();
 
         public static bool MonitorInputs { get; set; } = false;
 
-        public static Stack<string> UserInputs { get; private set; } = new Stack<string>();
+        public static bool UseDelays { get; set; } = false;
+
+        public static Stack<RoutineInput> UserInputs { get; private set; } = new Stack<RoutineInput>();
     }
 }
