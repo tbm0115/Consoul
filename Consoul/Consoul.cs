@@ -95,6 +95,8 @@ namespace ConsoulLibrary {
                 if (Routines.UseDelays && input.Delay.Value != null)
                     delayTicks = input.Delay.Value.Ticks / 2;
                 TimeSpan delay = new TimeSpan(delayTicks);
+                if (!string.IsNullOrEmpty(input.Description))
+                    Write(input.Description, RenderOptions.SubnoteColor);
 
                 System.Threading.Thread.Sleep(delay);
                 Write(input.Value, ConsoleColor.Cyan);
