@@ -8,11 +8,11 @@ namespace ConsoulLibrary.Views
     {
         public LineEntry Entry { get; set; }
 
-        public Expression<Func<object>> Action { get; set; }
+        public OptionAction Action { get; set; }
 
         public ConsoleColor Color { get; set; }
 
-        public Option(string message, Expression<Func<object>> action, ConsoleColor? color = null)
+        public Option(string message, OptionAction action, ConsoleColor? color = null)
         {
             if (color == null)
                 color = RenderOptions.DefaultColor;

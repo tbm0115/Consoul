@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using ConsoulLibrary.Entry;
 
 namespace ConsoulLibrary.Views
@@ -39,15 +40,19 @@ namespace ConsoulLibrary.Views
                 ViewOptionAttribute attr = method.GetCustomAttribute(viewOptionType) as ViewOptionAttribute;
                 if (attr != null)
                 {
+                    OptionAction p = delegate ()
+                           {
+                               thisType.InvokeMember(
+                                   method.Name,
+                                   BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
+                                   null,
+                                   this,
+                                   null
+                               );
+                           };
                     Options.Add(new Option(
-                        attr.Message, 
-                        () => thisType.InvokeMember(
-                            method.Name,
-                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
-                                null,
-                                this,
-                                null
-                            ),
+                        attr.Message,
+                        p,
                         attr.Color)
                     );
                 }
@@ -59,16 +64,15 @@ namespace ConsoulLibrary.Views
             _goBackRequested = true;
         }
 
-        public void Run(ChoiceCallback callback = null)
+        public async Task RunAsync(ChoiceCallback callback = null)
         {
             int idx = -1;
             do
             {
                 Prompt prompt = new Prompt(Title, true);
-                foreach (var option in Options)
-                {
+                foreach (Option option in Options)
                     prompt.Add(option.BuildMessage(), option.Color);
-                }
+
                 prompt.Add(_goBackMessage, RenderOptions.SubnoteColor);
 
                 try
@@ -76,23 +80,24 @@ namespace ConsoulLibrary.Views
                     idx = prompt.Run();
                     if (idx >= 0 && idx < Options.Count)
                     {
-                        Options[idx].Action.Compile().Invoke();
+                        await Task.Run(() => Options[idx].Action.Invoke());
                         if (callback != null)
-                        {
-                            callback(idx);
-                        }
+                             await callback(idx);
                         idx = -1;
                     }
                     else if (idx == Options.Count)
-                    {
                         idx = int.MaxValue;
-                    }
                 }
                 catch (Exception ex)
                 {
                     Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", RenderOptions.InvalidColor);
                 }
             } while (idx < 0 && !GoBackRequested);
+        }
+
+        public void Run(ChoiceCallback callback = null)
+        {
+            RunAsync(callback).Wait();
         }
     }
 }

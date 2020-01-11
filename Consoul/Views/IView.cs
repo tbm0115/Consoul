@@ -1,8 +1,10 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace ConsoulLibrary.Views
 {
-    public delegate void ChoiceCallback(int choiceIndex);
+    public delegate Task ChoiceCallback(int choiceIndex);
 
     public interface IView
     {
@@ -10,6 +12,7 @@ namespace ConsoulLibrary.Views
 
         bool GoBackRequested { get; }
 
+        Task RunAsync(ChoiceCallback callback = null);
         void Run(ChoiceCallback callback = null);
 
         void GoBack();

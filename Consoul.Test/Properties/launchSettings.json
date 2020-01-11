@@ -1,8 +1,7 @@
 {
   "profiles": {
     "Consoul.Test": {
-      "commandName": "Project",
-      "commandLineArgs": "-XmlRoutine \"C:\\Users\\LightWorks\\Documents\\GitHub\\Consoul\\Consoul.Test\\bin\\Debug\\netcoreapp2.2\\Test.xml\""
+      "commandName": "Project"
     }
   }
 }

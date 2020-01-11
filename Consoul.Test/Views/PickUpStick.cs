@@ -30,7 +30,7 @@ namespace ConsoulLibrary.Test.Views
         {
             Consoul.Write("You did not take the stick!");
             Consoul.Wait();
-            GoBack();
+            Source.Progress(typeof(GlowingObject));
         }
     }
     

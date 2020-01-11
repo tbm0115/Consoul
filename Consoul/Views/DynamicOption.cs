@@ -8,24 +8,12 @@ namespace ConsoulLibrary.Views
     {
         public DynamicEntry<T> Entry { get; set; }
 
-        public Expression<Func<object>> Action { get; set; }
+        public OptionAction Action { get; set; }
 
-        public DynamicOption(Expression<Func<T, string>> messageExpression, Expression<Func<object>> action, Expression<Func<T, ConsoleColor>> colorExpression = null)
+        public DynamicOption(OptionMessage messageExpression, OptionAction action, OptionColor colorExpression = null)
         {
             Entry = new DynamicEntry<T>(messageExpression, colorExpression);
             Action = action;
         }
-
-        public string BuildMessage(T source, Expression<Func<string, string>> template = null)
-        {
-            Func<T, string> buildFunc = Entry.MessageExpression.Compile();
-            if (template != null)
-            {
-                return template.Compile().Invoke(buildFunc.Invoke(source));
-            }
-            return buildFunc(source);
-        }
-
-        public ConsoleColor BuildColor(T source) => Entry.ColorExpression.Compile()(source);
     }
 }

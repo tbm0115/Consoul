@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using ConsoulLibrary.Entry;
 
 namespace ConsoulLibrary.Views
@@ -43,19 +44,21 @@ namespace ConsoulLibrary.Views
                     MethodInfo messageBuilder = allMethods.FirstOrDefault(o => o.Name == attr.MessageMethod);
                     MethodInfo colorBuilder = null;
                     if (!string.IsNullOrEmpty(attr.ColorMethod))
-                    {
                         colorBuilder = allMethods.FirstOrDefault(o => o.Name == attr.ColorMethod);
-                    }
+
                     if (messageBuilder != null)
                     {
                         Options.Add(new DynamicOption<T>(
-                            o => thisType.InvokeMember(
-                                attr.MessageMethod, 
-                                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod, 
-                                null,
-                                this,
-                                null
-                            ).ToString(),
+                            () =>
+                            {
+                                return thisType.InvokeMember(
+                                    attr.MessageMethod,
+                                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
+                                    null,
+                                    this,
+                                    null
+                                ).ToString();
+                            },
                             () => thisType.InvokeMember(
                                 method.Name,
                                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
@@ -63,7 +66,9 @@ namespace ConsoulLibrary.Views
                                 this,
                                 null
                             ),
-                            o => colorBuilder != null 
+                            () =>
+                            {
+                                return colorBuilder != null
                                 ? (ConsoleColor)thisType.InvokeMember(
                                         attr.ColorMethod,
                                         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
@@ -71,7 +76,8 @@ namespace ConsoulLibrary.Views
                                         this,
                                         null
                                     )
-                                : RenderOptions.DefaultColor
+                                : RenderOptions.DefaultColor;
+                            }
                         ));
                     }
                 }
@@ -83,16 +89,14 @@ namespace ConsoulLibrary.Views
             _goBackRequested = true;
         }
 
-        public void Run(ChoiceCallback callback = null)
+        public async Task RunAsync(ChoiceCallback callback = null)
         {
             int idx = -1;
             do
             {
                 Prompt prompt = new Prompt(Title, true);
-                foreach (var option in Options)
-                {
-                    prompt.Add(option.BuildMessage(Source), option.BuildColor(Source));
-                }
+                foreach (DynamicOption<T> option in Options)
+                    prompt.Add(option.Entry.MessageExpression(), option.Entry.ColorExpression());// option.BuildMessage(Source), option.BuildColor(Source));
                 prompt.Add(_goBackMessage, RenderOptions.SubnoteColor);
 
                 try
@@ -100,23 +104,24 @@ namespace ConsoulLibrary.Views
                     idx = prompt.Run();
                     if (idx >= 0 && idx < Options.Count)
                     {
-                        Options[idx].Action.Compile().Invoke();
+                        await Task.Run(() => Options[idx].Action.Invoke());
                         if (callback != null)
-                        {
-                            callback(idx);
-                        }
+                            await callback(idx);
                         idx = -1;
                     }
                     else if (idx == Options.Count)
-                    {
                         idx = int.MaxValue;
-                    }
                 }
                 catch (Exception ex)
                 {
                     Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", RenderOptions.InvalidColor);
                 }
             } while (idx < 0 && !GoBackRequested);
+        }
+    
+        public void Run(ChoiceCallback callback = null)
+        {
+            RunAsync(callback).Wait();
         }
     }
 }
