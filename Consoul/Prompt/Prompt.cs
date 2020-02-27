@@ -83,6 +83,8 @@ namespace ConsoulLibrary {
                 Consoul._write(Message, RenderOptions.PromptColor);
                 Consoul._write("Choose the corresponding number from the options below:", RenderOptions.SubnoteColor);
                 int i = 0;
+
+                Routines.RegisterOptions(this);
                 foreach (PromptOption option in Options)
                 {
                     Consoul._write(option.ToString(), option.Color);

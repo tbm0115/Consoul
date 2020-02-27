@@ -5,6 +5,8 @@ using System.Linq;
 
 namespace ConsoulLibrary {
     public static class Routines {
+        public static List<RegisteredOption> PromptRegistry { get; set; } = new List<RegisteredOption>();
+
         public static Queue<RoutineInput> InputBuffer { get; private set; } = new Queue<RoutineInput>();
 
         public static void InitializeRoutine(Routine routine) {
@@ -28,7 +30,15 @@ namespace ConsoulLibrary {
             filePath = args[idxXmlRoutineFlag + 1];
             if (!System.IO.File.Exists(filePath))
                 throw new System.IO.FileNotFoundException("Cannot find file.", filePath);
-            XmlRoutine xRoutine = new XmlRoutine(filePath);
+
+            XmlRoutine xRoutine;
+
+            int idxXmlRoutineNameFlag = args.ToList().IndexOf("-Name");
+            if (idxXmlRoutineNameFlag == (idxXmlRoutineFlag + 2) && (idxXmlRoutineNameFlag + 1) < args.Length)
+                xRoutine = new XmlRoutine(filePath, args[idxXmlRoutineNameFlag + 1]);
+            else
+                xRoutine = new XmlRoutine(filePath);
+            
             InitializeRoutine(xRoutine);
             return true;
         }
@@ -73,6 +83,26 @@ namespace ConsoulLibrary {
         }
 
         public static bool HasBuffer() => InputBuffer.Any();
+
+        public static void RegisterOptions(Prompt prompt)
+        {
+            ClearRegisteredOptions();
+            PromptRegistry
+            .AddRange(
+                prompt
+                .Options
+                .Select(o =>
+                    new RegisteredOption()
+                    {
+                        Index = o.Index,
+                        Prompt = prompt.Message,
+                        Text = o.Label
+                    }
+                )
+            );
+        }
+
+        public static void ClearRegisteredOptions() => PromptRegistry.Clear();
 
         public static bool MonitorInputs { get; set; } = false;
 

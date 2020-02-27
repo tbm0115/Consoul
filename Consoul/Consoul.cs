@@ -86,6 +86,7 @@ namespace ConsoulLibrary {
 
         public static string Read()
         {
+            bool keyControl = false, keyAlt = false, keyShift = false;
             RoutineInput input = new RoutineInput();
             if (Routines.HasBuffer())
             {
@@ -104,7 +105,17 @@ namespace ConsoulLibrary {
             }
             else
             {
+                string userInput = string.Empty;
                 input.Value = Console.ReadLine();
+            }
+
+            if (Routines.PromptRegistry.Any())
+            {
+                input.OptionReference = Routines.PromptRegistry.FirstOrDefault(o => (o.Index + 1).ToString() == input.Value);
+                //if (keyControl)
+                //{
+                //    input.Method = RoutineInput.InputMethod.OptionText;
+                //}
             }
 
             // Check if we should save the input to the Routine Stack
