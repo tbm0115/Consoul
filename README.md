@@ -1,3 +1,5 @@
+![Packaged](https://github.com/tbm0115/Consoul/workflows/Publish%20to%20Package%20Registries/badge.svg)
+
 # Consoul
 Add some life to your Console project!
 
