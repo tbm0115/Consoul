@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Xml;
 
-namespace ConsoulLibrary {
+namespace ConsoulLibrary
+{
     public class RoutineInput {
         private string _value { get; set; }
         public string Value {
@@ -22,18 +23,31 @@ namespace ConsoulLibrary {
 
         public string Description { get; set; } = string.Empty;
 
+        public RegisteredOption OptionReference { get; set; }
+
+        public InputMethod Method { get; set; } = InputMethod.Value;
+
+        public enum InputMethod
+        {
+            Value,
+            OptionText
+        }
+
         public RoutineInput() {
             RequestTime = DateTime.UtcNow;
         }
 
-        public RoutineInput(XmlNode xNode) : base() {
-            Value = xNode.SelectSingleNode("Value").InnerText;
-            if (!string.IsNullOrEmpty(xNode.SelectSingleNode("RequestTime")?.InnerText))
-                RequestTime = DateTime.Parse(xNode.SelectSingleNode("RequestTime").InnerText);
-            if (!string.IsNullOrEmpty(xNode.SelectSingleNode("ResponseTime")?.InnerText))
-                ResponseTime = DateTime.Parse(xNode.SelectSingleNode("ResponseTime").InnerText);
-            if (!string.IsNullOrEmpty(xNode.SelectSingleNode("Description")?.InnerText))
-                Description = xNode.SelectSingleNode("Description").InnerText;
+        public RoutineInput(XmlNode xNode) : this() {
+            Value = xNode["Value"]?.InnerText;
+            if (!string.IsNullOrEmpty(xNode["RequestTime"]?.InnerText))
+                RequestTime = DateTime.Parse(xNode["RequestTime"].InnerText);
+            if (!string.IsNullOrEmpty(xNode["ResponseTime"]?.InnerText))
+                ResponseTime = DateTime.Parse(xNode["ResponseTime"].InnerText);
+            if (!string.IsNullOrEmpty(xNode["Method"]?.InnerText))
+            {
+                Method = (InputMethod)Enum.Parse(typeof(InputMethod), xNode["Method"].InnerText);
+            }
+            Description = xNode["Description"]?.InnerText;
         }
 
         public XmlNode ToXmlNode(XmlDocument xDoc) {
@@ -43,7 +57,10 @@ namespace ConsoulLibrary {
             xInput.AppendChild(xDoc.CreateElement("RequestTime")).InnerText = RequestTime.ToString();
             xInput.AppendChild(xDoc.CreateElement("ResponseTime")).InnerText = ResponseTime.ToString();
             xInput.AppendChild(xDoc.CreateElement("Delay")).InnerText = Delay.Value.Ticks.ToString();
+            xInput.AppendChild(xDoc.CreateElement("Method")).InnerText = Method.ToString();
             xInput.AppendChild(xDoc.CreateElement("Description")).AppendChild(xDoc.CreateCDataSection(Description));
+            if (OptionReference != null)
+                xInput.AppendChild(OptionReference.ToXmlNode(xDoc));
 
             return xInput;
         }
