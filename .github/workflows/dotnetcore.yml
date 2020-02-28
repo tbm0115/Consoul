@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-
+    name: Build Package
     runs-on: windows-latest
 
     steps:
@@ -24,7 +24,10 @@ jobs:
       with:
         name: nupkg
         path: finalpackage
+
   deploy:
+    needs: build
+    name: Deploy Packages
     runs-on: windows-latest
     
     steps:
