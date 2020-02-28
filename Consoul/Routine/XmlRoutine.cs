@@ -14,6 +14,7 @@ namespace ConsoulLibrary {
         public DateTime DateCreated { get; set; } = DateTime.UtcNow;
 
         public Dictionary<string, List<RoutineInput>> XmlRoutines { get; set; } = new Dictionary<string, List<RoutineInput>>();
+        public Dictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
 
         public XmlRoutine() {
             _xml = new XmlDocument();
@@ -81,6 +82,10 @@ namespace ConsoulLibrary {
             foreach (KeyValuePair<string, List<RoutineInput>> routine in XmlRoutines)
             {
                 XmlNode xRoutine = xRoutines.AppendChild(_xml.CreateElement("Routine"));
+                XmlNode xRoutineMeta = xRoutine.AppendChild(_xml.CreateElement("Meta"));
+                xRoutineMeta.AppendChild(_xml.CreateElement("Description")).AppendChild(_xml.CreateCDataSection("{Describe this Routine}"));
+                // TODO: Add Variables section to provide 'dynamic' input replacement
+
                 XmlNode xInputs = xRoutine.AppendChild(_xml.CreateElement("Inputs"));
                 RoutineInput[] userInputs = Routines.UserInputs.ToArray().Reverse().ToArray();
                 foreach (RoutineInput userInput in userInputs)
