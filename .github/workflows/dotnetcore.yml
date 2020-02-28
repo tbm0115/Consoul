@@ -1,6 +1,9 @@
-name: .NET Core
+name: Publish to Package Registries
 
-on: [push]
+on: 
+  push:
+    branches:
+      - master
 
 jobs:
   build:
