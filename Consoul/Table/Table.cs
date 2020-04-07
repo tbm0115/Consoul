@@ -96,6 +96,72 @@ namespace ConsoulLibrary.Table {
             //    Consoul.Write(LeftPad + HorizontalLineString, RenderOptions.Lines.Color);
         }
 
+        public int Prompt()
+        {
+            var prevRenderOptionChoice = RenderOptions.IncludeChoices;
+            RenderOptions.IncludeChoices = true;
+
+            int selection = -1;
+            do
+            {
+                Write();
+
+                string input = Consoul.Read();
+                if (input.Contains("="))
+                {
+                    string[] queryParts = input.Split('=');
+                    if (queryParts.Length == 2)
+                    {
+                        int columnIndex = Headers.IndexOf(queryParts[0]);
+                        if (columnIndex >= 0)
+                        {
+                            List<int> results = new List<int>();
+                            for (int i = 0; i < Contents.Count; i++)
+                            {
+                                if (Contents[i][columnIndex] == queryParts[1])
+                                {
+                                    results.Add(i);
+                                }
+                            }
+                            if (results.Count == 1)
+                            {
+                                selection = results.First() + 1; // selection is expected as one-based
+                            }
+                            else if(results.Count > 1)
+                            {
+                                Consoul.Write("Invalid Query! Query yielded multiple results. Try a more refined search.", ConsoleColor.Red);
+                                Consoul.Wait();
+                            } 
+                            else if (results.Count == 0)
+                            {
+                                Consoul.Write("Invalid Query! Query yielded no results.", ConsoleColor.Red);
+                                Consoul.Wait();
+                            }
+                        }
+                        else
+                        {
+                            Consoul.Write($"Invalid Header reference! Could not find Header '{queryParts[0]}'.", ConsoleColor.Red);
+                            Consoul.Wait();
+                        }
+                    }
+                    else
+                    {
+                        Consoul.Write("Query-based selection not formatted correctly. Must be in {Header Name}={Value} format", ConsoleColor.Red);
+                        Consoul.Wait();
+                    }
+                } 
+                else if (!int.TryParse(input, out selection) || selection >= Contents.Count)
+                {
+                    Consoul.Write("Invalid selection!", ConsoleColor.Red);
+                    Consoul.Wait();
+                }
+            } while (selection < 0);
+
+            RenderOptions.IncludeChoices = prevRenderOptionChoice;
+
+            return selection - 1;
+        }
+
         public void Append(IEnumerable<string> row, bool addToCache = false)
         {
             if (!IsNormalized)
