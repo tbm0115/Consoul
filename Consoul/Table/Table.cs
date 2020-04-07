@@ -48,7 +48,20 @@ namespace ConsoulLibrary.Table {
             Headers = properties.ToList(); // Add Column Header Row
 
             Type enumerableType = source.GetType().GetGenericArguments()[0];
-            List<PropertyInfo> columns = enumerableType.GetProperties().Where(o => Headers.Contains(o.Name)).ToList();
+            var typeProps = enumerableType.GetProperties();
+            List<PropertyInfo> columns = new List<PropertyInfo>();
+            foreach (string header in Headers)
+            {
+                PropertyInfo typeProp = typeProps.FirstOrDefault(o => header.Equals(o.Name, StringComparison.OrdinalIgnoreCase));
+                if (typeProp != null)
+                {
+                    columns.Add(typeProp);
+                }
+                else
+                {
+                    Consoul.Write($"Couldn't find property by the name '{header}'.", ConsoleColor.Red);
+                }
+            }
             foreach (object sourceItem in source) {
                 List<string> row = new List<string>();
                 foreach (PropertyInfo property in columns) {
