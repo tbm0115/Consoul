@@ -61,7 +61,11 @@ namespace ConsoulLibrary.Test
             Routines.MonitorInputs = true;
             Routines.InitializeRoutine(args);
             //Routines.UseDelays = true; // Showcases the usecase of reusing input delays to simulate user response
-            
+
+            var tableTest = new Test.Views.TableView();
+            tableTest.Run();
+
+
             var view1 = new Welcome();
             view1.Run(
                 (choice) => System.Threading.Tasks.Task.Run(() =>

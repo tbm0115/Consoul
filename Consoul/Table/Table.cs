@@ -163,10 +163,11 @@ namespace ConsoulLibrary.Table {
                         Consoul.Wait();
                     }
                 } 
-                else if (!int.TryParse(input, out selection) || selection >= Contents.Count)
+                else if (!int.TryParse(input, out selection) || selection <= 0 || selection > Contents.Count)
                 {
                     Consoul.Write("Invalid selection!", ConsoleColor.Red);
                     Consoul.Wait();
+                    selection = -1;
                 }
             } while (selection < 0);
 
