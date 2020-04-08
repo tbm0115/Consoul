@@ -4,25 +4,30 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using ConsoulLibrary.Test.Views;
+using System.Linq.Expressions;
 
 namespace ConsoulLibrary.Test.Views
 {
     public class TableView : StaticView
     {
+        private List<Hero> Heroes { get; set; }
+
         public TableView()
         {
             Title = (new BannerEntry($"Testing Table View")).Message;
-        }
-
-        [ViewOption("Prompt Test")]
-        public void PromptTest()
-        {
-            List<Actor> actors = new List<Actor>()
+            Heroes = new List<Hero>()
             {
                 new Hero()
                 {
                     Name = "Trais McAllister",
-                    HitPoints = 100
+                    HitPoints = 100,
+                    Inventory = new Inventory()
+                    {
+                        Items = new List<Item>()
+                        {
+                            new Stick()
+                        }
+                    }
                 },
                 new Hero()
                 {
@@ -32,7 +37,15 @@ namespace ConsoulLibrary.Test.Views
                 new Hero()
                 {
                     Name = "Kylo McAllister",
-                    HitPoints = 50
+                    HitPoints = 50,
+                    Inventory = new Inventory()
+                    {
+                        Items = new List<Item>()
+                        {
+                            new Fang(),
+                            new Collar()
+                        }
+                    }
                 },
                 new Hero()
                 {
@@ -45,8 +58,13 @@ namespace ConsoulLibrary.Test.Views
                     HitPoints = 10
                 }
             };
+        }
+
+        [ViewOption("Prompt Test")]
+        public void PromptTest()
+        {
             var table = new ConsoulLibrary.Table.TableView(
-                actors, 
+                Heroes, 
                 new string[] 
                 { 
                     "Name", 
@@ -57,7 +75,23 @@ namespace ConsoulLibrary.Test.Views
 
             int idxChoice = table.Prompt();
 
-            ConsoulLibrary.Consoul.Write($"Actor: {actors[idxChoice].Name}");
+            ConsoulLibrary.Consoul.Write($"Hero: {Heroes[idxChoice].Name}");
+            ConsoulLibrary.Consoul.Wait();
+        }
+
+        [ViewOption("Dynamic Table Test")]
+        public void DynamicTable()
+        {
+            var table = new ConsoulLibrary.Table.DynamicTableView<Actor>(Heroes, new Table.TableRenderOptions() { });
+            table.AddHeader(o => o.Name);
+            table.AddHeader(o => o.HitPoints);
+            table.AddHeader(o => o.Inventory.Items.Count, "Inventory Size");
+
+            table.Build();
+
+            int idxChoice = table.Prompt();
+
+            ConsoulLibrary.Consoul.Write($"Actor: {Heroes[idxChoice].Name}");
             ConsoulLibrary.Consoul.Wait();
         }
     }
