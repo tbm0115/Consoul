@@ -4,7 +4,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace ConsoulLibrary.Table {
+namespace ConsoulLibrary.Table
+{
+
     public class TableView
     {
         public TableRenderOptions RenderOptions { get; set; }
@@ -17,27 +19,28 @@ namespace ConsoulLibrary.Table {
 
         public int? CurrentRow { get; private set; }
 
-        public string LeftPad { get; private set; }
-        public string RightPad { get; private set; }
-        public string HorizontalLineString { get; private set; }
-        public string VerticalLineString { get; private set; }
-        public int? ColumnSize { get; private set; }
-        public int? MaximumTableWidth { get; private set; }
-        public bool IsNormalized { get; private set; } = false;
+        public string HorizontalLineString { get; set; }
+
+        public string VerticalLineString { get; set; }
+
+
+        public TableView(TableRenderOptions options = null)
+        {
+            RenderOptions = options ?? new TableRenderOptions();
+        }
 
         public TableView(string[][] contents, TableRenderOptions options = null) : this(contents.Select(o => o.ToList()).ToList(), options) 
         {
 
         }
 
-        public TableView(IEnumerable<IEnumerable<string>> contents, TableRenderOptions options = null)
+        public TableView(IEnumerable<IEnumerable<string>> contents, TableRenderOptions options = null) : this(options)
         {
             Contents = contents.Select(o => o.ToList()).ToList();
             if (Contents.Count > 0){
                 Headers = Contents[0];
                 Contents.RemoveAt(0); // Remove Header Row
             }
-            RenderOptions = options ?? new TableRenderOptions();
         }
 
         public TableView(IEnumerable<object> source, string[] properties, TableRenderOptions options = null)
@@ -71,32 +74,14 @@ namespace ConsoulLibrary.Table {
             }
         }
 
-        public void Normalize() {
-            MaximumTableWidth = (int)(Console.BufferWidth * RenderOptions.TableWidthPercentage);
-            int widthRemainder = Console.BufferWidth - (int)MaximumTableWidth;
-            int marginLeft, marginRight;
-            marginRight = widthRemainder / 2;
-            marginLeft = marginRight;
-            if (widthRemainder % 2 != 0)
-                marginLeft = (widthRemainder + 1) / 2;
 
-            int columnCount = Contents.Max(o => o.Count) + (RenderOptions.IncludeChoices ? 1 : 0);
-            ColumnSize = MaximumTableWidth / columnCount;
-            int maximumColumnSize = Contents.SelectMany(o => o).Max(o => o.Length);
-            int minimumTableWidth = (maximumColumnSize + 3) * columnCount;
-
-            LeftPad = new string(' ', marginLeft);
-            RightPad = new string(' ', marginRight);
-
-            IsNormalized = true;
-        }
 
         public void Write(){
-            Normalize();
+            RenderOptions.Normalize(Contents);
 
             Console.Clear(); // Clear view
             CurrentRow = 0;
-            HorizontalLineString = new string(RenderOptions.Lines.HorizontalCharacter, (int)MaximumTableWidth);
+            HorizontalLineString = new string(RenderOptions.Lines.HorizontalCharacter, (int)RenderOptions.MaximumTableWidth);
             VerticalLineString = RenderOptions.Lines.VerticalCharacter.ToString();
 
             Append(Headers);
@@ -178,7 +163,7 @@ namespace ConsoulLibrary.Table {
 
         public void Append(IEnumerable<string> row, bool addToCache = false)
         {
-            if (!IsNormalized)
+            if (!RenderOptions.IsNormalized)
                 Write();
 
             List<string> rowContents = row.ToList();
@@ -190,9 +175,9 @@ namespace ConsoulLibrary.Table {
                 }
             }
             if ((CurrentRow <= 1 && RenderOptions.Lines.HeaderHorizontal) || (CurrentRow > 1 && RenderOptions.Lines.ContentHorizontal))
-                Consoul.Write(LeftPad + HorizontalLineString, RenderOptions.Lines.Color);
+                Consoul.Write(RenderOptions.LeftPad + HorizontalLineString, RenderOptions.Lines.Color);
 
-            Consoul.Write(LeftPad, writeLine: false);
+            Consoul.Write(RenderOptions.LeftPad, writeLine: false);
             int columnIndex = 0;
             foreach (string column in rowContents) 
             {
@@ -206,7 +191,7 @@ namespace ConsoulLibrary.Table {
                 }
                 Consoul.Center(
                     column, 
-                    (int)ColumnSize,
+                    RenderOptions.ColumnSize.Value,
                     CurrentRow == 0 
                         ? RenderOptions.HeaderColor 
                         : CurrentRow == Selection
@@ -257,6 +242,16 @@ namespace ConsoulLibrary.Table {
 
         public ConsoleColor SelectionColor { get; set; } = RenderOptions.OptionColor;
 
+        public string LeftPad { get; private set; }
+
+        public string RightPad { get; private set; }
+
+
+        public int? ColumnSize { get; private set; }
+
+        public int? MaximumTableWidth { get; private set; }
+
+        public bool IsNormalized { get; private set; } = false;
 
         private decimal _tableWidthPercentage { get; set; } = 0.8m;
         public decimal TableWidthPercentage {
@@ -272,6 +267,27 @@ namespace ConsoulLibrary.Table {
 
         public TableRenderOptions() {
 
+        }
+
+        public void Normalize(IEnumerable<IEnumerable<string>> contents)
+        {
+            MaximumTableWidth = (int)(Console.BufferWidth * TableWidthPercentage);
+            int widthRemainder = Console.BufferWidth - (int)MaximumTableWidth;
+            int marginLeft, marginRight;
+            marginRight = widthRemainder / 2;
+            marginLeft = marginRight;
+            if (widthRemainder % 2 != 0)
+                marginLeft = (widthRemainder + 1) / 2;
+
+            int columnCount = contents.Max(o => o.Count()) + (IncludeChoices ? 1 : 0);
+            ColumnSize = MaximumTableWidth / columnCount;
+            int maximumColumnSize = contents.SelectMany(o => o).Max(o => o.Length);
+            int minimumTableWidth = (maximumColumnSize + 3) * columnCount;
+
+            LeftPad = new string(' ', marginLeft);
+            RightPad = new string(' ', marginRight);
+
+            IsNormalized = true;
         }
 
         public class TableLineDisplayOptions {
