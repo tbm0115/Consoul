@@ -83,11 +83,20 @@ namespace ConsoulLibrary.Table
         /// <summary>
         /// Uses the dynamic property references to build the TableView
         /// </summary>
-        public void Build()
+        public bool Build()
         {
+            if (propertyReferences.Count <= 0)
+            {
+                Consoul.Write("Table Headers are not defined. Cannot build table without them.", ConsoleColor.Red);
+                Consoul.Wait();
+                return false;
+            }
             _table = new TableView(RenderOptions);
             _table.Headers = propertyReferences.Keys.ToList();
+
             Contents.ForEach(o => Append(o));
+
+            return true;
         }
 
         public void Append(TSource sourceItem, bool addToCache = false)
@@ -112,9 +121,16 @@ namespace ConsoulLibrary.Table
             _table?.Write();
         }
 
-        public int Prompt()
+        public int Prompt(bool allowEmpty = false)
         {
-            return _table?.Prompt() ?? -1;
+            if (_table == null)
+            {
+                if (!Build())
+                {
+                    return -1;
+                }
+            }
+            return _table?.Prompt(allowEmpty) ?? -1;
         }
 
     }
