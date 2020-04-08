@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -72,9 +71,6 @@ namespace ConsoulLibrary.Table
                     if (string.IsNullOrEmpty(keyName))
                     {
                         keyName = property.Name;
-                        DisplayAttribute attrDisplay = property.GetCustomAttribute<DisplayAttribute>();
-                        if (attrDisplay != null)
-                            keyName = attrDisplay.Name;
                     }
                     if (!propertyReferences.ContainsKey(keyName))
                     {
