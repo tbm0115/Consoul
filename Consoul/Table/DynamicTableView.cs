@@ -108,7 +108,15 @@ namespace ConsoulLibrary.Table
             List<string> row = new List<string>();
             foreach (var propertyReference in propertyReferences)
             {
-                object result = propertyReference.Value.DynamicInvoke(new object[] { sourceItem });
+                object result = null;
+                try
+                {
+                    result = propertyReference.Value.DynamicInvoke(new object[] { sourceItem });
+                }
+                catch (Exception ex)
+                {
+                    // Do nothing
+                }
                 string value = Convert.ToString(result);// string.Empty;
                 row.Add(value);
             }
