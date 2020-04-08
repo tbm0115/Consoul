@@ -121,7 +121,7 @@ namespace ConsoulLibrary.Table
             _table?.Write();
         }
 
-        public int Prompt(bool allowEmpty = false)
+        public int Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false)
         {
             if (_table == null)
             {
@@ -130,7 +130,7 @@ namespace ConsoulLibrary.Table
                     return -1;
                 }
             }
-            return _table?.Prompt(allowEmpty) ?? -1;
+            return _table?.Prompt(message, color, allowEmpty) ?? -1;
         }
 
     }

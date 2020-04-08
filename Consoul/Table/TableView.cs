@@ -93,7 +93,7 @@ namespace ConsoulLibrary.Table
             }
         }
 
-        public int Prompt(bool allowEmpty = false)
+        public int Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false)
         {
             var prevRenderOptionChoice = RenderOptions.IncludeChoices;
             RenderOptions.IncludeChoices = true;
@@ -102,6 +102,14 @@ namespace ConsoulLibrary.Table
             do
             {
                 Write();
+                if (!string.IsNullOrEmpty(message))
+                {
+                    Consoul.Write(message, color);
+                }
+                if (allowEmpty)
+                {
+                    Consoul.Write("Press Enter to continue", ConsoulLibrary.RenderOptions.SubnoteColor);
+                }
 
                 string input = Consoul.Read();
                 if (string.IsNullOrEmpty(input) && allowEmpty)
