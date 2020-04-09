@@ -13,8 +13,11 @@ Visit [consoul.dev](https://consoul.dev) for the latest documentation and exampl
 # Installing
 
 ## NuGet
-A NuGet package is published and maintained using GitHub Package Registry, which is at this time in Beta.
-View the available package(s) in the [GitHub Packages page](https://github.com/tbm0115/Consoul/packages)
+A NuGet package is published and maintained using both NuGet and GitHub Package Registry.
+
+View the available package(s):
+ - [GitHub Packages page](https://github.com/tbm0115/Consoul/packages)
+ - [NuGet.org](https://nuget.org/packages/Consoul)
 
 ## Otherwise
 Clone, build, and copy the assembly to your project.
