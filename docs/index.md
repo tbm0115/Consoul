@@ -9,6 +9,7 @@ Almost every Console application will have some form of methods that simplify th
  - **Input**: Prompt the user to respond with a raw string value using the same methods as the `Consoul.Write()` method. Optionally provide a safety net for yourself by not allowing null or empty responses, for those users that just try to blow past prompts
  - **Ask**: Similar to `Consoul.Input()`, but prompts the user to safely provide a Yes or No response that results in a boolean. Optionally allow users to blow past the prompt by allowing null or empty responses instead of the Yes or No input.
  - **Prompt**: A basic version of a *View* (see below) that prompts the user to select from a list of options by choosing the corresponding number.
+ - **Read**: Waits for the user to input text and press enter to submit their response, yielding a string of their response.
 
 # Views
 A Console application will typically consist of a few inputs, some messages, all primarily driven from a series of cascading methods and user choices. So, Consoul focuses on allowing you to build "views" with the premise that there will be one or more "choices" that the user must make in order to perform an action. For example, in a text-based RPG game, you will have a high-level "view" structure:
@@ -53,6 +54,7 @@ A StaticView displays options in the rawest form available, not worrying about t
 
 ``` csharp
 public class HelloWorld : StaticView {
+
   public HelloWorld() : base() {
     // Initialize
   }
@@ -61,6 +63,7 @@ public class HelloWorld : StaticView {
   public void SayYourName() {
     Consoul.Consoul.Write("I'm a computer, so I do not have a name!");
   }
+  
 }
 ```
 
@@ -69,27 +72,19 @@ A DynamicView focuses on dynamically building options depending on the state of 
 
 ``` csharp
 public class HelloWorld : DynamicView {
+  
   private string UserName { get; set; }
+  
   public HelloWorld() : base() {
     // Initialize
     UserName = string.Empty;
   }
   
-  private string _sayNameMessage() {
-    if (string.IsNullOrEmpty(UserName)) {
-      return "Enter Name...";
-    } else {
-      return "Say my name";
-    }
-  }
-  private ConsoleColor _changeOptionColor() {
-    if (string.IsNullOrEmpty(UserName)) {
-      return ConsoleColor.Red;
-    } else {
-      return ConsoleColor.Green;
-    }
-  }
-  [DynamicViewOption("_sayNameMessage", "_changeOptionColor")]
+  private string _sayNameMessage() => string.IsNullOrEmpty(UserName) ? "Enter Name..." : "Say my name";
+  
+  private ConsoleColor _changeOptionColor() => string.IsNullOrEmpty(UserName) ? ConsoleColor.Red : ConsoleColor.Green;
+  
+  [DynamicViewOption(nameof(_sayNameMessage), nameof(_changeOptionColor))]
   public void SayMyName() {
     if (string.IsNullOrEmpty(UserName)) {
       UserName = Consoul.Consoul.Input("What IS your name?");
