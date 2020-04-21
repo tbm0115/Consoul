@@ -48,6 +48,8 @@ namespace ConsoulLibrary.Table
 
         private TableView _table { get; set; }
 
+        public event TableQueryYieldsNoResults QueryYieldsNoResults;
+
         public DynamicTableView(TableRenderOptions options = null)
         {
             RenderOptions = options ?? new TableRenderOptions();
@@ -93,10 +95,16 @@ namespace ConsoulLibrary.Table
             }
             _table = new TableView(RenderOptions);
             _table.Headers = propertyReferences.Keys.ToList();
+            _table.QueryYieldsNoResults += _table_QueryYieldsNoResults;
 
             Contents.ForEach(o => Append(o));
 
             return true;
+        }
+
+        private void _table_QueryYieldsNoResults(object sender, TableQueryYieldsNoResultsEventArgs e)
+        {
+            raiseQueryYieldsNoResults(e.Message, e.Query);
         }
 
         public void Append(TSource sourceItem, bool addToCache = false)
@@ -141,5 +149,10 @@ namespace ConsoulLibrary.Table
             return _table?.Prompt(message, color, allowEmpty) ?? -1;
         }
 
+        private void raiseQueryYieldsNoResults(string message, string query)
+        {
+            if (QueryYieldsNoResults != null)
+                QueryYieldsNoResults(this, new TableQueryYieldsNoResultsEventArgs(message, query));
+        }
     }
 }
