@@ -72,11 +72,17 @@ namespace ConsoulLibrary.Test.Views
                 }, 
                 new ConsoulLibrary.Table.TableRenderOptions() { }
             );
+            table.QueryYieldsNoResults += Table_QueryYieldsNoResults;
 
             int idxChoice = table.Prompt();
 
             ConsoulLibrary.Consoul.Write($"Hero: {Heroes[idxChoice].Name}");
             ConsoulLibrary.Consoul.Wait();
+        }
+
+        private void Table_QueryYieldsNoResults(object sender, Table.TableQueryYieldsNoResultsEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         [ViewOption("Dynamic Table Test")]
@@ -86,8 +92,8 @@ namespace ConsoulLibrary.Test.Views
             table.AddHeader(o => o.Name);
             table.AddHeader(o => o.HitPoints);
             table.AddHeader(o => o.Inventory.Items.Count, "Inventory Size");
-
             table.Build();
+            table.QueryYieldsNoResults += Table_QueryYieldsNoResults;
 
             int idxChoice = table.Prompt();
 

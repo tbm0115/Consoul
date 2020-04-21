@@ -6,7 +6,20 @@ using System.Text;
 
 namespace ConsoulLibrary.Table
 {
+    public delegate void TableQueryYieldsNoResults(object sender, TableQueryYieldsNoResultsEventArgs e);
 
+    public class TableQueryYieldsNoResultsEventArgs : EventArgs
+    {
+        public string Message { get; set; }
+
+        public string Query { get; set; }
+
+        public TableQueryYieldsNoResultsEventArgs(string message, string query)
+        {
+            Message = message;
+            Query = query;
+        }
+    }
     public class TableView
     {
         public TableRenderOptions RenderOptions { get; set; }
@@ -23,6 +36,7 @@ namespace ConsoulLibrary.Table
 
         public string VerticalLineString { get; set; }
 
+        public event TableQueryYieldsNoResults QueryYieldsNoResults;
 
         public TableView(TableRenderOptions options = null)
         {
@@ -139,25 +153,21 @@ namespace ConsoulLibrary.Table
                             }
                             else if(results.Count > 1)
                             {
-                                Consoul.Write("Invalid Query! Query yielded multiple results. Try a more refined search.", ConsoleColor.Red);
-                                Consoul.Wait();
+                                raiseQueryYieldsNoResults("Invalid Query! Query yielded multiple results. Try a more refined search.", input);
                             } 
                             else if (results.Count == 0)
                             {
-                                Consoul.Write("Invalid Query! Query yielded no results.", ConsoleColor.Red);
-                                Consoul.Wait();
+                                raiseQueryYieldsNoResults("Invalid Query! Query yielded no results.", input);
                             }
                         }
                         else
                         {
-                            Consoul.Write($"Invalid Header reference! Could not find Header '{queryParts[0]}'.", ConsoleColor.Red);
-                            Consoul.Wait();
+                            raiseQueryYieldsNoResults($"Invalid Header reference! Could not find Header '{queryParts[0]}'.", input);
                         }
                     }
                     else
                     {
-                        Consoul.Write("Query-based selection not formatted correctly. Must be in {Header Name}={Value} format", ConsoleColor.Red);
-                        Consoul.Wait();
+                        raiseQueryYieldsNoResults("Query-based selection not formatted correctly. Must be in {Header Name}={Value} format", input);
                     }
                 } 
                 else if (!int.TryParse(input, out selection) || selection <= 0 || selection > Contents.Count)
@@ -239,6 +249,13 @@ namespace ConsoulLibrary.Table
         }
 
 
+        private void raiseQueryYieldsNoResults(string message, string query)
+        {
+            if (QueryYieldsNoResults != null)
+                QueryYieldsNoResults(this, new TableQueryYieldsNoResultsEventArgs(message, query));
 
+            Consoul.Write(message, ConsoleColor.Red);
+            Consoul.Wait();
+        }
     }
 }
