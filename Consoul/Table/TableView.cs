@@ -133,41 +133,59 @@ namespace ConsoulLibrary.Table
                 }
                 if (input.Contains("="))
                 {
-                    string[] queryParts = input.Split('=');
-                    if (queryParts.Length == 2)
+                    Dictionary<int, List<int>> matches = new Dictionary<int, List<int>>();
+                    string[] queries = input.Split(new string[] { ";" }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string queryInput in queries)
                     {
-                        int columnIndex = Headers.IndexOf(queryParts[0]);
-                        if (columnIndex >= 0)
+                        string[] queryParts = queryInput.Split('=');
+                        if (queryParts.Length == 2)
                         {
-                            List<int> results = new List<int>();
-                            for (int i = 0; i < Contents.Count; i++)
+                            int columnIndex = Headers.IndexOf(queryParts[0]);
+                            if (columnIndex >= 0)
                             {
-                                if (Contents[i][columnIndex] == queryParts[1])
+                                if (!matches.ContainsKey(columnIndex))
                                 {
-                                    results.Add(i);
+                                    matches.Add(columnIndex, new List<int>());
+                                }
+                                for (int i = 0; i < Contents.Count; i++)
+                                {
+                                    if (Contents[i][columnIndex] == queryParts[1])
+                                    {
+                                        matches[columnIndex].Add(i);
+                                    }
                                 }
                             }
-                            if (results.Count == 1)
+                            else
                             {
-                                selection = results.First() + 1; // selection is expected as one-based
-                            }
-                            else if(results.Count > 1)
-                            {
-                                raiseQueryYieldsNoResults("Invalid Query! Query yielded multiple results. Try a more refined search.", input);
-                            } 
-                            else if (results.Count == 0)
-                            {
-                                raiseQueryYieldsNoResults("Invalid Query! Query yielded no results.", input);
+                                raiseQueryYieldsNoResults($"Invalid Header reference! Could not find Header '{queryParts[0]}'.", input);
                             }
                         }
                         else
                         {
-                            raiseQueryYieldsNoResults($"Invalid Header reference! Could not find Header '{queryParts[0]}'.", input);
+                            raiseQueryYieldsNoResults("Query-based selection not formatted correctly. Must be in {Header Name}={Value} format", input);
                         }
                     }
-                    else
+
+                    List<int> results = new List<int>();
+                    for (int i = 0; i < Contents.Count; i++)
                     {
-                        raiseQueryYieldsNoResults("Query-based selection not formatted correctly. Must be in {Header Name}={Value} format", input);
+                        if (matches.All(o => o.Value.Contains(i)))
+                        {
+                            results.Add(i);
+                        }
+                    }
+
+                    if (results.Count == 1)
+                    {
+                        selection = results.First() + 1; // selection is expected as one-based
+                    }
+                    else if (matches.Count > 1)
+                    {
+                        raiseQueryYieldsNoResults("Invalid Query! Query yielded multiple results. Try a more refined search.", input);
+                    }
+                    else if (matches.Count == 0)
+                    {
+                        raiseQueryYieldsNoResults("Invalid Query! Query yielded no results.", input);
                     }
                 } 
                 else if (!int.TryParse(input, out selection) || selection <= 0 || selection > Contents.Count)
