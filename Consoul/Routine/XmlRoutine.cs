@@ -27,10 +27,10 @@ namespace ConsoulLibrary {
             _xml.Load(filepath);
 
             XmlNode xMeta = _xml.SelectSingleNode("//Meta");
-            Name = xMeta.InnerText;
-            DateCreated = DateTime.Parse(xMeta.SelectSingleNode("DateCreated").InnerText);
+            Name = xMeta["Name"].InnerText;
+            DateCreated = DateTime.Parse(xMeta["DateCreated"].InnerText);
             if (xMeta.SelectSingleNode("UseDelays") != null)
-                UseDelays = bool.Parse(xMeta.SelectSingleNode("UseDelays").InnerText);
+                UseDelays = bool.Parse(xMeta["UseDelays"].InnerText);
 
             string xPath = "//Routine";
 
