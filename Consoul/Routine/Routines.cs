@@ -36,14 +36,21 @@ namespace ConsoulLibrary {
                 throw new System.IO.FileNotFoundException("Cannot find file.", filePath);
 
             XmlRoutine xRoutine;
-
+            string routineName = string.Empty;
             int idxXmlRoutineNameFlag = args.ToList().IndexOf("-Name");
             if (idxXmlRoutineNameFlag == (idxXmlRoutineFlag + 2) && (idxXmlRoutineNameFlag + 1) < args.Length)
-                xRoutine = new XmlRoutine(filePath, args[idxXmlRoutineNameFlag + 1]);
+            {
+                routineName = args[idxXmlRoutineNameFlag + 1];
+                xRoutine = new XmlRoutine(filePath, routineName);
+                routineName = $"{xRoutine.Name}\\{routineName}";
+            }
             else
+            {
                 xRoutine = new XmlRoutine(filePath);
+                routineName = xRoutine.Name;
+            }
             
-            InitializeRoutine(xRoutine, xRoutine.Name);
+            InitializeRoutine(xRoutine, routineName);
             return true;
         }
         private static bool _checkRoutine(string[] args) {
