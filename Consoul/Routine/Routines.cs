@@ -43,7 +43,7 @@ namespace ConsoulLibrary {
             else
                 xRoutine = new XmlRoutine(filePath);
             
-            InitializeRoutine(xRoutine);
+            InitializeRoutine(xRoutine, xRoutine.Name);
             return true;
         }
         private static bool _checkRoutine(string[] args) {
@@ -67,7 +67,7 @@ namespace ConsoulLibrary {
             Routine routine = routineType.GetConstructor(new Type[0]).Invoke(new object[0]) as Routine;
             if (routine == null)
                 throw new TypeLoadException();
-            InitializeRoutine(routine);
+            InitializeRoutine(routine, routineType.Name);
 
             return true;
         }
