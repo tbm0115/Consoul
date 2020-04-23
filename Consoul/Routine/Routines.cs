@@ -9,9 +9,13 @@ namespace ConsoulLibrary {
 
         public static Queue<RoutineInput> InputBuffer { get; private set; } = new Queue<RoutineInput>();
 
-        public static void InitializeRoutine(Routine routine) {
+        public static void InitializeRoutine(Routine routine, string name = null) {
             InputBuffer = routine;
             UseDelays = routine.UseDelays;
+            if (!string.IsNullOrEmpty(name))
+            {
+                Console.Title = $"Routine: {name} - " + Console.Title;
+            }
         }
 
         public static void InitializeRoutine(string[] args)
