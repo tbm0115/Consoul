@@ -124,7 +124,8 @@ namespace ConsoulLibrary.Table
                 Write(clearConsole);
                 if (!string.IsNullOrEmpty(message))
                 {
-                    Consoul.Write(message, color);
+                    Consoul.Write("HELP ME!", Console.BackgroundColor);
+                    Consoul.Write(message, color ?? ConsoulLibrary.RenderOptions.PromptColor);
                 }
                 if (allowEmpty)
                 {

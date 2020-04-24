@@ -95,7 +95,7 @@ namespace ConsoulLibrary.Test.Views
             table.Build();
             table.QueryYieldsNoResults += Table_QueryYieldsNoResults;
 
-            int idxChoice = table.Prompt();
+            int idxChoice = table.Prompt($"Test Message");
 
             ConsoulLibrary.Consoul.Write($"Actor: {Heroes[idxChoice].Name}");
             ConsoulLibrary.Consoul.Wait();
