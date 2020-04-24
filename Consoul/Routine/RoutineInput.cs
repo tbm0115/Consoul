@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
 using System.Xml;
 
 namespace ConsoulLibrary
@@ -7,7 +9,31 @@ namespace ConsoulLibrary
         private string _value { get; set; }
         public string Value {
             get{
-                return _value;
+                string value = _value;
+                if (Transforms?.Length > 0)
+                {
+                    IConfigurationSection transforms = Routines.getAppSettings().GetSection("Transforms");
+                    foreach (InputTransform transform in Transforms)
+                    {
+                        if (transform.UseAppSettings)
+                        {
+                            if (!string.IsNullOrEmpty(value))
+                            {
+                                value = value.Replace("{{" + transform.Key + "}}", transforms[transform.Key] ?? string.Empty);
+                            }
+                            else
+                            {
+                                value = transforms[transform.Key] ?? string.Empty;
+                            }
+                        }
+                        else
+                        {
+                            value = value.Replace("{{" + transform.Key + "}}", transform.Value);
+                        }
+                    }
+                }
+
+                return value;
             }
             set{
                 ResponseTime = DateTime.UtcNow;
@@ -24,6 +50,8 @@ namespace ConsoulLibrary
         public string Description { get; set; } = string.Empty;
 
         public RegisteredOption OptionReference { get; set; }
+
+        public InputTransform[] Transforms { get; set; }
 
         public InputMethod Method { get; set; } = InputMethod.Value;
 
@@ -48,12 +76,22 @@ namespace ConsoulLibrary
                 Method = (InputMethod)Enum.Parse(typeof(InputMethod), xNode["Method"].InnerText);
             }
             Description = xNode["Description"]?.InnerText;
+            if (xNode["Transforms"] != null)
+            {
+                XmlNodeList xTransforms = xNode.SelectNodes("Transforms/Transform");
+                List<InputTransform> transforms = new List<InputTransform>();
+                foreach (XmlNode xTransform in xTransforms)
+                {
+                    transforms.Add(new InputTransform(xTransform));
+                }
+                Transforms = transforms.ToArray();
+            }
         }
 
         public XmlNode ToXmlNode(XmlDocument xDoc) {
             XmlNode xInput = xDoc.CreateElement("Input");
             // TODO: Add Description and Groupings
-            xInput.AppendChild(xDoc.CreateElement("Value")).InnerText = Value;
+            xInput.AppendChild(xDoc.CreateElement("Value")).InnerText = _value;
             xInput.AppendChild(xDoc.CreateElement("RequestTime")).InnerText = RequestTime.ToString();
             xInput.AppendChild(xDoc.CreateElement("ResponseTime")).InnerText = ResponseTime.ToString();
             xInput.AppendChild(xDoc.CreateElement("Delay")).InnerText = Delay.Value.Ticks.ToString();
@@ -61,6 +99,14 @@ namespace ConsoulLibrary
             xInput.AppendChild(xDoc.CreateElement("Description")).AppendChild(xDoc.CreateCDataSection(Description));
             if (OptionReference != null)
                 xInput.AppendChild(OptionReference.ToXmlNode(xDoc));
+            var xInputTransforms = xInput.AppendChild(xDoc.CreateElement("Transforms"));
+            if (Transforms?.Length > 0)
+            {
+                foreach (InputTransform inputTransform in Transforms)
+                {
+                    xInputTransforms.AppendChild(inputTransform.ToXmlNode(xDoc));
+                }
+            }
 
             return xInput;
         }

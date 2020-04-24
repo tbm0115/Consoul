@@ -2,12 +2,34 @@
 using System.Reflection;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using Microsoft.Extensions.Configuration;
 
 namespace ConsoulLibrary {
     public static class Routines {
         public static List<RegisteredOption> PromptRegistry { get; set; } = new List<RegisteredOption>();
 
         public static Queue<RoutineInput> InputBuffer { get; private set; } = new Queue<RoutineInput>();
+
+        private static IConfigurationSection appSettings = null;
+        public static IConfigurationSection getAppSettings()
+        {
+            if (appSettings == null)
+            {
+                var assemblyLoc = Assembly.GetExecutingAssembly().Location;
+                var directoryPath = Path.GetDirectoryName(assemblyLoc);
+
+                var configFilePath = Path.Combine(directoryPath, "appsettings.json");
+
+                IConfigurationBuilder builder = new ConfigurationBuilder();
+                builder.AddJsonFile(configFilePath);
+
+                var configRoot = builder.Build();
+                appSettings = configRoot.GetSection("Consoul");
+            }
+
+            return appSettings;
+        }
 
         public static void InitializeRoutine(Routine routine, string name = null) {
             InputBuffer = routine;
