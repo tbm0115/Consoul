@@ -16,16 +16,24 @@ namespace ConsoulLibrary {
         {
             if (appSettings == null)
             {
-                var assemblyLoc = Assembly.GetExecutingAssembly().Location;
-                var directoryPath = Path.GetDirectoryName(assemblyLoc);
+                try
+                {
+                    var assemblyLoc = Assembly.GetExecutingAssembly().Location;
+                    var directoryPath = Path.GetDirectoryName(assemblyLoc);
 
-                var configFilePath = Path.Combine(directoryPath, "appsettings.json");
+                    var configFilePath = Path.Combine(directoryPath, "appsettings.json");
 
-                IConfigurationBuilder builder = new ConfigurationBuilder();
-                builder.AddJsonFile(configFilePath);
+                    IConfigurationBuilder builder = new ConfigurationBuilder()
+                        .SetBasePath(Directory.GetCurrentDirectory())
+                        .AddJsonFile(configFilePath);
 
-                var configRoot = builder.Build();
-                appSettings = configRoot.GetSection("Consoul");
+                    var configRoot = builder.Build();
+                    appSettings = configRoot.GetSection("Consoul");
+                }
+                catch (Exception ex)
+                {
+                    return null;
+                }
             }
 
             return appSettings;
@@ -40,8 +48,11 @@ namespace ConsoulLibrary {
             }
         }
 
-        public static void InitializeRoutine(string[] args)
+        public static void InitializeRoutine(string[] args, IConfigurationRoot configuration = null)
         {
+            if (configuration != null)
+                appSettings = configuration.GetSection("Consoul");
+
             if (_checkRoutine(args))
                 return;
             if (_checkXmlRoutine(args))
