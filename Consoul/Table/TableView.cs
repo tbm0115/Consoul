@@ -101,21 +101,27 @@ namespace ConsoulLibrary.Table
 
             Append(Headers);
 
-            foreach (IEnumerable<string> row in Contents) 
+            if (Contents?.Any() == true)
             {
-                Append(row);
+                foreach (IEnumerable<string> row in Contents)
+                {
+                    Append(row);
+                }
             }
         }
 
-        public int Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false)
+        public int Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true)
         {
+            if (Contents?.Any() == false)
+                return -1;
+
             var prevRenderOptionChoice = RenderOptions.IncludeChoices;
             RenderOptions.IncludeChoices = true;
 
             int selection = -1;
             do
             {
-                Write();
+                Write(clearConsole);
                 if (!string.IsNullOrEmpty(message))
                 {
                     Consoul.Write(message, color);

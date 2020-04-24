@@ -97,7 +97,8 @@ namespace ConsoulLibrary.Table
             _table.Headers = propertyReferences.Keys.ToList();
             _table.QueryYieldsNoResults += _table_QueryYieldsNoResults;
 
-            Contents.ForEach(o => Append(o));
+            if (Contents?.Any() == true)
+                Contents.ForEach(o => Append(o));
 
             return true;
         }
