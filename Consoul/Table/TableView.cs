@@ -179,11 +179,11 @@ namespace ConsoulLibrary.Table
                     {
                         selection = results.First() + 1; // selection is expected as one-based
                     }
-                    else if (matches.Count > 1)
+                    else if (results.Count > 1)
                     {
                         raiseQueryYieldsNoResults("Invalid Query! Query yielded multiple results. Try a more refined search.", input);
                     }
-                    else if (matches.Count == 0)
+                    else if (results.Count == 0)
                     {
                         raiseQueryYieldsNoResults("Invalid Query! Query yielded no results.", input);
                     }
