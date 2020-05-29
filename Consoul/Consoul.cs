@@ -4,6 +4,8 @@ using System.Linq;
 namespace ConsoulLibrary {
     public static class Consoul
     {
+        public const int EscapeIndex = -100;
+
         /// <summary>
         /// Waits for the user to press "Enter". Performs Console.ReadLine()
         /// <paramref name="silent">Flags whether or not to show continue message.</paramref>
