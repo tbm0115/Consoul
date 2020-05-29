@@ -69,6 +69,13 @@ namespace ConsoulLibrary {
         /// <returns>Zero-based index of the selected option.</returns>
         public int Run()
         {
+            string[] escapePhrases = new string[]
+            {
+                "go back",
+                "back",
+                "exit",
+                "goback"
+            };
             string input = "";
             int selection = -1;
             PromptOption defaultOption = _options.FirstOrDefault(o => o.IsDefault);
@@ -95,6 +102,10 @@ namespace ConsoulLibrary {
                 if (string.IsNullOrEmpty(input) && defaultOption != null)
                 {
                     selection = defaultOption.Index;
+                }
+                else if (escapePhrases.Any(o => input.Equals(o, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return Consoul.EscapeIndex;
                 }
                 else 
                 {

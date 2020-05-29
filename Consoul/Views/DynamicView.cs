@@ -110,7 +110,13 @@ namespace ConsoulLibrary.Views
                         idx = -1;
                     }
                     else if (idx == Options.Count)
+                    {
                         idx = int.MaxValue;
+                    }
+                    else if (idx == Consoul.EscapeIndex)
+                    {
+                        GoBack();
+                    }
                 }
                 catch (Exception ex)
                 {
