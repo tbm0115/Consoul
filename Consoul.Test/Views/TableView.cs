@@ -100,5 +100,28 @@ namespace ConsoulLibrary.Test.Views
             ConsoulLibrary.Consoul.Write($"Actor: {Heroes[idxChoice].Name}");
             ConsoulLibrary.Consoul.Wait();
         }
+
+        [ViewOption("Dynamic Table Test (AllowEmpty)")]
+        public void DynamicTableEmpty()
+        {
+            var table = new ConsoulLibrary.Table.DynamicTableView<Actor>(Heroes, new Table.TableRenderOptions() { });
+            table.AddHeader(o => o.Name);
+            table.AddHeader(o => o.HitPoints);
+            table.AddHeader(o => o.Inventory.Items.Count, "Inventory Size");
+            table.Build();
+            table.QueryYieldsNoResults += Table_QueryYieldsNoResults;
+
+            int idxChoice = table.Prompt($"Test Message", allowEmpty: true);
+
+            if (idxChoice >= 0)
+            {
+                ConsoulLibrary.Consoul.Write($"Actor: {Heroes[idxChoice].Name}");
+            } else
+            {
+                ConsoulLibrary.Consoul.Write($"No Actor selected...");
+            }
+
+            ConsoulLibrary.Consoul.Wait();
+        }
     }
 }
