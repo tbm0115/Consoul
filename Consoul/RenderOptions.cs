@@ -52,6 +52,11 @@ namespace ConsoulLibrary {
 
         public static string ContinueMessage { get; set; } = "Press enter to continue...";
 
+        /// <summary>
+        /// Upon error within a view, Consoul will Wait() after capturing the error and displaying the message.
+        /// </summary>
+        public static bool WaitOnError { get; set; } = false;
+
         public enum WriteModes
         {
             WriteAll,

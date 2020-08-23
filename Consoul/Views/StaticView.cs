@@ -97,6 +97,10 @@ namespace ConsoulLibrary.Views
                 catch (Exception ex)
                 {
                     Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", RenderOptions.InvalidColor);
+                    if (RenderOptions.WaitOnError)
+                    {
+                        Consoul.Wait();
+                    }
                 }
             } while (idx < 0 && !GoBackRequested);
         }
