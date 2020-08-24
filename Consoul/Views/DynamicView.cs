@@ -131,7 +131,15 @@ namespace ConsoulLibrary.Views
     
         public void Run(ChoiceCallback callback = null)
         {
-            RunAsync(callback).Wait();
+            try
+            {
+                RunAsync(callback).Wait();
+            }
+            catch (Exception ex)
+            {
+                Consoul.Write($"{ex.Message}\r\nStack Trace: {ex.StackTrace}", ConsoleColor.Red);
+                if (RenderOptions.WaitOnError) Consoul.Wait();
+            }
         }
     }
 }
