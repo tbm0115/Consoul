@@ -9,10 +9,10 @@
     <PackageTags>Console</PackageTags>
     <Authors>tbm0115</Authors>
     <Company />
-    <Version>1.5.4</Version>
-    <PackageReleaseNotes>Added TryCatch around DynamicTableView property navigation</PackageReleaseNotes>
-    <AssemblyVersion>1.5.4.0</AssemblyVersion>
-    <FileVersion>1.5.4.0</FileVersion>
+    <Version>1.5.9</Version>
+    <PackageReleaseNotes>Added parameter recognition to ViewOption and DynamicOption</PackageReleaseNotes>
+    <AssemblyVersion>1.5.9.0</AssemblyVersion>
+    <FileVersion>1.5.9.0</FileVersion>
     <PackageIcon>Consoul_Small.png</PackageIcon>
     <PackageIconUrl />
   </PropertyGroup>

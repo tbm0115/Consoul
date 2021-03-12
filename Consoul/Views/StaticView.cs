@@ -40,6 +40,16 @@ namespace ConsoulLibrary.Views
                 ViewOptionAttribute attr = method.GetCustomAttribute(viewOptionType) as ViewOptionAttribute;
                 if (attr != null)
                 {
+                    ParameterInfo[] methodParameters = method.GetParameters();
+                    List<object> implementedMethodParameters = new List<object>();
+                    foreach (ParameterInfo methodParameter in methodParameters) {
+                        if (methodParameter.HasDefaultValue) {
+                            implementedMethodParameters.Add(methodParameter.DefaultValue);
+                        } else if (Nullable.GetUnderlyingType(methodParameter.ParameterType) != null) {
+                            implementedMethodParameters.Add(null);
+                        }
+                    }
+                    bool useParameters = methodParameters.Length > 0 && implementedMethodParameters.Count == methodParameters.Length;
                     OptionAction p = delegate ()
                            {
                                thisType.InvokeMember(
@@ -47,7 +57,7 @@ namespace ConsoulLibrary.Views
                                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
                                    null,
                                    this,
-                                   null
+                                   useParameters ? implementedMethodParameters.ToArray() : null
                                );
                            };
                     Options.Add(new Option(
@@ -97,6 +107,10 @@ namespace ConsoulLibrary.Views
                 catch (Exception ex)
                 {
                     Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", RenderOptions.InvalidColor);
+                    if (RenderOptions.WaitOnError)
+                    {
+                        Consoul.Wait();
+                    }
                 }
             } while (idx < 0 && !GoBackRequested);
         }

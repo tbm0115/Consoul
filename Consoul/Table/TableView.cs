@@ -203,6 +203,8 @@ namespace ConsoulLibrary.Table
                 }
             } while (selection < 0);
 
+            if (selection > Contents.Count) selection = 0;
+
             RenderOptions.IncludeChoices = prevRenderOptionChoice;
 
             return selection - 1;

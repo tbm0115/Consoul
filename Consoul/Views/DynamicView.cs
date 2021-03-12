@@ -46,8 +46,18 @@ namespace ConsoulLibrary.Views
                     if (!string.IsNullOrEmpty(attr.ColorMethod))
                         colorBuilder = allMethods.FirstOrDefault(o => o.Name == attr.ColorMethod);
 
-                    if (messageBuilder != null)
-                    {
+                    if (messageBuilder != null) {
+                        ParameterInfo[] methodParameters = method.GetParameters();
+                        List<object> implementedMethodParameters = new List<object>();
+                        foreach (ParameterInfo methodParameter in methodParameters) {
+                            if (methodParameter.HasDefaultValue) {
+                                implementedMethodParameters.Add(methodParameter.DefaultValue);
+                            } else if (Nullable.GetUnderlyingType(methodParameter.ParameterType) != null) {
+                                implementedMethodParameters.Add(null);
+                            }
+                        }
+                        bool useParameters = methodParameters.Length > 0 && implementedMethodParameters.Count == methodParameters.Length;
+
                         Options.Add(new DynamicOption<T>(
                             () =>
                             {
@@ -64,7 +74,7 @@ namespace ConsoulLibrary.Views
                                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
                                 null,
                                 this,
-                                null
+                                useParameters ? implementedMethodParameters.ToArray() : null
                             ),
                             () =>
                             {
@@ -121,13 +131,25 @@ namespace ConsoulLibrary.Views
                 catch (Exception ex)
                 {
                     Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", RenderOptions.InvalidColor);
+                    if (RenderOptions.WaitOnError)
+                    {
+                        Consoul.Wait();
+                    }
                 }
             } while (idx < 0 && !GoBackRequested);
         }
     
         public void Run(ChoiceCallback callback = null)
         {
-            RunAsync(callback).Wait();
+            try
+            {
+                RunAsync(callback).Wait();
+            }
+            catch (Exception ex)
+            {
+                Consoul.Write($"{ex.Message}\r\nStack Trace: {ex.StackTrace}", ConsoleColor.Red);
+                if (RenderOptions.WaitOnError) Consoul.Wait();
+            }
         }
     }
 }
