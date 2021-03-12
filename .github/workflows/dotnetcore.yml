@@ -20,13 +20,13 @@ jobs:
       run: dotnet build --configuration Release
       
     - name: Pack
-      run: dotnet pack Consoul --configuration Release --output ./artifacts --no-build
+      run: dotnet pack Consoul --configuration Release --output ${{ github.workspace }}/artifacts --no-build
     
     - name: Publish Artifact
       uses: actions/upload-artifact@v2
       with:
         name: nupkg
-        path: ./artifacts
+        path: ${{ github.workspace }}/artifacts
 
   deploy:
     needs: build
