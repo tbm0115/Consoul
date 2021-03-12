@@ -46,8 +46,18 @@ namespace ConsoulLibrary.Views
                     if (!string.IsNullOrEmpty(attr.ColorMethod))
                         colorBuilder = allMethods.FirstOrDefault(o => o.Name == attr.ColorMethod);
 
-                    if (messageBuilder != null)
-                    {
+                    if (messageBuilder != null) {
+                        ParameterInfo[] methodParameters = method.GetParameters();
+                        List<object> implementedMethodParameters = new List<object>();
+                        foreach (ParameterInfo methodParameter in methodParameters) {
+                            if (methodParameter.HasDefaultValue) {
+                                implementedMethodParameters.Add(methodParameter.DefaultValue);
+                            } else if (Nullable.GetUnderlyingType(methodParameter.ParameterType) != null) {
+                                implementedMethodParameters.Add(null);
+                            }
+                        }
+                        bool useParameters = methodParameters.Length > 0 && implementedMethodParameters.Count == methodParameters.Length;
+
                         Options.Add(new DynamicOption<T>(
                             () =>
                             {
@@ -64,7 +74,7 @@ namespace ConsoulLibrary.Views
                                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
                                 null,
                                 this,
-                                null
+                                useParameters ? implementedMethodParameters.ToArray() : null
                             ),
                             () =>
                             {
