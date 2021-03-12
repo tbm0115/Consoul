@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@main
       with:
         dotnet-version: 2.2.108
     - name: Build with dotnet
@@ -35,7 +35,7 @@ jobs:
     
     steps:
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@main
         with:
           dotnet-version: 2.2.108
 
@@ -45,7 +45,7 @@ jobs:
           name: nupkg
       
       - name: Setup NuGet
-        uses: NuGet/setup-nuget@v1.0.2
+        uses: NuGet/setup-nuget@main
         with:
           nuget-api-key: ${{ secrets.NUGET_API_KEY }}
           nuget-version: latest
