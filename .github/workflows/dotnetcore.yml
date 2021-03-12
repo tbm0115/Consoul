@@ -35,7 +35,7 @@ jobs:
     
     steps:
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@main
         with:
           dotnet-version: 2.2.108
 
