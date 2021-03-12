@@ -23,7 +23,7 @@ jobs:
       run: dotnet pack Consoul --configuration Release --output ./artifacts --no-build
     
     - name: Publish Artifact
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@v2
       with:
         name: nupkg
         path: ./artifacts
@@ -40,7 +40,7 @@ jobs:
           dotnet-version: 2.2.108
 
       - name: Download Artifact
-        uses: actions/download-artifact@main
+        uses: actions/download-artifact@v2
         with:
           name: nupkg
       
