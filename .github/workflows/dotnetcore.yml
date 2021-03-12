@@ -43,6 +43,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: nupkg
+          path: ${{ github.workspace }}/package
       
       - name: Setup NuGet
         uses: NuGet/setup-nuget@main
@@ -51,10 +52,10 @@ jobs:
           nuget-version: latest
       
       - name: Push to NuGet
-        run: dotnet nuget push nupkg\*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://nuget.org
+        run: dotnet nuget push ${{ github.workspace }}\package\*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://nuget.org
     
       - name: Add GitHub Package Registry Source
         run: nuget sources Add -Name "GPR" -Source ${{ secrets.GPR_URI }} -UserName ${{ secrets.GPR_USERNAME }} -Password ${{ secrets.GITHUB_TOKEN }}
     
       - name: Push to GitHub Packages
-        run: nuget push nupkg\*.nupkg -Source "GPR" -SkipDuplicate
+        run: nuget push ${{ github.workspace }}\package\*.nupkg -Source "GPR" -SkipDuplicate
