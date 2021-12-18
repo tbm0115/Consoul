@@ -1,5 +1,9 @@
-﻿using System;
+﻿using NAudio.Wave;
+using System;
+using System.IO;
 using System.Linq;
+using System.Reflection;
+using Consoul.Properties;
 
 namespace ConsoulLibrary {
     public static class Consoul
@@ -85,7 +89,11 @@ namespace ConsoulLibrary {
                     break;
             }
         }
-
+        
+        /// <summary>
+        /// Waits for user input and reads the user response.
+        /// </summary>
+        /// <returns>Value from the user</returns>
         public static string Read()
         {
             bool keyControl = false, keyAlt = false, keyShift = false;
@@ -127,6 +135,13 @@ namespace ConsoulLibrary {
             return input.Value;
         }
 
+        /// <summary>
+        /// Writes a message centered in the window in its current size.
+        /// </summary>
+        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="maxWidth">Maximum width that the text can render (in character length)</param>
+        /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
+        /// <param name="writeLine"><inheritdoc cref="Write" path="/param[@name='writeLine']"/></param>
         public static void Center(string message, int maxWidth, ConsoleColor? color = null, bool writeLine = true)
         {
             string text = message.Length > maxWidth ? message.Substring(0, maxWidth - 3) + "..." : message;
@@ -182,15 +197,133 @@ namespace ConsoulLibrary {
             return input.ToLower() == "y";
         }
 
+        /// <summary>
+        /// Prompts the user with a simple list of choices.
+        /// </summary>
+        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="clear">Indicates whether or not to clear the console window.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns></returns>
         public static int Prompt(string message, bool clear = false, params string[] options)
         {
             return (new Prompt(message, clear, options)).Run();
         }
 
+        /// <summary>
+        /// Prompts the user with a complex list of choices.
+        /// </summary>
+        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="options">Array of complex options.</param>
+        /// <param name="clear"><inheritdoc cref="Prompt(string, bool, string[])" path="/param[@name='clear']"/></param>
+        /// <returns></returns>
         public static int Prompt(string message, PromptOption[] options, bool clear = false)
         {
             return (new Prompt(message, clear, options)).Run();
         }
 
+        /// <summary>
+        /// Prompts the user to input a file path.
+        /// </summary>
+        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="checkExists">Indicates whether to check the file exists before allowing the user exit the loop.</param>
+        /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
+        /// <returns></returns>
+        public static string PromptForFilepath(string message, bool checkExists, ConsoleColor? color = null) {
+            string path;
+            do
+            {
+                Consoul.Write(message, color);
+                path = Consoul.Read();
+            } while (string.IsNullOrEmpty(path) && (checkExists ? !File.Exists(path) : true));
+            if (path.StartsWith("\"") && path.EndsWith("\"")) path = path.Substring(1, path.Length - 2);
+            return path;
+        }
+
+        /// <summary>
+        /// Prompts the user to input a file path with a suggested default path.
+        /// </summary>
+        /// <param name="defaultPath">The default file path the user must accept.</param>
+        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="checkExists"><inheritdoc cref="PromptForFilepath(string, bool, ConsoleColor?)" path="/param[@name='checkExists']"/></param>
+        /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
+        /// <returns></returns>
+        public static string PromptForFilepath(string defaultPath, string message, bool checkExists, ConsoleColor? color = null) {
+            string path = defaultPath;
+            if (!File.Exists(path) || !Consoul.Ask($"Would you like to use the default path:\r\n{path}", defaultIsNo: false)) {
+                path = PromptForFilepath(message, checkExists, color);
+            }
+            return path;
+        }
+
+        /// <summary>
+        /// Plays the Windows "Ding" sound
+        /// </summary>
+        public static void Notify(){
+            using (var windowsDingStream = Resources.Windows_Ding) {
+                if (windowsDingStream == null) {
+                    throw new InvalidOperationException("Could not load manifest resource stream.");
+                }
+                byte[] b = ReadToEnd(windowsDingStream);
+                using (var ms = new MemoryStream(ReadToEnd(windowsDingStream)))
+                using (WaveStream wav = new WaveFileReader(ms))
+                using (var output = new WaveOutEvent())
+                {
+                    output.Init(wav);
+                    output.Play();
+                    System.Threading.Thread.Sleep(wav.TotalTime);
+                }
+            }
+        }
+        internal static byte[] ReadToEnd(System.IO.Stream stream)
+        {
+            long originalPosition = 0;
+
+            if (stream.CanSeek)
+            {
+                originalPosition = stream.Position;
+                stream.Position = 0;
+            }
+
+            try
+            {
+                byte[] readBuffer = new byte[4096];
+
+                int totalBytesRead = 0;
+                int bytesRead;
+
+                while ((bytesRead = stream.Read(readBuffer, totalBytesRead, readBuffer.Length - totalBytesRead)) > 0)
+                {
+                    totalBytesRead += bytesRead;
+
+                    if (totalBytesRead == readBuffer.Length)
+                    {
+                        int nextByte = stream.ReadByte();
+                        if (nextByte != -1)
+                        {
+                            byte[] temp = new byte[readBuffer.Length * 2];
+                            Buffer.BlockCopy(readBuffer, 0, temp, 0, readBuffer.Length);
+                            Buffer.SetByte(temp, totalBytesRead, (byte)nextByte);
+                            readBuffer = temp;
+                            totalBytesRead++;
+                        }
+                    }
+                }
+
+                byte[] buffer = readBuffer;
+                if (readBuffer.Length != totalBytesRead)
+                {
+                    buffer = new byte[totalBytesRead];
+                    Buffer.BlockCopy(readBuffer, 0, buffer, 0, totalBytesRead);
+                }
+                return buffer;
+            }
+            finally
+            {
+                if (stream.CanSeek)
+                {
+                    stream.Position = originalPosition;
+                }
+            }
+        }
     }
 }

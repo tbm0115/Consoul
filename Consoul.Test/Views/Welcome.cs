@@ -22,6 +22,11 @@ namespace ConsoulLibrary.Test.Views
             Story.Progress(typeof(PickUpStick));
         }
 
+        [ViewOption("Play Sound")]
+        public void Notify(){
+            Consoul.Notify();
+        }
+
     }
     
 }
