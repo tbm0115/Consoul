@@ -10,13 +10,17 @@
     <Authors>tbm0115</Authors>
     <Company />
     <Version>1.5.10</Version>
-    <PackageReleaseNotes>Added Notify() and PromptForFilepath()</PackageReleaseNotes>
+    <PackageReleaseNotes>Added PromptForFilepath()</PackageReleaseNotes>
     <AssemblyVersion>1.5.10.0</AssemblyVersion>
     <FileVersion>1.5.10.0</FileVersion>
     <PackageIcon>Consoul_Small.png</PackageIcon>
     <PackageIconUrl />
   </PropertyGroup>
 
+
+  <ItemGroup>
+    <None Remove="Resources\Windows Ding.wav" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="Consoul_Small.png">
