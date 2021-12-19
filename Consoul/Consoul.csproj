@@ -10,16 +10,13 @@
     <Authors>tbm0115</Authors>
     <Company />
     <Version>1.5.10</Version>
-    <PackageReleaseNotes>Added parameter recognition to ViewOption and DynamicOption</PackageReleaseNotes>
+    <PackageReleaseNotes>Added Notify() and PromptForFilepath()</PackageReleaseNotes>
     <AssemblyVersion>1.5.10.0</AssemblyVersion>
     <FileVersion>1.5.10.0</FileVersion>
     <PackageIcon>Consoul_Small.png</PackageIcon>
     <PackageIconUrl />
   </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Resources\Windows Ding.wav" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="Consoul_Small.png">
@@ -35,6 +32,9 @@
     <PackageReference Include="NAudio" Version="2.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Resources\Windows Ding.wav" />
+  </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Windows Ding.wav" />
   </ItemGroup>
@@ -53,9 +53,5 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="dotnet pack &quot;$(ProjectPath)&quot; --configuration &quot;Release&quot; --no-build --output &quot;C:\Nuget\Packages\$(ProjectName)&quot;" />
-  </Target>
 
 </Project>
