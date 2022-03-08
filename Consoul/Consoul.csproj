@@ -9,12 +9,13 @@
     <PackageTags>Console</PackageTags>
     <Authors>tbm0115</Authors>
     <Company />
-    <Version>1.5.11</Version>
-    <PackageReleaseNotes>Added PromptForFilepath()</PackageReleaseNotes>
-    <AssemblyVersion>1.5.11.0</AssemblyVersion>
-    <FileVersion>1.5.11.0</FileVersion>
+    <Version>1.5.12</Version>
+    <PackageReleaseNotes>Resolved reference to errant Consoul namespace.</PackageReleaseNotes>
+    <AssemblyVersion>1.5.12.0</AssemblyVersion>
+    <FileVersion>1.5.12.0</FileVersion>
     <PackageIcon>Consoul_Small.png</PackageIcon>
     <PackageIconUrl />
+    <RootNamespace>ConsoulLibrary</RootNamespace>
   </PropertyGroup>
 
 

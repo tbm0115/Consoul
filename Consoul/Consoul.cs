@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Consoul.Properties;
 
 namespace ConsoulLibrary {
     public static class Consoul
