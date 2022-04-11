@@ -1,14 +1,16 @@
 name: Publish to Package Registries
 
 on: 
-  push:
-    branches:
-      - master
+  release:
+    types:
+      - published
+  workflow_dispatch:
+  
 
 jobs:
   build:
     name: Build Package
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
     - uses: actions/checkout@v2
