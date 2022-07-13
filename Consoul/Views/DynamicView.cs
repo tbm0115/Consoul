@@ -113,7 +113,17 @@ namespace ConsoulLibrary.Views
                     idx = prompt.Run();
                     if (idx >= 0 && idx < Options.Count)
                     {
-                        await Task.Run(() => Options[idx].Action.Invoke());
+                        await Task.Run(() => {
+                            try
+                            {
+                                Options[idx].Action.Invoke();
+                            }
+                            catch (Exception ex2)
+                            {
+                                Consoul.Write($"{Title}[{idx}]\t{ex2.Message}\r\n\tStack Trace: {ex2.StackTrace}", RenderOptions.InvalidColor);
+                                if (RenderOptions.WaitOnError) Consoul.Wait();
+                            }
+                        });
                         if (callback != null)
                             await callback(idx);
                         idx = -1;
@@ -130,10 +140,7 @@ namespace ConsoulLibrary.Views
                 catch (Exception ex)
                 {
                     Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", RenderOptions.InvalidColor);
-                    if (RenderOptions.WaitOnError)
-                    {
-                        Consoul.Wait();
-                    }
+                    if (RenderOptions.WaitOnError) Consoul.Wait();
                 }
             } while (idx < 0 && !GoBackRequested);
         }
