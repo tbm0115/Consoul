@@ -1,0 +1,131 @@
+<head>
+    <meta charset="{{ site.encoding }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    {% if site.enforce_https %}
+        <script type="text/javascript">
+            if (("{{ site.enforce_https }}" == window.location.host) && (window.location.protocol != "https:")) {
+                window.location = window.location.toString().replace(/^http:/, "https:");
+            }
+        </script>
+    {% endif %}
+
+    <title>{% if page.title %}{{ page.title }} - {{ site.title }}{% else %}{{ site.title }}{% endif %}</title>
+    <meta name="author" content="{{ site.author.name }}">
+    <meta name="description" content="{% if page.excerpt %}{{ page.excerpt | strip_html | strip_newlines | truncate: 160 }}{% else %}{{ site.description }}{% endif %}">
+    <link rel="canonical" href="{{ page.url | replace:'index.html','' | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}">
+    <link rel="alternate" type="application/rss+xml" title="{{ site.title }}" href="{{ "/feed.xml" | prepend: site.baseurl | prepend: site.url }}" />
+
+    <!-- OpenSearch -->
+    <link rel="search" type="application/opensearchdescription+xml" title="Search {{ site.title }}" href="{{ '/opensearch.xml' | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}" />
+
+    <!-- Open Graph -->
+    {% if page.is_post %}
+        <meta property="article:published_time" content="{{ page.date }}"/>
+        {% if site.facebook.username %}
+            <meta property="article:publisher" content="{{ site.facebook.username | prepend: 'https://facebook.com/' }}" />
+        {% endif %}
+    {% endif %}
+    {% if site.facebook.app_id %}
+        <meta property="fb:app_id" content="{{ site.facebook.app_id }}" />
+    {% endif %}
+    {% if site.facebook.page_id %}
+        <meta property="fb:page_id" content="{{ site.facebook.page_id }}" />
+    {% endif %}
+    <meta property="og:description" content="{% if page.excerpt %}{{ page.excerpt | strip_html | strip_newlines | truncate: 160 }}{% else %}{{ site.description }}{% endif %}" />
+    {% if site.author.email %}
+        <meta property="og:email" content="{{ site.author.email }}" />
+    {% endif %}
+    {% if page.image %}
+        <meta property="og:image" content="{{ page.image | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}" />
+    {% elsif site.image %}
+        <meta property="og:image" content="{{ site.image | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}" />
+    {% endif %}
+    <meta property="og:site_name" content="{{ site.title }}" />
+    <meta property="og:title" content="{% if page.title %}{{ page.title }}{% else %}{{ site.title }}{% endif %}" />
+    <meta property="og:type" content="{% if page.is_post %}{{ "article" }}{% else %}{{ "website" }}{% endif %}" />
+    <meta property="og:url" content="{{ page.url | replace:'index.html', '' | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary" />
+    {% if site.twitter_username %}
+        <meta name="twitter:site" content="{{ site.twitter_username | prepend: "@" }}" />
+    {% endif %}
+
+    <!-- Favicons (made with RealFaviconGenerator.net) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ "/assets/favicons/apple-touch-icon.png?v=4" | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ "/assets/favicons/favicon-32x32.png?v=4" | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ "/assets/favicons/favicon-16x16.png?v=4" | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}">
+    <link rel="manifest" href="{{ "/assets/favicons/site.webmanifest?v=4" | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}">
+    <link rel="mask-icon" href="/assets/favicons/safari-pinned-tab.svg?v=4" color="#009688">
+    <link rel="shortcut icon" href="{{ "/assets/favicons/favicon.ico?v=4" | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}">
+    <meta name="msapplication-TileColor" content="#009688">
+    <meta name="msapplication-config" content="{{ "/assets/favicons/browserconfig.xml?v=4" | prepend: site.baseurl | replace: '//', '/' | prepend: site.url }}">
+    <meta name="theme-color" content="#009688">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700|Material+Icons">
+    {% if jekyll.environment == "production" %}
+        <!--<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">-->
+        <link rel="stylesheet" href="https://unpkg.com/bootstrap-material-design@4.1.2/dist/css/bootstrap-material-design.min.css" integrity="sha384-dI6l3oYG+wVvjfdlixt6+FMddrb9+uejLU/wMhQFKklk7RDtSDBfe/XuF1dkcgVV" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha256-mUZM63G8m73Mcidfrv5E+Y61y7a12O5mW4ezU3bxqW4=" crossorigin="anonymous">
+    {% else %}
+        <!--<link rel="stylesheet" href="{{ "/libs/bootstrap/4.3.1/css/bootstrap.min.css" | prepend: site.baseurl }}">-->
+        <link rel="stylesheet" href="{{ "/libs/bootstrap-material-design/4.1.2/css/bootstrap-material-design.css" | prepend: site.baseurl }}">
+        <link rel="stylesheet" href="{{ "/libs/font-awesome/5.15.4/css/all.css" | prepend: site.baseurl }}">
+    {% endif %}
+    <link rel="stylesheet" href="{{ "/assets/css/syntax.css" | prepend: site.baseurl }}">
+    <link rel="stylesheet" href="{{ "/assets/css/main.css" | prepend: site.baseurl }}">
+
+    <!-- JS -->
+    {% if jekyll.environment == "production" %}
+        <script src="https://code.jquery.com/jquery-3.6.0.slim.min.js" integrity="sha256-u7e5khyithlIdTpu22PHhENmPcRdFiHRjhAuHcs05RI=" crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/popper.js@1.16.1-lts/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+        <!--<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>-->
+        <script src="https://unpkg.com/bootstrap-material-design@4.1.2/dist/js/bootstrap-material-design.min.js" integrity="sha384-aWO+CcMRDQLEvnT8RdnCxWbs4C76Ryoo4pzYpGNW2vlHTHiPA7gpBzIB5nYwYfLg" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/js/all.js" integrity="sha256-GaerX2a/DuOnPrxn/4vH13dobiFUe/27LO6gCZDNauA=" crossorigin="anonymous"></script>
+    {% else %}
+        <script src="{{ "/libs/jquery/3.6.0/jquery.slim.js" | prepend: site.baseurl }}"></script>
+        <script src="{{ "/libs/popper.js/1.16.1-lts/umd/popper.js" | prepend: site.baseurl }}"></script>
+        <!--<script src="{{ "/libs/bootstrap/4.3.1/js/bootstrap.js" | prepend: site.baseurl }}"></script>-->
+        <script src="{{ "/libs/bootstrap-material-design/4.1.2/js/bootstrap-material-design.js" | prepend: site.baseurl }}"></script>
+        <script defer src="{{ "/libs/font-awesome/5.15.4/js/all.js" | prepend: site.baseurl }}"></script>
+    {% endif %}
+    <script src="{{ "/assets/js/main.js" | prepend: site.baseurl }}"></script>
+
+    {% if site.google and jekyll.environment == "production" %}
+			<!-- Google tag (gtag.js) -->
+			<script async src="https://www.googletagmanager.com/gtag/js?id=G-LEE139MXXS"></script>
+			<script>
+				window.dataLayer = window.dataLayer || [];
+				function gtag(){dataLayer.push(arguments);}
+				gtag('js', new Date());
+
+				gtag('config', 'G-LEE139MXXS');
+			</script>
+    {% endif %}
+
+    {% if site.google and jekyll.environment == "production" %}
+        <!-- Google AdSense -->
+				<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3568656413005000"
+     crossorigin="anonymous"></script>
+    {% endif %}
+
+    {% if site.addthis_profile_id and jekyll.environment == "production" %}
+        <!-- AddThis -->
+        <script async src="//s7.addthis.com/js/300/addthis_widget.js#pubid={{ site.addthis_profile_id }}"></script>
+        <script type="text/javascript">
+            var addthis_config = {
+                data_track_clickback: true,
+                data_track_addressbar: true,
+                ui_language: '{{ site.lang }}'
+            };
+            var addthis_share = {
+                url: '{{ page.url | prepend: site.baseurl | replace: "//", "/"" | prepend: site.url }}',
+                title: document.title,
+                description: '{% if page.excerpt %}{{ page.excerpt | strip_html | strip_newlines | truncatewords: 55 }}{% else %}{{ site.description }}{% endif %}'
+            };
+        </script>
+        <!-- End AddThis -->
+    {% endif %}
+</head>
