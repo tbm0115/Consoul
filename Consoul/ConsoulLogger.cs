@@ -22,7 +22,9 @@ namespace ConsoulLibrary
             [LogLevel.None] = ConsoleColor.Black,
         };
 
-        public IDisposable BeginScope<TState>(TState state) => default!;
+        public IDisposable BeginScope<TState>(TState state) {
+            return state as IDisposable;
+        }
 
         public bool IsEnabled(LogLevel logLevel)
             => LogLevelToColorMap.ContainsKey(logLevel);
