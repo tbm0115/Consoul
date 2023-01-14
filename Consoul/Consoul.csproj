@@ -9,13 +9,16 @@
     <PackageTags>Console</PackageTags>
     <Authors>tbm0115</Authors>
     <Company />
-    <Version>1.5.14</Version>
-    <PackageReleaseNotes>Added error handling around method invokes.</PackageReleaseNotes>
+    <Version>1.6.0</Version>
+    <PackageReleaseNotes>Added ILogger implementation</PackageReleaseNotes>
     <AssemblyVersion>1.5.14.0</AssemblyVersion>
     <FileVersion>1.5.14.0</FileVersion>
     <PackageIcon>Consoul_Small.png</PackageIcon>
     <PackageIconUrl />
     <RootNamespace>ConsoulLibrary</RootNamespace>
+    <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
 
@@ -34,6 +37,8 @@
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
