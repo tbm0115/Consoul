@@ -1,4 +1,4 @@
-![Packaged](https://github.com/tbm0115/Consoul/workflows/Publish%20to%20Package%20Registries/badge.svg)
+[![Package](https://github.com/tbm0115/Consoul/actions/workflows/Publish%20to%20Package%20Registries.yml/badge.svg)](https://github.com/tbm0115/Consoul/actions/workflows/Publish%20to%20Package%20Registries.yml)
 
 # Consoul
 Add some life to your Console project!
