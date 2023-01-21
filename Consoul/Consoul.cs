@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace ConsoulLibrary {
     public static class Consoul
@@ -251,6 +252,26 @@ namespace ConsoulLibrary {
                 path = PromptForFilepath(message, checkExists, color);
             }
             return path;
+        }
+
+        /// <summary>
+        /// Plays the BEL character in the console. See <see href="https://en.wikipedia.org/wiki/Bell_character">Wikipedia</see> for more details.
+        /// </summary>
+        public static void Ding()
+        {
+            Console.Write((char)7);
+        }
+
+        /// <summary>
+        /// Displays a message in the console and plays <see cref="Ding"/>.
+        /// </summary>
+        /// <param name="message">Display message</param>
+        /// <param name="color">Color for Message. Defaults to RenderOptions.DefaultColor</param>
+        /// <param name="writeLine">Specifies whether to use Console.WriteLine() or Console.Write()</param>
+        public static void Alert(string message, ConsoleColor? color = null, bool writeLine = true)
+        {
+            Consoul.Write(message, color, writeLine);
+            Consoul.Ding();
         }
     }
 }

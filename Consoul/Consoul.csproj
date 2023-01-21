@@ -9,8 +9,8 @@
     <PackageTags>Console</PackageTags>
     <Authors>tbm0115</Authors>
     <Company />
-    <Version>1.6.0</Version>
-    <PackageReleaseNotes>Added ILogger implementation</PackageReleaseNotes>
+    <Version>1.6.1</Version>
+    <PackageReleaseNotes>Added Ding and Alert methods</PackageReleaseNotes>
     <AssemblyVersion>1.5.14.0</AssemblyVersion>
     <FileVersion>1.5.14.0</FileVersion>
     <PackageIcon>Consoul_Small.png</PackageIcon>
