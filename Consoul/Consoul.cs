@@ -1,8 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Text;
+using System.Threading;
 
 namespace ConsoulLibrary {
     public static class Consoul
@@ -13,11 +12,10 @@ namespace ConsoulLibrary {
         /// Waits for the user to press "Enter". Performs Console.ReadLine()
         /// <paramref name="silent">Flags whether or not to show continue message.</paramref>
         /// </summary>
-        public static void Wait(bool silent = false)
+        public static void Wait(bool silent = false, CancellationToken cancellationToken = default)
         {
-            if (!silent)
-                Consoul._write(RenderOptions.ContinueMessage, RenderOptions.SubnoteColor);
-            Read();
+            if (!silent) Consoul._write(RenderOptions.ContinueMessage, RenderOptions.SubnoteColor);
+            Read(cancellationToken);
         }
 
         /// <summary>
@@ -27,14 +25,14 @@ namespace ConsoulLibrary {
         /// <param name="color">Override the Prompt Message color</param>
         /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Can result in string.Empty</param>
         /// <returns>User response (string)</returns>
-        public static string Input(string message, ConsoleColor? color = null, bool allowEmpty = false)
+        public static string Input(string message, ConsoleColor? color = null, bool allowEmpty = false, CancellationToken cancellationToken = default)
         {
             string output = string.Empty;
             bool valid = false;
             do
             {
                 Consoul._write(message, RenderOptions.GetColor(color));
-                output = Read();
+                output = Read(cancellationToken);
                 if (allowEmpty)
                 {
                     valid = true;
@@ -88,12 +86,33 @@ namespace ConsoulLibrary {
                     break;
             }
         }
-        
+
+        /// <summary>
+        /// Reads user input from the console.
+        /// </summary>
+        /// <returns>Response from the user.</returns>
+        public static string Read() => Read("\r\n");
+
         /// <summary>
         /// Waits for user input and reads the user response.
         /// </summary>
+        /// <param name="exitCode">Reference to the string that indicates the end of stream.</param>
         /// <returns>Value from the user</returns>
-        public static string Read()
+        public static string Read(string exitCode = "\r\n")
+        {
+            using (var cancelSource = new CancellationTokenSource())
+            {
+                return Read(cancelSource.Token, exitCode);
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously reads any input from the user and allows the operation to be cancelled at any time.
+        /// </summary>
+        /// <param name="cancellationToken">Reference to the cancellation token to stop the read operation.</param>
+        /// <param name="exitCode">Reference to the string that indicates the end of stream.</param>
+        /// <returns>Response from the user.</returns>
+        public static string Read(CancellationToken cancellationToken = default, string exitCode = "\r\n")
         {
             bool keyControl = false, keyAlt = false, keyShift = false;
             RoutineInput input = new RoutineInput();
@@ -115,7 +134,37 @@ namespace ConsoulLibrary {
             else
             {
                 string userInput = string.Empty;
-                input.Value = Console.ReadLine();
+                using (var stream = Console.OpenStandardInput())
+                {
+                    byte[] data = new byte[1];
+                    while (!cancellationToken.IsCancellationRequested)
+                    {
+                        using (var readCanceller = new CancellationTokenSource(TimeSpan.FromMilliseconds(500)))
+                        {
+                            try
+                            {
+                                stream.ReadAsync(data, 0, data.Length, readCanceller.Token).Wait(cancellationToken);
+                            }
+                            catch (OperationCanceledException cancelled)
+                            {
+                                break;
+                            }
+
+                            if (data.Length > 0 && data[0] >= 0)
+                            {
+                                userInput += Console.InputEncoding.GetString(data);
+                            }
+
+                            if (userInput.EndsWith(exitCode))
+                            {
+                                userInput = userInput.Substring(0, userInput.Length - exitCode.Length);
+                                break;
+                            }
+                        }
+                    }
+                    stream.Close();
+                }
+                input.Value = userInput;
             }
 
             if (Routines.PromptRegistry.Any())
@@ -145,7 +194,6 @@ namespace ConsoulLibrary {
         {
             string text = message.Length > maxWidth ? message.Substring(0, maxWidth - 3) + "..." : message;
 
-
             int remainder = maxWidth - text.Length - 1;
             int left, right;
             right = remainder / 2;
@@ -167,7 +215,7 @@ namespace ConsoulLibrary {
         /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Default is typically the 'No', but can be overriden</param>
         /// <param name="defaultIsNo">Specifies whether the default entry should be 'No'. This only applies if 'allowEmpty' is true.</param>
         /// <returns>Boolean of users response relative to 'Yes' or 'No'</returns>
-        public static bool Ask(string message, bool clear = false, bool allowEmpty = false, bool defaultIsNo = true)
+        public static bool Ask(string message, bool clear = false, bool allowEmpty = false, bool defaultIsNo = true, CancellationToken cancellationToken = default)
         {
             string input = "";
             string orEmpty = $" or Press Enter";
@@ -185,7 +233,7 @@ namespace ConsoulLibrary {
                 }
                 Consoul._write(message, RenderOptions.PromptColor);
                 Consoul._write(optionMessage, RenderOptions.SubnoteColor);
-                input = Read();// Console.ReadLine();
+                input = Read(cancellationToken);
                 if (input.ToLower() != "y" && input.ToLower() != "n" && !string.IsNullOrEmpty(input))
                 {
                     Consoul._write("Invalid input!", RenderOptions.InvalidColor);
@@ -202,10 +250,22 @@ namespace ConsoulLibrary {
         /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
         /// <param name="clear">Indicates whether or not to clear the console window.</param>
         /// <param name="options">Simple list of options.</param>
-        /// <returns></returns>
+        /// <returns>Index of the option that was chosen. Returns -1 if selection was invalid.</returns>
         public static int Prompt(string message, bool clear = false, params string[] options)
         {
-            return (new Prompt(message, clear, options)).Run();
+            return Prompt(message, clear, CancellationToken.None, options);
+        }
+
+        /// <summary>
+        /// Prompts the user with a simple list of choices.
+        /// </summary>
+        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="clear">Indicates whether or not to clear the console window.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>Index of the option that was chosen. Returns -1 if selection was invalid.</returns>
+        public static int Prompt(string message, bool clear = false, CancellationToken cancellationToken = default, params string[] options)
+        {
+            return (new Prompt(message, clear, options)).Run(cancellationToken);
         }
 
         /// <summary>
@@ -227,12 +287,12 @@ namespace ConsoulLibrary {
         /// <param name="checkExists">Indicates whether to check the file exists before allowing the user exit the loop.</param>
         /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
         /// <returns></returns>
-        public static string PromptForFilepath(string message, bool checkExists, ConsoleColor? color = null) {
+        public static string PromptForFilepath(string message, bool checkExists, ConsoleColor? color = null, CancellationToken cancellationToken = default) {
             string path;
             do
             {
-                Consoul.Write(message, color);
-                path = Consoul.Read();
+                Write(message, color);
+                path = Read(cancellationToken);
             } while (string.IsNullOrEmpty(path) && (checkExists ? !File.Exists(path) : true));
             if (path.StartsWith("\"") && path.EndsWith("\"")) path = path.Substring(1, path.Length - 2);
             return path;
@@ -246,10 +306,10 @@ namespace ConsoulLibrary {
         /// <param name="checkExists"><inheritdoc cref="PromptForFilepath(string, bool, ConsoleColor?)" path="/param[@name='checkExists']"/></param>
         /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
         /// <returns></returns>
-        public static string PromptForFilepath(string defaultPath, string message, bool checkExists, ConsoleColor? color = null) {
+        public static string PromptForFilepath(string defaultPath, string message, bool checkExists, ConsoleColor? color = null, CancellationToken cancellationToken = default) {
             string path = defaultPath;
-            if (!File.Exists(path) || !Consoul.Ask($"Would you like to use the default path:\r\n{path}", defaultIsNo: false)) {
-                path = PromptForFilepath(message, checkExists, color);
+            if (!File.Exists(path) || !Ask($"Would you like to use the default path:\r\n{path}", defaultIsNo: false)) {
+                path = PromptForFilepath(message, checkExists, color, cancellationToken);
             }
             return path;
         }
@@ -270,8 +330,8 @@ namespace ConsoulLibrary {
         /// <param name="writeLine">Specifies whether to use Console.WriteLine() or Console.Write()</param>
         public static void Alert(string message, ConsoleColor? color = null, bool writeLine = true)
         {
-            Consoul.Write(message, color, writeLine);
-            Consoul.Ding();
+            Write(message, color, writeLine);
+            Ding();
         }
     }
 }

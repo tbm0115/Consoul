@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Options = ConsoulLibrary.RenderOptions;
 namespace ConsoulLibrary {
     public delegate void PromptChoiceCallback<TTarget>(TTarget choice);
@@ -67,7 +68,7 @@ namespace ConsoulLibrary {
         /// Displays the options for this prompt. Loops until the user "selects" the appropriate option.
         /// </summary>
         /// <returns>Zero-based index of the selected option.</returns>
-        public int Run()
+        public int Run(CancellationToken cancellationToken = default)
         {
             string[] escapePhrases = new string[]
             {
@@ -98,7 +99,7 @@ namespace ConsoulLibrary {
                     i++;
                 }
                 Console.ForegroundColor = RenderOptions.DefaultColor;
-                input = Consoul.Read();// Console.ReadLine();
+                input = Consoul.Read(cancellationToken);
                 if (string.IsNullOrEmpty(input) && defaultOption != null)
                 {
                     selection = defaultOption.Index;
