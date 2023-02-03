@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using System.Threading;
 
 namespace ConsoulLibrary.Table
 {
@@ -110,7 +110,7 @@ namespace ConsoulLibrary.Table
             }
         }
 
-        public int Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true)
+        public int Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true, CancellationToken cancellationToken = default)
         {
             if (Contents?.Any() == false)
                 return -1;
@@ -132,7 +132,7 @@ namespace ConsoulLibrary.Table
                     Consoul.Write("Press Enter to continue", ConsoulLibrary.RenderOptions.SubnoteColor);
                 }
 
-                string input = Consoul.Read();
+                string input = Consoul.Read(cancellationToken);
                 if (string.IsNullOrEmpty(input) && allowEmpty)
                 {
                     selection = Contents.Count + 1;
