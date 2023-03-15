@@ -37,6 +37,23 @@ namespace ConsoulLibrary
             }
 
             Consoul.Write(formatter(state, exception), LogLevelToColorMap[logLevel]);
+            WriteException(exception);
+        }
+
+        private void WriteException(Exception exception, int tabDepth = 0)
+        {
+            string tabs = new string('\t', tabDepth);
+            if (exception != null)
+            {
+                Consoul.Write(tabs + "Exception: ", ConsoleColor.Red);
+                Consoul.Write(tabs + "\tMessage: " + exception.Message, ConsoleColor.Red);
+                Consoul.Write(tabs + "\tStackTrace: " + exception.StackTrace, ConsoleColor.Gray);
+
+                if (exception.InnerException != null)
+                {
+                    Consoul.Write(tabs + "\tInnerException: ", ConsoleColor.Red);
+                }
+            }
         }
     }
 }

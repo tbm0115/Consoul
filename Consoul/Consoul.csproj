@@ -9,10 +9,10 @@
     <PackageTags>Console</PackageTags>
     <Authors>tbm0115</Authors>
     <Company />
-    <Version>1.6.2</Version>
-    <PackageReleaseNotes>Added Ding and Alert methods</PackageReleaseNotes>
-    <AssemblyVersion>1.5.14.0</AssemblyVersion>
-    <FileVersion>1.5.14.0</FileVersion>
+    <Version>1.6.3</Version>
+    <PackageReleaseNotes>Added exception to logging.</PackageReleaseNotes>
+    <AssemblyVersion>1.6.3</AssemblyVersion>
+    <FileVersion>1.6.3</FileVersion>
     <PackageIcon>Consoul_Small.png</PackageIcon>
     <PackageIconUrl />
     <RootNamespace>ConsoulLibrary</RootNamespace>
