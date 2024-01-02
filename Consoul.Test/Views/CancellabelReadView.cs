@@ -39,5 +39,22 @@ namespace ConsoulLibrary.Test.Views
 
             Consoul.Wait();
         }
+
+        [ViewOption("Test ReadPassword(ConsoleColor, CancellationToken, string)")]
+        public void TestReadPassword()
+        {
+            const int TIMEOUT_SECONDS = 5;
+            string input = string.Empty;
+            Consoul.Write("Enter Password");
+            using (var cancelSource = new CancellationTokenSource(TimeSpan.FromSeconds(TIMEOUT_SECONDS)))
+            {
+                cancelSource.Token.Register(() => Consoul.Write("Consoul.ReadPassword() Timed Out!", ConsoleColor.Red));
+                input = Consoul.ReadPassword(cancellationToken: cancelSource.Token);
+            }
+            Consoul.Write("Read the following input:");
+            Consoul.Write(input, ConsoleColor.Gray);
+
+            Consoul.Wait();
+        }
     }
 }

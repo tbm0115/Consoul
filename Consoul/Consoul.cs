@@ -184,6 +184,76 @@ namespace ConsoulLibrary {
         }
 
         /// <summary>
+        /// Method to read password without showing it in the console
+        /// </summary>
+        /// <returns>Entered password</returns>
+        public static string ReadPassword(ConsoleColor? color = null, CancellationToken cancellationToken = default)
+        {
+            bool keyControl = false, keyAlt = false, keyShift = false;
+            RoutineInput input = new RoutineInput();
+            if (Routines.HasBuffer())
+            {
+                input = Routines.Next();
+
+                long delayTicks = 0;
+                if (Routines.UseDelays && input.Delay.Value != null)
+                    delayTicks = input.Delay.Value.Ticks / 2;
+                TimeSpan delay = new TimeSpan(delayTicks);
+                if (!string.IsNullOrEmpty(input.Description))
+                    Write(input.Description, RenderOptions.SubnoteColor);
+
+                System.Threading.Thread.Sleep(delay);
+                Write(input.Value, ConsoleColor.Cyan);
+                System.Threading.Thread.Sleep(delay);
+            }
+            else
+            {
+                string password = "";
+                ConsoleKeyInfo key;
+
+                while(!cancellationToken.IsCancellationRequested)
+                {
+                    key = Console.ReadKey(true);
+
+                    // Ignore any key other than Enter
+                    if (key.Key == ConsoleKey.Enter)
+                    {
+                        //password = password.Substring(0, password.Length - 1);
+                        Console.WriteLine();
+
+                        break;
+                    }
+                     else if (key.Key != ConsoleKey.Backspace)
+                    {
+                        password += key.KeyChar;
+                        Consoul.Write("*", color, false);
+                    }
+                    else if (key.Key == ConsoleKey.Backspace && password.Length > 0)
+                    {
+                        password = password.Substring(0, password.Length - 1);
+                        Console.Write("\b \b");
+                    }
+                }
+                input.Value = password;
+            }
+
+            if (Routines.PromptRegistry.Any())
+            {
+                input.OptionReference = Routines.PromptRegistry.FirstOrDefault(o => (o.Index + 1).ToString() == input.Value);
+                //if (keyControl)
+                //{
+                //    input.Method = RoutineInput.InputMethod.OptionText;
+                //}
+            }
+
+            // Check if we should save the input to the Routine Stack
+            if (Routines.MonitorInputs)
+                Routines.UserInputs.Push(input);
+
+            return input.Value;
+        }
+
+        /// <summary>
         /// Writes a message centered in the window in its current size.
         /// </summary>
         /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
