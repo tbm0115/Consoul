@@ -113,7 +113,7 @@ namespace ConsoulLibrary.Table
         public int Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true, CancellationToken cancellationToken = default)
         {
             if (Contents?.Any() == false)
-                return -1;
+                raiseQueryYieldsNoResults("Invalid Query! Source has no results.", string.Empty);
 
             var prevRenderOptionChoice = RenderOptions.IncludeChoices;
             RenderOptions.IncludeChoices = true;
