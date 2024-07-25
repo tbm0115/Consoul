@@ -46,6 +46,60 @@ namespace ConsoulLibrary {
         }
 
         /// <summary>
+        /// Prompts the user to provide a string input and converts it to the expected type.
+        /// </summary>
+        /// <param name="message">Prompt message</param>
+        /// <param name="expectedType">The expected type of the return value</param>
+        /// <param name="color">Override the prompt message color</param>
+        /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Can result in string.Empty</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+        /// <returns>User response converted to the expected type</returns>
+        public static object Input(string message, Type expectedType, ConsoleColor? color = null, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            string output = string.Empty;
+            bool valid = false;
+            object result = null;
+            do
+            {
+                Consoul._write(message, RenderOptions.GetColor(color));
+                output = Read(cancellationToken);
+                if (allowEmpty && string.IsNullOrEmpty(output))
+                {
+                    valid = true;
+                    result = string.Empty;
+                }
+                else if (!string.IsNullOrEmpty(output))
+                {
+                    try
+                    {
+                        result = Convert.ChangeType(output, expectedType);
+                        valid = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        Consoul._write($"Invalid input. Please enter a value of type {expectedType.Name}. Error: {ex.Message}", ConsoleColor.Red);
+                    }
+                }
+            } while (!valid);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Prompts the user to provide a string input and converts it to the expected type "T".
+        /// </summary>
+        /// <typeparam name="T">The expected return type</typeparam>
+        /// <param name="message">Prompt message</param>
+        /// <param name="color">Override the prompt message color</param>
+        /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Can result in string.Empty</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
+        /// <returns>User response converted to type T</returns>
+        public static T Input<T>(string message, ConsoleColor? color = null, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            return (T)Input(message, typeof(T), color, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
         /// Internal Console.WriteLine() wrapper
         /// </summary>
         /// <param name="message">Display message</param>

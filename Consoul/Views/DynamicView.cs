@@ -10,6 +10,17 @@ namespace ConsoulLibrary.Views
     {
         private bool _goBackRequested = false;
         private string _goBackMessage = RenderOptions.DefaultGoBackMessage;
+        protected string GoBackMessage
+        {
+            get
+            {
+                return _goBackMessage;
+            }
+            set
+            {
+                _goBackMessage = value;
+            }
+        }
 
         public string Title { get; set; }
 
