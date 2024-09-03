@@ -42,7 +42,7 @@ jobs:
           dotnet-version: '3.1'
 
       - name: Download Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4.1.7
         with:
           name: nupkg
           path: ${{ github.workspace }}/package
