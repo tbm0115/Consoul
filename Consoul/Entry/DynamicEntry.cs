@@ -1,33 +1,33 @@
 ﻿
-namespace ConsoulLibrary.Entry
+namespace ConsoulLibrary
 {
     /// <summary>
     /// A dynamic option message.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DynamicEntry<T> : IDynamicEntry<T>
+    public class DynamicEntry<T> : IDynamicViewOption<T>
     {
         /// <summary>
         /// Expression that formats the text.
         /// </summary>
-        public OptionMessage MessageExpression { get; set; }
+        public SetViewOptionMessage SetMessage { get; set; }
 
         /// <summary>
         /// Expression that sets the text color.
         /// </summary>
-        public OptionColor ColorExpression { get; set; } = () => RenderOptions.DefaultColor;
+        public SetViewOptionColor SetColor { get; set; } = () => RenderOptions.DefaultColor;
 
         /// <summary>
         /// Constructs a dynamic option message.
         /// </summary>
-        /// <param name="messageExpression"><see cref="MessageExpression"/></param>
-        /// <param name="colorExpression"><see cref="ColorExpression"/></param>
-        public DynamicEntry(OptionMessage messageExpression, OptionColor colorExpression = null)
+        /// <param name="messageExpression"><see cref="SetMessage"/></param>
+        /// <param name="colorExpression"><see cref="SetColor"/></param>
+        public DynamicEntry(SetViewOptionMessage messageExpression, SetViewOptionColor colorExpression = null)
         {
-            MessageExpression = messageExpression;
+            SetMessage = messageExpression;
             if (colorExpression != null)
             {
-                ColorExpression = colorExpression;
+                SetColor = colorExpression;
             }
         }
     }

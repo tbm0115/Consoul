@@ -1,8 +1,9 @@
-﻿using System;
+﻿using ConsoulLibrary.Color;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace ConsoulLibrary.Table
+namespace ConsoulLibrary
 {
     /// <summary>
     /// Options for how a <see cref="TableView"/> is rendered.
@@ -18,22 +19,24 @@ namespace ConsoulLibrary.Table
         /// <summary>
         /// Color for the header.
         /// </summary>
-        public ConsoleColor HeaderColor { get; set; } = RenderOptions.DefaultColor;
+        public ColorScheme HeaderScheme { get; set; } = RenderOptions.DefaultScheme;
 
         /// <summary>
         /// Text color option 1.
         /// </summary>
-        public ConsoleColor ContentColor1 { get; set; } = RenderOptions.DefaultColor;
+        public ColorScheme ContentScheme1 { get; set; } = RenderOptions.DefaultScheme;
 
         /// <summary>
         /// Text color option 2.
         /// </summary>
-        public ConsoleColor ContentColor2 { get; set; } = RenderOptions.DefaultColor;
+        public ColorScheme ContentScheme2 { get; set; } = RenderOptions.DefaultScheme;
 
         /// <summary>
         /// Text color for row(s) that are selected.
         /// </summary>
-        public ConsoleColor SelectionColor { get; set; } = RenderOptions.OptionColor;
+        public ColorScheme SelectionScheme { get; set; } = new ColorScheme() { Color = ConsoleColor.Green, BackgroundColor = ConsoleColor.DarkGreen };
+
+        public ColorScheme HighlightedScheme { get; set; } = RenderOptions.OptionScheme;
 
         /// <summary>
         /// Left padding.
@@ -51,9 +54,14 @@ namespace ConsoulLibrary.Table
         public int? ColumnSize { get; private set; }
 
         /// <summary>
+        /// Character used for whitespace
+        /// </summary>
+        public char WhitespaceCharacater { get; set; } = (char)0x2588;
+
+        /// <summary>
         /// Maximum width of the table.
         /// </summary>
-        public int? MaximumTableWidth { get; private set; }
+        public int? MaximumTableWidth { get; private set; } = Console.BufferWidth;
 
         public bool IsNormalized { get; private set; } = false;
 
@@ -87,9 +95,18 @@ namespace ConsoulLibrary.Table
             if (widthRemainder % 2 != 0)
                 marginLeft = (widthRemainder + 1) / 2;
 
-            int columnCount = contents.Max(o => o.Count()) + (IncludeChoices ? 1 : 0);
+            int columnCount = 0;
+            if (contents != null && contents.Any())
+                columnCount = contents.Max(o => o.Count()) + (IncludeChoices ? 1 : 0);
+            
+            if (columnCount == 0)
+                columnCount = 1;
+
             ColumnSize = MaximumTableWidth / columnCount;
-            int maximumColumnSize = contents.SelectMany(o => o).Max(o => o.Length);
+            int maximumColumnSize = 0;
+            if (contents != null && contents.Any())
+                maximumColumnSize = contents.SelectMany(o => o).Max(o => o.Length);
+
             int minimumTableWidth = (maximumColumnSize + 3) * columnCount;
 
             LeftPad = new string(' ', marginLeft);
@@ -105,12 +122,12 @@ namespace ConsoulLibrary.Table
             /// <summary>
             /// Character used to render horizontal lines.
             /// </summary>
-            public char HorizontalCharacter { get; set; } = '-';
+            public char HorizontalCharacter { get; set; } = '─';
 
             /// <summary>
             /// Character used to render vertical lines.
             /// </summary>
-            public char VerticalCharacter { get; set; } = '|';
+            public char VerticalCharacter { get; set; } = '│';
 
             /// <summary>
             /// Flags whether to render a horizontal line for the header of the table.
@@ -135,7 +152,7 @@ namespace ConsoulLibrary.Table
             /// <summary>
             /// Color of the lines.
             /// </summary>
-            public ConsoleColor Color { get; set; } = RenderOptions.SubnoteColor;
+            public ColorScheme Color { get; set; } = RenderOptions.SubnoteScheme;
 
             /// <summary>
             /// Constructs a new instance of <see cref="TableLineDisplayOptions"/>

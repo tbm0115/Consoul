@@ -1,31 +1,29 @@
 ﻿using System;
 
-namespace ConsoulLibrary.Entry
+namespace ConsoulLibrary
 {
     /// <summary>
-    /// A simple line entry.
+    /// A simple line entry implementation that maintains a fixed position within the console.
     /// </summary>
-    public class LineEntry : ILineEntry
+    public class LineEntry : FixedMessage
     {
-        /// <summary>
-        /// Static text to be rendered.
-        /// </summary>
-        public string Message { get; set; }
+        private string _message;
+        private ConsoleColor _color;
+
+        public string Message { get { return _message; } set { _message = value; Render(_message, _color); } }
+
+        public ConsoleColor Color { get { return _color; } set { _color = value; Render(_message, _color); } }
 
         /// <summary>
-        /// Static value for the color of the text.
+        /// Constructs a new line entry with an optional message and color.
         /// </summary>
-        public ConsoleColor Color { get; set; } = RenderOptions.DefaultColor;
-
-        /// <summary>
-        /// Constructs a new line entry.
-        /// </summary>
-        /// <param name="message"><see cref="Message"/></param>
-        /// <param name="color"><see cref="Color"/></param>
-        public LineEntry(string message, ConsoleColor? color = null)
+        /// <param name="message">The initial message to be displayed on the line.</param>
+        /// <param name="color">The color of the text to be displayed.</param>
+        public LineEntry(string message, ConsoleColor? color = null) : base(Console.BufferWidth)
         {
-            Message = message;
-            Color = color ?? RenderOptions.DefaultColor;
+            _message = message;
+            _color = color ?? RenderOptions.DefaultColor;
+            Render(message, color);
         }
     }
 }

@@ -63,4 +63,8 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Entry\Interfaces\" />
+  </ItemGroup>
+
 </Project>

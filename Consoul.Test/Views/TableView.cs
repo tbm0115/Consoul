@@ -1,10 +1,5 @@
-﻿using ConsoulLibrary.Views;
-using ConsoulLibrary;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
-using ConsoulLibrary.Test.Views;
-using System.Linq.Expressions;
 
 namespace ConsoulLibrary.Test.Views
 {
@@ -14,7 +9,7 @@ namespace ConsoulLibrary.Test.Views
 
         public TableView()
         {
-            Title = (new BannerEntry($"Testing Table View")).Message;
+            Title = "Testing Table View";
             Heroes = new List<Hero>()
             {
                 new Hero()
@@ -63,24 +58,21 @@ namespace ConsoulLibrary.Test.Views
         [ViewOption("Prompt Test")]
         public void PromptTest()
         {
-            var table = new ConsoulLibrary.Table.TableView(
-                Heroes, 
-                new string[] 
-                { 
-                    "Name", 
-                    "HitPoints" 
-                }, 
-                new ConsoulLibrary.Table.TableRenderOptions() { }
-            );
+            var table = ConsoulLibrary.DynamicTableView<Hero>.Create(Heroes, o => o.Name, o => o.HitPoints);
             table.QueryYieldsNoResults += Table_QueryYieldsNoResults;
 
-            int idxChoice = table.Prompt();
-
-            ConsoulLibrary.Consoul.Write($"Hero: {Heroes[idxChoice].Name}");
+            var heroChoice = table.Prompt();
+            if (heroChoice != null)
+            {
+                ConsoulLibrary.Consoul.Write($"Hero: {heroChoice?.Name ?? "Unknown"}");
+            } else
+            {
+                Consoul.Write("Invalid selection");
+            }
             ConsoulLibrary.Consoul.Wait();
         }
 
-        private void Table_QueryYieldsNoResults(object sender, Table.TableQueryYieldsNoResultsEventArgs e)
+        private void Table_QueryYieldsNoResults(object sender, ConsoulLibrary.TableQueryYieldsNoResultsEventArgs e)
         {
             throw new NotImplementedException();
         }
@@ -88,34 +80,28 @@ namespace ConsoulLibrary.Test.Views
         [ViewOption("Dynamic Table Test")]
         public void DynamicTable()
         {
-            var table = new ConsoulLibrary.Table.DynamicTableView<Actor>(Heroes, new Table.TableRenderOptions() { });
-            table.AddHeader(o => o.Name);
-            table.AddHeader(o => o.HitPoints);
-            table.AddHeader(o => o.Inventory.Items.Count, "Inventory Size");
-            table.Build();
+            var table = ConsoulLibrary.DynamicTableView<Actor>.Create(Heroes, o => o.Name, o => o.HitPoints);
+            table.AddHeader(o => o.Inventory.Items.Count, "Inventory Count");
             table.QueryYieldsNoResults += Table_QueryYieldsNoResults;
 
-            int idxChoice = table.Prompt($"Test Message");
+            var heroChoice = table.Prompt($"Test Message");
 
-            ConsoulLibrary.Consoul.Write($"Actor: {Heroes[idxChoice].Name}");
+            ConsoulLibrary.Consoul.Write($"Actor: {heroChoice?.Name ?? "Unknown"}");
             ConsoulLibrary.Consoul.Wait();
         }
 
         [ViewOption("Dynamic Table Test (AllowEmpty)")]
         public void DynamicTableEmpty()
         {
-            var table = new ConsoulLibrary.Table.DynamicTableView<Actor>(Heroes, new Table.TableRenderOptions() { });
-            table.AddHeader(o => o.Name);
-            table.AddHeader(o => o.HitPoints);
-            table.AddHeader(o => o.Inventory.Items.Count, "Inventory Size");
-            table.Build();
+            var table = ConsoulLibrary.DynamicTableView<Actor>.Create(Heroes, o => o.Name, o => o.HitPoints);
+            table.AddHeader(o => o.Inventory.Items.Count);// new ConsoulLibrary.DynamicTableView<Actor>(Heroes, new ConsoulLibrary.TableRenderOptions() { });
             table.QueryYieldsNoResults += Table_QueryYieldsNoResults;
 
-            int idxChoice = table.Prompt($"Test Message", allowEmpty: true);
+            var heroChoice = table.Prompt($"Test Message", allowEmpty: true);
 
-            if (idxChoice >= 0)
+            if (heroChoice != null)
             {
-                ConsoulLibrary.Consoul.Write($"Actor: {Heroes[idxChoice].Name}");
+                ConsoulLibrary.Consoul.Write($"Actor: {heroChoice?.Name ?? "Unknown"}");
             } else
             {
                 ConsoulLibrary.Consoul.Write($"No Actor selected...");

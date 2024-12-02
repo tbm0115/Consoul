@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using ConsoulLibrary.Views;
 
 namespace ConsoulLibrary.Test.Views
 {
@@ -18,7 +17,7 @@ namespace ConsoulLibrary.Test.Views
         public void Fight()
         {
             int hitThreshold = 5;
-            if (Source.Hero.Inventory.Items.Any(o => o is Weapon))
+            if (Model.Hero.Inventory.Items.Any(o => o is Weapon))
             {
                 Consoul.Write($"{String.Join("", Enumerable.Repeat("*", 20))}", ConsoleColor.Gray);
                 Consoul.Write($"You must hit above {hitThreshold} to kill the spider", ConsoleColor.Gray);
@@ -27,7 +26,7 @@ namespace ConsoulLibrary.Test.Views
 
                 var fang = new Fang();
                 int spiderHit = fang.Hit();
-                int youHit = (Source.Hero.Inventory.Items.First(o => o is Weapon) as Weapon).Hit();
+                int youHit = (Model.Hero.Inventory.Items.First(o => o is Weapon) as Weapon).Hit();
                 Consoul.Write($"You strike: {youHit}", ConsoleColor.Gray);
                 Consoul.Write($"Spider strike: {spiderHit}", ConsoleColor.Gray);
                 if (youHit < spiderHit)

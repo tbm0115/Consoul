@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using ConsoulLibrary.Views;
-
+﻿
 namespace ConsoulLibrary.Test.Views
 {
     public class Welcome : StaticView

@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConsoulLibrary.Views
+namespace ConsoulLibrary
 {
     /// <summary>
     /// An abstract view that relies on an underlying model to dynamically change the labels and colors of choices whenever the view re-renders.
@@ -14,6 +15,7 @@ namespace ConsoulLibrary.Views
     {
         private bool _goBackRequested = false;
         private string _goBackMessage = RenderOptions.DefaultGoBackMessage;
+
         protected string GoBackMessage
         {
             get
@@ -26,15 +28,17 @@ namespace ConsoulLibrary.Views
             }
         }
 
+        internal string _title;
         /// <summary>
         /// Text displayed at the top of the console
         /// </summary>
-        public string Title { get; set; }
+        public string Title { get => _title; set { _title = value; } }
 
+        internal List<DynamicOption<T>> _options = new List<DynamicOption<T>>();
         /// <summary>
         /// Collection of view options
         /// </summary>
-        public List<DynamicOption<T>> Options { get; set; } = new List<DynamicOption<T>>();
+        public IEnumerable<DynamicOption<T>> Options => _options;
 
         /// <summary>
         /// Flag indicating whether or not an underlying process has requested this view to go back.
@@ -44,10 +48,14 @@ namespace ConsoulLibrary.Views
         /// <summary>
         /// Reference to the source model of the dynamic view.
         /// </summary>
-        public T Source { get; set; }
+        public T Model { get; set; }
 
-        public DynamicView()
+        public ChoiceCallback OnOptionSelected { get; set; }
+
+        public DynamicView(ChoiceCallback callback = null)
         {
+            OnOptionSelected = callback;
+
             Type thisType = this.GetType();
 
             Type viewType = typeof(ViewAttribute);
@@ -65,58 +73,63 @@ namespace ConsoulLibrary.Views
             foreach (MethodInfo method in viewOptionMethods)
             {
                 DynamicViewOptionAttribute attr = method.GetCustomAttribute(viewOptionType) as DynamicViewOptionAttribute;
-                if (attr != null)
+                if (attr == null)
+                    continue;
+
+                MethodInfo messageBuilder = allMethods.FirstOrDefault(o => o.Name == attr.MessageMethod);
+                MethodInfo colorBuilder = null;
+                if (!string.IsNullOrEmpty(attr.ColorMethod))
+                    colorBuilder = allMethods.FirstOrDefault(o => o.Name == attr.ColorMethod);
+
+                if (messageBuilder == null)
+                    continue;
+
+                ParameterInfo[] methodParameters = method.GetParameters();
+                List<object> implementedMethodParameters = new List<object>();
+                foreach (ParameterInfo methodParameter in methodParameters)
                 {
-                    MethodInfo messageBuilder = allMethods.FirstOrDefault(o => o.Name == attr.MessageMethod);
-                    MethodInfo colorBuilder = null;
-                    if (!string.IsNullOrEmpty(attr.ColorMethod))
-                        colorBuilder = allMethods.FirstOrDefault(o => o.Name == attr.ColorMethod);
+                    if (methodParameter.HasDefaultValue)
+                    {
+                        implementedMethodParameters.Add(methodParameter.DefaultValue);
+                    }
+                    else if (Nullable.GetUnderlyingType(methodParameter.ParameterType) != null)
+                    {
+                        implementedMethodParameters.Add(null);
+                    }
+                }
+                bool useParameters = methodParameters.Length > 0 && implementedMethodParameters.Count == methodParameters.Length;
 
-                    if (messageBuilder != null) {
-                        ParameterInfo[] methodParameters = method.GetParameters();
-                        List<object> implementedMethodParameters = new List<object>();
-                        foreach (ParameterInfo methodParameter in methodParameters) {
-                            if (methodParameter.HasDefaultValue) {
-                                implementedMethodParameters.Add(methodParameter.DefaultValue);
-                            } else if (Nullable.GetUnderlyingType(methodParameter.ParameterType) != null) {
-                                implementedMethodParameters.Add(null);
-                            }
-                        }
-                        bool useParameters = methodParameters.Length > 0 && implementedMethodParameters.Count == methodParameters.Length;
-
-                        Options.Add(new DynamicOption<T>(
-                            () =>
-                            {
-                                return thisType.InvokeMember(
-                                    attr.MessageMethod,
-                                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
-                                    null,
-                                    this,
-                                    null
-                                ).ToString();
-                            },
-                            () => thisType.InvokeMember(
-                                method.Name,
+                _options.Add(new DynamicOption<T>(
+                    () =>
+                    {
+                        return thisType.InvokeMember(
+                            attr.MessageMethod,
+                            BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
+                            null,
+                            this,
+                            null
+                        ).ToString();
+                    },
+                    () => thisType.InvokeMember(
+                        method.Name,
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
+                        null,
+                        this,
+                        useParameters ? implementedMethodParameters.ToArray() : null
+                    ),
+                    () =>
+                    {
+                        return colorBuilder != null
+                        ? (ConsoleColor)thisType.InvokeMember(
+                                attr.ColorMethod,
                                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
                                 null,
                                 this,
-                                useParameters ? implementedMethodParameters.ToArray() : null
-                            ),
-                            () =>
-                            {
-                                return colorBuilder != null
-                                ? (ConsoleColor)thisType.InvokeMember(
-                                        attr.ColorMethod,
-                                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
-                                        null,
-                                        this,
-                                        null
-                                    )
-                                : RenderOptions.DefaultColor;
-                            }
-                        ));
+                                null
+                            )
+                        : RenderOptions.DefaultColor;
                     }
-                }
+                ));
             }
         }
 
@@ -131,39 +144,39 @@ namespace ConsoulLibrary.Views
         /// <summary>
         /// Renders the current dynamic view
         /// </summary>
-        /// <param name="callback">Callback function whenever a choice for this dynamic view is made.</param>
         /// <returns>awaitable task</returns>
-        public async Task RunAsync(ChoiceCallback callback = null)
+        public async Task RenderAsync(CancellationToken cancellationToken = default)
         {
             int idx = -1;
             do
             {
-                Prompt prompt = new Prompt(Title, true);
+                SelectionPrompt prompt = new SelectionPrompt(Title, true);
                 foreach (DynamicOption<T> option in Options)
-                    prompt.Add(option.Entry.MessageExpression(), option.Entry.ColorExpression());// option.BuildMessage(Source), option.BuildColor(Source));
+                    prompt.Add(option.Entry.SetMessage(), option.Entry.SetColor());
                 prompt.Add(_goBackMessage, RenderOptions.SubnoteColor);
 
                 try
                 {
-                    idx = prompt.Run();
-                    if (idx >= 0 && idx < Options.Count)
+                    idx = prompt.Render();
+                    if (idx >= 0 && idx < _options.Count)
                     {
                         await Task.Run(() => {
                             try
                             {
-                                Options[idx].Action.Invoke();
+                                _options[idx].Action.Invoke();
                             }
                             catch (Exception ex2)
                             {
-                                Consoul.Write($"{Title}[{idx}]\t{ex2.Message}\r\n\tStack Trace: {ex2.StackTrace}", RenderOptions.InvalidColor);
-                                if (RenderOptions.WaitOnError) Consoul.Wait();
+                                Consoul.Write(ex2, $"Failed to render '{Title}[{idx}]' view", true, RenderOptions.InvalidColor);
+                                if (RenderOptions.WaitOnError)
+                                    Consoul.Wait();
                             }
                         });
-                        if (callback != null)
-                            await callback(idx);
+                        if (OnOptionSelected != null)
+                            await OnOptionSelected(idx);
                         idx = -1;
                     }
-                    else if (idx == Options.Count)
+                    else if (idx == _options.Count)
                     {
                         idx = int.MaxValue;
                     }
@@ -174,8 +187,9 @@ namespace ConsoulLibrary.Views
                 }
                 catch (Exception ex)
                 {
-                    Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", RenderOptions.InvalidColor);
-                    if (RenderOptions.WaitOnError) Consoul.Wait();
+                    Consoul.Write(ex, $"Failed to render '{Title}[{idx}]' view", true, RenderOptions.InvalidColor);
+                    if (RenderOptions.WaitOnError)
+                        Consoul.Wait();
                 }
             } while (idx < 0 && !GoBackRequested);
         }
@@ -183,17 +197,17 @@ namespace ConsoulLibrary.Views
         /// <summary>
         /// Renders the current dynamic view
         /// </summary>
-        /// <param name="callback">Callback function whenever a choice for this dynamic view is made.</param>
-        public void Run(ChoiceCallback callback = null)
+        public void Render()
         {
             try
             {
-                RunAsync(callback).Wait();
+                RenderAsync().Wait();
             }
             catch (Exception ex)
             {
-                Consoul.Write($"{ex.Message}\r\nStack Trace: {ex.StackTrace}", ConsoleColor.Red);
-                if (RenderOptions.WaitOnError) Consoul.Wait();
+                Consoul.Write(ex, $"Failed to render '{Title}' view", true, RenderOptions.InvalidColor);
+                if (RenderOptions.WaitOnError)
+                    Consoul.Wait();
             }
         }
     }

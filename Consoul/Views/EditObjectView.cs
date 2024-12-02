@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace ConsoulLibrary.Views
+namespace ConsoulLibrary
 {
     /// <summary>
     /// Creates a dynamic view to edit the properties of the given object.
@@ -15,7 +15,7 @@ namespace ConsoulLibrary.Views
 
         public EditObjectView(object entity, System.Reflection.BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) : base()
         {
-            Source = entity;
+            Model = entity;
 
             var entityType = entity.GetType();
             Title = BannerEntry.Render($"Edit {entityType.Name} View");
@@ -26,11 +26,11 @@ namespace ConsoulLibrary.Views
                 var propertyType = property.PropertyType;
                 if (IsSimpleType(propertyType, out Type simpleType))
                 {
-                    this.Options.Add(new DynamicOption<object>(
-                        () => $"Edit {property.Name}: " + property.GetValue(Source)?.ToString() ?? "<N/A>",
+                    this._options.Add(new DynamicOption<object>(
+                        () => $"Edit {property.Name}: " + property.GetValue(Model)?.ToString() ?? "<N/A>",
                         () =>
                         {
-                            property.SetValue(Source, EditObject(property, simpleType));
+                            property.SetValue(Model, EditObject(property, simpleType));
                         },
                         () => ConsoleColor.Yellow
                     ));
@@ -39,20 +39,20 @@ namespace ConsoulLibrary.Views
                     if (IsSimpleType(elementType, out Type simpleElementType))
                     {
                         // Simple "array" types should be rendered as editable Prompt
-                        this.Options.Add(new DynamicOption<object>(
-                            () => $"Edit {property.Name}: {simpleElementType.Name}[{GetCollectionCount(Source, property)}]",
+                        this._options.Add(new DynamicOption<object>(
+                            () => $"Edit {property.Name}: {simpleElementType.Name}[{GetCollectionCount(Model, property)}]",
                             () => {
-                                EditSimpleCollection(Source, property, simpleElementType);
+                                EditSimpleCollection(Model, property, simpleElementType);
                             },
                             () => ConsoleColor.DarkYellow));
                     } else
                     {
                         // Complex "array" types should be rendered as deeper EditObjectView
-                        this.Options.Add(new DynamicOption<object>(
-                            () => $"Edit {property.Name}: {elementType.Name}[{GetCollectionCount(Source, property)}]",
+                        this._options.Add(new DynamicOption<object>(
+                            () => $"Edit {property.Name}: {elementType.Name}[{GetCollectionCount(Model, property)}]",
                             () =>
                             {
-                                EditComplexCollection(Source, property, elementType);
+                                EditComplexCollection(Model, property, elementType);
                             },
                             () => ConsoleColor.DarkYellow));
                     }
@@ -61,11 +61,11 @@ namespace ConsoulLibrary.Views
                     if (IsSimpleType(keyValuePairType?.Item1, out Type simpleKeyType))
                     {
                         // Simple dictionary value types should be rendered as editable Prompt
-                        this.Options.Add(new DynamicOption<object>(
+                        this._options.Add(new DynamicOption<object>(
                             () => $"Edit {property.Name}",
                             () =>
                             {
-                                EditSimpleKeyDictionary(Source, property, simpleKeyType, keyValuePairType?.Item2);
+                                EditSimpleKeyDictionary(Model, property, simpleKeyType, keyValuePairType?.Item2);
                             },
                             () => ConsoleColor.DarkYellow));
                         //if (IsSimpleType(keyValuePairType?.Item2, out Type simpleValueType))
@@ -77,7 +77,7 @@ namespace ConsoulLibrary.Views
                     } else
                     {
                         // Cannot render complex key
-                        this.Options.Add(new DynamicOption<object>(
+                        this._options.Add(new DynamicOption<object>(
                             () => $"View {property.Name}",
                             () => {
                                 Consoul.Write($"Cannot render {property.Name} because it is a Dictionary with a complex key");
@@ -87,14 +87,14 @@ namespace ConsoulLibrary.Views
                     }
                 } else
                 {
-                    this.Options.Add(new DynamicOption<object>(
+                    this._options.Add(new DynamicOption<object>(
                         () => $"Edit {property.Name}",
                         () =>
                         {
-                            var propertyValue = property.GetValue(Source) ?? Activator.CreateInstance(propertyType);
+                            var propertyValue = property.GetValue(Model) ?? Activator.CreateInstance(propertyType);
                             var recursiveView = new EditObjectView(propertyValue);
-                            recursiveView.Run();
-                            property.SetValue(Source, recursiveView.Source);
+                            recursiveView.Render();
+                            property.SetValue(Model, recursiveView.Model);
                         },
                         () => ConsoleColor.DarkYellow
                     ));
@@ -110,7 +110,7 @@ namespace ConsoulLibrary.Views
 
         private void EditSimpleKeyDictionary(object source, PropertyInfo property, Type simpleKeyType, Type elementType)
         {
-            var prompt = new Prompt("Choose an item to edit or remove, or add a new item");
+            var prompt = new SelectionPrompt("Choose an item to edit or remove, or add a new item");
 
             var originalValue = property.GetValue(source) as IDictionary;
             if (originalValue == null)
@@ -132,7 +132,7 @@ namespace ConsoulLibrary.Views
                 int addChoice = prompt.Add("Add", ConsoleColor.DarkYellow);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
-                choice = prompt.Run();
+                choice = prompt.Render();
                 if (choice == addChoice)
                 {
                     var newKey = EditObject(property, simpleKeyType);
@@ -153,8 +153,8 @@ namespace ConsoulLibrary.Views
                     else
                     {
                         var complexEditor = new EditObjectView(items[choiceKey]);
-                        complexEditor.Run();
-                        items[choiceKey] = complexEditor.Source;
+                        complexEditor.Render();
+                        items[choiceKey] = complexEditor.Model;
                     }
                 }
                 choice = -1;
@@ -171,9 +171,9 @@ namespace ConsoulLibrary.Views
 
         private void EditSimpleCollection(object source, PropertyInfo property, Type simpleType)
         {
-            var prompt = new Prompt("Choose an item to edit or remove, or add a new item");
+            var prompt = new SelectionPrompt("Choose an item to edit or remove, or add a new item");
 
-            var originalValue = property.GetValue(Source);
+            var originalValue = property.GetValue(Model);
             var items = new List<object>((originalValue as object[]) ?? new object[] { });
 
             int choice = -1;
@@ -188,7 +188,7 @@ namespace ConsoulLibrary.Views
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
 
-                choice = prompt.Run();
+                choice = prompt.Render();
                 if (choice == addChoice)
                 {
                     var newItem = EditObject(property, simpleType);
@@ -210,9 +210,9 @@ namespace ConsoulLibrary.Views
 
         private void EditComplexCollection(object source, PropertyInfo property, Type complexType)
         {
-            var prompt = new Prompt("Choose an item to edit or remove, or add a new item");
+            var prompt = new SelectionPrompt("Choose an item to edit or remove, or add a new item");
 
-            var originalValue = property.GetValue(Source);
+            var originalValue = property.GetValue(Model);
             var items = new List<object>((originalValue as object[]) ?? new object[] { });
 
             int choice = -1;
@@ -226,7 +226,7 @@ namespace ConsoulLibrary.Views
                 int addChoice = prompt.Add("Add", ConsoleColor.DarkYellow);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
-                choice = prompt.Run();
+                choice = prompt.Render();
                 if (choice == addChoice)
                 {
                     var newItem = Activator.CreateInstance(complexType);
@@ -239,7 +239,7 @@ namespace ConsoulLibrary.Views
                 else
                 {
                     var editItemView = new EditObjectView(items[choice]);
-                    editItemView.Run();
+                    editItemView.Render();
                 }
                 choice = -1;
             }

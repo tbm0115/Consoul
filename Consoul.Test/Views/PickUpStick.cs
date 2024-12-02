@@ -1,5 +1,4 @@
 ﻿using System;
-using ConsoulLibrary.Views;
 
 namespace ConsoulLibrary.Test.Views
 {
@@ -19,8 +18,8 @@ namespace ConsoulLibrary.Test.Views
         {
             Consoul.Write("You have taken the stick!", ConsoleColor.Green);
             Consoul.Wait();
-            Source.Hero.Inventory.Items.Add(new Stick());
-            Source.Progress(typeof(GlowingObject));
+            Model.Hero.Inventory.Items.Add(new Stick());
+            Model.Progress(typeof(GlowingObject));
         }
 
         private string _leaveItMessage() => "Leave it alone.";
@@ -30,7 +29,7 @@ namespace ConsoulLibrary.Test.Views
         {
             Consoul.Write("You did not take the stick!");
             Consoul.Wait();
-            Source.Progress(typeof(GlowingObject));
+            Model.Progress(typeof(GlowingObject));
         }
     }
     
