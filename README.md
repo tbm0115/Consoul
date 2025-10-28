@@ -67,7 +67,7 @@ if (Consoul.Ask("Do you want to continue?"))
 | **Views** | `StaticView`, `DynamicView`, `ViewOption` | Model multi-step flows with menus that execute bound methods or dynamically generated entries. |
 | **Tables** | `TableView`, `TableRenderOptions` | Generate padded, column-aware tables that respect console buffer width. |
 | **Progress** | `ProgressBar` | Render textual progress indicators for long running tasks. |
-| **Routines** | `Routines`, `RoutineRunner` | Automate keyboard input or scripted demos for repeatable workflows. |
+| **Routines** | `Routines`, `XmlRoutine` | Automate keyboard input or scripted demos for repeatable workflows. |
 
 Each concept has dedicated documentation with minimal examples and advanced tips—see the documentation section below.
 
@@ -81,10 +81,39 @@ Each concept has dedicated documentation with minimal examples and advanced tips
 ### Writing output consistently
 Internal helpers have been renamed to follow .NET conventions. The former `_write` method is now `WriteCore`, and public overloads defer to it after evaluating the configured `RenderOptions.WriteMode`.
 
-## Extensibility
-* **Custom themes** – Override `RenderOptions` colors globally or swap schemes on the fly for sections of your UI.
-* **Logging integration** – Use `ConsoulLoggerProvider` and `ConsoulLoggerExtensions` to route `Microsoft.Extensions.Logging` output into Consoul styled messages.
-* **Window resize awareness** – Subscribe to `Consoul.WindowResized` to redraw content when the console buffer changes size.
+## Extensibility & advanced features
+Consoul ships with several capabilities that go beyond basic prompts and writes. The sections below outline scenarios that help you
+build production-grade tooling.
+
+### Custom themes & scoped rendering
+* Override `RenderOptions` globally, or clone `RenderOptions` into a temporary variable, adjust colours, then restore them to
+  create themed sections of your UI.
+* Store reusable `ColorScheme` instances (for example, `SuccessScheme`, `WarningScheme`) and assign them to
+  `RenderOptions.DefaultScheme`, `PromptScheme`, or `OptionScheme` before rendering specialised sections.
+* Switch `RenderOptions.WriteMode` to `WritePlainText` when detecting headless environments, then revert to `WriteAll` once a
+  capable terminal is detected.
+
+### Logging integration
+* Route `Microsoft.Extensions.Logging` to Consoul by calling `ILoggingBuilder.AddConsoulLogger()` inside your host builder. Adjust the
+  `ConsoulLogger.LogLevelToColorMap` dictionary to ensure each severity uses the colours you expect.
+* Pair logger output with `Consoul.Wait()` or prompts to pause after critical log entries in interactive tools.
+
+### Window, buffer, and layout management
+* Subscribe to `Consoul.WindowResized` to refresh dashboards whenever the terminal changes size. Views that render tables or
+  progress bars benefit from recalculating layout after receiving the event.
+* Pass explicit dimensions into table and view renderers when running inside CI systems with narrow buffers.
+
+### Automation & scripting
+* Use `XmlRoutine` definitions (or custom `Routine` subclasses) to run end-to-end smoke tests in CI. A single routine can combine menu navigation, table rendering,
+  and long-running jobs.
+* Pair routines with custom prompts via `Routines.RegisterOptions(prompt)` so scripted automation can resolve options by label
+  or index even after the order changes.
+
+### Composition with views
+* Views can call into progress bars, tables, and prompts inside option handlers. For example, a `DynamicView` handler can launch
+  a `ProgressBar`, update it asynchronously, and then navigate back to the view when complete.
+* Chain views manually by instantiating the next view within an option handler and calling its `Render()`/`RenderAsync()`
+  method. Share services via constructor parameters or by passing a shared context object between views.
 
 ## Documentation
 The `/docs` folder contains component deep dives:

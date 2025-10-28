@@ -29,7 +29,8 @@ Consoul.Write($"Deploying to {environment}", ConsoleColor.Green);
 ```
 
 ## Advanced tips
-* **Write modes** – `RenderOptions.WriteMode` lets you suppress all output or only colourised output. This is useful when running tests or logging to CI pipelines.
-* **Custom continue prompts** – Override `RenderOptions.ContinueMessage` to localise or rephrase the pause text used by `Consoul.Wait`.
-* **Colour fallbacks** – Use `RenderOptions.GetColorOrDefault` and related helpers when writing your own output routines to honour the configured defaults.
-* **Testing** – Pass alternative `TextWriter`/`TextReader` implementations into `Console.SetOut` / `Console.SetIn` when unit testing methods that rely on Consoul helpers.
+* **Write modes & fallbacks** – `RenderOptions.WriteMode` lets you suppress all output or only colourised output. This is useful when running tests or logging to CI pipelines. When authoring custom writers, call `RenderOptions.GetColorOrDefault` to respect the active mode automatically.
+* **Scoped overrides** – Clone `RenderOptions` into a local variable, tweak colours or padding, and restore it after calling `Consoul.Write` to emulate Spectre-style themes for specific sections.
+* **Custom continue prompts** – Override `RenderOptions.ContinueMessage` to localise or rephrase the pause text used by `Consoul.Wait`. Adjust `RenderOptions.SubnoteScheme` if you want the pause prompt to use a unique colour without altering other helpers.
+* **Integration with logging** – Register `ConsoulLoggerProvider` in a `HostApplicationBuilder` to emit structured log messages through Consoul’s formatting. Update `ConsoulLogger.LogLevelToColorMap` if you prefer different colours per severity.
+* **Testing** – Pass alternative `TextWriter`/`TextReader` implementations into `Console.SetOut` / `Console.SetIn` when unit testing methods that rely on Consoul helpers. Combine this with dependency injection to provide fake timers or cancellation tokens for `Consoul.Read` scenarios.

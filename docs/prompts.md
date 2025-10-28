@@ -40,6 +40,7 @@ else if (result.HasSelection)
 
 ## Advanced tips
 * **Default option** – Set `isDefault: true` on an option to accept it when the user presses enter without typing anything.
-* **Cancelation phrases** – Users can type “back”, “exit”, or “go back” to cancel. Check `PromptResult.IsCanceled` instead of comparing against sentinel values.
-* **Generic prompts** – Use `SelectionPrompt<T>` with a `labelSelector` to work directly with domain objects rather than indexes.
-* **Custom render styles** – `OptionRenderStyle` lets you switch between indexable, bullet, and custom rendering modes when presenting options.
+* **Cancelation phrases** – Users can type “back”, “exit”, or “go back” to cancel. Check `PromptResult.IsCanceled` instead of comparing against sentinel values, and honour cancelation inside your view or command loop.
+* **Generic prompts** – Use `SelectionPrompt<T>` with a `labelSelector` to work directly with domain objects rather than indexes. After calling `Render()`, map `PromptResult.Index` back to the underlying collection to retrieve the chosen instance.
+* **Custom render styles** – `OptionRenderStyle.Checkbox` is useful for multi-select style menus. Toggle `SelectOption.Selected` before rendering to show which entries are active even though the prompt captures a single choice.
+* **Clearing vs. appending** – Toggle the `clear` constructor argument or `ClearConsole` property to control whether the prompt redraws the screen. This is helpful when prompts live inside views that manage their own buffers.

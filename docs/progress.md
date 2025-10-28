@@ -25,7 +25,8 @@ for (int i = 0; i <= 10; i++)
 ```
 
 ## Advanced tips
-* **Fractional updates** – The `Update(double progress, …)` overload expects a 0–1 value; clamp your input to avoid rendering glitches.
-* **Minimal width** – Guard against extremely small console windows by clamping `BarWidth` to a sensible minimum (e.g., 20 characters).
-* **Color overrides** – Pass explicit colours into `Update` for special states (warning, error) without changing global render options.
-* **Integration** – Combine progress bars with views to create dashboards that refresh status in response to user input.
+* **Fractional updates** – The `Update(double progress, …)` overload expects a 0–1 value; clamp your input to avoid rendering glitches. Pair the fraction with a message to surface ETA or processed counts.
+* **Minimal width & resizing** – Guard against extremely small console windows by clamping `BarWidth` to a sensible minimum (e.g., 20 characters). Recalculate the width when handling `Consoul.WindowResized` to keep bars aligned.
+* **Color overrides & glyphs** – Pass explicit colours into `Update` for special states (warning, error) without changing global render options. Swap `BlockCharacter` to reflect success/failure with ASCII glyphs such as `#`, `=`, or `█`.
+* **Integration with tasks** – Combine progress bars with views to create dashboards that refresh status in response to user input. `ProgressBar` can be fed by background `Task` callbacks—just co-ordinate access if multiple threads update the same instance.
+* **Multiple bars** – Instantiate multiple `ProgressBar` instances with different labels to track concurrent operations. Render them sequentially and refresh in-place by reusing each bar instance instead of recreating them for every update.

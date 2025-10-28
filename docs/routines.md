@@ -1,7 +1,7 @@
 # Routines
 
 ## When to use this
-Routines let you automate console interactions—perfect for demos, scripted smoke tests, or running canned data entry flows. They can watch for file changes and replay sequences without requiring manual input.
+Routines let you automate console interactions—perfect for demos, scripted smoke tests, or running canned data entry flows. They replay scripted keystrokes without requiring manual input.
 
 ## Key types
 * `Routines` – Central registry that loads and executes routines from XML definitions and tracks buffered inputs.
@@ -23,7 +23,8 @@ while (Routines.HasBuffer())
 ```
 
 ## Advanced tips
-* **Integration with prompts** – Register prompts with `Routines.RegisterOptions(prompt)` so scripted routines can select options by index or label.
-* **Recording** – Populate `Routines.UserInputs` and call `XmlRoutine.SaveInputs` to capture real sessions for later playback.
-* **Delay handling** – Respect `RoutineInput.Delay` to mimic the cadence of real users when replaying steps.
-* **Testing** – Combine routines with CI to validate interactive flows without relying on human testers.
+* **Integration with prompts** – Register prompts with `Routines.RegisterOptions(prompt)` so scripted routines can select options by index or label. This allows automation scripts to remain resilient even if option ordering changes.
+* **Recording** – Populate `Routines.UserInputs` and call `XmlRoutine.SaveInputs` to capture real sessions for later playback. Store these artefacts alongside your project to share reproducible demos with teammates.
+* **Delay handling & timing** – Respect `RoutineInput.Delay` to mimic the cadence of real users when replaying steps. Use varying delays to highlight loading states or to throttle API-driven workflows.
+* **Monitoring live input** – Flip `Routines.MonitorInputs` to `true` to accumulate what users type during manual runs. You can then export these via `XmlRoutine.SaveInputs` to create new scripted journeys.
+* **Testing** – Combine routines with CI to validate interactive flows without relying on human testers. Pair with `Consoul.RenderOptions.WriteMode = WritePlainText` to keep CI logs readable while automation runs.

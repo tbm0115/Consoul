@@ -7,7 +7,7 @@ Views are ideal for multi-step workflows—dashboards, menus, or game scenes—w
 * `StaticView` – Presents a fixed set of options defined via attributes or collection initialisation.
 * `DynamicView` – Rebuilds its option list every time it renders, enabling state-aware labels and colours.
 * `ViewOption` / `DynamicOption<T>` – Describe the work performed when a user selects an option.
-* `ViewNavigator` – (if used) manages transitions between views.
+* `ChoiceCallback` – Optional delegate that receives notification whenever an option is executed.
 
 ## Minimal example
 ```csharp
@@ -41,7 +41,8 @@ public class MainMenu : StaticView
 ```
 
 ## Advanced tips
-* **Attribute-driven options** – Decorate methods with `ViewOptionAttribute` or `DynamicViewOptionAttribute` to declare choices alongside their logic.
-* **Go back behaviour** – Each view automatically appends a “Go back” option and now uses `PromptResult` cancelation rather than the legacy `Consoul.EscapeIndex` constant.
-* **Async rendering** – Use `RenderAsync()` on dynamic views when options trigger asynchronous operations; the framework awaits each action before re-rendering.
-* **Shared state** – Pass dependencies via constructors or properties; views are regular classes and can store fields, timers, or other stateful components.
+* **Attribute-driven options** – Decorate methods with `ViewOptionAttribute` or `DynamicViewOptionAttribute` to declare choices alongside their logic. Attribute metadata can control colour, ordering, and whether an option is hidden until a predicate returns true.
+* **Go back behaviour** – Each view automatically appends a “Go back” option and now uses `PromptResult` cancelation rather than the legacy `Consoul.EscapeIndex` constant. Customise the label via `ViewAttribute.GoBackMessage` or by changing `RenderOptions.DefaultGoBackMessage`.
+* **Async rendering** – Use `RenderAsync()` on dynamic views when options trigger asynchronous operations; the framework awaits each action before re-rendering. Combine this with `CancellationToken` parameters on option handlers to respond to user aborts or window closures.
+* **Shared state & navigation** – Pass dependencies via constructors or properties; views are regular classes and can store fields, timers, or other stateful components. Invoke `Render()`/`RenderAsync()` on another view inside an option to chain screens, or set `GoBackRequested` to unwind to a parent loop.
+* **Composed dashboards** – `DynamicView` options can render tables or progress bars inline, then rehydrate their options list after completing background work. This makes it easy to build monitoring dashboards driven by timers or file watchers.

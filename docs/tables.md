@@ -24,7 +24,8 @@ table.Render();
 ```
 
 ## Advanced tips
-* **Window width** – Pass explicit console dimensions to avoid wrapping on narrow terminals. This also simplifies unit tests.
-* **Whitespace character** – Configure `TableRenderOptions.WhitespaceCharacter` to customise the filler between columns (e.g., dots or dashes).
-* **Styling per row** – Apply different `ColorScheme` values per row to highlight warnings or failures.
-* **Export** – Use `table.Render()` without writing to the console if you need to export the formatted table into logs or files.
+* **Window width** – Pass explicit console dimensions to avoid wrapping on narrow terminals. This also simplifies unit tests. Adjust `TableRenderOptions.TableWidthPercentage` or `MaximumTableWidth` to cap the rendered width regardless of buffer size.
+* **Whitespace character & borders** – Configure `TableRenderOptions.WhitespaceCharacter` to customise the filler between columns (e.g., dots or dashes). Swap out border characters through `TableRenderOptions.Lines` to emulate markdown tables or CSV-style separators.
+* **Styling per row** – Toggle between `ContentScheme1`, `ContentScheme2`, and `SelectionScheme` to highlight warnings or active rows. You can set these schemes per render pass to reflect live status changes.
+* **Export & composition** – Use `table.Render()` to a `StringWriter` if you need to export formatted tables into logs or files. Embed table output inside views or routines to render summaries before prompting the user for next steps.
+* **Sorting & paging** – Preprocess your data before adding rows; many consumers combine `TableView` with LINQ to support custom sorting, filtering, or paging scenarios within dynamic views.
