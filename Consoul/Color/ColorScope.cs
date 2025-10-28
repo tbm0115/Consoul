@@ -5,7 +5,7 @@ namespace ConsoulLibrary.Color
     /// <summary>
     /// Disposable container for the current console color scheme. Resets the console color to original scheme when disposed.
     /// </summary>
-    public class ColorMemory : IDisposable
+    public class ColorScope : IDisposable
     {
         /// <summary>
         /// Reference to the original console color scheme at the time of construction.
@@ -25,7 +25,7 @@ namespace ConsoulLibrary.Color
         /// <summary>
         /// Constructs a new color state memory.
         /// </summary>
-        public ColorMemory()
+        public ColorScope()
         {
             OriginalColor = new ColorScheme()
             {
@@ -39,7 +39,7 @@ namespace ConsoulLibrary.Color
         /// </summary>
         /// <param name="color"><inheritdoc cref="Console.ForegroundColor"/></param>
         /// <param name="backgroundColor"><inheritdoc cref="Console.BackgroundColor"/></param>
-        public ColorMemory(ConsoleColor color, ConsoleColor? backgroundColor = null) : this()
+        public ColorScope(ConsoleColor color, ConsoleColor? backgroundColor = null) : this()
         {
             SetColorScheme(color, backgroundColor);
         }

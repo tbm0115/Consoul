@@ -81,6 +81,7 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Waits for the user to press "Enter". Performs Console.ReadLine()
         /// <paramref name="silent">Flags whether or not to show continue message.</paramref>
+        /// <paramref name="cancellationToken"/>
         /// </summary>
         public static void Wait(bool silent = false, CancellationToken cancellationToken = default)
         {
@@ -100,6 +101,7 @@ namespace ConsoulLibrary {
         /// </summary>
         /// <param name="message">Prompt Message</param>
         /// <param name="color">Override the Prompt Message color</param>
+        /// <param name="backgroundColor">Override the Prompt background color</param>
         /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Can result in <see cref="string.Empty"/> .</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>User response (string)</returns>
@@ -180,7 +182,7 @@ namespace ConsoulLibrary {
         }
 
         /// <summary>
-        /// Internal Console.WriteLine() wrapper
+        /// Internal <see cref="Console.WriteLine()"/> wrapper
         /// </summary>
         /// <param name="message">Display message</param>
         /// <param name="color">Color for Message. Defaults to <see cref="RenderOptions.DefaultColor"/></param>
@@ -188,7 +190,7 @@ namespace ConsoulLibrary {
         /// <param name="writeLine">Specifies whether to use <see cref="Console.WriteLine()"/> or <see cref="Console.Write(string)"/></param>
         internal static void WriteCore(string message, ConsoleColor color, ConsoleColor? backgroundColor = null, bool writeLine = true)
         {
-            using (var colors = new ColorMemory(color, backgroundColor))
+            using (var colors = new ColorScope(color, backgroundColor))
             {
                 if (writeLine)
                 {
@@ -202,7 +204,7 @@ namespace ConsoulLibrary {
         }
 
         /// <summary>
-        /// Internal Console.WriteLine() wrapper
+        /// Internal <see cref="Console.WriteLine()"/> wrapper
         /// </summary>
         /// <param name="message">Display message</param>
         /// <param name="colorScheme">Color scheme for Message. Defaults to <see cref="RenderOptions.DefaultColor"/></param>
@@ -247,6 +249,7 @@ namespace ConsoulLibrary {
         public static void Write(string message, ColorScheme colorScheme, bool writeLine = true)
             => WriteCore(message, colorScheme, writeLine);
 
+        private static readonly Regex _argumentReplacer = new Regex(@"\{(?<PropertyName>\w+)(:(?<Color>\w+))?\}");
         /// <summary>
         /// Writes a formatted string to the console with flexible color formatting.
         /// </summary>
@@ -258,8 +261,7 @@ namespace ConsoulLibrary {
         public static void Write(string template, ConsoleColor? color = null, ConsoleColor? backgroundColor = null, bool writeLine = true, params object[] args)
         {
             // Regular expression to match placeholders with optional color specification using named capture groups
-            Regex regex = new Regex(@"\{(?<PropertyName>\w+)(:(?<Color>\w+))?\}");
-            MatchCollection matches = regex.Matches(template);
+            MatchCollection matches = _argumentReplacer.Matches(template);
 
             int currentIndex = 0;
             foreach (Match match in matches)
@@ -322,6 +324,7 @@ namespace ConsoulLibrary {
         /// </summary>
         /// <param name="ex">Exception to be written</param>
         /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="includeStackTrace">Flag to include stack trace in output</param>
         /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
         /// <param name="backgroundColor"><inheritdoc cref="Write" path="/param[@name='backgroundColor']"/></param>
         public static void Write(Exception ex, string message = null, bool includeStackTrace = true, ConsoleColor? color = null, ConsoleColor? backgroundColor = null)
@@ -634,7 +637,6 @@ namespace ConsoulLibrary {
         /// </summary>
         /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
         /// <param name="checkExists">Indicates whether to check the file exists before allowing the user exit the loop.</param>
-        /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Filepath string</returns>
         public static string PromptForFilepath(string message, bool checkExists, CancellationToken cancellationToken = default) {
@@ -653,8 +655,7 @@ namespace ConsoulLibrary {
         /// </summary>
         /// <param name="defaultPath">The default file path the user must accept.</param>
         /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
-        /// <param name="checkExists"><inheritdoc cref="PromptForFilepath(string, bool, ConsoleColor?, CancellationToken)" path="/param[@name='checkExists']"/></param>
-        /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
+        /// <param name="checkExists"><inheritdoc cref="PromptForFilepath(string, bool, CancellationToken)" path="/param[@name='checkExists']"/></param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Filepath string</returns>
         public static string PromptForFilepath(string defaultPath, string message, bool checkExists, CancellationToken cancellationToken = default) {
