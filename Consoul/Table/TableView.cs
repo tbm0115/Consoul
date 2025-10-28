@@ -398,17 +398,22 @@ namespace ConsoulLibrary
                     }
                     else
                     {
-                        if (_tableNavigator.CurrentRow < 0)
+                        if (_tableNavigator.CurrentRow >= 0)
                         {
-                            if (allowEmpty)
-                            {
-                                return null;
-                            }
-
-                            continue;
+                            return _tableNavigator.CurrentRow;
                         }
 
-                        return _tableNavigator.CurrentRow;
+                        if (_tableNavigator.HoveredRow >= 0)
+                        {
+                            return _tableNavigator.HoveredRow;
+                        }
+
+                        if (allowEmpty)
+                        {
+                            return null;
+                        }
+
+                        continue;
                     }
                 }
                 else if (keyInfo.Key == ConsoleKey.Escape)
@@ -640,7 +645,7 @@ namespace ConsoulLibrary
                     return TableRenderOptions.SelectionScheme;
                 }
 
-                if (_tableNavigator.CurrentRow == rowIndex)
+                if (_tableNavigator.HoveredRow == rowIndex)
                 {
                     return TableRenderOptions.HighlightedScheme;
                 }

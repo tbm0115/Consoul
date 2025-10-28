@@ -171,7 +171,10 @@ namespace ConsoulLibrary
         /// <param name="color">Text color</param>
         private void RenderMessage(string message, ConsoleColor? color = null, ConsoleColor? backgroundColor = null)
         {
-            message ??= string.Empty;
+            if (message == null)
+            {
+                message = string.Empty;
+            }
             var resolvedColor = RenderOptions.GetColorOrDefault(color);
             var resolvedBackground = RenderOptions.GetBackgroundColorOrDefault(backgroundColor);
 
