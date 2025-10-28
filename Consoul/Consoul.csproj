@@ -6,13 +6,13 @@
     <Description>A Console UI library for quickly building view-like Console Apps.</Description>
     <PackageProjectUrl>https://github.com/tbm0115/Consoul</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tbm0115/Consoul</RepositoryUrl>
-    <PackageTags>Console</PackageTags>
+    <PackageTags>Console;Consoul;Terminal;</PackageTags>
     <Authors>tbm0115</Authors>
     <Company />
-    <Version>2.0.1</Version>
+    <Version>2.0.2</Version>
     <PackageReleaseNotes>Added exception to logging.</PackageReleaseNotes>
-    <AssemblyVersion>2.0.1</AssemblyVersion>
-    <FileVersion>2.0.1</FileVersion>
+    <AssemblyVersion>2.0.2</AssemblyVersion>
+    <FileVersion>2.0.2</FileVersion>
     <PackageIcon>Consoul_Small.png</PackageIcon>
     <PackageIconUrl />
     <RootNamespace>ConsoulLibrary</RootNamespace>

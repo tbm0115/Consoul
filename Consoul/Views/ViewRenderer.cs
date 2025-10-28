@@ -14,6 +14,8 @@ namespace ConsoulLibrary.Views
         /// Renders the specified implementation of <see cref="IView"/>.
         /// </summary>
         /// <typeparam name="T">Implementation of <see cref="IView"/>.</typeparam>
+        /// <param name="factory">Optional factory function to create the view instance.</param>
+        /// <param name="configure">Optional action to configure the view instance before rendering.</param>
         /// <returns>Reference to the current <see cref="ViewRenderer"/> to fluently chain commands.</returns>
         public ViewRenderer Render<T>(Func<IView> factory = null, Action<IView> configure = null) where T : IView
         {
@@ -37,6 +39,8 @@ namespace ConsoulLibrary.Views
         /// Renders the specified implementation of <see cref="IView"/>.
         /// </summary>
         /// <typeparam name="T">Implementation of <see cref="IView"/>.</typeparam>
+        /// <param name="factory">Optional factory function to create the view instance.</param>
+        /// <param name="configure">Optional action to configure the view instance before rendering.</param>
         /// <returns>Reference to the current <see cref="ViewRenderer"/> to fluently chain commands.</returns>
         public async Task<ViewRenderer> RenderAsync<T>(Func<IView> factory = null, Action<IView> configure = null) where T : IView
         {

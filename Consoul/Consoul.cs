@@ -498,22 +498,26 @@ namespace ConsoulLibrary {
         /// Renders a Consoul view using the <see cref="ViewRenderer"/> to chain renderings.
         /// </summary>
         /// <typeparam name="T">Type of the <see cref="IView"/> to render.</typeparam>
+        /// <param name="factory">Optional factory method to create the view.</param>
+        /// <param name="configure">Optional configuration action to modify the view after creation.</param>
         /// <returns>Reference to the created <see cref="ViewRenderer"/> to chain renderings.</returns>
-        public static ViewRenderer Render<T>() where T : IView
+        public static ViewRenderer Render<T>(Func<IView> factory = null, Action<IView> configure = null) where T : IView
         {
             var renderer = new ViewRenderer();
-            return renderer.Render<T>();
+            return renderer.Render<T>(factory, configure);
         }
 
         /// <summary>
         /// Renders a Consoul view using the <see cref="ViewRenderer"/> to chain renderings.
         /// </summary>
         /// <typeparam name="T">Type of the <see cref="IView"/> to render.</typeparam>
+        /// <param name="factory">Optional factory method to create the view.</param>
+        /// <param name="configure">Optional configuration action to modify the view after creation.</param>
         /// <returns>Reference to the created <see cref="ViewRenderer"/> to chain renderings.</returns>
-        public static async Task<ViewRenderer> RenderAsync<T>() where T : IView
+        public static async Task<ViewRenderer> RenderAsync<T>(Func<IView> factory = null, Action<IView> configure = null) where T : IView
         {
             var renderer = new ViewRenderer();
-            return await renderer.RenderAsync<T>();
+            return await renderer.RenderAsync<T>(factory, configure);
         }
 
         /// <summary>
