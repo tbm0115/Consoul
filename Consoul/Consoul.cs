@@ -687,8 +687,8 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Saves the current cursor position. NOTE: You <b>MUST</b> dispose this variable.
         /// </summary>
-        /// <returns>Reference to a <see cref="CursorMemory"/> position</returns>
-        public static CursorMemory SaveCursor()
-            => new CursorMemory();
+        /// <returns>Reference to a <see cref="CursorScope"/> position</returns>
+        public static CursorScope SaveCursor()
+            => new CursorScope();
     }
 }
