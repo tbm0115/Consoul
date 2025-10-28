@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading;
-using System.Xml.Linq;
+using ConsoulLibrary.Color;
 
 namespace ConsoulLibrary
 {
@@ -62,13 +59,19 @@ namespace ConsoulLibrary
 
         public int GetRenderWidth() => GetTableWidth();
 
-        public void Render()
+        public void Render(ColorScheme contentScheme = null, ColorScheme lineScheme = null, bool isHeader = false)
         {
             string line = _renderOptions.Lines.VerticalCharacter.ToString();
+            bool showVertical = isHeader
+                ? _renderOptions?.Lines?.HeaderVertical ?? true
+                : _renderOptions?.Lines?.ContentVertical ?? true;
             int rowTop = Console.CursorTop;
             int rowLeft = Console.CursorLeft;
 
-            Consoul.Write(line, writeLine: false);
+            if (showVertical)
+            {
+                Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+            }
 
             int currentLeft = Console.CursorLeft;
             for (int i = 0; i < _contents.Count; i++)
@@ -79,7 +82,7 @@ namespace ConsoulLibrary
                 int renderWidth = Math.Min(Math.Max(0, cell.CellWidth), availableWidth);
 
                 Console.SetCursorPosition(startLeft, rowTop);
-                cell.Render(renderWidth);
+                cell.Render(renderWidth, contentScheme);
 
                 currentLeft = startLeft + renderWidth;
                 if (currentLeft >= Console.BufferWidth)
@@ -87,16 +90,23 @@ namespace ConsoulLibrary
                     currentLeft = Console.BufferWidth - 1;
                 }
 
-                Console.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1)), rowTop);
-                Consoul.Write(line, writeLine: false);
-                currentLeft = Console.CursorLeft;
+                if (showVertical)
+                {
+                    Console.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1)), rowTop);
+                    Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                    currentLeft = Console.CursorLeft;
+                }
+                else
+                {
+                    Console.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1)), rowTop);
+                }
             }
 
-            if (_contents.Count == 0)
+            if (_contents.Count == 0 && showVertical)
             {
                 int closingLeft = Math.Min(rowLeft + GetTableWidth() - 1, Console.BufferWidth - 1);
                 Console.SetCursorPosition(Math.Max(0, closingLeft), rowTop);
-                Consoul.Write(line, writeLine: false);
+                Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
             }
 
             Consoul.Write(string.Empty);
@@ -174,7 +184,7 @@ namespace ConsoulLibrary
             _message = new FixedMessage(_cellWidth);
         }
 
-        public void Render(int? overrideWidth = null)
+        public void Render(int? overrideWidth = null, ColorScheme contentScheme = null)
         {
             int width = overrideWidth.HasValue ? Math.Max(0, overrideWidth.Value) : _cellWidth;
             _cellWidth = width;
@@ -214,7 +224,7 @@ namespace ConsoulLibrary
                 _message.Reset();
             }
 
-            _message.Render(contents);
+            _message.Render(contents, contentScheme?.Color, contentScheme?.BackgroundColor);
             _hasRendered = true;
         }
     }
@@ -255,24 +265,52 @@ namespace ConsoulLibrary
         {
             if (clearConsole)
                 Console.Clear();
+            else
+                Console.SetCursorPosition(0, 0);
+
+            if (!string.IsNullOrEmpty(message))
+            {
+                Consoul.Write(message, color, writeLine: true);
+            }
 
             RecalculateColumnWidths();
             char line = TableRenderOptions.Lines.HorizontalCharacter;
             int tableWidth = GetTableWidth();
             string horizontalLine = new string(line, tableWidth);
-            // Render Headers with FixedMessage
-            if (_header != null)
+            var lineScheme = TableRenderOptions.Lines.Color;
+
+            bool hasHeader = _header != null && _header.CellCount > 0;
+            bool hasRows = _rows.Count > 0;
+
+            if (hasHeader || hasRows)
             {
-                Consoul.Write(horizontalLine);
-                _header.Render();
+                Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+            }
+
+            if (hasHeader)
+            {
+                _header.Render(TableRenderOptions.HeaderScheme, lineScheme, isHeader: true);
+                if (TableRenderOptions.Lines.HeaderHorizontal)
+                {
+                    Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                }
             }
 
             for (int i = 0; i < _rows.Count; i++)
             {
-                Consoul.Write(horizontalLine);
-                _rows[i].Render();
+                if (TableRenderOptions.Lines.ContentHorizontal)
+                {
+                    Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                }
+
+                var contentScheme = GetRowContentScheme(i);
+                _rows[i].Render(contentScheme, lineScheme);
             }
-            Consoul.Write(horizontalLine);
+
+            if (hasRows && TableRenderOptions.Lines.ContentHorizontal)
+            {
+                Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+            }
 
                 //_headerMessage = new FixedMessage(Console.BufferWidth);
                 //_headerMessage.Render(string.Join(TableRenderOptions.Lines.VerticalCharacter.ToString(), _headers), ConsoleColor.White);
@@ -334,19 +372,17 @@ namespace ConsoulLibrary
                 if (keyInfo.Key == ConsoleKey.UpArrow)
                 {
                     _tableNavigator.MoveUp();
-                    UpdateRenderedRow(_tableNavigator.PreviousRow);
-                    UpdateRenderedRow(_tableNavigator.CurrentRow);
+                    continue;
                 }
                 else if (keyInfo.Key == ConsoleKey.DownArrow)
                 {
                     _tableNavigator.MoveDown();
-                    UpdateRenderedRow(_tableNavigator.PreviousRow);
-                    UpdateRenderedRow(_tableNavigator.CurrentRow);
+                    continue;
                 }
                 else if (keyInfo.Key == ConsoleKey.Spacebar)
                 {
                     _tableNavigator.ToggleSelection();
-                    UpdateRenderedRow(_tableNavigator.CurrentRow);
+                    continue;
                 }
                 else if (keyInfo.Key == ConsoleKey.Enter)
                 {
@@ -355,10 +391,10 @@ namespace ConsoulLibrary
                         if (int.TryParse(inputBuffer, out int rowNumber) && rowNumber >= 1 && rowNumber <= _rows.Count)
                         {
                             _tableNavigator.SetCurrentRow(rowNumber - 1);
-                            UpdateRenderedRow(_tableNavigator.CurrentRow);
                             return _tableNavigator.CurrentRow;
                         }
                         inputBuffer = "";
+                        continue;
                     }
                     else
                     {
@@ -372,10 +408,12 @@ namespace ConsoulLibrary
                 else if (char.IsDigit(keyInfo.KeyChar))
                 {
                     inputBuffer += keyInfo.KeyChar;
+                    continue;
                 }
                 else if (keyInfo.Key == ConsoleKey.Backspace && inputBuffer.Length > 0)
                 {
                     inputBuffer = inputBuffer.Substring(0, inputBuffer.Length - 1);
+                    continue;
                 }
 
             } while (true);
@@ -583,24 +621,24 @@ namespace ConsoulLibrary
             return result;
         }
 
-        private void UpdateRenderedRow(int rowIndex)
+        private ColorScheme GetRowContentScheme(int rowIndex)
         {
-            if (rowIndex < 0 || rowIndex >= _rows.Count) return;
+            if (_tableNavigator != null)
+            {
+                if (_tableNavigator.SelectedRows.Contains(rowIndex))
+                {
+                    return TableRenderOptions.SelectionScheme;
+                }
 
-            bool isSelected = _tableNavigator.SelectedRows.Contains(rowIndex);
-            bool isHighlighted = _tableNavigator.CurrentRow == rowIndex;
-            var rowText = string.Join(" | ", _rows[rowIndex]);
-            var rowColor = isSelected
-                ? TableRenderOptions.SelectionScheme
-                : isHighlighted
-                    ? TableRenderOptions.HighlightedScheme
-                    : (rowIndex % 2 == 0
-                        ? TableRenderOptions.ContentScheme1
-                        : TableRenderOptions.ContentScheme2);
-            var backgroundColor = isHighlighted ? ConsoleColor.DarkGray : ConsoleColor.Black;
+                if (_tableNavigator.CurrentRow == rowIndex)
+                {
+                    return TableRenderOptions.HighlightedScheme;
+                }
+            }
 
-            _rows[rowIndex].Render();
-            //_rowMessages[rowIndex].Render(rowText, rowColor.Color, rowColor.BackgroundColor);
+            return rowIndex % 2 == 0
+                ? TableRenderOptions.ContentScheme1
+                : TableRenderOptions.ContentScheme2;
         }
 
         public static TableView Create(IEnumerable<IEnumerable<string>> items, params string[] columnNames)

@@ -16,6 +16,10 @@ namespace ConsoulLibrary
         {
             _totalRows = totalRows;
             _selectedRows = new HashSet<int>();
+            if (totalRows > 0)
+            {
+                _currentRow = 0;
+            }
         }
 
         public int CurrentRow => _currentRow;
@@ -36,6 +40,11 @@ namespace ConsoulLibrary
 
         public void ToggleSelection()
         {
+            if (_currentRow < 0)
+            {
+                return;
+            }
+
             if (_selectedRows.Contains(_currentRow))
                 _selectedRows.Remove(_currentRow);
             else
