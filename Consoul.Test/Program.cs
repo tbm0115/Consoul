@@ -1,8 +1,5 @@
 ﻿using System;
 using ConsoulLibrary.Test.Views;
-using ConsoulLibrary;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace ConsoulLibrary.Test
 {
@@ -59,27 +56,12 @@ namespace ConsoulLibrary.Test
             //
             // **************************************************************************
             Routines.MonitorInputs = true;
+            RenderOptions.WaitOnError = true;
             Routines.InitializeRoutine(args);
             //Routines.UseDelays = true; // Showcases the usecase of reusing input delays to simulate user response
-
-            var entityEditor = new Test.Views.EntityEditorView();
-            entityEditor.Run();
-
-            var cancelReadTest = new Test.Views.CancellabelReadView();
-            cancelReadTest.Run();
-
-
-            var view1 = new Welcome();
-            view1.Run(
-                (choice) => System.Threading.Tasks.Task.Run(() =>
-                    {
-                        Consoul.Write("DONE!", ConsoleColor.Green);
-                    }
-                )
-            );
-
-            var xRoutine = new XmlRoutine();
-            xRoutine.SaveInputs("Test.xml");
+            
+            Consoul.Render<Test.Views.Welcome>()
+                .SaveInput("Test.xml");
         }
 
     }

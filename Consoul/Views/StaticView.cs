@@ -2,27 +2,56 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
-using ConsoulLibrary.Entry;
+using ConsoulLibrary.Views;
 
-namespace ConsoulLibrary.Views
+namespace ConsoulLibrary
 {
-    public abstract class StaticView : IView
+    /// <summary>
+    /// Represents a static console view containing a set of predefined options.
+    /// This view can display options to the user and respond to their selection, including supporting asynchronous rendering.
+    /// </summary>
+    public abstract class StaticView : IView, INavigationAwareView
     {
         private bool _goBackRequested = false;
         private string _goBackMessage = RenderOptions.DefaultGoBackMessage;
+        private ViewNavigationContext _navigationContext = new ViewNavigationContext();
 
+        /// <summary>
+        /// Gets or sets the title of the view.
+        /// </summary>
         public string Title { get; set; }
 
-        public List<Option> Options { get; set; } = new List<Option>();
+        /// <summary>
+        /// Gets or sets the list of view options available in this view.
+        /// </summary>
+        public List<ViewOption> Options { get; set; } = new List<ViewOption>();
 
+        /// <summary>
+        /// Gets a value indicating whether a "go back" request has been made.
+        /// </summary>
         public bool GoBackRequested => _goBackRequested;
 
-
-        public StaticView()
+        ViewNavigationContext INavigationAwareView.NavigationContext
         {
+            get => _navigationContext;
+            set => _navigationContext = value ?? new ViewNavigationContext();
+        }
+
+        public ChoiceCallback OnOptionSelected { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StaticView"/> class.
+        /// The constructor initializes the view based on attributes and methods that define the options for the view.
+        /// </summary>
+        public StaticView(ChoiceCallback callback = null)
+        {
+            OnOptionSelected = callback;
+
             Type thisType = this.GetType();
 
+            // Set the view's title and "go back" message if the ViewAttribute is present.
             Type viewType = typeof(ViewAttribute);
             ViewAttribute viewAttr = thisType.GetCustomAttribute(viewType) as ViewAttribute;
             if (viewAttr != null)
@@ -31,106 +60,221 @@ namespace ConsoulLibrary.Views
                 _goBackMessage = viewAttr.GoBackMessage;
             }
 
-            // Build the options from local methods decorated with ViewOption
+            // Build the options from local methods decorated with the ViewOption attribute.
             Type viewOptionType = typeof(ViewOptionAttribute);
             IEnumerable<MethodInfo> allOptionMethods = thisType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             IEnumerable<MethodInfo> viewOptionMethods = allOptionMethods.Where(o => o.GetCustomAttribute(viewOptionType) != null);
+
             foreach (MethodInfo method in viewOptionMethods)
             {
                 ViewOptionAttribute attr = method.GetCustomAttribute(viewOptionType) as ViewOptionAttribute;
-                if (attr != null)
+                if (attr == null)
+                    continue;
+
+                ParameterInfo[] methodParameters = method.GetParameters();
+                List<object> implementedMethodParameters = new List<object>();
+
+                // Set default values for parameters where applicable.
+                foreach (ParameterInfo methodParameter in methodParameters)
                 {
-                    ParameterInfo[] methodParameters = method.GetParameters();
-                    List<object> implementedMethodParameters = new List<object>();
-                    foreach (ParameterInfo methodParameter in methodParameters) {
-                        if (methodParameter.HasDefaultValue) {
-                            implementedMethodParameters.Add(methodParameter.DefaultValue);
-                        } else if (Nullable.GetUnderlyingType(methodParameter.ParameterType) != null) {
-                            implementedMethodParameters.Add(null);
-                        }
+                    if (methodParameter.HasDefaultValue)
+                    {
+                        implementedMethodParameters.Add(methodParameter.DefaultValue);
                     }
-                    bool useParameters = methodParameters.Length > 0 && implementedMethodParameters.Count == methodParameters.Length;
-                    OptionAction p = delegate ()
-                           {
-                               thisType.InvokeMember(
-                                   method.Name,
-                                   BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
-                                   null,
-                                   this,
-                                   useParameters ? implementedMethodParameters.ToArray() : null
-                               );
-                           };
-                    Options.Add(new Option(
-                        attr.Message,
-                        p,
-                        attr.Color)
-                    );
+                    else if (Nullable.GetUnderlyingType(methodParameter.ParameterType) != null)
+                    {
+                        implementedMethodParameters.Add(null);
+                    }
                 }
+
+                bool useParameters = methodParameters.Length > 0 && implementedMethodParameters.Count == methodParameters.Length;
+
+                // Create a callback for the option's action.
+                ViewOptionCallback p = delegate ()
+                {
+                    thisType.InvokeMember(
+                        method.Name,
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.InvokeMethod,
+                        null,
+                        this,
+                        useParameters ? implementedMethodParameters.ToArray() : null
+                    );
+                };
+
+                // Add the option to the list of available options in the view.
+                Options.Add(new ViewOption(
+                    attr.Message,
+                    p,
+                    attr.Color)
+                );
             }
         }
 
+        /// <summary>
+        /// Requests to navigate back from the current view.
+        /// </summary>
         public void GoBack()
         {
             _goBackRequested = true;
+            _navigationContext.RequestNavigation(NavigationCommand.Pop());
         }
 
-        public async Task RunAsync(ChoiceCallback callback = null)
+        /// <summary>
+        /// Requests navigation to a new view instance of type <typeparamref name="TView"/>.
+        /// </summary>
+        /// <typeparam name="TView">The view type to navigate to.</typeparam>
+        /// <param name="replace">
+        /// When <see langword="true"/> (default), the current view is replaced with the new view. When <see langword="false"/>,
+        /// the new view is pushed on top of the navigation stack.
+        /// </param>
+        protected void NavigateTo<TView>(bool replace = true) where TView : IView
+        {
+            if (replace)
+            {
+                _navigationContext.RequestNavigation(NavigationCommand.Replace(typeof(TView)));
+            }
+            else
+            {
+                _navigationContext.RequestNavigation(NavigationCommand.Push(typeof(TView)));
+            }
+        }
+
+        /// <summary>
+        /// Requests navigation to a new view created via the provided factory.
+        /// </summary>
+        /// <typeparam name="TView">The view type to navigate to.</typeparam>
+        /// <param name="viewFactory">Factory used to create the view instance.</param>
+        /// <param name="replace">
+        /// When <see langword="true"/> (default), the current view is replaced with the new view. When <see langword="false"/>,
+        /// the new view is pushed on top of the navigation stack.
+        /// </param>
+        protected void NavigateTo<TView>(Func<TView> viewFactory, bool replace = true) where TView : IView
+        {
+            if (viewFactory == null)
+            {
+                throw new ArgumentNullException(nameof(viewFactory));
+            }
+
+            if (replace)
+            {
+                _navigationContext.RequestNavigation(NavigationCommand.Replace(() => (IView)viewFactory()));
+            }
+            else
+            {
+                _navigationContext.RequestNavigation(NavigationCommand.Push(() => (IView)viewFactory()));
+            }
+        }
+
+        /// <summary>
+        /// Asynchronously renders the view and handles user selection of options.
+        /// </summary>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests during rendering.</param>
+        /// <returns>A task representing the asynchronous render operation.</returns>
+        public async Task RenderAsync(CancellationToken cancellationToken = default)
         {
             int idx = -1;
+            _goBackRequested = false;
+            _navigationContext.Reset();
             do
             {
-                Prompt prompt = new Prompt(Title, true);
-                foreach (Option option in Options)
-                    prompt.Add(option.BuildMessage(), option.Color);
+                Console.Clear();
 
+                BannerEntry.Render(Title, RenderOptions.PromptColor);
+
+                // Create and configure a SelectionPrompt to display the view options.
+                SelectionPrompt prompt = new SelectionPrompt(string.Empty, false);
+                foreach (ViewOption option in Options)
+                {
+                    prompt.Add(option.Render(), option.Color);
+                }
+
+                // Add the "go back" option to the prompt.
                 prompt.Add(_goBackMessage, RenderOptions.SubnoteColor);
 
                 try
                 {
-                    idx = prompt.Run();
+                    var result = prompt.Render();
+                    if (result.IsCanceled)
+                    {
+                        GoBack();
+                        continue;
+                    }
+
+                    if (!result.HasSelection)
+                    {
+                        idx = -1;
+                        continue;
+                    }
+
+                    idx = result.Index;
                     if (idx >= 0 && idx < Options.Count)
                     {
-                        await Task.Run(() => {
+                        _navigationContext.Reset();
+                        // Execute the selected option's action asynchronously.
+                        await Task.Run(() =>
+                        {
                             try
                             {
                                 Options[idx].Action.Invoke();
                             }
                             catch (Exception ex2)
                             {
-                                Consoul.Write($"{Title}[{idx}]\t{ex2.Message}\r\n\tStack Trace: {ex2.StackTrace}", RenderOptions.InvalidColor);
-                                if (RenderOptions.WaitOnError) Consoul.Wait();
+                                Consoul.Write(ex2, $"Failed to render '{Title}[{idx}]' view", true, RenderOptions.InvalidColor);
+                                if (RenderOptions.WaitOnError)
+                                    Consoul.Wait();
                             }
                         });
-                        if (callback != null)
-                             await callback(idx);
+
+                        // Invoke the callback if provided.
+                        if (OnOptionSelected != null)
+                        {
+                            await OnOptionSelected(idx);
+                        }
+
+                        if (_navigationContext.HasPendingCommand)
+                        {
+                            if (_navigationContext.PendingCommand.CommandType == NavigationCommandType.Pop)
+                            {
+                                _goBackRequested = true;
+                            }
+                            break;
+                        }
+
+                        if (_goBackRequested)
+                        {
+                            break;
+                        }
+
                         idx = -1;
                     }
                     else if (idx == Options.Count)
                     {
-                        idx = int.MaxValue;
-                    }
-                    else if (idx == Consoul.EscapeIndex)
-                    {
                         GoBack();
+                        break;
                     }
+
                 }
                 catch (Exception ex)
                 {
-                    Consoul.Write($"{Title}[{idx}]\t{ex.Message}\r\n\tStack Trace: {ex.StackTrace}", RenderOptions.InvalidColor);
-                    if (RenderOptions.WaitOnError) Consoul.Wait();
+                    Consoul.Write(ex, $"Failed to render '{Title}' view", true, RenderOptions.InvalidColor);
+                    if (RenderOptions.WaitOnError)
+                        Consoul.Wait();
                 }
-            } while (idx < 0 && !GoBackRequested);
+            } while (idx < 0 && !_navigationContext.HasPendingCommand && !GoBackRequested);
         }
 
-        public void Run(ChoiceCallback callback = null)
+        /// <summary>
+        /// Renders the view synchronously and waits for user input.
+        /// </summary>
+        public void Render()
         {
             try
             {
-                RunAsync(callback).Wait();
+                RenderAsync().Wait();
             }
             catch (Exception ex)
             {
-                Consoul.Write($"{ex.Message}\r\nStack Trace: {ex.StackTrace}", ConsoleColor.Red);
+                Consoul.Write(ex, $"Failed to render '{Title}' view", true, RenderOptions.InvalidColor);
                 if (RenderOptions.WaitOnError) Consoul.Wait();
             }
         }
