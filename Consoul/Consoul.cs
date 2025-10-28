@@ -13,6 +13,7 @@ namespace ConsoulLibrary {
     /// </summary>
     public static class Consoul
     {
+        [Obsolete("Use PromptResult.IsCanceled instead of sentinel values.")]
         public const int EscapeIndex = -100;
 
         #region Window Resize Listener
@@ -84,7 +85,7 @@ namespace ConsoulLibrary {
         public static void Wait(bool silent = false, CancellationToken cancellationToken = default)
         {
             if (!silent)
-                Consoul._write(RenderOptions.ContinueMessage, RenderOptions.SubnoteScheme);
+                Consoul.WriteCore(RenderOptions.ContinueMessage, RenderOptions.SubnoteScheme);
             Read(cancellationToken);
         }
 
@@ -108,7 +109,7 @@ namespace ConsoulLibrary {
             bool valid = false;
             do
             {
-                Consoul._write(message, RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor));
+                Consoul.WriteCore(message, RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor));
                 output = Read(cancellationToken);
                 if (allowEmpty)
                 {
@@ -139,7 +140,7 @@ namespace ConsoulLibrary {
             object result = null;
             do
             {
-                Consoul._write(message, RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor));
+                Consoul.WriteCore(message, RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor));
                 output = Read(cancellationToken);
                 if (allowEmpty && string.IsNullOrEmpty(output))
                 {
@@ -155,7 +156,7 @@ namespace ConsoulLibrary {
                     }
                     catch (Exception ex)
                     {
-                        Consoul._write($"Invalid input. Please enter a value of type {expectedType.Name}. Error: {ex.Message}", RenderOptions.InvalidScheme);
+                        Consoul.WriteCore($"Invalid input. Please enter a value of type {expectedType.Name}. Error: {ex.Message}", RenderOptions.InvalidScheme);
                     }
                 }
             } while (!valid);
@@ -185,7 +186,7 @@ namespace ConsoulLibrary {
         /// <param name="color">Color for Message. Defaults to <see cref="RenderOptions.DefaultColor"/></param>
         /// <param name="backgroundColor">Color for the background. Defaults to <see cref="RenderOptions.BackgroundColor"/></param>
         /// <param name="writeLine">Specifies whether to use <see cref="Console.WriteLine()"/> or <see cref="Console.Write(string)"/></param>
-        internal static void _write(string message, ConsoleColor color, ConsoleColor? backgroundColor = null, bool writeLine = true)
+        internal static void WriteCore(string message, ConsoleColor color, ConsoleColor? backgroundColor = null, bool writeLine = true)
         {
             using (var colors = new ColorMemory(color, backgroundColor))
             {
@@ -206,20 +207,20 @@ namespace ConsoulLibrary {
         /// <param name="message">Display message</param>
         /// <param name="colorScheme">Color scheme for Message. Defaults to <see cref="RenderOptions.DefaultColor"/></param>
         /// <param name="writeLine">Specifies whether to use <see cref="Console.WriteLine()"/> or <see cref="Console.Write(string)"/></param>
-        internal static void _write(string message, ColorScheme? colorScheme = null, bool writeLine = true)
+        internal static void WriteCore(string message, ColorScheme? colorScheme = null, bool writeLine = true)
         {
             if (colorScheme == null)
                 colorScheme = RenderOptions.DefaultScheme;
-            _write(message, colorScheme.Value.Color, backgroundColor: colorScheme.Value.BackgroundColor, writeLine: writeLine);
+            WriteCore(message, colorScheme.Value.Color, backgroundColor: colorScheme.Value.BackgroundColor, writeLine: writeLine);
         }
 
         /// <summary>
         /// Writes a message to the <see cref="Console"/>. Rendering depends on <see cref="RenderOptions.WriteMode"/>
         /// </summary>
-        /// <param name="message"><inheritdoc cref="_write(string, ConsoleColor, ConsoleColor?, bool)" path="/param[@name='message']"/></param>
-        /// <param name="color"><inheritdoc cref="_write(string, ConsoleColor, ConsoleColor?, bool)" path="/param[@name='color']"/></param>
-        /// <param name="backgroundColor"><inheritdoc cref="_write(string, ConsoleColor, ConsoleColor?, bool)" path="/param[@name='backgroundColor']"/></param>
-        /// <param name="writeLine"><inheritdoc cref="_write(string, ConsoleColor, ConsoleColor?, bool)" path="/param[@name='writeLine']"/></param>
+        /// <param name="message"><inheritdoc cref="WriteCore(string, ConsoleColor, ConsoleColor?, bool)" path="/param[@name='message']"/></param>
+        /// <param name="color"><inheritdoc cref="WriteCore(string, ConsoleColor, ConsoleColor?, bool)" path="/param[@name='color']"/></param>
+        /// <param name="backgroundColor"><inheritdoc cref="WriteCore(string, ConsoleColor, ConsoleColor?, bool)" path="/param[@name='backgroundColor']"/></param>
+        /// <param name="writeLine"><inheritdoc cref="WriteCore(string, ConsoleColor, ConsoleColor?, bool)" path="/param[@name='writeLine']"/></param>
         public static void Write(string message, ConsoleColor? color = null, ConsoleColor? backgroundColor = null, bool writeLine = true)
         {
             switch (RenderOptions.WriteMode)
@@ -229,10 +230,10 @@ namespace ConsoulLibrary {
                     break;
                 case RenderOptions.WriteModes.SuppressBlacklist:
                     if (!RenderOptions.BlacklistColors.Any(c => c == color))
-                        _write(message, color: RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor), writeLine: writeLine);
+                        WriteCore(message, color: RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor), writeLine: writeLine);
                     break;
                 default: // Include WriteAll
-                    _write(message, color: RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor), writeLine: writeLine);
+                    WriteCore(message, color: RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor), writeLine: writeLine);
                     break;
             }
         }
@@ -240,11 +241,11 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Writes a message to the <see cref="Console"/>. Rendering depends on <see cref="RenderOptions.WriteMode"/>
         /// </summary>
-        /// <param name="message"><inheritdoc cref="_write(string, ColorScheme?, bool)" path="/param[@name='message']"/></param>
-        /// <param name="colorScheme"><inheritdoc cref="_write(string, ColorScheme?, bool)" path="/param[@name='colorScheme']"/></param>
-        /// <param name="writeLine"><inheritdoc cref="_write(string, ColorScheme?, bool)" path="/param[@name='writeLine']"/></param>
+        /// <param name="message"><inheritdoc cref="WriteCore(string, ColorScheme?, bool)" path="/param[@name='message']"/></param>
+        /// <param name="colorScheme"><inheritdoc cref="WriteCore(string, ColorScheme?, bool)" path="/param[@name='colorScheme']"/></param>
+        /// <param name="writeLine"><inheritdoc cref="WriteCore(string, ColorScheme?, bool)" path="/param[@name='writeLine']"/></param>
         public static void Write(string message, ColorScheme colorScheme, bool writeLine = true)
-            => _write(message, colorScheme, writeLine);
+            => WriteCore(message, colorScheme, writeLine);
 
         /// <summary>
         /// Writes a formatted string to the console with flexible color formatting.
@@ -576,12 +577,12 @@ namespace ConsoulLibrary {
                 {
                     Console.Clear();
                 }
-                Consoul._write(message, RenderOptions.PromptScheme);
-                Consoul._write(optionMessage, RenderOptions.SubnoteScheme);
+                Consoul.WriteCore(message, RenderOptions.PromptScheme);
+                Consoul.WriteCore(optionMessage, RenderOptions.SubnoteScheme);
                 input = Read(cancellationToken);
                 if (input.ToLower() != "y" && input.ToLower() != "n" && !string.IsNullOrEmpty(input))
                 {
-                    Consoul._write("Invalid input!", RenderOptions.InvalidScheme);
+                    Consoul.WriteCore("Invalid input!", RenderOptions.InvalidScheme);
                 }
             } while ((allowEmpty ? false : string.IsNullOrEmpty(input)) && input.ToLower() != "y" && input.ToLower() != "n");
             if (allowEmpty && string.IsNullOrEmpty(input))

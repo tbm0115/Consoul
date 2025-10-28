@@ -70,10 +70,10 @@ namespace ConsoulLibrary
         public static T Render(string message, Func<T, string> labelSelector, bool clear = false, params T[] options)
         {
             var prompt = new SelectionPrompt<T>(message, clear, labelSelector, options);
-            var choice = prompt.Render();
-            if (choice >= 0 && choice < options.Length)
+            var result = prompt.Render();
+            if (result.HasSelection && result.Index >= 0 && result.Index < options.Length)
             {
-                return options[choice];
+                return options[result.Index];
             }
             return default(T);
         }
@@ -186,8 +186,8 @@ namespace ConsoulLibrary
         /// Displays the prompt options to the user and waits for the user to make a selection.
         /// </summary>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>The zero-based index of the selected option, or a special index if the user opts to go back.</returns>
-        public int Render(CancellationToken cancellationToken = default)
+        /// <returns>A <see cref="PromptResult"/> that describes the user's selection or cancellation.</returns>
+        public PromptResult Render(CancellationToken cancellationToken = default)
         {
             string[] escapePhrases = new string[]
             {
@@ -207,32 +207,36 @@ namespace ConsoulLibrary
                 {
                     Console.Clear();
                 }
-                Consoul._write(Message, RenderOptions.PromptColor);
-                Consoul._write("Choose the corresponding number from the options below:", RenderOptions.SubnoteColor);
+                Consoul.WriteCore(Message, RenderOptions.PromptColor);
+                Consoul.WriteCore("Choose the corresponding number from the options below:", RenderOptions.SubnoteColor);
                 int i = 0;
 
                 Routines.RegisterOptions(this);
                 foreach (SelectOption option in Options)
                 {
-                    Consoul._write(option.ToString(), option.Color);
+                    Consoul.WriteCore(option.ToString(), option.Color);
                     i++;
                 }
                 Console.ForegroundColor = RenderOptions.DefaultColor;
                 input = Consoul.Read(cancellationToken);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return PromptResult.Canceled();
+                }
                 if (string.IsNullOrEmpty(input) && defaultOption != null)
                 {
                     selection = defaultOption.Index;
                 }
                 else if (escapePhrases.Any(o => input.Equals(o, StringComparison.OrdinalIgnoreCase)))
                 {
-                    return Consoul.EscapeIndex;
+                    return PromptResult.Canceled();
                 }
                 else
                 {
                     Int32.TryParse(input, out selection);
                     if (selection <= 0 || selection > (_options.Count + 1))
                     {
-                        Consoul._write("Invalid selection!", RenderOptions.InvalidColor);
+                        Consoul.WriteCore("Invalid selection!", RenderOptions.InvalidColor);
                         selection = -1;
                     }
                     else
@@ -244,7 +248,7 @@ namespace ConsoulLibrary
 
             _options[selection].Selected = true;
 
-            return selection;
+            return PromptResult.FromSelection(selection);
         }
 
         /// <summary>
@@ -257,10 +261,10 @@ namespace ConsoulLibrary
         public static SelectOption Render(string message, bool clear = false, params SelectOption[] options)
         {
             var prompt = new SelectionPrompt(message, clear, options);
-            var choice = prompt.Render();
-            if (choice >= 0 && choice < options.Length)
+            var result = prompt.Render();
+            if (result.HasSelection && result.Index >= 0 && result.Index < options.Length)
             {
-                return options[choice];
+                return options[result.Index];
             }
             return null;
         }

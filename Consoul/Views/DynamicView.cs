@@ -157,7 +157,20 @@ namespace ConsoulLibrary
 
                 try
                 {
-                    idx = prompt.Render();
+                    var result = prompt.Render();
+                    if (result.IsCanceled)
+                    {
+                        GoBack();
+                        continue;
+                    }
+
+                    if (!result.HasSelection)
+                    {
+                        idx = -1;
+                        continue;
+                    }
+
+                    idx = result.Index;
                     if (idx >= 0 && idx < _options.Count)
                     {
                         await Task.Run(() => {
@@ -180,10 +193,7 @@ namespace ConsoulLibrary
                     {
                         idx = int.MaxValue;
                     }
-                    else if (idx == Consoul.EscapeIndex)
-                    {
-                        GoBack();
-                    }
+                    
                 }
                 catch (Exception ex)
                 {
