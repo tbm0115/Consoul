@@ -42,30 +42,8 @@ namespace ConsoulLibrary
         /// <param name="content"></param>
         public void Add(string content)
         {
-            int initialWidth = Math.Min(_renderOptions?.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
-            var tableCell = new TableCell(content, initialWidth, _renderOptions);
+            var tableCell = new TableCell(content, 0, _renderOptions);
             _contents.Add(tableCell);
-            UpdateCellWidths();
-        }
-
-        private void UpdateCellWidths()
-        {
-            if (_contents.Count == 0)
-            {
-                return;
-            }
-
-            int tableWidth = Math.Min(_renderOptions?.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
-            int separatorCount = _contents.Count + 1;
-            int availableWidth = Math.Max(0, tableWidth - separatorCount);
-            int baseWidth = availableWidth / _contents.Count;
-            int remainder = availableWidth % _contents.Count;
-
-            for (int i = 0; i < _contents.Count; i++)
-            {
-                int width = Math.Max(0, baseWidth + (i < remainder ? 1 : 0));
-                _contents[i].CellWidth = width;
-            }
         }
 
         private int GetTableWidth()
@@ -78,7 +56,7 @@ namespace ConsoulLibrary
             }
 
             int separatorCount = _contents.Count + 1;
-            int width = separatorCount + _contents.Sum(cell => cell.CellWidth);
+            int width = separatorCount + _contents.Sum(cell => Math.Max(0, cell.CellWidth));
             return Math.Min(width, configuredWidth);
         }
 
@@ -86,8 +64,6 @@ namespace ConsoulLibrary
 
         public void Render()
         {
-            UpdateCellWidths();
-
             string line = _renderOptions.Lines.VerticalCharacter.ToString();
             int rowTop = Console.CursorTop;
             int rowLeft = Console.CursorLeft;
@@ -100,7 +76,7 @@ namespace ConsoulLibrary
                 var cell = _contents[i];
                 int startLeft = Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1));
                 int availableWidth = Math.Max(0, Console.BufferWidth - startLeft);
-                int renderWidth = Math.Min(cell.CellWidth, availableWidth);
+                int renderWidth = Math.Min(Math.Max(0, cell.CellWidth), availableWidth);
 
                 Console.SetCursorPosition(startLeft, rowTop);
                 cell.Render(renderWidth);
@@ -130,11 +106,33 @@ namespace ConsoulLibrary
         {
             string[] values = contents.ToArray();
             int contentCount = values.Length;
-            UpdateCellWidths();
             for (int i = 0; i < contentCount && i < _contents.Count; i++)
             {
                 _contents[i].Contents = values[i];
             }
+        }
+
+        public void ApplyColumnWidths(IReadOnlyList<int> columnWidths)
+        {
+            if (columnWidths == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _contents.Count && i < columnWidths.Count; i++)
+            {
+                _contents[i].CellWidth = columnWidths[i];
+            }
+        }
+
+        public int GetCellContentLength(int index)
+        {
+            if (index < 0 || index >= _contents.Count)
+            {
+                return 0;
+            }
+
+            return (_contents[index].Contents ?? string.Empty).Length;
         }
     }
 
@@ -148,9 +146,9 @@ namespace ConsoulLibrary
             get => _cellWidth;
             set
             {
-                _cellWidth = value;
-                _message.MaxWidth = Math.Max(0, value);
-                Render();
+                int width = Math.Max(0, value);
+                _cellWidth = width;
+                _message.MaxWidth = width;
             }
         }
 
@@ -161,12 +159,11 @@ namespace ConsoulLibrary
             set
             {
                 _contents = value;
-                _message.MaxWidth = _cellWidth;
-                Render();
             }
         }
 
         private FixedMessage _message;
+        private bool _hasRendered;
 
         public TableCell(string content, int maxWidth, TableRenderOptions options = default)
         {
@@ -174,26 +171,28 @@ namespace ConsoulLibrary
             _contents = content;
 
             _cellWidth = Math.Max(0, maxWidth);
-            _message = new FixedMessage(maxWidth);
+            _message = new FixedMessage(_cellWidth);
         }
 
         public void Render(int? overrideWidth = null)
         {
-            if (overrideWidth.HasValue)
-            {
-                int width = Math.Max(0, overrideWidth.Value);
-                _message.MaxWidth = width;
-                _cellWidth = width;
-            }
+            int width = overrideWidth.HasValue ? Math.Max(0, overrideWidth.Value) : _cellWidth;
+            _cellWidth = width;
+            _message.MaxWidth = width;
 
-            int maxWidth = _message.MaxWidth ?? _cellWidth;
-            if (maxWidth <= 0)
+            if (width <= 0)
             {
+                if (_hasRendered)
+                {
+                    _message.Reset();
+                }
+
                 _message.Render(string.Empty);
+                _hasRendered = true;
                 return;
             }
 
-            int innerWidth = Math.Max(0, maxWidth - 1);
+            int innerWidth = Math.Max(0, width - 1);
             string text = _contents ?? string.Empty;
 
             if (innerWidth > 0 && text.Length > innerWidth)
@@ -201,16 +200,22 @@ namespace ConsoulLibrary
                 int truncateLength = Math.Max(0, innerWidth - 1);
                 text = truncateLength > 0 ? text.Substring(0, truncateLength) + "…" : text.Substring(0, innerWidth);
             }
-            else if (innerWidth == 0 && text.Length > maxWidth)
+            else if (innerWidth == 0 && text.Length > width)
             {
-                text = text.Substring(0, maxWidth);
+                text = text.Substring(0, width);
             }
 
             string contents = innerWidth > 0
                 ? " " + text.PadRight(innerWidth)
                 : text;
 
+            if (_hasRendered)
+            {
+                _message.Reset();
+            }
+
             _message.Render(contents);
+            _hasRendered = true;
         }
     }
 
@@ -224,6 +229,7 @@ namespace ConsoulLibrary
         // FixedMessage instances for each row and header
         private TableRow _header { get; set; }
         private List<TableRow> _rows = new List<TableRow>();
+        private List<int> _columnWidths = new List<int>();
 
         public event TableQueryYieldsNoResults QueryYieldsNoResults;
 
@@ -247,11 +253,10 @@ namespace ConsoulLibrary
 
         public void Render(string message = default, ConsoleColor? color = null, bool clearConsole = true)
         {
-            //TableRenderOptions.Normalize(Contents);
-
             if (clearConsole)
                 Console.Clear();
 
+            RecalculateColumnWidths();
             char line = TableRenderOptions.Lines.HorizontalCharacter;
             int tableWidth = GetTableWidth();
             string horizontalLine = new string(line, tableWidth);
@@ -428,20 +433,154 @@ namespace ConsoulLibrary
 
         private int GetTableWidth()
         {
-            int width = _header?.GetRenderWidth() ?? 0;
-
-            foreach (var row in _rows)
+            if (_columnWidths.Count == 0 && ((_header?.CellCount ?? 0) > 0 || _rows.Count > 0))
             {
-                width = Math.Max(width, row.GetRenderWidth());
+                RecalculateColumnWidths();
             }
 
             int configuredWidth = Math.Min(TableRenderOptions.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            if (_columnWidths.Count == 0)
+            {
+                return configuredWidth;
+            }
+
+            int separators = _columnWidths.Count + 1;
+            int width = separators + _columnWidths.Sum();
             if (width == 0)
             {
                 return configuredWidth;
             }
 
             return Math.Min(width, configuredWidth);
+        }
+
+        private void RecalculateColumnWidths()
+        {
+            int headerColumns = _header?.CellCount ?? 0;
+            int rowColumns = _rows.Count == 0 ? 0 : _rows.Max(r => r.CellCount);
+            int columnCount = Math.Max(headerColumns, rowColumns);
+
+            _columnWidths.Clear();
+
+            if (columnCount == 0)
+            {
+                return;
+            }
+
+            int configuredWidth = Math.Min(TableRenderOptions.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            int separators = columnCount + 1;
+            int availableWidth = Math.Max(0, configuredWidth - separators);
+
+            var desired = new int[columnCount];
+
+            if (_header != null)
+            {
+                for (int i = 0; i < columnCount; i++)
+                {
+                    desired[i] = Math.Max(desired[i], _header.GetCellContentLength(i) + 1);
+                }
+            }
+
+            foreach (var row in _rows)
+            {
+                for (int i = 0; i < columnCount; i++)
+                {
+                    desired[i] = Math.Max(desired[i], row.GetCellContentLength(i) + 1);
+                }
+            }
+
+            for (int i = 0; i < desired.Length; i++)
+            {
+                desired[i] = Math.Max(desired[i], 1);
+            }
+
+            _columnWidths = AllocateColumnWidths(desired, availableWidth);
+
+            _header?.ApplyColumnWidths(_columnWidths);
+            foreach (var row in _rows)
+            {
+                row.ApplyColumnWidths(_columnWidths);
+            }
+        }
+
+        private static List<int> AllocateColumnWidths(IReadOnlyList<int> desired, int availableWidth)
+        {
+            int columnCount = desired.Count;
+            var result = Enumerable.Repeat(0, columnCount).ToList();
+
+            if (columnCount == 0 || availableWidth <= 0)
+            {
+                return result;
+            }
+
+            int desiredTotal = desired.Sum();
+
+            if (desiredTotal <= availableWidth)
+            {
+                for (int i = 0; i < columnCount; i++)
+                {
+                    result[i] = desired[i];
+                }
+
+                int remaining = availableWidth - desiredTotal;
+                int index = 0;
+                while (remaining > 0)
+                {
+                    result[index % columnCount]++;
+                    index++;
+                    remaining--;
+                }
+
+                return result;
+            }
+
+            double scale = (double)availableWidth / desiredTotal;
+            int assigned = 0;
+            var zeroWidthCandidates = new List<int>();
+
+            for (int i = 0; i < columnCount; i++)
+            {
+                int width = (int)Math.Floor(desired[i] * scale);
+                if (desired[i] > 0 && width == 0)
+                {
+                    zeroWidthCandidates.Add(i);
+                }
+
+                result[i] = width;
+                assigned += width;
+            }
+
+            int remainingAllocation = availableWidth - assigned;
+
+            foreach (int index in zeroWidthCandidates)
+            {
+                if (remainingAllocation == 0)
+                {
+                    break;
+                }
+
+                result[index]++;
+                remainingAllocation--;
+            }
+
+            if (remainingAllocation > 0)
+            {
+                var order = Enumerable.Range(0, columnCount)
+                    .OrderByDescending(i => desired[i] - result[i])
+                    .ThenBy(i => i)
+                    .ToList();
+
+                int orderIndex = 0;
+                while (remainingAllocation > 0 && order.Count > 0)
+                {
+                    int target = order[orderIndex];
+                    result[target]++;
+                    remainingAllocation--;
+                    orderIndex = (orderIndex + 1) % order.Count;
+                }
+            }
+
+            return result;
         }
 
         private void UpdateRenderedRow(int rowIndex)
