@@ -22,9 +22,7 @@ namespace ConsoulLibrary
 
         public int CellCount => _contents.Count;
 
-        public int CellWidth => ((_renderOptions.MaximumTableWidth ?? Console.BufferWidth) / (CellCount > 0 ? CellCount : 1)) - 2;
-
-        private List<TableCell> _contents = new List<TableCell>();
+        private readonly List<TableCell> _contents = new List<TableCell>();
         public IEnumerable<TableCell> Contents => _contents;
 
 
@@ -44,44 +42,98 @@ namespace ConsoulLibrary
         /// <param name="content"></param>
         public void Add(string content)
         {
-            var tableCell = new TableCell(content, CellWidth, _renderOptions);
+            int initialWidth = Math.Min(_renderOptions?.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            var tableCell = new TableCell(content, initialWidth, _renderOptions);
             _contents.Add(tableCell);
             UpdateCellWidths();
         }
 
         private void UpdateCellWidths()
         {
-            foreach (var cell in _contents)
+            if (_contents.Count == 0)
             {
-                cell.CellWidth = CellWidth;
+                return;
+            }
+
+            int tableWidth = Math.Min(_renderOptions?.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            int separatorCount = _contents.Count + 1;
+            int availableWidth = Math.Max(0, tableWidth - separatorCount);
+            int baseWidth = availableWidth / _contents.Count;
+            int remainder = availableWidth % _contents.Count;
+
+            for (int i = 0; i < _contents.Count; i++)
+            {
+                int width = Math.Max(0, baseWidth + (i < remainder ? 1 : 0));
+                _contents[i].CellWidth = width;
             }
         }
+
+        private int GetTableWidth()
+        {
+            int configuredWidth = Math.Min(_renderOptions?.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+
+            if (_contents.Count == 0)
+            {
+                return configuredWidth;
+            }
+
+            int separatorCount = _contents.Count + 1;
+            int width = separatorCount + _contents.Sum(cell => cell.CellWidth);
+            return Math.Min(width, configuredWidth);
+        }
+
+        public int GetRenderWidth() => GetTableWidth();
 
         public void Render()
         {
             UpdateCellWidths();
 
             string line = _renderOptions.Lines.VerticalCharacter.ToString();
-            using (var position = Consoul.SaveCursor())
+            int rowTop = Console.CursorTop;
+            int rowLeft = Console.CursorLeft;
+
+            Consoul.Write(line, writeLine: false);
+
+            int currentLeft = Console.CursorLeft;
+            for (int i = 0; i < _contents.Count; i++)
             {
-                Consoul.Write(line, writeLine: false);
-                foreach (var cell in Contents)
+                var cell = _contents[i];
+                int startLeft = Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1));
+                int availableWidth = Math.Max(0, Console.BufferWidth - startLeft);
+                int renderWidth = Math.Min(cell.CellWidth, availableWidth);
+
+                Console.SetCursorPosition(startLeft, rowTop);
+                cell.Render(renderWidth);
+
+                currentLeft = startLeft + renderWidth;
+                if (currentLeft >= Console.BufferWidth)
                 {
-                    cell.Render();
-                    Consoul.Write(line, writeLine: false);
+                    currentLeft = Console.BufferWidth - 1;
                 }
-                Consoul.Write(string.Empty);
+
+                Console.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1)), rowTop);
+                Consoul.Write(line, writeLine: false);
+                currentLeft = Console.CursorLeft;
             }
+
+            if (_contents.Count == 0)
+            {
+                int closingLeft = Math.Min(rowLeft + GetTableWidth() - 1, Console.BufferWidth - 1);
+                Console.SetCursorPosition(Math.Max(0, closingLeft), rowTop);
+                Consoul.Write(line, writeLine: false);
+            }
+
+            Consoul.Write(string.Empty);
         }
 
         public void Update(IEnumerable<string> contents)
         {
             string[] values = contents.ToArray();
             int contentCount = values.Length;
-            for (int i = 0; i < contentCount; i++)
+            UpdateCellWidths();
+            for (int i = 0; i < contentCount && i < _contents.Count; i++)
             {
                 _contents[i].Contents = values[i];
-                _contents[i].CellWidth = CellWidth;
             }
         }
     }
@@ -97,6 +149,7 @@ namespace ConsoulLibrary
             set
             {
                 _cellWidth = value;
+                _message.MaxWidth = Math.Max(0, value);
                 Render();
             }
         }
@@ -120,19 +173,43 @@ namespace ConsoulLibrary
             _renderOptions = options;
             _contents = content;
 
+            _cellWidth = Math.Max(0, maxWidth);
             _message = new FixedMessage(maxWidth);
         }
 
-        public void Render()
+        public void Render(int? overrideWidth = null)
         {
-            int textWidth = _message.MaxWidth.Value - 2;
-            string contents = string.Empty;
-            string text = _contents;
-            if (text.Length > textWidth)
+            if (overrideWidth.HasValue)
             {
-                text = text.Substring(0, textWidth - 1);
+                int width = Math.Max(0, overrideWidth.Value);
+                _message.MaxWidth = width;
+                _cellWidth = width;
             }
-            contents += text;
+
+            int maxWidth = _message.MaxWidth ?? _cellWidth;
+            if (maxWidth <= 0)
+            {
+                _message.Render(string.Empty);
+                return;
+            }
+
+            int innerWidth = Math.Max(0, maxWidth - 1);
+            string text = _contents ?? string.Empty;
+
+            if (innerWidth > 0 && text.Length > innerWidth)
+            {
+                int truncateLength = Math.Max(0, innerWidth - 1);
+                text = truncateLength > 0 ? text.Substring(0, truncateLength) + "…" : text.Substring(0, innerWidth);
+            }
+            else if (innerWidth == 0 && text.Length > maxWidth)
+            {
+                text = text.Substring(0, maxWidth);
+            }
+
+            string contents = innerWidth > 0
+                ? " " + text.PadRight(innerWidth)
+                : text;
+
             _message.Render(contents);
         }
     }
@@ -175,23 +252,22 @@ namespace ConsoulLibrary
             if (clearConsole)
                 Console.Clear();
 
-            using (var pos = Consoul.SaveCursor())
+            char line = TableRenderOptions.Lines.HorizontalCharacter;
+            int tableWidth = GetTableWidth();
+            string horizontalLine = new string(line, tableWidth);
+            // Render Headers with FixedMessage
+            if (_header != null)
             {
-                char line = TableRenderOptions.Lines.HorizontalCharacter;
-                string horizontalLine = new string(line, TableRenderOptions.MaximumTableWidth.Value);
-                // Render Headers with FixedMessage
-                if (_header != null)
-                {
-                    Consoul.Write(horizontalLine);
-                    _header.Render();
-                }
-
-                for (int i = 0; i < _rows.Count; i++)
-                {
-                    Consoul.Write(horizontalLine);
-                    _rows[i].Render();
-                }
                 Consoul.Write(horizontalLine);
+                _header.Render();
+            }
+
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                Consoul.Write(horizontalLine);
+                _rows[i].Render();
+            }
+            Consoul.Write(horizontalLine);
 
                 //_headerMessage = new FixedMessage(Console.BufferWidth);
                 //_headerMessage.Render(string.Join(TableRenderOptions.Lines.VerticalCharacter.ToString(), _headers), ConsoleColor.White);
@@ -219,9 +295,8 @@ namespace ConsoulLibrary
                 //    _rowMessages[i].Render(rowText, rowColor.Color, rowColor.BackgroundColor);
                 //}
 
-                // Optionally render footer prompts
-                Consoul.Write("Use Arrow Keys to navigate, Enter to confirm, Space to select/deselect, Escape to exit, or enter row number to jump.", ConsoleColor.Gray);
-            }
+            // Optionally render footer prompts
+            Consoul.Write("Use Arrow Keys to navigate, Enter to confirm, Space to select/deselect, Escape to exit, or enter row number to jump.", ConsoleColor.Gray);
         }
 
         /// <summary>
@@ -349,6 +424,24 @@ namespace ConsoulLibrary
             {
                 AddRow(row, renderAfterAdding);
             }
+        }
+
+        private int GetTableWidth()
+        {
+            int width = _header?.GetRenderWidth() ?? 0;
+
+            foreach (var row in _rows)
+            {
+                width = Math.Max(width, row.GetRenderWidth());
+            }
+
+            int configuredWidth = Math.Min(TableRenderOptions.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            if (width == 0)
+            {
+                return configuredWidth;
+            }
+
+            return Math.Min(width, configuredWidth);
         }
 
         private void UpdateRenderedRow(int rowIndex)
