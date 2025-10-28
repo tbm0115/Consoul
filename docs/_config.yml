@@ -2,4 +2,6 @@ theme: jekyll-theme-slate
 title: .NET Consoul
 email: tbm0115@hotmail.com
 github_username: tbm0115
+lang: en
 
+google: true

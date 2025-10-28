@@ -62,8 +62,11 @@ namespace ConsoulLibrary.Test
             Routines.InitializeRoutine(args);
             //Routines.UseDelays = true; // Showcases the usecase of reusing input delays to simulate user response
 
-            var tableTest = new Test.Views.TableView();
-            tableTest.Run();
+            var entityEditor = new Test.Views.EntityEditorView();
+            entityEditor.Run();
+
+            var cancelReadTest = new Test.Views.CancellabelReadView();
+            cancelReadTest.Run();
 
 
             var view1 = new Welcome();

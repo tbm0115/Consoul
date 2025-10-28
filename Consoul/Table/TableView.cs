@@ -2,14 +2,23 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+using System.Threading;
 
 namespace ConsoulLibrary.Table
 {
+    /// <summary>
+    /// Delegate for handling when a <see cref="TableView"/> query yields no results.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     public delegate void TableQueryYieldsNoResults(object sender, TableQueryYieldsNoResultsEventArgs e);
 
+    /// <summary>
+    /// Event arguments when a <see cref="TableView"/> query yields no results.
+    /// </summary>
     public class TableQueryYieldsNoResultsEventArgs : EventArgs
     {
+
         public string Message { get; set; }
 
         public string Query { get; set; }
@@ -20,12 +29,21 @@ namespace ConsoulLibrary.Table
             Query = query;
         }
     }
+    /// <summary>
+    /// Renders a table in the view, allowing the user to choose a table row or perform basic queries against the table contents.
+    /// </summary>
     public class TableView
     {
         public TableRenderOptions RenderOptions { get; set; }
 
+        /// <summary>
+        /// 2D matrix of table contents.
+        /// </summary>
         public List<List<string>> Contents { get; set; } = new List<List<string>>();
 
+        /// <summary>
+        /// Column headers.
+        /// </summary>
         public List<string> Headers { get; set; } = new List<string>();
 
         public int? Selection { get; set; }
@@ -43,10 +61,7 @@ namespace ConsoulLibrary.Table
             RenderOptions = options ?? new TableRenderOptions();
         }
 
-        public TableView(string[][] contents, TableRenderOptions options = null) : this(contents.Select(o => o.ToList()).ToList(), options) 
-        {
-
-        }
+        public TableView(string[][] contents, TableRenderOptions options = null) : this(contents.Select(o => o.ToList()).ToList(), options) { }
 
         public TableView(IEnumerable<IEnumerable<string>> contents, TableRenderOptions options = null) : this(options)
         {
@@ -60,7 +75,6 @@ namespace ConsoulLibrary.Table
         public TableView(IEnumerable<object> source, string[] properties, TableRenderOptions options = null)
         {
             RenderOptions = options ?? new TableRenderOptions();
-
 
             Headers = properties.ToList(); // Add Column Header Row
 
@@ -88,8 +102,6 @@ namespace ConsoulLibrary.Table
             }
         }
 
-
-
         public void Write(bool clearConsole = true){
             RenderOptions.Normalize(Contents);
 
@@ -110,10 +122,10 @@ namespace ConsoulLibrary.Table
             }
         }
 
-        public int Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true)
+        public int Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true, CancellationToken cancellationToken = default)
         {
             if (Contents?.Any() == false)
-                return -1;
+                raiseQueryYieldsNoResults("Invalid Query! Source has no results.", string.Empty);
 
             var prevRenderOptionChoice = RenderOptions.IncludeChoices;
             RenderOptions.IncludeChoices = true;
@@ -132,7 +144,7 @@ namespace ConsoulLibrary.Table
                     Consoul.Write("Press Enter to continue", ConsoulLibrary.RenderOptions.SubnoteColor);
                 }
 
-                string input = Consoul.Read();
+                string input = Consoul.Read(cancellationToken);
                 if (string.IsNullOrEmpty(input) && allowEmpty)
                 {
                     selection = Contents.Count + 1;
@@ -274,7 +286,6 @@ namespace ConsoulLibrary.Table
             }
             Append(row, addToCache);
         }
-
 
         private void raiseQueryYieldsNoResults(string message, string query)
         {

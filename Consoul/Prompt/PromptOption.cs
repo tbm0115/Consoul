@@ -55,9 +55,18 @@ namespace ConsoulLibrary
             }
         }
     }
+    /// <summary>
+    /// Indicates the expected rendering style of each item in a list
+    /// </summary>
     public enum OptionRenderStyle
     {
+        /// <summary>
+        /// Item rendered as an incrementing number.
+        /// </summary>
         Indexable = 0,
+        /// <summary>
+        /// Item rendered as a checkbox.
+        /// </summary>
         Checkbox = 1
     }
 }

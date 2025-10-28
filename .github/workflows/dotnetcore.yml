@@ -1,21 +1,23 @@
 name: Publish to Package Registries
 
 on: 
-  push:
-    branches:
-      - master
+  release:
+    types:
+      - published
+  workflow_dispatch:
+  
 
 jobs:
   build:
     name: Build Package
-    runs-on: windows-latest
+    runs-on: windows-2019
 
     steps:
     - uses: actions/checkout@v2
     - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@main
       with:
-        dotnet-version: 2.2.108
+        dotnet-version: '3.1'
     - name: Build with dotnet
       run: dotnet build --configuration Release
       
@@ -37,7 +39,7 @@ jobs:
       - name: Setup .NET Core
         uses: actions/setup-dotnet@main
         with:
-          dotnet-version: 2.2.108
+          dotnet-version: '3.1'
 
       - name: Download Artifact
         uses: actions/download-artifact@v2

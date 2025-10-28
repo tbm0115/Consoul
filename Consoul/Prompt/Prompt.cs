@@ -1,13 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Options = ConsoulLibrary.RenderOptions;
 namespace ConsoulLibrary {
     public delegate void PromptChoiceCallback<TTarget>(TTarget choice);
+    /// <summary>
+    /// Renders a new indexable list of options to choose from.
+    /// </summary>
     public class Prompt
     {
         private List<PromptOption> _options { get; set; }
 
+        /// <summary>
+        /// Gets a <see cref="PromptOption.Label"/> by index.
+        /// </summary>
+        /// <param name="index">Zero-based index of the <see cref="PromptOption"/></param>
+        /// <returns><see cref="PromptOption.Label"/></returns>
         public string this[int index] => _options[index].Label;
 
         /// <summary>
@@ -20,8 +29,14 @@ namespace ConsoulLibrary {
         /// </summary>
         public bool ClearConsole { get; set; }
 
+        /// <summary>
+        /// Collection of <see cref="PromptOption"/>s
+        /// </summary>
         public IEnumerable<PromptOption> Options => _options;
 
+        /// <summary>
+        /// Number of <see cref="PromptOption"/>s
+        /// </summary>
         public int Count => _options.Count;
 
 
@@ -51,13 +66,27 @@ namespace ConsoulLibrary {
             }
         }
 
-        public void Add(string label, ConsoleColor? color = null, bool isDefault = false, OptionRenderStyle renderStyle = OptionRenderStyle.Indexable)
+        /// <summary>
+        /// Adds a new <see cref="PromptOption"/>
+        /// </summary>
+        /// <param name="label"><see cref="PromptOption.Label"/></param>
+        /// <param name="color"><see cref="PromptOption.Color"/></param>
+        /// <param name="isDefault">Flag for whether this is the default selected option</param>
+        /// <param name="renderStyle">Sets the style for which the item is rendered</param>
+        /// <returns>Index of the new item</returns>
+        public int Add(string label, ConsoleColor? color = null, bool isDefault = false, OptionRenderStyle renderStyle = OptionRenderStyle.Indexable)
         {
             if (color == null)
                 color = RenderOptions.OptionColor;
-            _options.Add(new PromptOption(_options.Count, label, (ConsoleColor)color, isDefault, renderStyle));
+            var option = new PromptOption(_options.Count, label, (ConsoleColor)color, isDefault, renderStyle);
+            option.Index = _options.Count;
+            _options.Add(option);
+            return option.Index;
         }
 
+        /// <summary>
+        /// Clears the list of <see cref="PromptOption"/>s
+        /// </summary>
         public void Clear()
         {
             _options.Clear();
@@ -67,7 +96,7 @@ namespace ConsoulLibrary {
         /// Displays the options for this prompt. Loops until the user "selects" the appropriate option.
         /// </summary>
         /// <returns>Zero-based index of the selected option.</returns>
-        public int Run()
+        public int Run(CancellationToken cancellationToken = default)
         {
             string[] escapePhrases = new string[]
             {
@@ -98,7 +127,7 @@ namespace ConsoulLibrary {
                     i++;
                 }
                 Console.ForegroundColor = RenderOptions.DefaultColor;
-                input = Consoul.Read();// Console.ReadLine();
+                input = Consoul.Read(cancellationToken);
                 if (string.IsNullOrEmpty(input) && defaultOption != null)
                 {
                     selection = defaultOption.Index;
