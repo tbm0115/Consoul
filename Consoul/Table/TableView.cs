@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading;
-using System.Xml.Linq;
+using ConsoulLibrary.Color;
 
 namespace ConsoulLibrary
 {
@@ -22,9 +19,7 @@ namespace ConsoulLibrary
 
         public int CellCount => _contents.Count;
 
-        public int CellWidth => ((_renderOptions.MaximumTableWidth ?? Console.BufferWidth) / (CellCount > 0 ? CellCount : 1)) - 2;
-
-        private List<TableCell> _contents = new List<TableCell>();
+        private readonly List<TableCell> _contents = new List<TableCell>();
         public IEnumerable<TableCell> Contents => _contents;
 
 
@@ -44,45 +39,110 @@ namespace ConsoulLibrary
         /// <param name="content"></param>
         public void Add(string content)
         {
-            var tableCell = new TableCell(content, CellWidth, _renderOptions);
+            var tableCell = new TableCell(content, 0, _renderOptions);
             _contents.Add(tableCell);
-            UpdateCellWidths();
         }
 
-        private void UpdateCellWidths()
+        private int GetTableWidth()
         {
-            foreach (var cell in _contents)
+            int configuredWidth = Math.Min(_renderOptions?.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+
+            if (_contents.Count == 0)
             {
-                cell.CellWidth = CellWidth;
+                return configuredWidth;
             }
+
+            int separatorCount = _contents.Count + 1;
+            int width = separatorCount + _contents.Sum(cell => Math.Max(0, cell.CellWidth));
+            return Math.Min(width, configuredWidth);
         }
 
-        public void Render()
-        {
-            UpdateCellWidths();
+        public int GetRenderWidth() => GetTableWidth();
 
+        public void Render(ColorScheme contentScheme = null, ColorScheme lineScheme = null, bool isHeader = false)
+        {
             string line = _renderOptions.Lines.VerticalCharacter.ToString();
-            using (var position = Consoul.SaveCursor())
+            bool showVertical = isHeader
+                ? _renderOptions?.Lines?.HeaderVertical ?? true
+                : _renderOptions?.Lines?.ContentVertical ?? true;
+            int rowTop = Console.CursorTop;
+            int rowLeft = Console.CursorLeft;
+
+            if (showVertical)
             {
-                Consoul.Write(line, writeLine: false);
-                foreach (var cell in Contents)
-                {
-                    cell.Render();
-                    Consoul.Write(line, writeLine: false);
-                }
-                Consoul.Write(string.Empty);
+                Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
             }
+
+            int currentLeft = Console.CursorLeft;
+            for (int i = 0; i < _contents.Count; i++)
+            {
+                var cell = _contents[i];
+                int startLeft = Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1));
+                int availableWidth = Math.Max(0, Console.BufferWidth - startLeft);
+                int renderWidth = Math.Min(Math.Max(0, cell.CellWidth), availableWidth);
+
+                Console.SetCursorPosition(startLeft, rowTop);
+                cell.Render(renderWidth, contentScheme);
+
+                currentLeft = startLeft + renderWidth;
+                if (currentLeft >= Console.BufferWidth)
+                {
+                    currentLeft = Console.BufferWidth - 1;
+                }
+
+                if (showVertical)
+                {
+                    Console.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1)), rowTop);
+                    Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                    currentLeft = Console.CursorLeft;
+                }
+                else
+                {
+                    Console.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1)), rowTop);
+                }
+            }
+
+            if (_contents.Count == 0 && showVertical)
+            {
+                int closingLeft = Math.Min(rowLeft + GetTableWidth() - 1, Console.BufferWidth - 1);
+                Console.SetCursorPosition(Math.Max(0, closingLeft), rowTop);
+                Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+            }
+
+            Consoul.Write(string.Empty);
         }
 
         public void Update(IEnumerable<string> contents)
         {
             string[] values = contents.ToArray();
             int contentCount = values.Length;
-            for (int i = 0; i < contentCount; i++)
+            for (int i = 0; i < contentCount && i < _contents.Count; i++)
             {
                 _contents[i].Contents = values[i];
-                _contents[i].CellWidth = CellWidth;
             }
+        }
+
+        public void ApplyColumnWidths(IReadOnlyList<int> columnWidths)
+        {
+            if (columnWidths == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _contents.Count && i < columnWidths.Count; i++)
+            {
+                _contents[i].CellWidth = columnWidths[i];
+            }
+        }
+
+        public int GetCellContentLength(int index)
+        {
+            if (index < 0 || index >= _contents.Count)
+            {
+                return 0;
+            }
+
+            return (_contents[index].Contents ?? string.Empty).Length;
         }
     }
 
@@ -96,8 +156,9 @@ namespace ConsoulLibrary
             get => _cellWidth;
             set
             {
-                _cellWidth = value;
-                Render();
+                int width = Math.Max(0, value);
+                _cellWidth = width;
+                _message.MaxWidth = width;
             }
         }
 
@@ -108,32 +169,63 @@ namespace ConsoulLibrary
             set
             {
                 _contents = value;
-                _message.MaxWidth = _cellWidth;
-                Render();
             }
         }
 
         private FixedMessage _message;
+        private bool _hasRendered;
 
         public TableCell(string content, int maxWidth, TableRenderOptions options = default)
         {
             _renderOptions = options;
             _contents = content;
 
-            _message = new FixedMessage(maxWidth);
+            _cellWidth = Math.Max(0, maxWidth);
+            _message = new FixedMessage(_cellWidth);
         }
 
-        public void Render()
+        public void Render(int? overrideWidth = null, ColorScheme contentScheme = null)
         {
-            int textWidth = _message.MaxWidth.Value - 2;
-            string contents = string.Empty;
-            string text = _contents;
-            if (text.Length > textWidth)
+            int width = overrideWidth.HasValue ? Math.Max(0, overrideWidth.Value) : _cellWidth;
+            _cellWidth = width;
+            _message.MaxWidth = width;
+
+            if (width <= 0)
             {
-                text = text.Substring(0, textWidth - 1);
+                if (_hasRendered)
+                {
+                    _message.Reset();
+                }
+
+                _message.Render(string.Empty);
+                _hasRendered = true;
+                return;
             }
-            contents += text;
-            _message.Render(contents);
+
+            int innerWidth = Math.Max(0, width - 1);
+            string text = _contents ?? string.Empty;
+
+            if (innerWidth > 0 && text.Length > innerWidth)
+            {
+                int truncateLength = Math.Max(0, innerWidth - 1);
+                text = truncateLength > 0 ? text.Substring(0, truncateLength) + "…" : text.Substring(0, innerWidth);
+            }
+            else if (innerWidth == 0 && text.Length > width)
+            {
+                text = text.Substring(0, width);
+            }
+
+            string contents = innerWidth > 0
+                ? " " + text.PadRight(innerWidth)
+                : text;
+
+            if (_hasRendered)
+            {
+                _message.Reset();
+            }
+
+            _message.Render(contents, contentScheme?.Color, contentScheme?.BackgroundColor);
+            _hasRendered = true;
         }
     }
 
@@ -147,6 +239,7 @@ namespace ConsoulLibrary
         // FixedMessage instances for each row and header
         private TableRow _header { get; set; }
         private List<TableRow> _rows = new List<TableRow>();
+        private List<int> _columnWidths = new List<int>();
 
         public event TableQueryYieldsNoResults QueryYieldsNoResults;
 
@@ -170,28 +263,54 @@ namespace ConsoulLibrary
 
         public void Render(string message = default, ConsoleColor? color = null, bool clearConsole = true)
         {
-            //TableRenderOptions.Normalize(Contents);
-
             if (clearConsole)
                 Console.Clear();
+            else
+                Console.SetCursorPosition(0, 0);
 
-            using (var pos = Consoul.SaveCursor())
+            if (!string.IsNullOrEmpty(message))
             {
-                char line = TableRenderOptions.Lines.HorizontalCharacter;
-                string horizontalLine = new string(line, TableRenderOptions.MaximumTableWidth.Value);
-                // Render Headers with FixedMessage
-                if (_header != null)
+                Consoul.Write(message, color, writeLine: true);
+            }
+
+            RecalculateColumnWidths();
+            char line = TableRenderOptions.Lines.HorizontalCharacter;
+            int tableWidth = GetTableWidth();
+            string horizontalLine = new string(line, tableWidth);
+            var lineScheme = TableRenderOptions.Lines.Color;
+
+            bool hasHeader = _header != null && _header.CellCount > 0;
+            bool hasRows = _rows.Count > 0;
+
+            if (hasHeader || hasRows)
+            {
+                Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+            }
+
+            if (hasHeader)
+            {
+                _header.Render(TableRenderOptions.HeaderScheme, lineScheme, isHeader: true);
+                if (TableRenderOptions.Lines.HeaderHorizontal)
                 {
-                    Consoul.Write(horizontalLine);
-                    _header.Render();
+                    Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                }
+            }
+
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                if (TableRenderOptions.Lines.ContentHorizontal)
+                {
+                    Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
                 }
 
-                for (int i = 0; i < _rows.Count; i++)
-                {
-                    Consoul.Write(horizontalLine);
-                    _rows[i].Render();
-                }
-                Consoul.Write(horizontalLine);
+                var contentScheme = GetRowContentScheme(i);
+                _rows[i].Render(contentScheme, lineScheme);
+            }
+
+            if (hasRows && TableRenderOptions.Lines.ContentHorizontal)
+            {
+                Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+            }
 
                 //_headerMessage = new FixedMessage(Console.BufferWidth);
                 //_headerMessage.Render(string.Join(TableRenderOptions.Lines.VerticalCharacter.ToString(), _headers), ConsoleColor.White);
@@ -219,9 +338,8 @@ namespace ConsoulLibrary
                 //    _rowMessages[i].Render(rowText, rowColor.Color, rowColor.BackgroundColor);
                 //}
 
-                // Optionally render footer prompts
-                Consoul.Write("Use Arrow Keys to navigate, Enter to confirm, Space to select/deselect, Escape to exit, or enter row number to jump.", ConsoleColor.Gray);
-            }
+            // Optionally render footer prompts
+            Consoul.Write("Use Arrow Keys to navigate, Enter to confirm, Space to select/deselect, Escape to exit, or enter row number to jump.", ConsoleColor.Gray);
         }
 
         /// <summary>
@@ -254,19 +372,17 @@ namespace ConsoulLibrary
                 if (keyInfo.Key == ConsoleKey.UpArrow)
                 {
                     _tableNavigator.MoveUp();
-                    UpdateRenderedRow(_tableNavigator.PreviousRow);
-                    UpdateRenderedRow(_tableNavigator.CurrentRow);
+                    continue;
                 }
                 else if (keyInfo.Key == ConsoleKey.DownArrow)
                 {
                     _tableNavigator.MoveDown();
-                    UpdateRenderedRow(_tableNavigator.PreviousRow);
-                    UpdateRenderedRow(_tableNavigator.CurrentRow);
+                    continue;
                 }
                 else if (keyInfo.Key == ConsoleKey.Spacebar)
                 {
                     _tableNavigator.ToggleSelection();
-                    UpdateRenderedRow(_tableNavigator.CurrentRow);
+                    continue;
                 }
                 else if (keyInfo.Key == ConsoleKey.Enter)
                 {
@@ -275,14 +391,24 @@ namespace ConsoulLibrary
                         if (int.TryParse(inputBuffer, out int rowNumber) && rowNumber >= 1 && rowNumber <= _rows.Count)
                         {
                             _tableNavigator.SetCurrentRow(rowNumber - 1);
-                            UpdateRenderedRow(_tableNavigator.CurrentRow);
                             return _tableNavigator.CurrentRow;
                         }
                         inputBuffer = "";
+                        continue;
                     }
                     else
                     {
-                        return _tableNavigator.CurrentRow == 0 && allowEmpty ? (int?)null : _tableNavigator.CurrentRow;
+                        if (_tableNavigator.CurrentRow < 0)
+                        {
+                            if (allowEmpty)
+                            {
+                                return null;
+                            }
+
+                            continue;
+                        }
+
+                        return _tableNavigator.CurrentRow;
                     }
                 }
                 else if (keyInfo.Key == ConsoleKey.Escape)
@@ -292,10 +418,12 @@ namespace ConsoulLibrary
                 else if (char.IsDigit(keyInfo.KeyChar))
                 {
                     inputBuffer += keyInfo.KeyChar;
+                    continue;
                 }
                 else if (keyInfo.Key == ConsoleKey.Backspace && inputBuffer.Length > 0)
                 {
                     inputBuffer = inputBuffer.Substring(0, inputBuffer.Length - 1);
+                    continue;
                 }
 
             } while (true);
@@ -351,24 +479,176 @@ namespace ConsoulLibrary
             }
         }
 
-        private void UpdateRenderedRow(int rowIndex)
+        private int GetTableWidth()
         {
-            if (rowIndex < 0 || rowIndex >= _rows.Count) return;
+            if (_columnWidths.Count == 0 && ((_header?.CellCount ?? 0) > 0 || _rows.Count > 0))
+            {
+                RecalculateColumnWidths();
+            }
 
-            bool isSelected = _tableNavigator.SelectedRows.Contains(rowIndex);
-            bool isHighlighted = _tableNavigator.CurrentRow == rowIndex;
-            var rowText = string.Join(" | ", _rows[rowIndex]);
-            var rowColor = isSelected
-                ? TableRenderOptions.SelectionScheme
-                : isHighlighted
-                    ? TableRenderOptions.HighlightedScheme
-                    : (rowIndex % 2 == 0
-                        ? TableRenderOptions.ContentScheme1
-                        : TableRenderOptions.ContentScheme2);
-            var backgroundColor = isHighlighted ? ConsoleColor.DarkGray : ConsoleColor.Black;
+            int configuredWidth = Math.Min(TableRenderOptions.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            if (_columnWidths.Count == 0)
+            {
+                return configuredWidth;
+            }
 
-            _rows[rowIndex].Render();
-            //_rowMessages[rowIndex].Render(rowText, rowColor.Color, rowColor.BackgroundColor);
+            int separators = _columnWidths.Count + 1;
+            int width = separators + _columnWidths.Sum();
+            if (width == 0)
+            {
+                return configuredWidth;
+            }
+
+            return Math.Min(width, configuredWidth);
+        }
+
+        private void RecalculateColumnWidths()
+        {
+            int headerColumns = _header?.CellCount ?? 0;
+            int rowColumns = _rows.Count == 0 ? 0 : _rows.Max(r => r.CellCount);
+            int columnCount = Math.Max(headerColumns, rowColumns);
+
+            _columnWidths.Clear();
+
+            if (columnCount == 0)
+            {
+                return;
+            }
+
+            int configuredWidth = Math.Min(TableRenderOptions.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            int separators = columnCount + 1;
+            int availableWidth = Math.Max(0, configuredWidth - separators);
+
+            var desired = new int[columnCount];
+
+            if (_header != null)
+            {
+                for (int i = 0; i < columnCount; i++)
+                {
+                    desired[i] = Math.Max(desired[i], _header.GetCellContentLength(i) + 1);
+                }
+            }
+
+            foreach (var row in _rows)
+            {
+                for (int i = 0; i < columnCount; i++)
+                {
+                    desired[i] = Math.Max(desired[i], row.GetCellContentLength(i) + 1);
+                }
+            }
+
+            for (int i = 0; i < desired.Length; i++)
+            {
+                desired[i] = Math.Max(desired[i], 1);
+            }
+
+            _columnWidths = AllocateColumnWidths(desired, availableWidth);
+
+            _header?.ApplyColumnWidths(_columnWidths);
+            foreach (var row in _rows)
+            {
+                row.ApplyColumnWidths(_columnWidths);
+            }
+        }
+
+        private static List<int> AllocateColumnWidths(IReadOnlyList<int> desired, int availableWidth)
+        {
+            int columnCount = desired.Count;
+            var result = Enumerable.Repeat(0, columnCount).ToList();
+
+            if (columnCount == 0 || availableWidth <= 0)
+            {
+                return result;
+            }
+
+            int desiredTotal = desired.Sum();
+
+            if (desiredTotal <= availableWidth)
+            {
+                for (int i = 0; i < columnCount; i++)
+                {
+                    result[i] = desired[i];
+                }
+
+                int remaining = availableWidth - desiredTotal;
+                int index = 0;
+                while (remaining > 0)
+                {
+                    result[index % columnCount]++;
+                    index++;
+                    remaining--;
+                }
+
+                return result;
+            }
+
+            double scale = (double)availableWidth / desiredTotal;
+            int assigned = 0;
+            var zeroWidthCandidates = new List<int>();
+
+            for (int i = 0; i < columnCount; i++)
+            {
+                int width = (int)Math.Floor(desired[i] * scale);
+                if (desired[i] > 0 && width == 0)
+                {
+                    zeroWidthCandidates.Add(i);
+                }
+
+                result[i] = width;
+                assigned += width;
+            }
+
+            int remainingAllocation = availableWidth - assigned;
+
+            foreach (int index in zeroWidthCandidates)
+            {
+                if (remainingAllocation == 0)
+                {
+                    break;
+                }
+
+                result[index]++;
+                remainingAllocation--;
+            }
+
+            if (remainingAllocation > 0)
+            {
+                var order = Enumerable.Range(0, columnCount)
+                    .OrderByDescending(i => desired[i] - result[i])
+                    .ThenBy(i => i)
+                    .ToList();
+
+                int orderIndex = 0;
+                while (remainingAllocation > 0 && order.Count > 0)
+                {
+                    int target = order[orderIndex];
+                    result[target]++;
+                    remainingAllocation--;
+                    orderIndex = (orderIndex + 1) % order.Count;
+                }
+            }
+
+            return result;
+        }
+
+        private ColorScheme GetRowContentScheme(int rowIndex)
+        {
+            if (_tableNavigator != null)
+            {
+                if (_tableNavigator.SelectedRows.Contains(rowIndex))
+                {
+                    return TableRenderOptions.SelectionScheme;
+                }
+
+                if (_tableNavigator.CurrentRow == rowIndex)
+                {
+                    return TableRenderOptions.HighlightedScheme;
+                }
+            }
+
+            return rowIndex % 2 == 0
+                ? TableRenderOptions.ContentScheme1
+                : TableRenderOptions.ContentScheme2;
         }
 
         public static TableView Create(IEnumerable<IEnumerable<string>> items, params string[] columnNames)

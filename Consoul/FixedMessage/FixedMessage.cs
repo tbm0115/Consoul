@@ -30,6 +30,8 @@ namespace ConsoulLibrary
         private readonly object _lock = new object();
 
         private bool _firstRender = true;
+        private string _lastRenderedMessage = string.Empty;
+        private ColorScheme? _lastRenderedScheme = null;
 
         /// <summary>
         /// Character used to fill whitespace around message
@@ -157,6 +159,7 @@ namespace ConsoulLibrary
                 {
                     RenderMessage(_pendingMessage, _pendingScheme?.Color, _pendingScheme?.BackgroundColor);
                     _pendingMessage = null; // Clear the pending message once rendered
+                    _pendingScheme = null;
                 }
             }
         }
@@ -168,6 +171,10 @@ namespace ConsoulLibrary
         /// <param name="color">Text color</param>
         private void RenderMessage(string message, ConsoleColor? color = null, ConsoleColor? backgroundColor = null)
         {
+            message ??= string.Empty;
+            var resolvedColor = RenderOptions.GetColorOrDefault(color);
+            var resolvedBackground = RenderOptions.GetBackgroundColorOrDefault(backgroundColor);
+
             // Split message into lines based on MaxWidth and console buffer width to prevent overflow.
             var maxWidth = Math.Min(MaxWidth ?? _fw, _fw);
             var lines = SplitMessageIntoLines(message, maxWidth);
@@ -191,9 +198,16 @@ namespace ConsoulLibrary
                 for (int i = 0; i < lines.Count; i++)
                 {
                     Console.SetCursorPosition(_x, _y + i);
-                    Consoul.Write(lines[i], color: color, backgroundColor: backgroundColor, writeLine: false);
+                    Consoul.Write(lines[i], color: resolvedColor, backgroundColor: resolvedBackground, writeLine: false);
                 }
             }
+
+            _lastRenderedMessage = message;
+            _lastRenderedScheme = new ColorScheme
+            {
+                Color = resolvedColor,
+                BackgroundColor = resolvedBackground
+            };
         }
 
         /// <summary>
@@ -232,7 +246,7 @@ namespace ConsoulLibrary
                 else
                 {
                     // Re-render the last message if available to fit new console size
-                    RenderMessage(_pendingMessage ?? string.Empty);
+                    RenderMessage(_lastRenderedMessage ?? string.Empty, _lastRenderedScheme?.Color, _lastRenderedScheme?.BackgroundColor);
                 }
             }
         }
