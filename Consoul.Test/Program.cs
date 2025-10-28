@@ -59,19 +59,8 @@ namespace ConsoulLibrary.Test
             RenderOptions.WaitOnError = true;
             Routines.InitializeRoutine(args);
             //Routines.UseDelays = true; // Showcases the usecase of reusing input delays to simulate user response
-            try
-            {
-                var person = new { Name = "Trais" };
-                Consoul.Write("Hello {Name:Green}", ConsoleColor.Cyan, writeLine: true, args: person);
-                throw new Exception("Testing this shit");
-            }
-            catch (Exception ex)
-            {
-                Consoul.Write(ex, includeStackTrace: false);
-            }
-            Consoul.Wait();
-
-            Consoul.Render<Test.Views.TableView>()
+            
+            Consoul.Render<Test.Views.Welcome>()
                 .SaveInput("Test.xml");
         }
 
