@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using ConsoulLibrary.Views;
 
 namespace ConsoulLibrary
 {
@@ -11,10 +12,11 @@ namespace ConsoulLibrary
     /// Represents a static console view containing a set of predefined options.
     /// This view can display options to the user and respond to their selection, including supporting asynchronous rendering.
     /// </summary>
-    public abstract class StaticView : IView
+    public abstract class StaticView : IView, INavigationAwareView
     {
         private bool _goBackRequested = false;
         private string _goBackMessage = RenderOptions.DefaultGoBackMessage;
+        private ViewNavigationContext _navigationContext = new ViewNavigationContext();
 
         /// <summary>
         /// Gets or sets the title of the view.
@@ -30,6 +32,12 @@ namespace ConsoulLibrary
         /// Gets a value indicating whether a "go back" request has been made.
         /// </summary>
         public bool GoBackRequested => _goBackRequested;
+
+        ViewNavigationContext INavigationAwareView.NavigationContext
+        {
+            get => _navigationContext;
+            set => _navigationContext = value ?? new ViewNavigationContext();
+        }
 
         public ChoiceCallback OnOptionSelected { get; set; }
 
@@ -108,6 +116,53 @@ namespace ConsoulLibrary
         public void GoBack()
         {
             _goBackRequested = true;
+            _navigationContext.RequestNavigation(NavigationCommand.Pop());
+        }
+
+        /// <summary>
+        /// Requests navigation to a new view instance of type <typeparamref name="TView"/>.
+        /// </summary>
+        /// <typeparam name="TView">The view type to navigate to.</typeparam>
+        /// <param name="replace">
+        /// When <see langword="true"/> (default), the current view is replaced with the new view. When <see langword="false"/>,
+        /// the new view is pushed on top of the navigation stack.
+        /// </param>
+        protected void NavigateTo<TView>(bool replace = true) where TView : IView
+        {
+            if (replace)
+            {
+                _navigationContext.RequestNavigation(NavigationCommand.Replace(typeof(TView)));
+            }
+            else
+            {
+                _navigationContext.RequestNavigation(NavigationCommand.Push(typeof(TView)));
+            }
+        }
+
+        /// <summary>
+        /// Requests navigation to a new view created via the provided factory.
+        /// </summary>
+        /// <typeparam name="TView">The view type to navigate to.</typeparam>
+        /// <param name="viewFactory">Factory used to create the view instance.</param>
+        /// <param name="replace">
+        /// When <see langword="true"/> (default), the current view is replaced with the new view. When <see langword="false"/>,
+        /// the new view is pushed on top of the navigation stack.
+        /// </param>
+        protected void NavigateTo<TView>(Func<TView> viewFactory, bool replace = true) where TView : IView
+        {
+            if (viewFactory == null)
+            {
+                throw new ArgumentNullException(nameof(viewFactory));
+            }
+
+            if (replace)
+            {
+                _navigationContext.RequestNavigation(NavigationCommand.Replace(() => (IView)viewFactory()));
+            }
+            else
+            {
+                _navigationContext.RequestNavigation(NavigationCommand.Push(() => (IView)viewFactory()));
+            }
         }
 
         /// <summary>
@@ -118,6 +173,8 @@ namespace ConsoulLibrary
         public async Task RenderAsync(CancellationToken cancellationToken = default)
         {
             int idx = -1;
+            _goBackRequested = false;
+            _navigationContext.Reset();
             do
             {
                 Console.Clear();
@@ -152,6 +209,7 @@ namespace ConsoulLibrary
                     idx = result.Index;
                     if (idx >= 0 && idx < Options.Count)
                     {
+                        _navigationContext.Reset();
                         // Execute the selected option's action asynchronously.
                         await Task.Run(() =>
                         {
@@ -173,13 +231,28 @@ namespace ConsoulLibrary
                             await OnOptionSelected(idx);
                         }
 
+                        if (_navigationContext.HasPendingCommand)
+                        {
+                            if (_navigationContext.PendingCommand.CommandType == NavigationCommandType.Pop)
+                            {
+                                _goBackRequested = true;
+                            }
+                            break;
+                        }
+
+                        if (_goBackRequested)
+                        {
+                            break;
+                        }
+
                         idx = -1;
                     }
                     else if (idx == Options.Count)
                     {
-                        idx = int.MaxValue; // "Go back" selected.
+                        GoBack();
+                        break;
                     }
-                    
+
                 }
                 catch (Exception ex)
                 {
@@ -187,7 +260,7 @@ namespace ConsoulLibrary
                     if (RenderOptions.WaitOnError)
                         Consoul.Wait();
                 }
-            } while (idx < 0 && !GoBackRequested);
+            } while (idx < 0 && !_navigationContext.HasPendingCommand && !GoBackRequested);
         }
 
         /// <summary>

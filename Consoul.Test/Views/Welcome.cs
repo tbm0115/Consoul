@@ -14,7 +14,8 @@ namespace ConsoulLibrary.Test.Views
         public void Yes()
         {
             Story = new Story();
-            Story.Progress(typeof(PickUpStick));
+            NavigateTo(() => new PickUpStick(Story), replace: true);
+            //Story.Progress(typeof(PickUpStick));
         }
     }
     
