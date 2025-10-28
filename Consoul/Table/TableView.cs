@@ -59,7 +59,7 @@ namespace ConsoulLibrary
 
         public int GetRenderWidth() => GetTableWidth();
 
-        public void Render(ColorScheme contentScheme = null, ColorScheme lineScheme = null, bool isHeader = false)
+        public void Render(ColorScheme? contentScheme = null, ColorScheme? lineScheme = null, bool isHeader = false)
         {
             string line = _renderOptions.Lines.VerticalCharacter.ToString();
             bool showVertical = isHeader
@@ -184,7 +184,7 @@ namespace ConsoulLibrary
             _message = new FixedMessage(_cellWidth);
         }
 
-        public void Render(int? overrideWidth = null, ColorScheme contentScheme = null)
+        public void Render(int? overrideWidth = null, ColorScheme? contentScheme = null)
         {
             int width = overrideWidth.HasValue ? Math.Max(0, overrideWidth.Value) : _cellWidth;
             _cellWidth = width;
@@ -277,7 +277,7 @@ namespace ConsoulLibrary
             char line = TableRenderOptions.Lines.HorizontalCharacter;
             int tableWidth = GetTableWidth();
             string horizontalLine = new string(line, tableWidth);
-            var lineScheme = TableRenderOptions.Lines.Color;
+            ColorScheme? lineScheme = TableRenderOptions.Lines.Color;
 
             bool hasHeader = _header != null && _header.CellCount > 0;
             bool hasRows = _rows.Count > 0;
@@ -289,7 +289,7 @@ namespace ConsoulLibrary
 
             if (hasHeader)
             {
-                _header.Render(TableRenderOptions.HeaderScheme, lineScheme, isHeader: true);
+                _header.Render(TableRenderOptions.HeaderScheme, lineScheme.GetValueOrDefault(), isHeader: true);
                 if (TableRenderOptions.Lines.HeaderHorizontal)
                 {
                     Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
