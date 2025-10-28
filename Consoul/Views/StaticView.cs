@@ -136,7 +136,20 @@ namespace ConsoulLibrary
 
                 try
                 {
-                    idx = prompt.Render();
+                    var result = prompt.Render();
+                    if (result.IsCanceled)
+                    {
+                        GoBack();
+                        continue;
+                    }
+
+                    if (!result.HasSelection)
+                    {
+                        idx = -1;
+                        continue;
+                    }
+
+                    idx = result.Index;
                     if (idx >= 0 && idx < Options.Count)
                     {
                         // Execute the selected option's action asynchronously.
@@ -166,10 +179,7 @@ namespace ConsoulLibrary
                     {
                         idx = int.MaxValue; // "Go back" selected.
                     }
-                    else if (idx == Consoul.EscapeIndex)
-                    {
-                        GoBack();
-                    }
+                    
                 }
                 catch (Exception ex)
                 {

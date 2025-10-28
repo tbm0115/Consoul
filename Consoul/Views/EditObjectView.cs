@@ -132,7 +132,19 @@ namespace ConsoulLibrary
                 int addChoice = prompt.Add("Add", ConsoleColor.DarkYellow);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
-                choice = prompt.Render();
+                var result = prompt.Render();
+                if (result.IsCanceled)
+                {
+                    break;
+                }
+
+                if (!result.HasSelection)
+                {
+                    choice = -1;
+                    continue;
+                }
+
+                choice = result.Index;
                 if (choice == addChoice)
                 {
                     var newKey = EditObject(property, simpleKeyType);
@@ -188,7 +200,19 @@ namespace ConsoulLibrary
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
 
-                choice = prompt.Render();
+                var result = prompt.Render();
+                if (result.IsCanceled)
+                {
+                    break;
+                }
+
+                if (!result.HasSelection)
+                {
+                    choice = -1;
+                    continue;
+                }
+
+                choice = result.Index;
                 if (choice == addChoice)
                 {
                     var newItem = EditObject(property, simpleType);
@@ -226,7 +250,19 @@ namespace ConsoulLibrary
                 int addChoice = prompt.Add("Add", ConsoleColor.DarkYellow);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
-                choice = prompt.Render();
+                var result = prompt.Render();
+                if (result.IsCanceled)
+                {
+                    break;
+                }
+
+                if (!result.HasSelection)
+                {
+                    choice = -1;
+                    continue;
+                }
+
+                choice = result.Index;
                 if (choice == addChoice)
                 {
                     var newItem = Activator.CreateInstance(complexType);
