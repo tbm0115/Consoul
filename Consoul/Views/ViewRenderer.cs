@@ -15,11 +15,11 @@ namespace ConsoulLibrary.Views
         /// </summary>
         /// <typeparam name="T">Implementation of <see cref="IView"/>.</typeparam>
         /// <returns>Reference to the current <see cref="ViewRenderer"/> to fluently chain commands.</returns>
-        public ViewRenderer Render<T>() where T : IView
+        public ViewRenderer Render<T>(Func<IView> factory = null, Action<IView> configure = null) where T : IView
         {
             try
             {
-                RunNavigationLoopAsync(typeof(T), CancellationToken.None).GetAwaiter().GetResult();
+                RunNavigationLoopAsync<T>(factory, configure, CancellationToken.None).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -38,11 +38,11 @@ namespace ConsoulLibrary.Views
         /// </summary>
         /// <typeparam name="T">Implementation of <see cref="IView"/>.</typeparam>
         /// <returns>Reference to the current <see cref="ViewRenderer"/> to fluently chain commands.</returns>
-        public async Task<ViewRenderer> RenderAsync<T>() where T : IView
+        public async Task<ViewRenderer> RenderAsync<T>(Func<IView> factory = null, Action<IView> configure = null) where T : IView
         {
             try
             {
-                await RunNavigationLoopAsync(typeof(T), CancellationToken.None);
+                await RunNavigationLoopAsync<T>(factory, configure, CancellationToken.None);
             }
             catch (Exception ex)
             {
@@ -66,10 +66,11 @@ namespace ConsoulLibrary.Views
             xRoutine.SaveInputs(filepath);
         }
 
-        private async Task RunNavigationLoopAsync(Type initialViewType, CancellationToken cancellationToken)
+        private async Task RunNavigationLoopAsync<T>(Func<IView> factory = null, Action<IView> configure = null, CancellationToken cancellationToken = default) where T : IView
         {
+            Type initialViewType = typeof(T);
             Stack<ViewStackEntry> navigationStack = new Stack<ViewStackEntry>();
-            navigationStack.Push(new ViewStackEntry(initialViewType, null, null));
+            navigationStack.Push(new ViewStackEntry(initialViewType, factory, configure));
 
             while (navigationStack.Count > 0)
             {
