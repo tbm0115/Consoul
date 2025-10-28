@@ -21,6 +21,12 @@
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Entry\Interfaces\**" />
+    <EmbeddedResource Remove="Entry\Interfaces\**" />
+    <None Remove="Entry\Interfaces\**" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <None Remove="Resources\Windows Ding.wav" />
@@ -61,10 +67,6 @@
       <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Entry\Interfaces\" />
   </ItemGroup>
 
 </Project>

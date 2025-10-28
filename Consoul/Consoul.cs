@@ -612,7 +612,8 @@ namespace ConsoulLibrary {
         /// <returns>Index of the option that was chosen. Returns -1 if selection was invalid.</returns>
         public static int Prompt(string message, bool clear = false, CancellationToken cancellationToken = default, params string[] options)
         {
-            return (new SelectionPrompt(message, clear, options)).Render(cancellationToken);
+            var result = (new SelectionPrompt(message, clear, options)).Render(cancellationToken);
+            return result.Index;
         }
 
         /// <summary>
@@ -624,7 +625,8 @@ namespace ConsoulLibrary {
         /// <returns></returns>
         public static int Prompt(string message, SelectOption[] options, bool clear = false, CancellationToken cancellationToken = default)
         {
-            return (new SelectionPrompt(message, clear, options)).Render(cancellationToken);
+            var result = (new SelectionPrompt(message, clear, options)).Render(cancellationToken);
+            return result.Index;
         }
 
         /// <summary>
