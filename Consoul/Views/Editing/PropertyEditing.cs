@@ -15,7 +15,7 @@ namespace ConsoulLibrary.Views.Editing
         /// <param name="property">The property being edited.</param>
         /// <param name="documentation">Documentation describing the property.</param>
         /// <param name="currentValue">The current value of the property.</param>
-        public PropertyEditContext(object model, PropertyInfo property, PropertyDocumentation documentation, object? currentValue)
+        public PropertyEditContext(object model, PropertyInfo property, PropertyDocumentation documentation, object currentValue)
         {
             Model = model ?? throw new ArgumentNullException(nameof(model));
             Property = property ?? throw new ArgumentNullException(nameof(property));
@@ -41,7 +41,7 @@ namespace ConsoulLibrary.Views.Editing
         /// <summary>
         /// Gets or sets the current value of the property.
         /// </summary>
-        public object? CurrentValue { get; set; }
+        public object CurrentValue { get; set; }
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ namespace ConsoulLibrary.Views.Editing
         /// <param name="context">Context of the property edit.</param>
         /// <param name="value">The value produced by the editor.</param>
         /// <returns>The formatted value that should be assigned to the property.</returns>
-        object? Format(PropertyEditContext context, object? value);
+        object Format(PropertyEditContext context, object value);
     }
 
     /// <summary>
@@ -69,7 +69,7 @@ namespace ConsoulLibrary.Views.Editing
         /// <param name="context">Context for the property edit.</param>
         /// <param name="value">Receives the updated value if the edit succeeded.</param>
         /// <returns><see langword="true"/> when the edit completes and a value should be assigned; otherwise <see langword="false"/>.</returns>
-        bool TryEdit(PropertyEditContext context, out object? value);
+        bool TryEdit(PropertyEditContext context, out object value);
     }
 
     /// <summary>

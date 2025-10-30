@@ -97,13 +97,15 @@ namespace ConsoulLibrary
                 return;
             }
 
-            if (IsDictionaryType(propertyType, out var keyValuePairType))
+            Type keyType;
+            Type valueType;
+            if (IsDictionaryType(propertyType, out keyType, out valueType))
             {
-                if (IsSimpleType(keyValuePairType?.Item1, out var simpleKeyType))
+                if (IsSimpleType(keyType, out var simpleKeyType))
                 {
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}",
-                        () => EditSimpleKeyDictionary(Model, property, simpleKeyType, keyValuePairType?.Item2),
+                        () => EditSimpleKeyDictionary(Model, property, simpleKeyType, valueType),
                         () => ConsoleColor.DarkYellow));
                 }
                 else
@@ -178,11 +180,13 @@ namespace ConsoulLibrary
                 return;
             }
 
-            if (IsDictionaryType(propertyType, out var keyValueType))
+            Type keyType;
+            Type valueType;
+            if (IsDictionaryType(propertyType, out keyType, out valueType))
             {
-                if (IsSimpleType(keyValueType?.Item1, out var simpleKeyType))
+                if (IsSimpleType(keyType, out var simpleKeyType))
                 {
-                    EditSimpleKeyDictionary(Model, descriptor.Property, simpleKeyType, keyValueType?.Item2);
+                    EditSimpleKeyDictionary(Model, descriptor.Property, simpleKeyType, valueType);
                 }
                 else
                 {
@@ -202,7 +206,7 @@ namespace ConsoulLibrary
             editor.Run();
         }
 
-        private static object? ConvertIfNeeded(object? value, Type targetType)
+        private static object ConvertIfNeeded(object value, Type targetType)
         {
             if (value == null)
             {
@@ -223,7 +227,13 @@ namespace ConsoulLibrary
             var attribute = property.GetCustomAttribute<PropertyEditorAttribute>(inherit: true);
             if (attribute != null)
             {
-                return (IPropertyEditor)Activator.CreateInstance(attribute.EditorType)!;
+                var editor = Activator.CreateInstance(attribute.EditorType) as IPropertyEditor;
+                if (editor == null)
+                {
+                    throw new InvalidOperationException("Property editor attribute references an invalid editor type.");
+                }
+
+                return editor;
             }
 
             if (property.PropertyType == typeof(string) && property.Name.EndsWith("Path", StringComparison.OrdinalIgnoreCase))
@@ -234,7 +244,7 @@ namespace ConsoulLibrary
             return new DefaultPropertyEditor();
         }
 
-        private static object? ApplyFormatter(PropertyInfo property, PropertyEditContext context, object? value)
+        private static object ApplyFormatter(PropertyInfo property, PropertyEditContext context, object value)
         {
             var attribute = property.GetCustomAttribute<PropertyValueFormatterAttribute>(inherit: true);
             if (attribute == null)
@@ -242,7 +252,12 @@ namespace ConsoulLibrary
                 return value;
             }
 
-            var formatter = (IPropertyValueFormatter)Activator.CreateInstance(attribute.FormatterType)!;
+            var formatter = Activator.CreateInstance(attribute.FormatterType) as IPropertyValueFormatter;
+            if (formatter == null)
+            {
+                throw new InvalidOperationException("Property formatter attribute references an invalid formatter type.");
+            }
+
             return formatter.Format(context, value);
         }
 
@@ -296,16 +311,18 @@ namespace ConsoulLibrary
             return false;
         }
 
-        private static bool IsDictionaryType(Type type, out (Type, Type)? keyValuePairType)
+        private static bool IsDictionaryType(Type type, out Type keyType, out Type valueType)
         {
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
             {
                 var arguments = type.GetGenericArguments();
-                keyValuePairType = (arguments[0], arguments[1]);
+                keyType = arguments[0];
+                valueType = arguments[1];
                 return true;
             }
 
-            keyValuePairType = null;
+            keyType = null;
+            valueType = null;
             return false;
         }
 
@@ -692,7 +709,7 @@ namespace ConsoulLibrary
 
                     if (ch == '\n')
                     {
-                        if (builder.Length == 0 || builder[^1] != '\n')
+                        if (builder.Length == 0 || builder[builder.Length - 1] != '\n')
                         {
                             builder.Append('\n');
                         }
@@ -750,20 +767,10 @@ namespace ConsoulLibrary
                 Console.WriteLine();
                 var lines = BuildDocument();
 
-                for (var i = 0; i < lines.Count; i++)
+                foreach (var line in lines)
                 {
-                    var line = lines[i];
-                    if (line.DescriptorIndex == _selectedIndex)
-                    {
-                        using (new ColorScope(RenderOptions.DefaultColor, _view.HighlightColor))
-                        {
-                            Console.WriteLine(line.Text);
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine(line.Text);
-                    }
+                    var highlight = line.DescriptorIndex == _selectedIndex;
+                    line.Write(highlight, _view.HighlightColor);
                 }
             }
 
@@ -771,40 +778,41 @@ namespace ConsoulLibrary
             {
                 var lines = new List<DocumentLine>
                 {
-                    new DocumentLine("{", -1)
+                    new DocumentLine(new[] { CreateDefaultSegment("{") }, -1)
                 };
 
                 for (var index = 0; index < _view._descriptors.Count; index++)
                 {
                     var descriptor = _view._descriptors[index];
-                    var summaryLines = BuildCommentLines(descriptor);
-                    foreach (var line in summaryLines)
+                    foreach (var commentLine in BuildCommentLines(descriptor))
                     {
-                        lines.Add(new DocumentLine(line, -1));
+                        lines.Add(commentLine);
                     }
 
                     var value = descriptor.Property.GetValue(_view.Model);
-                    var jsonValue = FormatJsonValue(value);
                     var suffix = index == _view._descriptors.Count - 1 ? string.Empty : ",";
-                    lines.Add(new DocumentLine($"  \"{descriptor.DisplayName}\": {jsonValue}{suffix}", index));
+                    lines.Add(BuildPropertyLine(descriptor, value, suffix, index));
                 }
 
-                lines.Add(new DocumentLine("}", -1));
+                lines.Add(new DocumentLine(new[] { CreateDefaultSegment("}") }, -1));
                 return lines;
             }
 
-            private static IEnumerable<string> BuildCommentLines(EditablePropertyDescriptor descriptor)
+            private static IEnumerable<DocumentLine> BuildCommentLines(EditablePropertyDescriptor descriptor)
             {
-                var comments = new List<string>();
+                var comments = new List<DocumentLine>();
                 var summary = descriptor.Documentation.XmlSummary;
                 var description = descriptor.Documentation.DisplayDescription;
 
                 var text = !string.IsNullOrWhiteSpace(summary) ? summary : description;
                 if (!string.IsNullOrWhiteSpace(text))
                 {
-                    foreach (var line in NormalizeForComment(text).Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                    var normalized = NormalizeForComment(text);
+                    var pieces = normalized.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var piece in pieces)
                     {
-                        comments.Add($"  // {line.Trim()}");
+                        var segmentText = "  // " + piece.Trim();
+                        comments.Add(new DocumentLine(new[] { CreateCommentSegment(segmentText) }, -1));
                     }
                 }
 
@@ -838,34 +846,193 @@ namespace ConsoulLibrary
                 return NormalizeWhitespace(builder.ToString());
             }
 
-            private static string FormatJsonValue(object value)
+            private DocumentLine BuildPropertyLine(EditablePropertyDescriptor descriptor, object value, string suffix, int descriptorIndex)
+            {
+                var segments = new List<DocumentSegment>
+                {
+                    CreateDefaultSegment("  "),
+                    CreateStringSegment("\"" + descriptor.DisplayName + "\""),
+                    CreateDefaultSegment(": ")
+                };
+
+                segments.AddRange(FormatJsonSegments(value));
+
+                if (!string.IsNullOrEmpty(suffix))
+                {
+                    segments.Add(CreateDefaultSegment(suffix));
+                }
+
+                return new DocumentLine(segments, descriptorIndex);
+            }
+
+            private static IEnumerable<DocumentSegment> FormatJsonSegments(object value)
             {
                 if (value == null)
                 {
-                    return "null";
+                    return new[] { CreateDefaultSegment("null") };
                 }
 
+                string json;
                 try
                 {
-                    return JsonSerializer.Serialize(value, value.GetType());
+                    json = JsonSerializer.Serialize(value, value.GetType());
                 }
                 catch
                 {
-                    return JsonSerializer.Serialize(value.ToString());
+                    json = JsonSerializer.Serialize(value != null ? value.ToString() : string.Empty);
+                }
+
+                return TokenizeJson(json);
+            }
+
+            private static IEnumerable<DocumentSegment> TokenizeJson(string json)
+            {
+                var segments = new List<DocumentSegment>();
+                var builder = new StringBuilder();
+                var inString = false;
+
+                for (var index = 0; index < json.Length; index++)
+                {
+                    var ch = json[index];
+
+                    if (inString)
+                    {
+                        builder.Append(ch);
+                        if (ch == '"' && !IsEscaped(json, index))
+                        {
+                            segments.Add(CreateStringSegment(builder.ToString()));
+                            builder.Clear();
+                            inString = false;
+                        }
+
+                        continue;
+                    }
+
+                    if (ch == '"')
+                    {
+                        if (builder.Length > 0)
+                        {
+                            segments.Add(CreateDefaultSegment(builder.ToString()));
+                            builder.Clear();
+                        }
+
+                        builder.Append(ch);
+                        inString = true;
+                        continue;
+                    }
+
+                    if (char.IsDigit(ch) || (ch == '-' && index + 1 < json.Length && char.IsDigit(json[index + 1])))
+                    {
+                        if (builder.Length > 0)
+                        {
+                            segments.Add(CreateDefaultSegment(builder.ToString()));
+                            builder.Clear();
+                        }
+
+                        var numberBuilder = new StringBuilder();
+                        numberBuilder.Append(ch);
+                        index++;
+                        while (index < json.Length && (char.IsDigit(json[index]) || json[index] == '.' || json[index] == 'e' || json[index] == 'E' || json[index] == '+' || json[index] == '-'))
+                        {
+                            numberBuilder.Append(json[index]);
+                            index++;
+                        }
+
+                        index--;
+                        segments.Add(CreateNumberSegment(numberBuilder.ToString()));
+                        continue;
+                    }
+
+                    builder.Append(ch);
+                }
+
+                if (builder.Length > 0)
+                {
+                    segments.Add(CreateDefaultSegment(builder.ToString()));
+                }
+
+                return segments;
+            }
+
+            private static bool IsEscaped(string text, int index)
+            {
+                var backslashes = 0;
+                var current = index - 1;
+                while (current >= 0 && text[current] == '\\')
+                {
+                    backslashes++;
+                    current--;
+                }
+
+                return backslashes % 2 == 1;
+            }
+
+            private static DocumentSegment CreateDefaultSegment(string text)
+            {
+                return new DocumentSegment(text, ConsoleColor.White, ConsoleColor.Black);
+            }
+
+            private static DocumentSegment CreateStringSegment(string text)
+            {
+                return new DocumentSegment(text, ConsoleColor.Yellow, ConsoleColor.Black);
+            }
+
+            private static DocumentSegment CreateNumberSegment(string text)
+            {
+                return new DocumentSegment(text, ConsoleColor.Cyan, ConsoleColor.Black);
+            }
+
+            private static DocumentSegment CreateCommentSegment(string text)
+            {
+                return new DocumentSegment(text, ConsoleColor.DarkGreen, ConsoleColor.Black);
+            }
+
+            private sealed class DocumentLine
+            {
+                public DocumentLine(IEnumerable<DocumentSegment> segments, int descriptorIndex)
+                {
+                    if (segments == null)
+                    {
+                        throw new ArgumentNullException(nameof(segments));
+                    }
+
+                    Segments = new List<DocumentSegment>(segments);
+                    DescriptorIndex = descriptorIndex;
+                }
+
+                public IList<DocumentSegment> Segments { get; }
+
+                public int DescriptorIndex { get; }
+
+                public void Write(bool highlight, ConsoleColor highlightColor)
+                {
+                    foreach (var segment in Segments)
+                    {
+                        var background = highlight ? (ConsoleColor?)highlightColor : segment.Background;
+                        using (var scope = new ColorScope(segment.Foreground, background))
+                        {
+                            Console.Write(segment.Text);
+                        }
+                    }
+
+                    Console.WriteLine();
                 }
             }
 
-            private readonly struct DocumentLine
+            private sealed class DocumentSegment
             {
-                public DocumentLine(string text, int descriptorIndex)
+                public DocumentSegment(string text, ConsoleColor foreground, ConsoleColor background)
                 {
-                    Text = text;
-                    DescriptorIndex = descriptorIndex;
+                    Text = text ?? string.Empty;
+                    Foreground = foreground;
+                    Background = background;
                 }
 
                 public string Text { get; }
 
-                public int DescriptorIndex { get; }
+                public ConsoleColor Foreground { get; }
+
+                public ConsoleColor Background { get; }
             }
         }
     }

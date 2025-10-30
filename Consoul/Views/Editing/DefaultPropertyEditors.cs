@@ -10,16 +10,18 @@ namespace ConsoulLibrary.Views.Editing
     public sealed class DefaultPropertyEditor : IPropertyEditor
     {
         /// <inheritdoc />
-        public bool TryEdit(PropertyEditContext context, out object? value)
+        public bool TryEdit(PropertyEditContext context, out object value)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            var instruction = !string.IsNullOrWhiteSpace(context.Documentation.DisplayDescription)
-                ? context.Documentation.DisplayDescription
-                : context.Documentation.XmlSummary;
+            var instruction = context.Documentation.DisplayDescription;
+            if (string.IsNullOrWhiteSpace(instruction))
+            {
+                instruction = context.Documentation.XmlSummary;
+            }
 
             if (!string.IsNullOrWhiteSpace(instruction))
             {
@@ -27,16 +29,17 @@ namespace ConsoulLibrary.Views.Editing
             }
 
             var expectedType = Nullable.GetUnderlyingType(context.Property.PropertyType) ?? context.Property.PropertyType;
-            var message = $"Enter new {GetPropertyDisplayName(context)} ({expectedType.Name})";
+            var message = "Enter new " + GetPropertyDisplayName(context) + " (" + expectedType.Name + ")";
             value = Consoul.Input(message, expectedType);
             return true;
         }
 
         private static string GetPropertyDisplayName(PropertyEditContext context)
         {
-            if (!string.IsNullOrWhiteSpace(context.Documentation.DisplayName))
+            var displayName = context.Documentation.DisplayName;
+            if (!string.IsNullOrWhiteSpace(displayName))
             {
-                return context.Documentation.DisplayName!;
+                return displayName;
             }
 
             return context.Property.Name;
@@ -73,16 +76,18 @@ namespace ConsoulLibrary.Views.Editing
     public sealed class FilePathPropertyEditor : IPropertyEditor
     {
         /// <inheritdoc />
-        public bool TryEdit(PropertyEditContext context, out object? value)
+        public bool TryEdit(PropertyEditContext context, out object value)
         {
             if (context == null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            var prompt = string.IsNullOrWhiteSpace(context.Documentation.DisplayDescription)
-                ? $"Please type or paste a filepath below:"
-                : context.Documentation.DisplayDescription!;
+            var prompt = context.Documentation.DisplayDescription;
+            if (string.IsNullOrWhiteSpace(prompt))
+            {
+                prompt = "Please type or paste a filepath below:";
+            }
 
             var summary = context.Documentation.XmlSummary;
             if (!string.IsNullOrWhiteSpace(summary))
@@ -91,10 +96,15 @@ namespace ConsoulLibrary.Views.Editing
             }
 
             Consoul.WriteCore(NormalizeWhitespace(prompt), RenderOptions.SubnoteColor);
-            var displayName = !string.IsNullOrWhiteSpace(context.Documentation.DisplayName)
-                ? context.Documentation.DisplayName
-                : context.Property.Name;
-            value = Consoul.PromptForFilepath(context.Property.GetValue(context.Model)?.ToString() ?? string.Empty, $"Select {displayName}", checkExists: false);
+            var displayName = context.Documentation.DisplayName;
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                displayName = context.Property.Name;
+            }
+
+            var currentValue = context.Property.GetValue(context.Model);
+            var currentText = currentValue != null ? currentValue.ToString() : string.Empty;
+            value = Consoul.PromptForFilepath(currentText, "Select " + displayName, checkExists: false);
             return true;
         }
 

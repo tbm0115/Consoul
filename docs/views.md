@@ -75,10 +75,15 @@ If you need to normalise values before assignment—for example trimming a parti
 ```csharp
 public sealed class RelativePathFormatter : IPropertyValueFormatter
 {
-    public object? Format(PropertyEditContext context, object? value)
-        => value is string text
-            ? Path.GetRelativePath(AppContext.BaseDirectory, text)
-            : value;
+    public object Format(PropertyEditContext context, object value)
+    {
+        if (value is string text)
+        {
+            return Path.GetRelativePath(AppContext.BaseDirectory, text);
+        }
+
+        return value;
+    }
 }
 
 public sealed class ScriptOptions

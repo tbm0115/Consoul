@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using ConsoulLibrary.Views.Editing;
 using Xunit;
@@ -18,7 +19,12 @@ namespace ConsoulLibrary.Tests.Views
             var property = typeof(SampleModel).GetProperty(nameof(SampleModel.Adapter));
             Assert.NotNull(property);
 
-            var documentation = new PropertyDocumentation(property!);
+            if (property == null)
+            {
+                throw new InvalidOperationException("Expected Adapter property to exist.");
+            }
+
+            var documentation = new PropertyDocumentation(property);
             Assert.Equal("Adapter name", documentation.DisplayName);
             Assert.Equal("Adapter path description", documentation.DisplayDescription);
             Assert.Contains("SampleDependency", documentation.XmlSummary);

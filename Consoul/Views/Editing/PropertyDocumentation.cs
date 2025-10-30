@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Xml.Linq;
 
 namespace ConsoulLibrary.Views.Editing
@@ -32,28 +33,32 @@ namespace ConsoulLibrary.Views.Editing
         /// <summary>
         /// Gets the resolved display name for the property, if any.
         /// </summary>
-        public string? DisplayName { get; }
+        public string DisplayName { get; }
 
         /// <summary>
         /// Gets a human friendly description for the property, if any.
         /// </summary>
-        public string? DisplayDescription { get; }
+        public string DisplayDescription { get; }
 
         /// <summary>
         /// Gets the XML documentation summary for the property, if available.
         /// </summary>
         public string XmlSummary => _xmlSummary.Value;
 
-        private static string? ResolveDisplayName(PropertyInfo property)
+        private static string ResolveDisplayName(PropertyInfo property)
         {
-            var displayAttribute = property.GetCustomAttribute<DisplayAttribute>(inherit: true);
-            if (displayAttribute?.GetName() is { } name)
+            var displayAttribute = property.GetCustomAttribute<DisplayAttribute>(true);
+            if (displayAttribute != null)
             {
-                return name;
+                var name = displayAttribute.GetName();
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    return name;
+                }
             }
 
-            var displayNameAttribute = property.GetCustomAttribute<DisplayNameAttribute>(inherit: true);
-            if (!string.IsNullOrWhiteSpace(displayNameAttribute?.DisplayName))
+            var displayNameAttribute = property.GetCustomAttribute<DisplayNameAttribute>(true);
+            if (displayNameAttribute != null && !string.IsNullOrWhiteSpace(displayNameAttribute.DisplayName))
             {
                 return displayNameAttribute.DisplayName;
             }
@@ -61,16 +66,20 @@ namespace ConsoulLibrary.Views.Editing
             return null;
         }
 
-        private static string? ResolveDescription(PropertyInfo property)
+        private static string ResolveDescription(PropertyInfo property)
         {
-            var displayAttribute = property.GetCustomAttribute<DisplayAttribute>(inherit: true);
-            if (displayAttribute?.GetDescription() is { } description && !string.IsNullOrWhiteSpace(description))
+            var displayAttribute = property.GetCustomAttribute<DisplayAttribute>(true);
+            if (displayAttribute != null)
             {
-                return description;
+                var description = displayAttribute.GetDescription();
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    return description;
+                }
             }
 
-            var descriptionAttribute = property.GetCustomAttribute<DescriptionAttribute>(inherit: true);
-            if (!string.IsNullOrWhiteSpace(descriptionAttribute?.Description))
+            var descriptionAttribute = property.GetCustomAttribute<DescriptionAttribute>(true);
+            if (descriptionAttribute != null && !string.IsNullOrWhiteSpace(descriptionAttribute.Description))
             {
                 return descriptionAttribute.Description;
             }
@@ -84,7 +93,7 @@ namespace ConsoulLibrary.Views.Editing
     /// </summary>
     internal static class XmlDocumentationProvider
     {
-        private static readonly ConcurrentDictionary<Assembly, XDocument?> CachedDocuments = new ConcurrentDictionary<Assembly, XDocument?>();
+        private static readonly ConcurrentDictionary<Assembly, Lazy<XDocument>> CachedDocuments = new ConcurrentDictionary<Assembly, Lazy<XDocument>>();
 
         public static string GetSummary(MemberInfo member)
         {
@@ -105,10 +114,23 @@ namespace ConsoulLibrary.Views.Editing
                 return string.Empty;
             }
 
-            var memberElement = document.Root?
-                .Elements("members")
-                .Elements("member")
-                .FirstOrDefault(element => string.Equals(element.Attribute("name")?.Value, memberName, StringComparison.Ordinal));
+            var root = document.Root;
+            if (root == null)
+            {
+                return string.Empty;
+            }
+
+            XElement memberElement = null;
+            foreach (var element in root.Elements("members").Elements("member"))
+            {
+                var attribute = element.Attribute("name");
+                var value = attribute != null ? attribute.Value : null;
+                if (string.Equals(value, memberName, StringComparison.Ordinal))
+                {
+                    memberElement = element;
+                    break;
+                }
+            }
 
             if (memberElement == null)
             {
@@ -132,7 +154,8 @@ namespace ConsoulLibrary.Views.Editing
                 {
                     if (string.Equals(element.Name.LocalName, "see", StringComparison.OrdinalIgnoreCase))
                     {
-                        var cref = element.Attribute("cref")?.Value;
+                        var crefAttribute = element.Attribute("cref");
+                        var cref = crefAttribute != null ? crefAttribute.Value : null;
                         if (!string.IsNullOrWhiteSpace(cref))
                         {
                             builder.Append(FormatCref(cref));
@@ -153,17 +176,23 @@ namespace ConsoulLibrary.Views.Editing
             return builder.ToString().Trim();
         }
 
-        private static XDocument? GetXmlDocument(Assembly assembly)
+        private static XDocument GetXmlDocument(Assembly assembly)
         {
             if (assembly == null)
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
 
-            return CachedDocuments.GetOrAdd(assembly, LoadDocument);
+            var lazy = CachedDocuments.GetOrAdd(assembly, CreateLazyDocument);
+            return lazy.Value;
         }
 
-        private static XDocument? LoadDocument(Assembly assembly)
+        private static Lazy<XDocument> CreateLazyDocument(Assembly assembly)
+        {
+            return new Lazy<XDocument>(() => LoadDocument(assembly), LazyThreadSafetyMode.ExecutionAndPublication);
+        }
+
+        private static XDocument LoadDocument(Assembly assembly)
         {
             try
             {
@@ -173,14 +202,28 @@ namespace ConsoulLibrary.Views.Editing
                     return XDocument.Load(xmlFileName);
                 }
 
-                var resourceName = assembly
-                    .GetManifestResourceNames()
-                    .FirstOrDefault(name => name.EndsWith(Path.GetFileName(xmlFileName), StringComparison.OrdinalIgnoreCase));
-
-                if (resourceName != null)
+                var fileName = Path.GetFileName(xmlFileName);
+                if (!string.IsNullOrEmpty(fileName))
                 {
-                    using var stream = assembly.GetManifestResourceStream(resourceName);
-                    return stream != null ? XDocument.Load(stream) : null;
+                    var resourceName = assembly
+                        .GetManifestResourceNames()
+                        .FirstOrDefault(name => name.EndsWith(fileName, StringComparison.OrdinalIgnoreCase));
+
+                    if (resourceName != null)
+                    {
+                        var stream = assembly.GetManifestResourceStream(resourceName);
+                        if (stream != null)
+                        {
+                            try
+                            {
+                                return XDocument.Load(stream);
+                            }
+                            finally
+                            {
+                                stream.Dispose();
+                            }
+                        }
+                    }
                 }
             }
             catch
@@ -191,7 +234,7 @@ namespace ConsoulLibrary.Views.Editing
             return null;
         }
 
-        private static string? GetMemberElementName(MemberInfo member)
+        private static string GetMemberElementName(MemberInfo member)
         {
             var type = member.DeclaringType;
             if (type == null)
@@ -205,15 +248,21 @@ namespace ConsoulLibrary.Views.Editing
                 return null;
             }
 
-            return member.MemberType switch
+            switch (member.MemberType)
             {
-                MemberTypes.Property => $"P:{typeName}.{member.Name}",
-                MemberTypes.Method => $"M:{typeName}.{member.Name}",
-                MemberTypes.Field => $"F:{typeName}.{member.Name}",
-                MemberTypes.Event => $"E:{typeName}.{member.Name}",
-                MemberTypes.TypeInfo => $"T:{typeName}",
-                _ => null,
-            };
+                case MemberTypes.Property:
+                    return "P:" + typeName + "." + member.Name;
+                case MemberTypes.Method:
+                    return "M:" + typeName + "." + member.Name;
+                case MemberTypes.Field:
+                    return "F:" + typeName + "." + member.Name;
+                case MemberTypes.Event:
+                    return "E:" + typeName + "." + member.Name;
+                case MemberTypes.TypeInfo:
+                    return "T:" + typeName;
+                default:
+                    return null;
+            }
         }
 
         private static string FormatCref(string cref)
