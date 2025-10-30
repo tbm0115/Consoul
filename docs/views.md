@@ -52,3 +52,41 @@ public class MainMenu : StaticView
 * **Shared state & navigation** – Pass dependencies via constructors or properties; views are regular classes and can store fields, timers, or other stateful components. Use `NavigateTo<TView>()` (or `NavigateTo<TView>(replace: false)` when you need to push) or `GoBack()` inside an option to request transitions; the renderer now applies these commands iteratively so the call stack stays flat even through long navigation chains. Inject shared services (logging, data providers) to keep options thin and testable.
 * **Composed dashboards** – `DynamicView` options can render tables or progress bars inline, then rehydrate their options list after completing background work. This makes it easy to build monitoring dashboards driven by timers or file watchers; schedule refreshes with `System.Threading.Timer` to trigger `RenderAsync()` when data changes.
 * **Choice callbacks** – Supply a `ChoiceCallback` to track navigation analytics, enforce authorisation, or log audit trails. Because the callback receives the executed option, you can centralise cross-cutting concerns instead of duplicating logic inside every handler.
+
+## Object editing
+
+`EditObjectView` now renders the target model as annotated JSON so users can arrow through property values before pressing <kbd>Enter</kbd> to edit. Each line includes JavaScript-style comments sourced from `[Display]` metadata and the model's XML documentation (including `<see cref="..."/>` references). Use the left/right or up/down arrows—or the <kbd>Tab</kbd> key—to change the selection, and <kbd>Esc</kbd> to return to the menu.
+
+### Metadata-aware prompts
+
+When a property is selected the editor surfaces the resolved display name, description and summary before invoking an appropriate prompt. For simple types the default prompt respects the property's type; string properties ending with `Path` automatically use `Consoul.PromptForFilepath`. You can opt into other editors by decorating properties with `PropertyEditorAttribute`:
+
+```csharp
+public sealed class AdapterConfiguration
+{
+    [PropertyEditor(typeof(FilePathPropertyEditor))]
+    [Display(Name = "Adapter", Description = "Full path to the adapter implementation.")]
+    public string AdapterPath { get; set; } = string.Empty;
+}
+```
+
+If you need to normalise values before assignment—for example trimming a partial path—implement `IPropertyValueFormatter` and apply `PropertyValueFormatterAttribute` to the property. Formatters receive the edit context so they can inspect the model, documentation and original value:
+
+```csharp
+public sealed class RelativePathFormatter : IPropertyValueFormatter
+{
+    public object? Format(PropertyEditContext context, object? value)
+        => value is string text
+            ? Path.GetRelativePath(AppContext.BaseDirectory, text)
+            : value;
+}
+
+public sealed class ScriptOptions
+{
+    [PropertyEditor(typeof(FilePathPropertyEditor))]
+    [PropertyValueFormatter(typeof(RelativePathFormatter))]
+    public string ScriptPath { get; set; } = string.Empty;
+}
+```
+
+Complex types (objects, collections and dictionaries) still launch nested `EditObjectView` instances so you can drill into hierarchies while preserving the legacy menu options for power users.
