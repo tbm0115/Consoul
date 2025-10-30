@@ -234,7 +234,7 @@ namespace ConsoulLibrary
                 else
                 {
                     Int32.TryParse(input, out selection);
-                    if (selection <= 0 || selection > (_options.Count + 1))
+                    if (selection <= 0 || selection > _options.Count)
                     {
                         Consoul.WriteCore("Invalid selection!", RenderOptions.InvalidColor);
                         selection = -1;
