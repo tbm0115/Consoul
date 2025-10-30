@@ -133,4 +133,82 @@ namespace ConsoulLibrary.Views.Editing
         /// </summary>
         public Type FormatterType { get; }
     }
+
+    /// <summary>
+    /// Provides extensibility hooks for supplying documentation, editors and formatters when a property cannot be inspected directly.
+    /// </summary>
+    public interface IPropertyMetadataResolver
+    {
+        /// <summary>
+        /// Resolves metadata used when editing the target property.
+        /// </summary>
+        /// <param name="property">The property that is being edited.</param>
+        /// <returns>A metadata container describing custom documentation, editors and formatters.</returns>
+        ResolvedPropertyMetadata Resolve(PropertyInfo property);
+    }
+
+    /// <summary>
+    /// Describes optional metadata supplied by <see cref="IPropertyMetadataResolver"/> implementations.
+    /// </summary>
+    public sealed class ResolvedPropertyMetadata
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResolvedPropertyMetadata"/> class.
+        /// </summary>
+        /// <param name="documentation">Documentation describing the property.</param>
+        /// <param name="editor">Editor instance that should collect values for the property.</param>
+        /// <param name="formatter">Formatter instance applied to the editor's result.</param>
+        public ResolvedPropertyMetadata(PropertyDocumentation documentation, IPropertyEditor editor, IPropertyValueFormatter formatter)
+        {
+            Documentation = documentation;
+            Editor = editor;
+            Formatter = formatter;
+        }
+
+        /// <summary>
+        /// Gets the documentation describing the property.
+        /// </summary>
+        public PropertyDocumentation Documentation { get; }
+
+        /// <summary>
+        /// Gets the editor that should capture the property's value.
+        /// </summary>
+        public IPropertyEditor Editor { get; }
+
+        /// <summary>
+        /// Gets the formatter that should post-process the value produced by the editor.
+        /// </summary>
+        public IPropertyValueFormatter Formatter { get; }
+    }
+
+    /// <summary>
+    /// Specifies a resolver that supplies custom metadata for a property.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    public sealed class PropertyMetadataResolverAttribute : Attribute
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PropertyMetadataResolverAttribute"/> class.
+        /// </summary>
+        /// <param name="resolverType">Type implementing <see cref="IPropertyMetadataResolver"/>.</param>
+        public PropertyMetadataResolverAttribute(Type resolverType)
+        {
+            if (resolverType == null)
+            {
+                throw new ArgumentNullException(nameof(resolverType));
+            }
+
+            if (!typeof(IPropertyMetadataResolver).IsAssignableFrom(resolverType))
+            {
+                throw new ArgumentException("Resolver type '" + resolverType.FullName + "' must implement " + nameof(IPropertyMetadataResolver) + ".", nameof(resolverType));
+            }
+
+            ResolverType = resolverType;
+        }
+
+        /// <summary>
+        /// Gets the resolver type associated with the property.
+        /// </summary>
+        public Type ResolverType { get; }
+    }
 }

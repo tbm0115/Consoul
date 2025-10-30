@@ -41,7 +41,7 @@ namespace ConsoulLibrary
             _descriptors = entityType
                 .GetProperties(bindingAttr)
                 .Where(property => property.CanRead && property.CanWrite)
-                .Select(property => new EditablePropertyDescriptor(property, new PropertyDocumentation(property)))
+                .Select(property => CreateDescriptor(property))
                 .ToList();
 
             if (_descriptors.Count > 0)
@@ -62,6 +62,54 @@ namespace ConsoulLibrary
         /// Indicates whether the JSON editor should highlight values using the default highlight scheme.
         /// </summary>
         public ConsoleColor HighlightColor { get; set; } = ConsoleColor.DarkCyan;
+
+        private EditablePropertyDescriptor CreateDescriptor(PropertyInfo property)
+        {
+            var documentation = new PropertyDocumentation(property);
+            IPropertyEditor editorOverride = null;
+            IPropertyValueFormatter formatterOverride = null;
+
+            var resolverAttribute = property.GetCustomAttribute<PropertyMetadataResolverAttribute>(true);
+            if (resolverAttribute != null)
+            {
+                object resolverInstance;
+                try
+                {
+                    resolverInstance = Activator.CreateInstance(resolverAttribute.ResolverType);
+                }
+                catch (Exception exception)
+                {
+                    throw new InvalidOperationException("Property metadata resolver attribute could not create resolver instance.", exception);
+                }
+
+                var resolver = resolverInstance as IPropertyMetadataResolver;
+                if (resolver == null)
+                {
+                    throw new InvalidOperationException("Property metadata resolver attribute references an invalid resolver type.");
+                }
+
+                var resolvedMetadata = resolver.Resolve(property);
+                if (resolvedMetadata != null)
+                {
+                    if (resolvedMetadata.Documentation != null)
+                    {
+                        documentation = resolvedMetadata.Documentation;
+                    }
+
+                    if (resolvedMetadata.Editor != null)
+                    {
+                        editorOverride = resolvedMetadata.Editor;
+                    }
+
+                    if (resolvedMetadata.Formatter != null)
+                    {
+                        formatterOverride = resolvedMetadata.Formatter;
+                    }
+                }
+            }
+
+            return new EditablePropertyDescriptor(property, documentation, editorOverride, formatterOverride);
+        }
 
         private void AddLegacyOption(EditablePropertyDescriptor descriptor)
         {
@@ -131,11 +179,18 @@ namespace ConsoulLibrary
 
         private void EditSimpleProperty(EditablePropertyDescriptor descriptor, Type propertyType)
         {
-            var editor = ResolveEditor(descriptor.Property);
+            var editor = descriptor.EditorOverride ?? ResolveEditor(descriptor.Property);
             var context = descriptor.CreateContext(Model);
             if (editor.TryEdit(context, out var value))
             {
-                value = ApplyFormatter(descriptor.Property, context, value);
+                if (descriptor.FormatterOverride != null)
+                {
+                    value = descriptor.FormatterOverride.Format(context, value);
+                }
+                else
+                {
+                    value = ApplyFormatter(descriptor.Property, context, value);
+                }
                 value = ConvertIfNeeded(value, propertyType);
                 context.CurrentValue = value;
                 descriptor.Property.SetValue(Model, value);

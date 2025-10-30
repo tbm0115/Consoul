@@ -17,12 +17,28 @@ namespace ConsoulLibrary.Views.Editing
     {
         private readonly Lazy<string> _xmlSummary;
 
-        internal PropertyDocumentation(PropertyInfo property)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PropertyDocumentation"/> class using the property's metadata.
+        /// </summary>
+        /// <param name="property">The property supplying attribute-based documentation.</param>
+        public PropertyDocumentation(PropertyInfo property)
+            : this(property, ResolveDisplayName(property), ResolveDescription(property), new Func<string>(() => XmlDocumentationProvider.GetSummary(property)))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PropertyDocumentation"/> class using explicit values.
+        /// </summary>
+        /// <param name="property">The property associated with the documentation.</param>
+        /// <param name="displayName">Optional display name describing the property.</param>
+        /// <param name="displayDescription">Optional description instructing how to populate the property.</param>
+        /// <param name="xmlSummaryProvider">Provider that supplies an XML summary when requested.</param>
+        public PropertyDocumentation(PropertyInfo property, string displayName, string displayDescription, Func<string> xmlSummaryProvider)
         {
             Property = property ?? throw new ArgumentNullException(nameof(property));
-            DisplayName = ResolveDisplayName(property);
-            DisplayDescription = ResolveDescription(property);
-            _xmlSummary = new Lazy<string>(() => XmlDocumentationProvider.GetSummary(property));
+            DisplayName = displayName;
+            DisplayDescription = displayDescription;
+            _xmlSummary = new Lazy<string>(() => xmlSummaryProvider != null ? xmlSummaryProvider() ?? string.Empty : string.Empty);
         }
 
         /// <summary>

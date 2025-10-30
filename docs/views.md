@@ -95,3 +95,34 @@ public sealed class ScriptOptions
 ```
 
 Complex types (objects, collections and dictionaries) still launch nested `EditObjectView` instances so you can drill into hierarchies while preserving the legacy menu options for power users.
+
+### Metadata resolvers
+
+Some properties surface values whose structure is only known at runtime—for example, dictionaries that map to constructor parameters in an external assembly. Decorate these members with `PropertyMetadataResolverAttribute` to plug in a custom resolver that supplies documentation, editors or formatters without relying on reflection against the runtime value.
+
+```csharp
+public sealed class OptionsMetadataResolver : IPropertyMetadataResolver
+{
+    public ResolvedPropertyMetadata Resolve(PropertyInfo property)
+    {
+        var documentation = new PropertyDocumentation(
+            property,
+            "Options",
+            "Key/value pairs configuring the remote adapter.",
+            () => "Each key should match a constructor parameter on the adapter type.");
+
+        return new ResolvedPropertyMetadata(
+            documentation,
+            new DefaultPropertyEditor(),
+            null);
+    }
+}
+
+public sealed class AdapterConfiguration
+{
+    [PropertyMetadataResolver(typeof(OptionsMetadataResolver))]
+    public Dictionary<string, object> Options { get; set; } = new Dictionary<string, object>();
+}
+```
+
+Resolvers can construct rich guidance even when the property value references remote types, enabling consistent prompts and comments throughout the JSON editor.
