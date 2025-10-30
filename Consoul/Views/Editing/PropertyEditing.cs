@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace ConsoulLibrary.Views.Editing
@@ -143,7 +144,7 @@ namespace ConsoulLibrary.Views.Editing
         /// Resolves metadata used when editing the target property.
         /// </summary>
         /// <param name="property">The property that is being edited.</param>
-        /// <returns>A metadata container describing custom documentation, editors and formatters.</returns>
+        /// <returns>A metadata container describing custom documentation, editors, formatters and layers.</returns>
         ResolvedPropertyMetadata Resolve(PropertyInfo property);
     }
 
@@ -159,10 +160,23 @@ namespace ConsoulLibrary.Views.Editing
         /// <param name="editor">Editor instance that should collect values for the property.</param>
         /// <param name="formatter">Formatter instance applied to the editor's result.</param>
         public ResolvedPropertyMetadata(PropertyDocumentation documentation, IPropertyEditor editor, IPropertyValueFormatter formatter)
+            : this(documentation, editor, formatter, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResolvedPropertyMetadata"/> class including layer overrides.
+        /// </summary>
+        /// <param name="documentation">Documentation describing the property.</param>
+        /// <param name="editor">Editor instance that should collect values for the property.</param>
+        /// <param name="formatter">Formatter instance applied to the editor's result.</param>
+        /// <param name="layerProvider">Provider exposing additional editing layers for the property.</param>
+        public ResolvedPropertyMetadata(PropertyDocumentation documentation, IPropertyEditor editor, IPropertyValueFormatter formatter, IPropertyLayerProvider layerProvider)
         {
             Documentation = documentation;
             Editor = editor;
             Formatter = formatter;
+            LayerProvider = layerProvider;
         }
 
         /// <summary>
@@ -179,6 +193,77 @@ namespace ConsoulLibrary.Views.Editing
         /// Gets the formatter that should post-process the value produced by the editor.
         /// </summary>
         public IPropertyValueFormatter Formatter { get; }
+
+        /// <summary>
+        /// Gets the provider that exposes additional editing layers for the property.
+        /// </summary>
+        public IPropertyLayerProvider LayerProvider { get; }
+    }
+
+    /// <summary>
+    /// Describes a callback capable of editing a property through a custom layer.
+    /// </summary>
+    /// <param name="context">Context describing the property edit.</param>
+    /// <returns><see langword="true"/> when the property's value was updated.</returns>
+    public delegate bool PropertyLayerEditHandler(PropertyEditContext context);
+
+    /// <summary>
+    /// Represents an additional editing surface exposed for a property.
+    /// </summary>
+    public sealed class PropertyEditLayer
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PropertyEditLayer"/> class.
+        /// </summary>
+        /// <param name="displayName">Display name describing the layer.</param>
+        /// <param name="description">Optional description shown before the layer is invoked.</param>
+        /// <param name="handler">Handler responsible for editing the property's value.</param>
+        /// <param name="applyContextValue">Indicates whether the layer's handler expects the caller to apply <see cref="PropertyEditContext.CurrentValue"/> to the property upon completion.</param>
+        public PropertyEditLayer(string displayName, string description, PropertyLayerEditHandler handler, bool applyContextValue)
+        {
+            if (handler == null)
+            {
+                throw new ArgumentNullException(nameof(handler));
+            }
+
+            DisplayName = displayName ?? string.Empty;
+            Description = description ?? string.Empty;
+            Handler = handler;
+            ApplyContextValue = applyContextValue;
+        }
+
+        /// <summary>
+        /// Gets the display name describing the layer.
+        /// </summary>
+        public string DisplayName { get; }
+
+        /// <summary>
+        /// Gets a description presented prior to executing the layer.
+        /// </summary>
+        public string Description { get; }
+
+        /// <summary>
+        /// Gets the handler responsible for executing the layer.
+        /// </summary>
+        public PropertyLayerEditHandler Handler { get; }
+
+        /// <summary>
+        /// Gets a value indicating whether the edit context value should be applied to the property after the handler completes.
+        /// </summary>
+        public bool ApplyContextValue { get; }
+    }
+
+    /// <summary>
+    /// Exposes additional editing layers that can be invoked for a property.
+    /// </summary>
+    public interface IPropertyLayerProvider
+    {
+        /// <summary>
+        /// Retrieves the layers that can be executed for the supplied edit context.
+        /// </summary>
+        /// <param name="context">Context describing the property edit.</param>
+        /// <returns>A sequence of layers that can edit the property.</returns>
+        IEnumerable<PropertyEditLayer> GetLayers(PropertyEditContext context);
     }
 
     /// <summary>

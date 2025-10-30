@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace ConsoulLibrary.Views.Editing
@@ -14,7 +15,7 @@ namespace ConsoulLibrary.Views.Editing
         /// <param name="property">The property represented by the descriptor.</param>
         /// <param name="documentation">Documentation describing the property.</param>
         public EditablePropertyDescriptor(PropertyInfo property, PropertyDocumentation documentation)
-            : this(property, documentation, null, null)
+            : this(property, documentation, null, null, null)
         {
         }
 
@@ -25,12 +26,13 @@ namespace ConsoulLibrary.Views.Editing
         /// <param name="documentation">Documentation describing the property.</param>
         /// <param name="editorOverride">Editor instance overriding the default editor resolution.</param>
         /// <param name="formatterOverride">Formatter instance overriding the default formatter resolution.</param>
-        public EditablePropertyDescriptor(PropertyInfo property, PropertyDocumentation documentation, IPropertyEditor editorOverride, IPropertyValueFormatter formatterOverride)
+        public EditablePropertyDescriptor(PropertyInfo property, PropertyDocumentation documentation, IPropertyEditor editorOverride, IPropertyValueFormatter formatterOverride, IPropertyLayerProvider layerProvider)
         {
             Property = property ?? throw new ArgumentNullException(nameof(property));
             Documentation = documentation ?? throw new ArgumentNullException(nameof(documentation));
             EditorOverride = editorOverride;
             FormatterOverride = formatterOverride;
+            LayerProvider = layerProvider;
         }
 
         /// <summary>
@@ -54,6 +56,11 @@ namespace ConsoulLibrary.Views.Editing
         public IPropertyValueFormatter FormatterOverride { get; }
 
         /// <summary>
+        /// Gets a provider that exposes custom editing layers for the property, if any.
+        /// </summary>
+        public IPropertyLayerProvider LayerProvider { get; }
+
+        /// <summary>
         /// Gets the display label for the property.
         /// </summary>
         public string DisplayName => Documentation.DisplayName ?? Property.Name;
@@ -67,6 +74,41 @@ namespace ConsoulLibrary.Views.Editing
         {
             var value = Property.GetValue(model);
             return new PropertyEditContext(model, Property, Documentation, value);
+        }
+
+        /// <summary>
+        /// Retrieves the editing layers provided for the supplied context.
+        /// </summary>
+        /// <param name="context">Context describing the property edit.</param>
+        /// <returns>The layers exposed by the provider, or an empty collection when none are available.</returns>
+        public IList<PropertyEditLayer> GetLayers(PropertyEditContext context)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (LayerProvider == null)
+            {
+                return Array.Empty<PropertyEditLayer>();
+            }
+
+            var layers = LayerProvider.GetLayers(context);
+            if (layers == null)
+            {
+                return Array.Empty<PropertyEditLayer>();
+            }
+
+            var materialized = new List<PropertyEditLayer>();
+            foreach (var layer in layers)
+            {
+                if (layer != null)
+                {
+                    materialized.Add(layer);
+                }
+            }
+
+            return materialized;
         }
     }
 }

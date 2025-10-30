@@ -126,3 +126,54 @@ public sealed class AdapterConfiguration
 ```
 
 Resolvers can construct rich guidance even when the property value references remote types, enabling consistent prompts and comments throughout the JSON editor.
+
+#### Layered editors
+
+Some data surfaces as opaque `object` graphs—think JSON blobs, plugin settings loaded from another assembly, or dictionaries whose values describe constructor parameters. To keep these scenarios discoverable the resolver can also expose additional layers through `IPropertyLayerProvider`. Each layer describes a named editing surface with an optional description and a handler that receives the active `PropertyEditContext`. When the user presses <kbd>Enter</kbd> on the property, Consoul prompts whether to run the default editor or one of the custom layers.
+
+Implementations can parse JSON Schema files, spin up another `EditObjectView`, or invoke bespoke editors for nested structures. The handler can mutate `context.CurrentValue` and return `true` to signal that the new value should be applied automatically; alternatively it can perform its own persistence (for example by updating a dictionary entry directly) and return `false`.
+
+```csharp
+public sealed class OptionsMetadataResolver : IPropertyMetadataResolver
+{
+    public ResolvedPropertyMetadata Resolve(PropertyInfo property)
+    {
+        var documentation = new PropertyDocumentation(
+            property,
+            "Options",
+            "Key/value pairs configuring the remote adapter.",
+            () => "Each key should match a constructor parameter on the adapter type.");
+
+        return new ResolvedPropertyMetadata(
+            documentation,
+            new DefaultPropertyEditor(),
+            null,
+            new SchemaLayerProvider());
+    }
+}
+
+private sealed class SchemaLayerProvider : IPropertyLayerProvider
+{
+    public IEnumerable<PropertyEditLayer> GetLayers(PropertyEditContext context)
+    {
+        return new[]
+        {
+            new PropertyEditLayer(
+                "Edit via schema",
+                "Loads the remote JSON schema and opens a nested editor for the selected dictionary entry.",
+                RunSchemaEditor,
+                false)
+        };
+    }
+
+    private static bool RunSchemaEditor(PropertyEditContext context)
+    {
+        // Locate the JSON schema based on the current model and open a tailored view.
+        var view = new EditObjectView(JsonSchemaParser.BuildModel(context.CurrentValue));
+        view.Render();
+        return false; // the layer updated the value directly.
+    }
+}
+```
+
+Because layers participate in the same prompt flow, users can switch between schema-driven editors, remote type reflection and the built-in prompts without leaving the JSON workspace.

@@ -68,6 +68,7 @@ namespace ConsoulLibrary
             var documentation = new PropertyDocumentation(property);
             IPropertyEditor editorOverride = null;
             IPropertyValueFormatter formatterOverride = null;
+            IPropertyLayerProvider layerProviderOverride = null;
 
             var resolverAttribute = property.GetCustomAttribute<PropertyMetadataResolverAttribute>(true);
             if (resolverAttribute != null)
@@ -105,10 +106,15 @@ namespace ConsoulLibrary
                     {
                         formatterOverride = resolvedMetadata.Formatter;
                     }
+
+                    if (resolvedMetadata.LayerProvider != null)
+                    {
+                        layerProviderOverride = resolvedMetadata.LayerProvider;
+                    }
                 }
             }
 
-            return new EditablePropertyDescriptor(property, documentation, editorOverride, formatterOverride);
+            return new EditablePropertyDescriptor(property, documentation, editorOverride, formatterOverride, layerProviderOverride);
         }
 
         private void AddLegacyOption(EditablePropertyDescriptor descriptor)
@@ -120,7 +126,7 @@ namespace ConsoulLibrary
             {
                 _options.Add(new DynamicOption<object>(
                     () => $"Edit {descriptor.DisplayName}: " + (property.GetValue(Model)?.ToString() ?? "<N/A>"),
-                    () => EditSimpleProperty(descriptor, simpleType),
+                    () => EditDescriptor(descriptor),
                     () => ConsoleColor.Yellow));
                 return;
             }
@@ -131,14 +137,14 @@ namespace ConsoulLibrary
                 {
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}: {simpleElementType.Name}[{GetCollectionCount(Model, property)}]",
-                        () => EditSimpleCollection(Model, property, simpleElementType),
+                        () => EditDescriptor(descriptor),
                         () => ConsoleColor.DarkYellow));
                 }
                 else
                 {
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}: {elementType.Name}[{GetCollectionCount(Model, property)}]",
-                        () => EditComplexCollection(Model, property, elementType),
+                        () => EditDescriptor(descriptor),
                         () => ConsoleColor.DarkYellow));
                 }
 
@@ -153,7 +159,7 @@ namespace ConsoulLibrary
                 {
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}",
-                        () => EditSimpleKeyDictionary(Model, property, simpleKeyType, valueType),
+                        () => EditDescriptor(descriptor),
                         () => ConsoleColor.DarkYellow));
                 }
                 else
@@ -173,7 +179,7 @@ namespace ConsoulLibrary
 
             _options.Add(new DynamicOption<object>(
                 () => $"Edit {descriptor.DisplayName}",
-                () => EditComplexProperty(descriptor),
+                () => EditDescriptor(descriptor),
                 () => ConsoleColor.DarkYellow));
         }
 
@@ -212,6 +218,69 @@ namespace ConsoulLibrary
         }
 
         private void EditDescriptor(EditablePropertyDescriptor descriptor)
+        {
+            var context = descriptor.CreateContext(Model);
+            var layers = descriptor.GetLayers(context);
+            if (layers.Count > 0)
+            {
+                var prompt = new SelectionPrompt("Choose how to edit " + descriptor.DisplayName);
+                var defaultChoice = prompt.Add("Use default editor", ConsoleColor.Yellow);
+                var layerChoices = new Dictionary<int, PropertyEditLayer>();
+
+                foreach (var layer in layers)
+                {
+                    var index = prompt.Add(layer.DisplayName, ConsoleColor.Cyan);
+                    layerChoices[index] = layer;
+                }
+
+                var result = prompt.Render();
+                if (result.IsCanceled || !result.HasSelection)
+                {
+                    return;
+                }
+
+                if (result.Index == defaultChoice)
+                {
+                    EditDescriptorUsingDefaultEditor(descriptor);
+                    return;
+                }
+
+                if (!layerChoices.ContainsKey(result.Index))
+                {
+                    return;
+                }
+
+                var selectedLayer = layerChoices[result.Index];
+                if (!string.IsNullOrWhiteSpace(selectedLayer.Description))
+                {
+                    Consoul.WriteCore(selectedLayer.Description, RenderOptions.SubnoteColor);
+                    Consoul.WriteCore(string.Empty, RenderOptions.DefaultColor);
+                }
+
+                bool updated = false;
+                try
+                {
+                    updated = selectedLayer.Handler(context);
+                }
+                catch (Exception exception)
+                {
+                    Consoul.WriteCore("Layer failed: " + exception.Message, RenderOptions.InvalidColor);
+                    Consoul.Wait();
+                    return;
+                }
+
+                if (updated && selectedLayer.ApplyContextValue)
+                {
+                    descriptor.Property.SetValue(Model, context.CurrentValue);
+                }
+
+                return;
+            }
+
+            EditDescriptorUsingDefaultEditor(descriptor);
+        }
+
+        private void EditDescriptorUsingDefaultEditor(EditablePropertyDescriptor descriptor)
         {
             var propertyType = descriptor.Property.PropertyType;
 

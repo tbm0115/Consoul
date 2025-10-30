@@ -66,6 +66,20 @@ namespace ConsoulLibrary.Tests.Views
             Assert.Equal("Resolved summary", descriptor.Documentation.XmlSummary);
             Assert.IsType<StubEditor>(descriptor.EditorOverride);
             Assert.IsType<StubFormatter>(descriptor.FormatterOverride);
+            Assert.IsType<StubLayerProvider>(descriptor.LayerProvider);
+
+            var context = descriptor.CreateContext(model);
+            var layers = descriptor.GetLayers(context);
+            Assert.Single(layers);
+
+            var layer = layers[0];
+            Assert.Equal("Stub layer", layer.DisplayName);
+            Assert.Equal("Stub description", layer.Description);
+            Assert.True(layer.ApplyContextValue);
+
+            var updated = layer.Handler(context);
+            Assert.True(updated);
+            Assert.Equal("layer", context.CurrentValue);
         }
 
         private sealed class SampleDependency
@@ -100,7 +114,8 @@ namespace ConsoulLibrary.Tests.Views
                 return new ResolvedPropertyMetadata(
                     documentation,
                     new StubEditor(),
-                    new StubFormatter());
+                    new StubFormatter(),
+                    new StubLayerProvider());
             }
         }
 
@@ -118,6 +133,23 @@ namespace ConsoulLibrary.Tests.Views
             public object Format(PropertyEditContext context, object value)
             {
                 return value;
+            }
+        }
+
+        private sealed class StubLayerProvider : IPropertyLayerProvider
+        {
+            public IEnumerable<PropertyEditLayer> GetLayers(PropertyEditContext context)
+            {
+                return new[]
+                {
+                    new PropertyEditLayer("Stub layer", "Stub description", Handle, true)
+                };
+            }
+
+            private static bool Handle(PropertyEditContext context)
+            {
+                context.CurrentValue = "layer";
+                return true;
             }
         }
     }
