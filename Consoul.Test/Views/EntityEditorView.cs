@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Xml;
 using ConsoulLibrary.Views.Editing;
 
@@ -251,10 +252,44 @@ namespace ConsoulLibrary.Test.Views
                 return true;
             }
 
+            /// <summary>
+            /// Builds a constructor dictionary for the supplied type using reflection when possible.
+            /// </summary>
+            /// <param name="assemblyPath">Path to the assembly that defines the target type.</param>
+            /// <param name="targetType">Fully qualified target type name.</param>
+            /// <param name="existingValues">Existing parameter values supplied by the caller.</param>
+            /// <returns>A populated constructor dictionary describing the remote parameters.</returns>
             private static ConstructorParameterDictionary BuildConstructorDictionary(string assemblyPath, string targetType, IDictionary existingValues)
             {
-                var assembly = Assembly.LoadFrom(assemblyPath);
-                var type = assembly.GetType(targetType, throwOnError: true);
+                try
+                {
+                    var assembly = Assembly.LoadFrom(assemblyPath);
+                    var type = assembly.GetType(targetType, true);
+                    return BuildConstructorDictionaryFromType(assemblyPath, targetType, existingValues, type);
+                }
+                catch (Exception loadException)
+                {
+                    Consoul.Write("Falling back to XML documentation: " + loadException.Message, ConsoleColor.DarkYellow);
+                    var fallback = BuildConstructorDictionaryFromDocumentation(assemblyPath, targetType, existingValues);
+                    if (fallback != null)
+                    {
+                        return fallback;
+                    }
+
+                    throw;
+                }
+            }
+
+            /// <summary>
+            /// Uses reflection to inspect the remote constructor and hydrate parameter metadata.
+            /// </summary>
+            /// <param name="assemblyPath">Path to the remote assembly.</param>
+            /// <param name="targetType">Fully qualified target type name.</param>
+            /// <param name="existingValues">Existing parameter values captured from prior edits.</param>
+            /// <param name="type">Resolved remote type instance.</param>
+            /// <returns>The constructor dictionary describing the remote parameters.</returns>
+            private static ConstructorParameterDictionary BuildConstructorDictionaryFromType(string assemblyPath, string targetType, IDictionary existingValues, Type type)
+            {
                 var constructors = type.GetConstructors();
 
                 var constructor = constructors.OrderByDescending(info => info.GetParameters().Length).FirstOrDefault();
@@ -334,6 +369,231 @@ namespace ConsoulLibrary.Test.Views
                 }
 
                 return dictionary;
+            }
+
+            /// <summary>
+            /// Uses XML documentation as a fallback to compose constructor parameters when the assembly cannot be loaded.
+            /// </summary>
+            /// <param name="assemblyPath">Path to the assembly associated with the documentation.</param>
+            /// <param name="targetType">Target type identifier used in documentation.</param>
+            /// <param name="existingValues">Existing parameter values captured from prior edits.</param>
+            /// <returns>A constructor dictionary derived from the XML documentation or null if unavailable.</returns>
+            private static ConstructorParameterDictionary BuildConstructorDictionaryFromDocumentation(string assemblyPath, string targetType, IDictionary existingValues)
+            {
+                var documentationPath = Path.ChangeExtension(assemblyPath, ".xml");
+                if (string.IsNullOrEmpty(documentationPath) || !File.Exists(documentationPath))
+                {
+                    return null;
+                }
+
+                var document = new XmlDocument();
+                document.Load(documentationPath);
+
+                var constructorNodes = document.SelectNodes("/doc/members/member[starts-with(@name, 'M:" + targetType + ".#ctor')]");
+                if (constructorNodes == null || constructorNodes.Count == 0)
+                {
+                    return null;
+                }
+
+                var dictionary = new ConstructorParameterDictionary
+                {
+                    AssemblyPath = assemblyPath,
+                    Type = targetType,
+                    DisplayName = GetDisplayName(targetType),
+                    Documentation = LookupTypeSummary(document, targetType)
+                };
+
+                var constructor = constructorNodes[0] as XmlElement;
+                if (constructor == null)
+                {
+                    return dictionary;
+                }
+
+                var signature = constructor.GetAttribute("name");
+                var parameterTypeNames = ParseParameterTypes(signature);
+                var parameters = constructor.SelectNodes("param");
+                if (parameters != null)
+                {
+                    for (var index = 0; index < parameters.Count; index++)
+                    {
+                        var element = parameters[index] as XmlElement;
+                        if (element == null)
+                        {
+                            continue;
+                        }
+
+                        var parameterName = element.GetAttribute("name");
+                        object value = null;
+                        if (existingValues != null && existingValues.Contains(parameterName))
+                        {
+                            value = existingValues[parameterName];
+                        }
+                        else
+                        {
+                            var parameterTypeName = parameterTypeNames.Count > index ? parameterTypeNames[index] : string.Empty;
+                            value = CreateFallbackValue(parameterTypeName, assemblyPath, document);
+                        }
+
+                        if (!dictionary.CtorParameters.ContainsKey(parameterName))
+                        {
+                            dictionary.CtorParameters.Add(parameterName, value);
+                        }
+                    }
+                }
+
+                return dictionary;
+            }
+
+            /// <summary>
+            /// Creates a placeholder value using documentation when the remote type cannot be inspected.
+            /// </summary>
+            /// <param name="typeName">Remote parameter type name.</param>
+            /// <param name="assemblyPath">Assembly path associated with the remote type.</param>
+            /// <param name="document">XML documentation loaded for the assembly.</param>
+            /// <returns>A placeholder value compatible with the editor.</returns>
+            private static object CreateFallbackValue(string typeName, string assemblyPath, XmlDocument document)
+            {
+                if (IsSimpleParameter(typeName))
+                {
+                    return string.Empty;
+                }
+
+                var nested = new ConstructorParameterDictionary
+                {
+                    DisplayName = GetDisplayName(typeName),
+                    Type = typeName,
+                    AssemblyPath = assemblyPath,
+                    Documentation = LookupTypeSummary(document, typeName)
+                };
+
+                return nested;
+            }
+
+            /// <summary>
+            /// Determines whether a parameter type name represents a simple value.
+            /// </summary>
+            /// <param name="typeName">Type name extracted from documentation.</param>
+            /// <returns><c>true</c> when the type should be treated as a scalar; otherwise, <c>false</c>.</returns>
+            private static bool IsSimpleParameter(string typeName)
+            {
+                if (string.IsNullOrEmpty(typeName))
+                {
+                    return false;
+                }
+
+                var normalized = typeName.Trim();
+                if (normalized.StartsWith("System.Nullable{", StringComparison.Ordinal))
+                {
+                    normalized = normalized.Substring("System.Nullable{".Length);
+                    if (normalized.EndsWith("}", StringComparison.Ordinal))
+                    {
+                        normalized = normalized.Substring(0, normalized.Length - 1);
+                    }
+                }
+
+                var simpleTypes = new[]
+                {
+                    "System.Boolean",
+                    "System.Byte",
+                    "System.SByte",
+                    "System.Char",
+                    "System.Decimal",
+                    "System.Double",
+                    "System.Single",
+                    "System.Int32",
+                    "System.UInt32",
+                    "System.Int64",
+                    "System.UInt64",
+                    "System.Int16",
+                    "System.UInt16",
+                    "System.String",
+                    "System.DateTime",
+                    "System.Guid"
+                };
+
+                return simpleTypes.Any(candidate => string.Equals(candidate, normalized, StringComparison.Ordinal));
+            }
+
+            /// <summary>
+            /// Produces a human-readable display name for a documented type.
+            /// </summary>
+            /// <param name="typeName">Fully qualified type name.</param>
+            /// <returns>The simplified display name.</returns>
+            private static string GetDisplayName(string typeName)
+            {
+                if (string.IsNullOrEmpty(typeName))
+                {
+                    return string.Empty;
+                }
+
+                var lastDot = typeName.LastIndexOf('.');
+                if (lastDot >= 0 && lastDot < typeName.Length - 1)
+                {
+                    return typeName.Substring(lastDot + 1);
+                }
+
+                return typeName;
+            }
+
+            /// <summary>
+            /// Parses parameter type identifiers from a constructor signature string in XML documentation.
+            /// </summary>
+            /// <param name="signature">Constructor signature extracted from the documentation.</param>
+            /// <returns>A list of parameter type identifiers.</returns>
+            private static IList<string> ParseParameterTypes(string signature)
+            {
+                var parameterTypes = new List<string>();
+                if (string.IsNullOrEmpty(signature))
+                {
+                    return parameterTypes;
+                }
+
+                var start = signature.IndexOf('(');
+                var end = signature.LastIndexOf(')');
+                if (start < 0 || end <= start)
+                {
+                    return parameterTypes;
+                }
+
+                var list = signature.Substring(start + 1, end - start - 1);
+                if (string.IsNullOrEmpty(list))
+                {
+                    return parameterTypes;
+                }
+
+                var builder = new StringBuilder();
+                var depth = 0;
+                for (var index = 0; index < list.Length; index++)
+                {
+                    var character = list[index];
+                    if (character == '{' || character == '[')
+                    {
+                        depth++;
+                    }
+                    else if (character == '}' || character == ']')
+                    {
+                        if (depth > 0)
+                        {
+                            depth--;
+                        }
+                    }
+
+                    if (character == ',' && depth == 0)
+                    {
+                        parameterTypes.Add(builder.ToString().Trim());
+                        builder.Clear();
+                        continue;
+                    }
+
+                    builder.Append(character);
+                }
+
+                if (builder.Length > 0)
+                {
+                    parameterTypes.Add(builder.ToString().Trim());
+                }
+
+                return parameterTypes;
             }
 
             private static bool IsSimpleParameter(Type type)
@@ -450,7 +710,26 @@ namespace ConsoulLibrary.Test.Views
 
                     var document = new XmlDocument();
                     document.Load(xmlPath);
-                    var memberName = "T:" + type.FullName;
+                    return LookupTypeSummary(document, type.FullName);
+                }
+                catch
+                {
+                }
+
+                return string.Empty;
+            }
+
+            /// <summary>
+            /// Reads a type summary from the loaded XML documentation.
+            /// </summary>
+            /// <param name="document">XML documentation instance.</param>
+            /// <param name="typeName">Fully qualified type identifier.</param>
+            /// <returns>The extracted summary or an empty string.</returns>
+            private static string LookupTypeSummary(XmlDocument document, string typeName)
+            {
+                try
+                {
+                    var memberName = "T:" + typeName;
                     var node = document.SelectSingleNode("/doc/members/member[@name='" + memberName + "']/summary");
                     if (node != null)
                     {
