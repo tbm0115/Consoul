@@ -35,9 +35,14 @@ namespace ConsoulLibrary
 
             Model = entity;
             _bindingFlags = bindingAttr;
-            _jsonEditorEnabled = enableJsonEditor;
-
             var entityType = entity.GetType();
+            var jsonEditorEnabled = enableJsonEditor;
+            if (entityType.GetCustomAttribute<DisableJsonEditorAttribute>(true) != null)
+            {
+                jsonEditorEnabled = false;
+            }
+
+            _jsonEditorEnabled = jsonEditorEnabled;
             Title = BannerEntry.Render($"Edit {entityType.Name} View");
 
             _descriptors = entityType

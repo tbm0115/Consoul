@@ -314,4 +314,12 @@ namespace ConsoulLibrary.Views.Editing
     public sealed class PropertyEditorIgnoreAttribute : Attribute
     {
     }
+
+    /// <summary>
+    /// Indicates that the JSON editor should be suppressed when editing instances of the decorated type.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+    public sealed class DisableJsonEditorAttribute : Attribute
+    {
+    }
 }

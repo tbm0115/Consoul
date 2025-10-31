@@ -121,8 +121,19 @@ namespace ConsoulLibrary.Views.Editing
     /// <summary>
     /// Represents a nested dictionary describing a remote constructor and its parameters.
     /// </summary>
+    [DisableJsonEditor]
     internal sealed class RemoteConstructorParameterDictionary
     {
+        private Dictionary<string, object> _ctorParameters;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RemoteConstructorParameterDictionary"/> class.
+        /// </summary>
+        public RemoteConstructorParameterDictionary()
+        {
+            _ctorParameters = new Dictionary<string, object>();
+        }
+
         /// <summary>
         /// Gets or sets the assembly path that declares the constructor.
         /// </summary>
@@ -152,7 +163,18 @@ namespace ConsoulLibrary.Views.Editing
         /// </summary>
         [PropertyMetadataResolver(typeof(RemoteConstructorMetadataResolver))]
         [RemoteConstructorOptions(nameof(AssemblyPath), nameof(Type))]
-        public Dictionary<string, object> CtorParameters { get; } = new Dictionary<string, object>();
+        public Dictionary<string, object> CtorParameters
+        {
+            get
+            {
+                return _ctorParameters;
+            }
+
+            set
+            {
+                _ctorParameters = value ?? new Dictionary<string, object>();
+            }
+        }
     }
 
     internal sealed class RemoteConstructorLayerProvider : IPropertyLayerProvider
@@ -223,7 +245,7 @@ namespace ConsoulLibrary.Views.Editing
                 Consoul.Write(documentation, ConsoleColor.DarkGreen);
             }
 
-            var view = new EditObjectView(parameters, false);
+            var view = new EditObjectView(parameters);
             view.Render();
 
             var flattened = FlattenParameters(parameters.CtorParameters);
