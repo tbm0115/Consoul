@@ -187,6 +187,11 @@ namespace ConsoulLibrary.Test.Views
             /// <inheritdoc />
             public IEnumerable<PropertyEditLayer> GetLayers(PropertyEditContext context)
             {
+                if (context != null && context.Model is ConstructorParameterDictionary)
+                {
+                    return Array.Empty<PropertyEditLayer>();
+                }
+
                 return new[]
                 {
                     new PropertyEditLayer(
@@ -245,7 +250,7 @@ namespace ConsoulLibrary.Test.Views
                     return false;
                 }
 
-                var view = new EditObjectView(parameters);
+                var view = new EditObjectView(parameters, enableJsonEditor: false);
                 view.Render();
 
                 var flattened = FlattenParameters(parameters.CtorParameters);
@@ -824,21 +829,25 @@ namespace ConsoulLibrary.Test.Views
         /// <summary>
         /// Gets or sets the assembly path associated with the remote type.
         /// </summary>
+        [PropertyEditorIgnore]
         public string AssemblyPath { get; set; }
 
         /// <summary>
         /// Gets or sets the type name associated with the remote type.
         /// </summary>
+        [PropertyEditorIgnore]
         public string Type { get; set; }
 
         /// <summary>
         /// Gets or sets the display name used when editing nested parameters.
         /// </summary>
+        [PropertyEditorIgnore]
         public string DisplayName { get; set; }
 
         /// <summary>
         /// Gets or sets additional documentation describing the nested parameter context.
         /// </summary>
+        [PropertyEditorIgnore]
         public string Documentation { get; set; }
 
         /// <summary>

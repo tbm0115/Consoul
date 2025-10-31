@@ -18,13 +18,14 @@ namespace ConsoulLibrary
     {
         private readonly List<EditablePropertyDescriptor> _descriptors;
         private readonly BindingFlags _bindingFlags;
+        private readonly bool _jsonEditorEnabled;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditObjectView"/> class.
         /// </summary>
         /// <param name="entity">The entity being edited.</param>
         /// <param name="bindingAttr">Binding flags describing the accessible properties.</param>
-        public EditObjectView(object entity, BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+        public EditObjectView(object entity, BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, bool enableJsonEditor = true)
             : base()
         {
             if (entity == null)
@@ -34,17 +35,18 @@ namespace ConsoulLibrary
 
             Model = entity;
             _bindingFlags = bindingAttr;
+            _jsonEditorEnabled = enableJsonEditor;
 
             var entityType = entity.GetType();
             Title = BannerEntry.Render($"Edit {entityType.Name} View");
 
             _descriptors = entityType
                 .GetProperties(bindingAttr)
-                .Where(property => property.CanRead && property.CanWrite)
+                .Where(property => property.CanRead && property.CanWrite && !ShouldIgnore(property))
                 .Select(property => CreateDescriptor(property))
                 .ToList();
 
-            if (_descriptors.Count > 0)
+            if (_jsonEditorEnabled && _descriptors.Count > 0)
             {
                 _options.Add(new DynamicOption<object>(
                     () => "Open JSON editor",
@@ -115,6 +117,16 @@ namespace ConsoulLibrary
             }
 
             return new EditablePropertyDescriptor(property, documentation, editorOverride, formatterOverride, layerProviderOverride);
+        }
+
+        private static bool ShouldIgnore(PropertyInfo property)
+        {
+            if (property == null)
+            {
+                return false;
+            }
+
+            return property.GetCustomAttribute<PropertyEditorIgnoreAttribute>(true) != null;
         }
 
         private void AddLegacyOption(EditablePropertyDescriptor descriptor)
@@ -206,7 +218,7 @@ namespace ConsoulLibrary
         private void EditComplexProperty(EditablePropertyDescriptor descriptor)
         {
             var propertyValue = descriptor.Property.GetValue(Model) ?? Activator.CreateInstance(descriptor.Property.PropertyType);
-            var recursiveView = new EditObjectView(propertyValue, _bindingFlags);
+            var recursiveView = new EditObjectView(propertyValue, _bindingFlags, _jsonEditorEnabled);
             recursiveView.Render();
             descriptor.Property.SetValue(Model, recursiveView.Model);
         }
@@ -795,7 +807,7 @@ namespace ConsoulLibrary
                 return currentValue;
             }
 
-            var editor = new EditObjectView(valueInstance, _bindingFlags);
+            var editor = new EditObjectView(valueInstance, _bindingFlags, _jsonEditorEnabled);
             editor.Render();
             return editor.Model;
         }
@@ -964,7 +976,7 @@ namespace ConsoulLibrary
                 }
                 else
                 {
-                    var editItemView = new EditObjectView(items[choice], _bindingFlags);
+                    var editItemView = new EditObjectView(items[choice], _bindingFlags, _jsonEditorEnabled);
                     editItemView.Render();
                 }
 

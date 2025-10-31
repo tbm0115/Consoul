@@ -306,4 +306,12 @@ namespace ConsoulLibrary.Views.Editing
         /// </summary>
         public Type ResolverType { get; }
     }
+
+    /// <summary>
+    /// Indicates that a property should be excluded from the editable property list rendered by <see cref="EditObjectView"/>.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    public sealed class PropertyEditorIgnoreAttribute : Attribute
+    {
+    }
 }

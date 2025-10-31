@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
+using System.Linq;
 using ConsoulLibrary;
 using ConsoulLibrary.Views.Editing;
 using Xunit;
@@ -106,6 +107,63 @@ namespace ConsoulLibrary.Tests.Views
             Assert.Equal("applied", model.Value);
         }
 
+        /// <summary>
+        /// Ensures properties marked with <see cref="PropertyEditorIgnoreAttribute"/> are not exposed as editable descriptors.
+        /// </summary>
+        [Fact]
+        public void EditObjectView_OmitsIgnoredProperties()
+        {
+            var model = new IgnoreModel();
+            var view = new EditObjectView(model);
+
+            var field = typeof(EditObjectView).GetField("_descriptors", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(field);
+
+            if (field == null)
+            {
+                throw new InvalidOperationException("Expected descriptor field to exist.");
+            }
+
+            var descriptors = field.GetValue(view) as List<EditablePropertyDescriptor>;
+            Assert.NotNull(descriptors);
+
+            if (descriptors == null)
+            {
+                throw new InvalidOperationException("Expected descriptor list to be initialised.");
+            }
+
+            Assert.Single(descriptors);
+            Assert.Equal(nameof(IgnoreModel.Visible), descriptors[0].Property.Name);
+        }
+
+        /// <summary>
+        /// Validates that disabling the JSON editor removes the associated option from the view.
+        /// </summary>
+        [Fact]
+        public void EditObjectView_DisablesJsonEditorOption()
+        {
+            var model = new IgnoreModel();
+            var view = new EditObjectView(model, enableJsonEditor: false);
+
+            var optionsField = typeof(DynamicView<object>).GetField("_options", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(optionsField);
+
+            if (optionsField == null)
+            {
+                throw new InvalidOperationException("Expected options field to exist.");
+            }
+
+            var options = optionsField.GetValue(view) as IEnumerable<DynamicOption<object>>;
+            Assert.NotNull(options);
+
+            if (options == null)
+            {
+                throw new InvalidOperationException("Expected options to be initialised.");
+            }
+
+            Assert.DoesNotContain(options, option => option.Entry.SetMessage() == "Open JSON editor");
+        }
+
         private sealed class SampleDependency
         {
         }
@@ -117,6 +175,14 @@ namespace ConsoulLibrary.Tests.Views
             /// </summary>
             [Display(Name = "Adapter name", Description = "Adapter path description")]
             public string Adapter { get; set; } = string.Empty;
+        }
+
+        private sealed class IgnoreModel
+        {
+            [PropertyEditorIgnore]
+            public string Hidden { get; set; } = string.Empty;
+
+            public string Visible { get; set; } = string.Empty;
         }
 
         private sealed class ResolverModel
