@@ -193,7 +193,7 @@ namespace ConsoulLibrary.Test.Views
                         "Edit adapter constructor",
                         "Loads the remote constructor and opens a nested editor for each parameter.",
                         RunConstructorEditor,
-                        true)
+                        false)
                 };
             }
 
@@ -248,8 +248,48 @@ namespace ConsoulLibrary.Test.Views
                 var view = new EditObjectView(parameters);
                 view.Render();
 
-                context.CurrentValue = FlattenParameters(parameters.CtorParameters);
-                return true;
+                var flattened = FlattenParameters(parameters.CtorParameters);
+                ApplyResolvedParameters(context, flattened);
+                return false;
+            }
+
+            /// <summary>
+            /// Applies the resolved constructor parameters to the edit context, respecting writable and read-only properties.
+            /// </summary>
+            /// <param name="context">Edit context describing the property being updated.</param>
+            /// <param name="values">Flattened constructor parameter values.</param>
+            private static void ApplyResolvedParameters(PropertyEditContext context, Dictionary<string, object> values)
+            {
+                if (context == null)
+                {
+                    throw new ArgumentNullException(nameof(context));
+                }
+
+                if (values == null)
+                {
+                    return;
+                }
+
+                if (context.Property.CanWrite)
+                {
+                    context.ApplyValue(values);
+                    return;
+                }
+
+                var destination = context.Property.GetValue(context.Model) as IDictionary;
+                if (destination != null)
+                {
+                    destination.Clear();
+                    foreach (var kvp in values)
+                    {
+                        destination[kvp.Key] = kvp.Value;
+                    }
+
+                    context.CurrentValue = destination;
+                    return;
+                }
+
+                context.CurrentValue = values;
             }
 
             /// <summary>
@@ -805,6 +845,6 @@ namespace ConsoulLibrary.Test.Views
         /// Gets the constructor parameters for the associated type.
         /// </summary>
         [PropertyMetadataResolver(typeof(MixedObject.RemoteConstructorMetadataResolver))]
-        public Dictionary<string, object> CtorParameters { get; } = new Dictionary<string, object>();
+        public Dictionary<string, object> CtorParameters { get; set; } = new Dictionary<string, object>();
     }
 }

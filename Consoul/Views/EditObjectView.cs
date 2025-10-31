@@ -577,7 +577,25 @@ namespace ConsoulLibrary
             }
 
             var updatedDictionary = EditDictionaryEntries(displayName, originalValue, property.PropertyType, simpleKeyType, elementType);
-            property.SetValue(source, updatedDictionary);
+            if (property.CanWrite)
+            {
+                property.SetValue(source, updatedDictionary);
+                return;
+            }
+
+            if (originalValue != null)
+            {
+                originalValue.Clear();
+                foreach (DictionaryEntry entry in updatedDictionary)
+                {
+                    originalValue[entry.Key] = entry.Value;
+                }
+
+                return;
+            }
+
+            Consoul.Write("Unable to update read-only dictionary for " + descriptor.DisplayName + ".", RenderOptions.InvalidColor);
+            Consoul.Wait();
         }
 
         private IDictionary EditDictionaryEntries(string ownerDisplayName, IDictionary originalValue, Type dictionaryType, Type simpleKeyType, Type elementType)
@@ -710,6 +728,26 @@ namespace ConsoulLibrary
             if (valueInstance == null)
             {
                 valueInstance = CreateDefaultValue(elementType);
+            }
+
+            if (valueInstance != null)
+            {
+                var runtimeType = valueInstance.GetType();
+                if (IsSimpleType(runtimeType, out var runtimeSimpleType))
+                {
+                    var labelBuilder = new StringBuilder();
+                    labelBuilder.Append(ownerDisplayName);
+                    labelBuilder.Append('[');
+                    if (key != null)
+                    {
+                        labelBuilder.Append(key);
+                    }
+                    labelBuilder.Append(']');
+
+                    var promptLabel = labelBuilder.ToString();
+                    var runtimeValue = Consoul.Input("Enter new " + promptLabel + "\t(" + runtimeSimpleType.Name + ")", runtimeSimpleType);
+                    return ConvertIfNeeded(runtimeValue, runtimeType);
+                }
             }
 
             if (valueInstance is IDictionary nestedDictionary)
