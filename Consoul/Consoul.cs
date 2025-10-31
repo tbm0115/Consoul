@@ -1,6 +1,7 @@
 ﻿using ConsoulLibrary.Color;
 using ConsoulLibrary.Views;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -260,35 +261,48 @@ namespace ConsoulLibrary {
         /// <param name="args">The values for the placeholders in the template.</param>
         public static void Write(string template, ConsoleColor? color = null, ConsoleColor? backgroundColor = null, bool writeLine = true, params object[] args)
         {
-            // Regular expression to match placeholders with optional color specification using named capture groups
             MatchCollection matches = _argumentReplacer.Matches(template);
+
+            var values = new Dictionary<string, object>();
 
             int currentIndex = 0;
             foreach (Match match in matches)
             {
-                // Write the text before the match
                 if (match.Index > currentIndex)
                 {
                     Consoul.Write(template.Substring(currentIndex, match.Index - currentIndex), color: color, backgroundColor: backgroundColor, writeLine: false);
                 }
 
-                // Extract property name and optional color using named capture groups
                 string propertyName = match.Groups["PropertyName"].Value;
                 string colorName = match.Groups["Color"].Success ? match.Groups["Color"].Value : null;
 
-                // Find the value corresponding to the propertyName
-                object value = null;
-                foreach (var arg in args)
+                object value;
+                if (!values.TryGetValue(propertyName, out value))
                 {
-                    var prop = arg.GetType().GetProperty(propertyName);
-                    if (prop != null)
+                    values[propertyName] = null;
+                    value = null;
+                }
+
+                if (value == null)
+                {
+                    foreach (var arg in args)
                     {
-                        value = prop.GetValue(arg);
-                        break;
+                        var prop = arg.GetType().GetProperty(propertyName);
+                        if (prop != null)
+                        {
+                            value = prop.GetValue(arg);
+                            values[propertyName] = value;
+                            break;
+                        }
+                    }
+
+                    if (value == null && values.Count > 0 && values.Count <= args.Length)
+                    {
+                        values[propertyName] = args[values.Count - 1];
+                        value = values[propertyName];
                     }
                 }
 
-                // If the value is found, write it with the specified color
                 ConsoleColor subtextColor;
                 if (string.IsNullOrEmpty(colorName) || !Enum.TryParse(colorName, true, out subtextColor))
                 {
@@ -301,19 +315,17 @@ namespace ConsoulLibrary {
                 }
                 else
                 {
-                    // If the value is not found, write the placeholder as-is
                     Consoul.Write(match.Value, color: subtextColor, backgroundColor: backgroundColor, writeLine: false);
                 }
 
-                // Update currentIndex to the end of the current match
                 currentIndex = match.Index + match.Length;
             }
 
-            // Write any remaining text after the last placeholder
             if (currentIndex < template.Length)
             {
                 Consoul.Write(template.Substring(currentIndex), color: color, backgroundColor: backgroundColor, writeLine: writeLine);
-            } else if(writeLine)
+            }
+            else if (writeLine)
             {
                 Consoul.Write(string.Empty);
             }
