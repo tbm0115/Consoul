@@ -82,6 +82,30 @@ namespace ConsoulLibrary.Tests.Views
             Assert.Equal("layer", context.CurrentValue);
         }
 
+        /// <summary>
+        /// Validates that <see cref="PropertyEditContext.ApplyValue(object)"/> synchronises the model and current value.
+        /// </summary>
+        [Fact]
+        public void PropertyEditContext_ApplyValueUpdatesModel()
+        {
+            var model = new ResolverModel();
+            var property = typeof(ResolverModel).GetProperty(nameof(ResolverModel.Value));
+            Assert.NotNull(property);
+
+            if (property == null)
+            {
+                throw new InvalidOperationException("Expected Value property to exist.");
+            }
+
+            var documentation = new PropertyDocumentation(property);
+            var context = new PropertyEditContext(model, property, documentation, property.GetValue(model));
+
+            context.ApplyValue("applied");
+
+            Assert.Equal("applied", context.CurrentValue);
+            Assert.Equal("applied", model.Value);
+        }
+
         private sealed class SampleDependency
         {
         }

@@ -269,11 +269,17 @@ namespace ConsoulLibrary
                     return;
                 }
 
-                if (updated && selectedLayer.ApplyContextValue)
+                if (updated)
                 {
-                    descriptor.Property.SetValue(Model, context.CurrentValue);
+                    if (selectedLayer.ApplyContextValue)
+                    {
+                        descriptor.Property.SetValue(Model, context.CurrentValue);
+                    }
+
+                    return;
                 }
 
+                EditDescriptorUsingDefaultEditor(descriptor);
                 return;
             }
 
@@ -310,7 +316,7 @@ namespace ConsoulLibrary
             {
                 if (IsSimpleType(keyType, out var simpleKeyType))
                 {
-                    EditSimpleKeyDictionary(Model, descriptor.Property, simpleKeyType, valueType);
+                    EditSimpleKeyDictionary(Model, descriptor, simpleKeyType, valueType);
                 }
                 else
                 {
@@ -549,29 +555,48 @@ namespace ConsoulLibrary
             return null;
         }
 
-        private void EditSimpleKeyDictionary(object source, PropertyInfo property, Type simpleKeyType, Type elementType)
+        private void EditSimpleKeyDictionary(object source, EditablePropertyDescriptor descriptor, Type simpleKeyType, Type elementType)
         {
-            var prompt = new SelectionPrompt("Choose an item to edit or remove, or add a new item");
-
+            var property = descriptor.Property;
             var originalValue = property.GetValue(source) as IDictionary;
             if (originalValue == null)
             {
                 originalValue = Activator.CreateInstance(property.PropertyType) as IDictionary;
+                if (originalValue == null)
+                {
+                    Consoul.Write("Unable to create dictionary instance for " + descriptor.DisplayName + ".", RenderOptions.InvalidColor);
+                    Consoul.Wait();
+                    return;
+                }
             }
 
-            var items = new Dictionary<object, object>();
-            foreach (var key in originalValue.Keys)
+            var displayName = descriptor.DisplayName;
+            if (string.IsNullOrWhiteSpace(displayName))
             {
-                items.Add(key, originalValue[key]);
+                displayName = property.Name;
             }
 
-            int choice = -1;
-            while (choice < 0)
+            var updatedDictionary = EditDictionaryEntries(displayName, originalValue, property.PropertyType, simpleKeyType, elementType);
+            property.SetValue(source, updatedDictionary);
+        }
+
+        private IDictionary EditDictionaryEntries(string ownerDisplayName, IDictionary originalValue, Type dictionaryType, Type simpleKeyType, Type elementType)
+        {
+            var prompt = new SelectionPrompt("Choose an item to edit or remove, or add a new item");
+            var entries = new List<KeyValuePair<object, object>>();
+
+            foreach (DictionaryEntry entry in originalValue)
+            {
+                entries.Add(new KeyValuePair<object, object>(entry.Key, entry.Value));
+            }
+
+            while (true)
             {
                 prompt.Clear();
-                foreach (var item in items)
+                for (int index = 0; index < entries.Count; index++)
                 {
-                    prompt.Add(item.ToString());
+                    var pair = entries[index];
+                    prompt.Add(FormatDictionaryEntry(pair));
                 }
 
                 int addChoice = prompt.Add("Add", ConsoleColor.DarkYellow);
@@ -585,46 +610,224 @@ namespace ConsoulLibrary
 
                 if (!result.HasSelection)
                 {
-                    choice = -1;
                     continue;
                 }
 
-                choice = result.Index;
-                if (choice == addChoice)
+                if (result.Index == addChoice)
                 {
-                    var newKey = EditObject(property, simpleKeyType);
-                    items.Add(newKey, elementType != null ? Activator.CreateInstance(elementType) : null);
+                    var newKey = PromptForDictionaryKey(ownerDisplayName, simpleKeyType);
+                    if (newKey == null)
+                    {
+                        continue;
+                    }
+
+                    if (entries.Any(entry => KeysEqual(entry.Key, newKey)))
+                    {
+                        Consoul.Write("Key '" + newKey + "' already exists.", RenderOptions.InvalidColor);
+                        Consoul.Wait();
+                        continue;
+                    }
+
+                    var defaultValue = CreateDefaultValue(elementType);
+                    entries.Add(new KeyValuePair<object, object>(newKey, defaultValue));
+                    continue;
                 }
-                else if (choice == finishChoice)
+
+                if (result.Index == finishChoice)
                 {
                     break;
                 }
-                else
+
+                if (result.Index < 0 || result.Index >= entries.Count)
                 {
-                    var choiceKey = items.ElementAt(choice).Key;
-                    if (elementType != null && IsSimpleType(elementType, out var simpleElementType))
+                    continue;
+                }
+
+                var selection = entries[result.Index];
+                var updatedValue = EditDictionaryEntryValue(ownerDisplayName, selection.Key, selection.Value, elementType);
+                entries[result.Index] = new KeyValuePair<object, object>(selection.Key, updatedValue);
+            }
+
+            var updatedDictionary = CreateDictionaryInstance(dictionaryType, simpleKeyType, elementType);
+            if (updatedDictionary == null)
+            {
+                updatedDictionary = new Dictionary<object, object>();
+            }
+
+            foreach (var entry in entries)
+            {
+                updatedDictionary.Add(entry.Key, entry.Value);
+            }
+
+            return updatedDictionary;
+        }
+
+        private static string FormatDictionaryEntry(KeyValuePair<object, object> entry)
+        {
+            var keyText = entry.Key != null ? entry.Key.ToString() : "<null>";
+            string valueText;
+            if (entry.Value == null)
+            {
+                valueText = "<null>";
+            }
+            else if (entry.Value is IDictionary)
+            {
+                valueText = "{...}";
+            }
+            else
+            {
+                valueText = entry.Value.ToString();
+            }
+            return keyText + " = " + valueText;
+        }
+
+        private static object PromptForDictionaryKey(string ownerDisplayName, Type simpleKeyType)
+        {
+            if (simpleKeyType == null)
+            {
+                return null;
+            }
+
+            var label = ownerDisplayName + " key";
+            return Consoul.Input("Enter new " + label + "\t(" + simpleKeyType.Name + ")", simpleKeyType);
+        }
+
+        private object EditDictionaryEntryValue(string ownerDisplayName, object key, object currentValue, Type elementType)
+        {
+            if (elementType != null && IsSimpleType(elementType, out var simpleElementType))
+            {
+                var label = ownerDisplayName + "[" + key + "]";
+                var value = Consoul.Input("Enter new " + label + "\t(" + simpleElementType.Name + ")", simpleElementType);
+                if (elementType != null)
+                {
+                    return ConvertIfNeeded(value, elementType);
+                }
+
+                return value;
+            }
+
+            var valueInstance = currentValue;
+            if (valueInstance == null)
+            {
+                valueInstance = CreateDefaultValue(elementType);
+            }
+
+            if (valueInstance is IDictionary nestedDictionary)
+            {
+                Type nestedKeyType;
+                Type nestedValueType;
+                if (!IsDictionaryType(valueInstance.GetType(), out nestedKeyType, out nestedValueType))
+                {
+                    if (elementType != null && IsDictionaryType(elementType, out nestedKeyType, out nestedValueType))
                     {
-                        items[choiceKey] = EditObject(property, simpleElementType);
+                        // use declared value type if runtime information is unavailable
                     }
-                    else if (elementType != null)
+                    else
                     {
-                        var itemValue = items[choiceKey] ?? Activator.CreateInstance(elementType);
-                        var complexEditor = new EditObjectView(itemValue);
-                        complexEditor.Render();
-                        items[choiceKey] = complexEditor.Model;
+                        nestedKeyType = typeof(object);
+                        nestedValueType = typeof(object);
                     }
                 }
 
-                choice = -1;
+                var nestedName = ownerDisplayName + "[" + (key != null ? key.ToString() : string.Empty) + "]";
+                var updated = EditDictionaryEntries(nestedName, nestedDictionary, valueInstance.GetType(), nestedKeyType, nestedValueType);
+                return updated;
             }
 
-            var updatedDictionary = Activator.CreateInstance(property.PropertyType) as IDictionary;
-            foreach (var item in items)
+            if (elementType != null && IsDictionaryType(elementType, out var declaredKeyType, out var declaredValueType))
             {
-                updatedDictionary.Add(item.Key, item.Value);
+                var nestedValue = CreateDictionaryInstance(elementType, declaredKeyType, declaredValueType);
+                if (nestedValue != null)
+                {
+                    var nestedName = ownerDisplayName + "[" + (key != null ? key.ToString() : string.Empty) + "]";
+                    var updatedNested = EditDictionaryEntries(nestedName, nestedValue, elementType, declaredKeyType, declaredValueType);
+                    return updatedNested;
+                }
             }
 
-            property.SetValue(source, updatedDictionary);
+            if (valueInstance == null && elementType == null)
+            {
+                return null;
+            }
+
+            if (valueInstance == null)
+            {
+                Consoul.Write("Unable to instantiate value for key '" + key + "'.", RenderOptions.InvalidColor);
+                Consoul.Wait();
+                return currentValue;
+            }
+
+            var editor = new EditObjectView(valueInstance, _bindingFlags);
+            editor.Render();
+            return editor.Model;
+        }
+
+        private static bool KeysEqual(object left, object right)
+        {
+            if (left == null && right == null)
+            {
+                return true;
+            }
+
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            return left.Equals(right);
+        }
+
+        private static IDictionary CreateDictionaryInstance(Type dictionaryType, Type keyType, Type valueType)
+        {
+            if (dictionaryType != null)
+            {
+                try
+                {
+                    var created = Activator.CreateInstance(dictionaryType) as IDictionary;
+                    if (created != null)
+                    {
+                        return created;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            var resolvedKeyType = keyType ?? typeof(object);
+            var resolvedValueType = valueType ?? typeof(object);
+
+            try
+            {
+                var fallbackType = typeof(Dictionary<,>).MakeGenericType(resolvedKeyType, resolvedValueType);
+                return Activator.CreateInstance(fallbackType) as IDictionary;
+            }
+            catch
+            {
+                return new Dictionary<object, object>();
+            }
+        }
+
+        private static object CreateDefaultValue(Type type)
+        {
+            if (type == null)
+            {
+                return null;
+            }
+
+            if (type == typeof(string))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return Activator.CreateInstance(type);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private void EditSimpleCollection(object source, PropertyInfo property, Type simpleType)

@@ -43,6 +43,16 @@ namespace ConsoulLibrary.Views.Editing
         /// Gets or sets the current value of the property.
         /// </summary>
         public object CurrentValue { get; set; }
+
+        /// <summary>
+        /// Applies the provided value to the property on the underlying model and updates the current value snapshot.
+        /// </summary>
+        /// <param name="value">The value that should be assigned to the property.</param>
+        public void ApplyValue(object value)
+        {
+            Property.SetValue(Model, value);
+            CurrentValue = value;
+        }
     }
 
     /// <summary>

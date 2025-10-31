@@ -131,7 +131,7 @@ Resolvers can construct rich guidance even when the property value references re
 
 Some data surfaces as opaque `object` graphs—think JSON blobs, plugin settings loaded from another assembly, or dictionaries whose values describe constructor parameters. To keep these scenarios discoverable the resolver can also expose additional layers through `IPropertyLayerProvider`. Each layer describes a named editing surface with an optional description and a handler that receives the active `PropertyEditContext`. When the user presses <kbd>Enter</kbd> on the property, Consoul prompts whether to run the default editor or one of the custom layers.
 
-Implementations can parse JSON Schema files, spin up another `EditObjectView`, or invoke bespoke editors for nested structures. The handler can mutate `context.CurrentValue` and return `true` to signal that the new value should be applied automatically; alternatively it can perform its own persistence (for example by updating a dictionary entry directly) and return `false`.
+Implementations can parse JSON Schema files, spin up another `EditObjectView`, or invoke bespoke editors for nested structures. The handler can mutate `context.CurrentValue` and return `true` to signal that the new value should be applied automatically. If the layer wants to persist the value directly it can call `context.ApplyValue` and still return `true` while marking the `PropertyEditLayer` as not applying the context value. Returning `false` now falls back to the default editor so layers can bootstrap data (for example by materialising dictionary entries) and then let the built-in prompts continue the session.
 
 ```csharp
 public sealed class OptionsMetadataResolver : IPropertyMetadataResolver
@@ -162,7 +162,7 @@ private sealed class SchemaLayerProvider : IPropertyLayerProvider
                 "Edit via schema",
                 "Loads the remote JSON schema and opens a nested editor for the selected dictionary entry.",
                 RunSchemaEditor,
-                false)
+                true)
         };
     }
 
@@ -171,7 +171,8 @@ private sealed class SchemaLayerProvider : IPropertyLayerProvider
         // Locate the JSON schema based on the current model and open a tailored view.
         var view = new EditObjectView(JsonSchemaParser.BuildModel(context.CurrentValue));
         view.Render();
-        return false; // the layer updated the value directly.
+        context.CurrentValue = view.Model;
+        return true; // the updated model will be applied by Consoul.
     }
 }
 ```
