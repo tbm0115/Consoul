@@ -155,14 +155,14 @@ namespace ConsoulLibrary
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}: {simpleElementType.Name}[{GetCollectionCount(Model, property)}]",
                         () => EditDescriptor(descriptor),
-                        () => ConsoleColor.DarkYellow));
+                        () => ConsoleColor.Green));
                 }
                 else
                 {
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}: {elementType.Name}[{GetCollectionCount(Model, property)}]",
                         () => EditDescriptor(descriptor),
-                        () => ConsoleColor.DarkYellow));
+                        () => ConsoleColor.Green));
                 }
 
                 return;
@@ -177,7 +177,7 @@ namespace ConsoulLibrary
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}",
                         () => EditDescriptor(descriptor),
-                        () => ConsoleColor.DarkYellow));
+                        () => ConsoleColor.Green));
                 }
                 else
                 {
@@ -197,7 +197,7 @@ namespace ConsoulLibrary
             _options.Add(new DynamicOption<object>(
                 () => $"Edit {descriptor.DisplayName}",
                 () => EditDescriptor(descriptor),
-                () => ConsoleColor.DarkYellow));
+                () => ConsoleColor.Green));
         }
 
         private void EditSimpleProperty(EditablePropertyDescriptor descriptor, Type propertyType)
@@ -246,7 +246,7 @@ namespace ConsoulLibrary
 
                 foreach (var layer in layers)
                 {
-                    var index = prompt.Add(layer.DisplayName, ConsoleColor.Cyan);
+                    var index = prompt.Add(layer.DisplayName, ConsoleColor.Green);
                     layerChoices[index] = layer;
                 }
 
@@ -634,7 +634,7 @@ namespace ConsoulLibrary
                     prompt.Add(FormatDictionaryEntry(pair));
                 }
 
-                int addChoice = prompt.Add("Add", ConsoleColor.DarkYellow);
+                int addChoice = prompt.Add("Add", ConsoleColor.Green);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
                 var result = prompt.Render();
@@ -901,7 +901,7 @@ namespace ConsoulLibrary
                     prompt.Add(item?.ToString());
                 }
 
-                int addChoice = prompt.Add("Add", ConsoleColor.DarkYellow);
+                int addChoice = prompt.Add("Add", ConsoleColor.Green);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
                 var result = prompt.Render();
@@ -954,7 +954,7 @@ namespace ConsoulLibrary
                     prompt.Add(item?.ToString());
                 }
 
-                int addChoice = prompt.Add("Add", ConsoleColor.DarkYellow);
+                int addChoice = prompt.Add("Add", ConsoleColor.Green);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
                 var result = prompt.Render();
@@ -1073,9 +1073,6 @@ namespace ConsoulLibrary
 
                 _view.EditDescriptor(descriptor);
 
-                Consoul.WriteCore(string.Empty, RenderOptions.DefaultColor);
-                Consoul.WriteCore("Press any key to return to the editor…", RenderOptions.SubnoteColor);
-                Console.ReadKey(true);
             }
 
             private static string NormalizeWhitespace(string value)
@@ -1146,6 +1143,7 @@ namespace ConsoulLibrary
             {
                 Console.Clear();
                 Console.WriteLine(_view.Title);
+                Console.WriteLine("Press Esc to return to the editor.");
                 Console.WriteLine();
                 var lines = BuildDocument();
 
