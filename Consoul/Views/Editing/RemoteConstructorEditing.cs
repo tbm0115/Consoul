@@ -415,19 +415,12 @@ namespace ConsoulLibrary.Views.Editing
                     continue;
                 }
 
-                object defaultValue = null;
+                object defaultValue;
                 if (IsSimpleParameter(parameter.ParameterType))
                 {
-                    if (parameter.HasDefaultValue)
-                    {
-                        defaultValue = parameter.DefaultValue;
-                    }
-                    else
-                    {
-                        defaultValue = string.Empty;
-                    }
+                    defaultValue = GetDefaultValue(parameter);
                 }
-                else
+                else if (ShouldCreateNestedDictionary(parameter.ParameterType))
                 {
                     defaultValue = new RemoteConstructorParameterDictionary
                     {
@@ -436,6 +429,10 @@ namespace ConsoulLibrary.Views.Editing
                         DisplayName = parameter.Name,
                         Documentation = LookupParameterSummary(parameter)
                     };
+                }
+                else
+                {
+                    defaultValue = GetDefaultValue(parameter);
                 }
 
                 dictionary.CtorParameters.Add(parameter.Name, defaultValue);
@@ -514,7 +511,7 @@ namespace ConsoulLibrary.Views.Editing
         {
             if (IsSimpleParameter(typeName))
             {
-                return string.Empty;
+                return GetDefaultValue(typeName);
             }
 
             var nested = new RemoteConstructorParameterDictionary
@@ -561,6 +558,149 @@ namespace ConsoulLibrary.Views.Editing
             }
 
             return false;
+        }
+
+        private static object GetDefaultValue(ParameterInfo parameter)
+        {
+            if (parameter == null)
+            {
+                return null;
+            }
+
+            if (parameter.HasDefaultValue)
+            {
+                return parameter.DefaultValue;
+            }
+
+            return GetDefaultValue(parameter.ParameterType);
+        }
+
+        private static object GetDefaultValue(Type type)
+        {
+            if (type == null)
+            {
+                return null;
+            }
+
+            if (type == typeof(string))
+            {
+                return string.Empty;
+            }
+
+            if (type.IsValueType)
+            {
+                try
+                {
+                    return Activator.CreateInstance(type);
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            if (type.IsInterface || type.IsAbstract)
+            {
+                return null;
+            }
+
+            if (typeof(IDictionary).IsAssignableFrom(type))
+            {
+                try
+                {
+                    return Activator.CreateInstance(type);
+                }
+                catch
+                {
+                }
+
+                return null;
+            }
+
+            return null;
+        }
+
+        private static object GetDefaultValue(string typeName)
+        {
+            if (string.IsNullOrWhiteSpace(typeName))
+            {
+                return null;
+            }
+
+            var normalized = typeName.Trim();
+            if (normalized.StartsWith("System.Nullable", StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            if (normalized.IndexOf("System.", StringComparison.Ordinal) == 0)
+            {
+                normalized = normalized.Substring("System.".Length);
+            }
+
+            switch (normalized)
+            {
+                case "Boolean":
+                    return false;
+                case "Byte":
+                    return (byte)0;
+                case "Char":
+                    return (char)0;
+                case "Decimal":
+                    return 0m;
+                case "Double":
+                    return 0d;
+                case "Guid":
+                    return Guid.Empty;
+                case "Int16":
+                    return (short)0;
+                case "Int32":
+                    return 0;
+                case "Int64":
+                    return 0L;
+                case "SByte":
+                    return (sbyte)0;
+                case "Single":
+                    return 0f;
+                case "String":
+                    return string.Empty;
+                case "TimeSpan":
+                    return TimeSpan.Zero;
+                case "UInt16":
+                    return (ushort)0;
+                case "UInt32":
+                    return 0u;
+                case "UInt64":
+                    return 0UL;
+                case "DateTime":
+                    return DateTime.MinValue;
+                case "DateTimeOffset":
+                    return DateTimeOffset.MinValue;
+                case "Uri":
+                    return null;
+            }
+
+            return null;
+        }
+
+        private static bool ShouldCreateNestedDictionary(Type type)
+        {
+            if (type == null)
+            {
+                return false;
+            }
+
+            if (type.IsInterface || type.IsAbstract)
+            {
+                return false;
+            }
+
+            if (typeof(IDictionary).IsAssignableFrom(type))
+            {
+                return false;
+            }
+
+            return !IsSimpleParameter(type);
         }
 
         private static bool IsSimpleParameter(string typeName)
