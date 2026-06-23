@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConsoulLibrary.Views
+namespace ConsoulLibrary
 {
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     public class DynamicViewOptionAttribute : Attribute

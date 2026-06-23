@@ -1,8 +1,5 @@
-﻿using ConsoulLibrary;
-using ConsoulLibrary.Views;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace ConsoulLibrary.Test.Views
 {
@@ -18,7 +15,7 @@ namespace ConsoulLibrary.Test.Views
         {
             var person = new Person();
             var view = new EditObjectView(person);
-            view.Run();
+            view.Render();
             Consoul.Write($"{person.LastName}, {person.FirstName} created on {person.DateOfBirth?.ToString("MM/dd/yyyy")}!", ConsoleColor.Green);
             if (person.Spouse != null)
             {

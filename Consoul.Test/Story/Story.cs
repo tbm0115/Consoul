@@ -26,8 +26,8 @@ namespace ConsoulLibrary.Test.Views
             var nextStage = Stages.FirstOrDefault(o => o.GetType() == viewType);
             if (nextStage != null)
             {
-                nextStage.Source = this;
-                nextStage.Run();
+                nextStage.Model = this;
+                nextStage.Render();
             }
             else
             {

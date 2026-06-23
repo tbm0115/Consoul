@@ -128,7 +128,7 @@ namespace ConsoulLibrary {
 
         public static bool HasBuffer() => InputBuffer.Any();
 
-        public static void RegisterOptions(Prompt prompt)
+        public static void RegisterOptions(SelectionPrompt prompt)
         {
             ClearRegisteredOptions();
             PromptRegistry

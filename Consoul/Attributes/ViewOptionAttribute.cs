@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConsoulLibrary.Views
+namespace ConsoulLibrary
 {
     /// <summary>
     /// Indicates that a method can be rendered as an option within a view.

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using ConsoulLibrary.Views;
-
+﻿
 namespace ConsoulLibrary.Test.Views
 {
     public class Welcome : StaticView
@@ -19,7 +14,8 @@ namespace ConsoulLibrary.Test.Views
         public void Yes()
         {
             Story = new Story();
-            Story.Progress(typeof(PickUpStick));
+            NavigateTo(() => new PickUpStick(Story), replace: true);
+            //Story.Progress(typeof(PickUpStick));
         }
     }
     
