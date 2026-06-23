@@ -46,6 +46,34 @@ if (Consoul.Ask("Continue?"))
 }
 ```
 
+## 5-Minute POC View
+
+For quick proof-of-concept terminal views, use `Consoul.View(...)` instead of creating a view subclass up front.
+
+```csharp
+using ConsoulLibrary;
+using System.Threading.Tasks;
+
+Consoul.View("Deployment Tools")
+    .Option("Print status", () => Consoul.Write("All systems ready.", ConsoleColor.Green))
+    .Option("Run async check", async cancellationToken =>
+    {
+        await Task.Delay(250, cancellationToken);
+        Consoul.Write("Check complete.", ConsoleColor.Cyan);
+    })
+    .Navigate<SettingsView>("Edit settings")
+    .Render();
+
+public sealed class SettingsView : StaticView
+{
+    public SettingsView()
+    {
+        Title = "Settings";
+        Options.Add(new ViewOption("Say hello", () => Consoul.Write("Hello")));
+    }
+}
+```
+
 ## Prompts
 
 `SelectionPrompt` renders a numbered menu and returns a `PromptResult`, so callers can distinguish selection, cancellation, and default selection behavior.
@@ -65,6 +93,50 @@ if (result.IsCanceled)
 else if (result.HasSelection)
 {
     Consoul.Write($"You chose {prompt[result.Index]}");
+}
+```
+
+For simple menus, `Consoul.Select(...)` returns the same result without manually creating a prompt:
+
+```csharp
+PromptResult environment = Consoul.Select("Pick an environment", false, "Development", "Staging", "Production");
+
+if (environment.HasSelection)
+{
+    Consoul.Write($"Selected option {environment.Index + 1}");
+}
+```
+
+Typed selection returns both the prompt result and the selected object:
+
+```csharp
+var targets = new[]
+{
+    new DeployTarget("Development", "dev"),
+    new DeployTarget("Production", "prod")
+};
+
+SelectionResult<DeployTarget> target = Consoul.Select(
+    "Pick a target",
+    item => item.Name,
+    false,
+    targets);
+
+if (target.HasSelection)
+{
+    Consoul.Write($"Deploying to {target.SelectedItem.Slug}");
+}
+
+public sealed class DeployTarget
+{
+    public DeployTarget(string name, string slug)
+    {
+        Name = name;
+        Slug = slug;
+    }
+
+    public string Name { get; }
+    public string Slug { get; }
 }
 ```
 
@@ -113,7 +185,7 @@ using (var progress = new ProgressBar("Starting"))
 
 ## Views
 
-Use `StaticView` or `DynamicView<T>` to model menu-driven workflows.
+Use `Consoul.View(...)` for first-run POCs, then graduate to `StaticView` or `DynamicView<T>` when the workflow deserves a named class.
 
 ```csharp
 [View("Tools")]
@@ -136,6 +208,8 @@ public sealed class ToolsView : StaticView
 
 Consoul.Render<ToolsView>();
 ```
+
+The sample app includes small POC examples for fluent menus, table display, and object editing under `Consoul.Test/Views/PocViews.cs`.
 
 ## Routines
 

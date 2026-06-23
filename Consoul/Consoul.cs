@@ -609,6 +609,20 @@ namespace ConsoulLibrary {
         /// Renders a Consoul view using the <see cref="ViewRenderer"/> to chain renderings.
         /// </summary>
         /// <typeparam name="T">Type of the <see cref="IView"/> to render.</typeparam>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests during rendering.</param>
+        /// <param name="factory">Optional factory method to create the view.</param>
+        /// <param name="configure">Optional configuration action to modify the view after creation.</param>
+        /// <returns>Reference to the created <see cref="ViewRenderer"/> to chain renderings.</returns>
+        public static ViewRenderer Render<T>(CancellationToken cancellationToken, Func<IView> factory = null, Action<IView> configure = null) where T : IView
+        {
+            var renderer = new ViewRenderer();
+            return renderer.Render<T>(cancellationToken, factory, configure);
+        }
+
+        /// <summary>
+        /// Renders a Consoul view using the <see cref="ViewRenderer"/> to chain renderings.
+        /// </summary>
+        /// <typeparam name="T">Type of the <see cref="IView"/> to render.</typeparam>
         /// <param name="factory">Optional factory method to create the view.</param>
         /// <param name="configure">Optional configuration action to modify the view after creation.</param>
         /// <returns>Reference to the created <see cref="ViewRenderer"/> to chain renderings.</returns>
@@ -616,6 +630,31 @@ namespace ConsoulLibrary {
         {
             var renderer = new ViewRenderer();
             return await renderer.RenderAsync<T>(factory, configure);
+        }
+
+        /// <summary>
+        /// Renders a Consoul view asynchronously using the <see cref="ViewRenderer"/> to chain renderings.
+        /// </summary>
+        /// <typeparam name="T">Type of the <see cref="IView"/> to render.</typeparam>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests during rendering.</param>
+        /// <param name="factory">Optional factory method to create the view.</param>
+        /// <param name="configure">Optional configuration action to modify the view after creation.</param>
+        /// <returns>Reference to the created <see cref="ViewRenderer"/> to chain renderings.</returns>
+        public static async Task<ViewRenderer> RenderAsync<T>(CancellationToken cancellationToken, Func<IView> factory = null, Action<IView> configure = null) where T : IView
+        {
+            var renderer = new ViewRenderer();
+            return await renderer.RenderAsync<T>(cancellationToken, factory, configure);
+        }
+
+        /// <summary>
+        /// Creates a fluently configured Consoul view for quick menus and proof-of-concept views.
+        /// </summary>
+        /// <param name="title">The title rendered above the option prompt.</param>
+        /// <param name="goBackMessage">Optional label for the generated option that exits the view.</param>
+        /// <returns>A <see cref="FluentView"/> that can be configured with options and navigation entries.</returns>
+        public static FluentView View(string title, string goBackMessage = null)
+        {
+            return new FluentView(title, goBackMessage);
         }
 
         /// <summary>
@@ -733,6 +772,107 @@ namespace ConsoulLibrary {
         {
             var result = (new SelectionPrompt(message, clear, options)).Render(cancellationToken);
             return result.Index;
+        }
+
+        /// <summary>
+        /// Prompts the user with a simple list of choices and returns the full prompt result.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Indicates whether or not to clear the console window.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(string message, bool clear = false, params string[] options)
+        {
+            return Select(message, clear, CancellationToken.None, options);
+        }
+
+        /// <summary>
+        /// Prompts the user with a simple list of choices and returns the full prompt result.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Indicates whether or not to clear the console window.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(string message, bool clear = false, CancellationToken cancellationToken = default, params string[] options)
+        {
+            return (new SelectionPrompt(message, clear, options)).Render(cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts the user with a complex list of choices and returns the full prompt result.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Array of complex options.</param>
+        /// <param name="clear">Indicates whether or not to clear the console window.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(string message, SelectOption[] options, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            return (new SelectionPrompt(message, clear, options)).Render(cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts the user with typed choices and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Indicates whether or not to clear the console window.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(string message, Func<T, string> labelSelector, bool clear = false, params T[] options)
+        {
+            return Select(message, labelSelector, clear, CancellationToken.None, options);
+        }
+
+        /// <summary>
+        /// Prompts the user with typed choices and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Indicates whether or not to clear the console window.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(string message, Func<T, string> labelSelector, bool clear = false, CancellationToken cancellationToken = default, params T[] options)
+        {
+            if (labelSelector == null)
+            {
+                throw new ArgumentNullException(nameof(labelSelector));
+            }
+
+            options = options ?? Array.Empty<T>();
+            var prompt = new SelectionPrompt<T>(message, clear, labelSelector, options);
+            var result = prompt.Render(cancellationToken);
+            T selectedItem = default(T);
+            if (result.HasSelection && result.Index >= 0 && result.Index < options.Length)
+            {
+                selectedItem = options[result.Index];
+            }
+
+            return new SelectionResult<T>(result, selectedItem);
+        }
+
+        /// <summary>
+        /// Prompts the user with typed choices and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Indicates whether or not to clear the console window.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(string message, IEnumerable<T> options, Func<T, string> labelSelector, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            return Select(message, labelSelector, clear, cancellationToken, options.ToArray());
         }
 
         /// <summary>

@@ -50,9 +50,9 @@ namespace ConsoulLibrary
             TryWrite(() => Console.SetCursorPosition(targetLeft, targetTop));
         }
 
-        public ConsoleKeyInfo ReadKey(bool intercept) => Console.ReadKey(intercept);
+        public ConsoleKeyInfo ReadKey(bool intercept) => TryRead(() => Console.ReadKey(intercept), new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false));
 
-        public Stream OpenStandardInput() => Console.OpenStandardInput();
+        public Stream OpenStandardInput() => TryRead(() => Console.OpenStandardInput(), Stream.Null);
 
         private static T TryRead<T>(Func<T> read, T fallback)
         {

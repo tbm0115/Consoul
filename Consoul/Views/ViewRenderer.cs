@@ -19,9 +19,25 @@ namespace ConsoulLibrary.Views
         /// <returns>Reference to the current <see cref="ViewRenderer"/> to fluently chain commands.</returns>
         public ViewRenderer Render<T>(Func<IView> factory = null, Action<IView> configure = null) where T : IView
         {
+            return Render<T>(CancellationToken.None, factory, configure);
+        }
+
+        /// <summary>
+        /// Renders the specified implementation of <see cref="IView"/>.
+        /// </summary>
+        /// <typeparam name="T">Implementation of <see cref="IView"/>.</typeparam>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests during rendering.</param>
+        /// <param name="factory">Optional factory function to create the view instance.</param>
+        /// <param name="configure">Optional action to configure the view instance before rendering.</param>
+        /// <returns>Reference to the current <see cref="ViewRenderer"/> to fluently chain commands.</returns>
+        public ViewRenderer Render<T>(CancellationToken cancellationToken, Func<IView> factory = null, Action<IView> configure = null) where T : IView
+        {
             try
             {
-                RunNavigationLoopAsync<T>(factory, configure, CancellationToken.None).GetAwaiter().GetResult();
+                RunNavigationLoopAsync<T>(factory, configure, cancellationToken).GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
             }
             catch (Exception ex)
             {
@@ -29,6 +45,11 @@ namespace ConsoulLibrary.Views
                 if (RenderOptions.WaitOnError)
                 {
                     Consoul.Wait();
+                }
+
+                if (RenderOptions.ViewErrorMode == RenderOptions.ViewErrorModes.Throw)
+                {
+                    throw;
                 }
             }
 
@@ -44,9 +65,25 @@ namespace ConsoulLibrary.Views
         /// <returns>Reference to the current <see cref="ViewRenderer"/> to fluently chain commands.</returns>
         public async Task<ViewRenderer> RenderAsync<T>(Func<IView> factory = null, Action<IView> configure = null) where T : IView
         {
+            return await RenderAsync<T>(CancellationToken.None, factory, configure);
+        }
+
+        /// <summary>
+        /// Renders the specified implementation of <see cref="IView"/>.
+        /// </summary>
+        /// <typeparam name="T">Implementation of <see cref="IView"/>.</typeparam>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests during rendering.</param>
+        /// <param name="factory">Optional factory function to create the view instance.</param>
+        /// <param name="configure">Optional action to configure the view instance before rendering.</param>
+        /// <returns>Reference to the current <see cref="ViewRenderer"/> to fluently chain commands.</returns>
+        public async Task<ViewRenderer> RenderAsync<T>(CancellationToken cancellationToken, Func<IView> factory = null, Action<IView> configure = null) where T : IView
+        {
             try
             {
-                await RunNavigationLoopAsync<T>(factory, configure, CancellationToken.None);
+                await RunNavigationLoopAsync<T>(factory, configure, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
             }
             catch (Exception ex)
             {
@@ -54,6 +91,11 @@ namespace ConsoulLibrary.Views
                 if (RenderOptions.WaitOnError)
                 {
                     Consoul.Wait();
+                }
+
+                if (RenderOptions.ViewErrorMode == RenderOptions.ViewErrorModes.Throw)
+                {
+                    throw;
                 }
             }
 
@@ -78,7 +120,10 @@ namespace ConsoulLibrary.Views
 
             while (navigationStack.Count > 0)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
 
                 ViewStackEntry currentEntry = navigationStack.Peek();
                 Type currentViewType = currentEntry.ViewType;
@@ -103,6 +148,11 @@ namespace ConsoulLibrary.Views
                     if (RenderOptions.WaitOnError)
                     {
                         Consoul.Wait();
+                    }
+
+                    if (RenderOptions.ViewErrorMode == RenderOptions.ViewErrorModes.Throw)
+                    {
+                        throw;
                     }
 
                     navigationStack.Pop();
@@ -137,6 +187,11 @@ namespace ConsoulLibrary.Views
                             Consoul.Wait();
                         }
 
+                        if (RenderOptions.ViewErrorMode == RenderOptions.ViewErrorModes.Throw)
+                        {
+                            throw;
+                        }
+
                         navigationStack.Pop();
                         continue;
                     }
@@ -152,12 +207,21 @@ namespace ConsoulLibrary.Views
                 {
                     await viewInstance.RenderAsync(cancellationToken).ConfigureAwait(false);
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
                 catch (Exception ex)
                 {
                     Consoul.Write(ex, $"Failed to render '{currentViewType.FullName}' view", true, RenderOptions.InvalidColor);
                     if (RenderOptions.WaitOnError)
                     {
                         Consoul.Wait();
+                    }
+
+                    if (RenderOptions.ViewErrorMode == RenderOptions.ViewErrorModes.Throw)
+                    {
+                        throw;
                     }
                 }
 

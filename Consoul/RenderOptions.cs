@@ -113,6 +113,11 @@ namespace ConsoulLibrary {
         public static bool WaitOnError { get; set; } = false;
 
         /// <summary>
+        /// Gets or sets how Consoul handles exceptions that occur while rendering a view.
+        /// </summary>
+        public static ViewErrorModes ViewErrorMode { get; set; } = ViewErrorModes.RenderAndContinue;
+
+        /// <summary>
         /// Defines how Consoul applies write suppression rules.
         /// </summary>
         public enum WriteModes
@@ -129,6 +134,22 @@ namespace ConsoulLibrary {
             /// Suppresses messages of certain <see cref="ConsoleColor"/>
             /// </summary>
             SuppressBlacklist
+        }
+
+        /// <summary>
+        /// Defines how view rendering errors are handled after Consoul writes the error details.
+        /// </summary>
+        public enum ViewErrorModes
+        {
+            /// <summary>
+            /// Writes the error details and continues view navigation where possible.
+            /// </summary>
+            RenderAndContinue,
+
+            /// <summary>
+            /// Writes the error details and rethrows the original exception.
+            /// </summary>
+            Throw
         }
 
         /// <summary>

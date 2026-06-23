@@ -1129,8 +1129,8 @@ namespace ConsoulLibrary
 
             public void Run()
             {
-                var previousCursorVisible = Console.CursorVisible;
-                Console.CursorVisible = false;
+                var previousCursorVisible = Consoul.ConsoleDriver.CursorVisible;
+                Consoul.ConsoleDriver.CursorVisible = false;
 
                 try
                 {
@@ -1138,7 +1138,7 @@ namespace ConsoulLibrary
                     do
                     {
                         RenderDocument();
-                        keyInfo = Console.ReadKey(true);
+                        keyInfo = Consoul.ConsoleDriver.ReadKey(true);
 
                         if (keyInfo.Key == ConsoleKey.DownArrow || keyInfo.Key == ConsoleKey.RightArrow || keyInfo.Key == ConsoleKey.Tab)
                         {
@@ -1157,8 +1157,8 @@ namespace ConsoulLibrary
                 }
                 finally
                 {
-                    Console.CursorVisible = previousCursorVisible;
-                    Console.Clear();
+                    Consoul.ConsoleDriver.CursorVisible = previousCursorVisible;
+                    Consoul.ConsoleDriver.Clear();
                 }
             }
 
@@ -1256,10 +1256,10 @@ namespace ConsoulLibrary
 
             private void RenderDocument()
             {
-                Console.Clear();
-                Console.WriteLine(_view.Title);
-                Console.WriteLine("Press Esc to return to the editor.");
-                Console.WriteLine();
+                Consoul.ConsoleDriver.Clear();
+                Consoul.ConsoleDriver.WriteLine(_view.Title);
+                Consoul.ConsoleDriver.WriteLine("Press Esc to return to the editor.");
+                Consoul.ConsoleDriver.WriteLine(string.Empty);
                 var lines = BuildDocument();
 
                 foreach (var line in lines)
@@ -1507,11 +1507,11 @@ namespace ConsoulLibrary
                         var background = highlight ? (ConsoleColor?)highlightColor : segment.Background;
                         using (var scope = new ColorScope(segment.Foreground, background))
                         {
-                            Console.Write(segment.Text);
+                            Consoul.ConsoleDriver.Write(segment.Text);
                         }
                     }
 
-                    Console.WriteLine();
+                    Consoul.ConsoleDriver.WriteLine(string.Empty);
                 }
             }
 

@@ -181,6 +181,12 @@ namespace ConsoulLibrary
             _navigationContext.Reset();
             do
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    GoBack();
+                    break;
+                }
+
                 Consoul.ConsoleDriver.Clear();
 
                 BannerEntry.Render(Title, RenderOptions.PromptColor);
@@ -197,11 +203,11 @@ namespace ConsoulLibrary
 
                 try
                 {
-                    var result = prompt.Render();
-                    if (result.IsCanceled)
+                    var result = prompt.Render(cancellationToken);
+                    if (result.IsCanceled || cancellationToken.IsCancellationRequested)
                     {
                         GoBack();
-                        continue;
+                        break;
                     }
 
                     if (!result.HasSelection)
@@ -213,26 +219,30 @@ namespace ConsoulLibrary
                     idx = result.Index;
                     if (idx >= 0 && idx < Options.Count)
                     {
+                        int selectedIndex = idx;
                         _navigationContext.Reset();
                         // Execute the selected option's action asynchronously.
                         await Task.Run(() =>
                         {
                             try
                             {
-                                Options[idx].Action.Invoke();
+                                Options[selectedIndex].Action.Invoke();
                             }
                             catch (Exception ex2)
                             {
-                                Consoul.Write(ex2, $"Failed to render '{Title}[{idx}]' view", true, RenderOptions.InvalidColor);
+                                Consoul.Write(ex2, $"Failed to render '{Title}[{selectedIndex}]' view", true, RenderOptions.InvalidColor);
                                 if (RenderOptions.WaitOnError)
-                                    Consoul.Wait();
+                                    Consoul.Wait(cancellationToken: cancellationToken);
+
+                                if (RenderOptions.ViewErrorMode == RenderOptions.ViewErrorModes.Throw)
+                                    throw;
                             }
-                        });
+                        }, cancellationToken);
 
                         // Invoke the callback if provided.
                         if (OnOptionSelected != null)
                         {
-                            await OnOptionSelected(idx);
+                            await OnOptionSelected(selectedIndex);
                         }
 
                         if (_navigationContext.HasPendingCommand)
@@ -258,11 +268,19 @@ namespace ConsoulLibrary
                     }
 
                 }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    GoBack();
+                    break;
+                }
                 catch (Exception ex)
                 {
                     Consoul.Write(ex, $"Failed to render '{Title}' view", true, RenderOptions.InvalidColor);
                     if (RenderOptions.WaitOnError)
-                        Consoul.Wait();
+                        Consoul.Wait(cancellationToken: cancellationToken);
+
+                    if (RenderOptions.ViewErrorMode == RenderOptions.ViewErrorModes.Throw)
+                        throw;
                 }
             } while (idx < 0 && !_navigationContext.HasPendingCommand && !GoBackRequested);
         }
@@ -274,9 +292,9 @@ namespace ConsoulLibrary
         {
             try
             {
-                RenderAsync().Wait();
+                RenderAsync().GetAwaiter().GetResult();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (RenderOptions.ViewErrorMode != RenderOptions.ViewErrorModes.Throw)
             {
                 Consoul.Write(ex, $"Failed to render '{Title}' view", true, RenderOptions.InvalidColor);
                 if (RenderOptions.WaitOnError) Consoul.Wait();

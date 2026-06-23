@@ -48,7 +48,15 @@ if (result.HasSelection)
 }
 ```
 
-See [Consoul/README.md](Consoul/README.md) for complete core usage examples.
+For a fast proof-of-concept menu, start with the fluent view API:
+
+```csharp
+Consoul.View("Tools")
+    .Option("Say hello", () => Consoul.Write("Hello"))
+    .Render();
+```
+
+See [Consoul/README.md](Consoul/README.md) for complete core usage examples, including fluent POC views, result-first selection helpers, tables, prompts, and object editing.
 
 ## Repository Projects
 
@@ -57,7 +65,7 @@ See [Consoul/README.md](Consoul/README.md) for complete core usage examples.
 - `Consoul.Extensions.Configuration` is the packable configuration integration.
 - `Consoul.Text.Json` is the packable JSON integration.
 - `Consoul.Tests` contains xUnit coverage for input handling, rendering, prompts, and metadata behavior.
-- `Consoul.Test` is a sample console application used for manual exploration.
+- `Consoul.Test` is a sample console application used for manual exploration, including small POC menu, table, and settings-editor views.
 
 ## Documentation
 

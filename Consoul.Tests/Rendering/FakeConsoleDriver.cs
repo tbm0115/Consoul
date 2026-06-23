@@ -134,22 +134,15 @@ namespace ConsoulLibrary.Tests.Rendering
                 MoveToNextLine();
             }
 
+            _cursorLeft = Math.Max(0, _cursorLeft);
             EnsureLine(_cursorTop);
             var line = _lines[_cursorTop];
-            while (line.Length < _cursorLeft)
+            while (line.Length <= _cursorLeft)
             {
                 line.Append(' ');
             }
 
-            if (_cursorLeft < line.Length)
-            {
-                line[_cursorLeft] = ch;
-            }
-            else
-            {
-                line.Append(ch);
-            }
-
+            line[_cursorLeft] = ch;
             _cursorLeft++;
             if (_cursorLeft >= BufferWidth)
             {
