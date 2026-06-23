@@ -6,6 +6,11 @@ using Options = ConsoulLibrary.RenderOptions;
 
 namespace ConsoulLibrary
 {
+    /// <summary>
+    /// Represents a callback invoked when a typed prompt option is selected.
+    /// </summary>
+    /// <typeparam name="TTarget">The type of the selected target object.</typeparam>
+    /// <param name="choice">The selected target object.</param>
     public delegate void PromptChoiceCallback<TTarget>(TTarget choice);
     /// <summary>
     /// Represents a selection prompt with generic entity type <typeparamref name="T"/>, allowing customized label selection for each item.
@@ -29,6 +34,13 @@ namespace ConsoulLibrary
             LabelSelector = labelSelector;
         }
 
+        /// <summary>
+        /// Initializes a new typed prompt with an initial set of options.
+        /// </summary>
+        /// <param name="message">The message to display when the prompt is shown.</param>
+        /// <param name="clear">Indicates whether to clear the console when the prompt is displayed.</param>
+        /// <param name="labelSelector">The function used to extract the label from each entity of type <typeparamref name="T"/>.</param>
+        /// <param name="options">Initial options to add to the prompt.</param>
         public SelectionPrompt(string message, bool clear = false, Func<T, string> labelSelector = null, params T[] options) : this(message, clear, labelSelector)
         {
             foreach (var item in options)
@@ -61,7 +73,6 @@ namespace ConsoulLibrary
         /// <summary>
         /// Creates and shows a new prompt with the given message and options, then returns the selected item of type <typeparamref name="T"/>.
         /// </summary>
-        /// <typeparam name="T">The type of the objects to present as options.</typeparam>
         /// <param name="message">The message to display for the prompt.</param>
         /// <param name="labelSelector">A function to extract the label for each option.</param>
         /// <param name="clear">Indicates whether to clear the console when the prompt is displayed.</param>
@@ -84,6 +95,9 @@ namespace ConsoulLibrary
     /// </summary>
     public class SelectionPrompt
     {
+        /// <summary>
+        /// Stores the mutable option list used by derived prompt types.
+        /// </summary>
         protected List<SelectOption> _options { get; set; }
 
         /// <summary>
@@ -205,7 +219,7 @@ namespace ConsoulLibrary
             {
                 if (ClearConsole)
                 {
-                    Console.Clear();
+                    Consoul.ConsoleDriver.Clear();
                 }
                 Consoul.WriteCore(Message, RenderOptions.PromptColor);
                 Consoul.WriteCore("Choose the corresponding number from the options below:", RenderOptions.SubnoteColor);
@@ -217,7 +231,7 @@ namespace ConsoulLibrary
                     Consoul.WriteCore(option.ToString(), option.Color);
                     i++;
                 }
-                Console.ForegroundColor = RenderOptions.DefaultColor;
+                Consoul.ConsoleDriver.ForegroundColor = RenderOptions.DefaultColor;
                 input = Consoul.Read(cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
                 {

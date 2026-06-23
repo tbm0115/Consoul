@@ -5,12 +5,16 @@ namespace ConsoulLibrary
     /// <summary>
     /// Maintains a fixed positioned progress bar with an optional message and block representing progress.
     /// </summary>
-    public class ProgressBar
+    public class ProgressBar : IDisposable
     {
         private FixedMessage _messageArea;
         private FixedMessage _barArea;
         private double _progress = 0.0;
-        public int BarWidth { get; set; } = Console.BufferWidth - 10; // Default to a width slightly smaller than buffer width to prevent overflow
+
+        /// <summary>
+        /// Gets or sets the maximum number of characters used for the progress bar itself.
+        /// </summary>
+        public int BarWidth { get; set; } = Math.Max(1, Consoul.ConsoleBufferWidth - 10); // Default to a width slightly smaller than buffer width to prevent overflow
 
 
         /// <summary>
@@ -53,9 +57,15 @@ namespace ConsoulLibrary
         {
             _progress = 0.0;
             if (reAffix)
+            {
+                _messageArea?.Dispose();
+                _barArea?.Dispose();
                 Initialize(string.Empty);
+            }
             else
+            {
                 Update(0.0, "", ConsoleColor.Gray, ConsoleColor.Gray);
+            }
         }
 
         /// <summary>
@@ -79,6 +89,15 @@ namespace ConsoulLibrary
             // Render message and bar
             _messageArea.Render(message ?? string.Empty, messageColor);
             _barArea.Render(new string(BlockCharacter, width), barColor);
+        }
+
+        /// <summary>
+        /// Releases fixed message resources used by the progress bar.
+        /// </summary>
+        public void Dispose()
+        {
+            _messageArea?.Dispose();
+            _barArea?.Dispose();
         }
     }
 }

@@ -1,7 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace ConsoulLibrary
@@ -16,42 +14,26 @@ namespace ConsoulLibrary
         /// </summary>
         public readonly Dictionary<LogLevel, ConsoleColor> LogLevelToColorMap = new Dictionary<LogLevel, ConsoleColor>()
         {
-            [LogLevel.Trace] = ConsoulLibrary.RenderOptions.OptionColor,
-            [LogLevel.Debug] = ConsoulLibrary.RenderOptions.SubnoteColor,
-            [LogLevel.Information] = ConsoulLibrary.RenderOptions.DefaultColor,
-            [LogLevel.Warning] = ConsoulLibrary.RenderOptions.InvalidColor,
-            [LogLevel.Error] = ConsoulLibrary.RenderOptions.InvalidColor,
-            [LogLevel.Critical] = ConsoulLibrary.RenderOptions.InvalidColor,
+            [LogLevel.Trace] = RenderOptions.OptionColor,
+            [LogLevel.Debug] = RenderOptions.SubnoteColor,
+            [LogLevel.Information] = RenderOptions.DefaultColor,
+            [LogLevel.Warning] = RenderOptions.InvalidColor,
+            [LogLevel.Error] = RenderOptions.InvalidColor,
+            [LogLevel.Critical] = RenderOptions.InvalidColor,
             [LogLevel.None] = ConsoleColor.Black,
         };
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="TState"></typeparam>
-        /// <param name="state"></param>
-        /// <returns></returns>
-        public IDisposable BeginScope<TState>(TState state) {
+        /// <inheritdoc />
+        public IDisposable BeginScope<TState>(TState state)
+        {
             return state as IDisposable;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="logLevel"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public bool IsEnabled(LogLevel logLevel)
             => LogLevelToColorMap.ContainsKey(logLevel);
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <typeparam name="TState"></typeparam>
-        /// <param name="logLevel"></param>
-        /// <param name="eventId"></param>
-        /// <param name="state"></param>
-        /// <param name="exception"></param>
-        /// <param name="formatter"></param>
+        /// <inheritdoc />
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
             if (!IsEnabled(logLevel))
@@ -63,11 +45,6 @@ namespace ConsoulLibrary
             WriteException(exception);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="exception"></param>
-        /// <param name="tabDepth"></param>
         private void WriteException(Exception exception, int tabDepth = 0)
         {
             string tabs = new string('\t', tabDepth);
@@ -80,6 +57,7 @@ namespace ConsoulLibrary
                 if (exception.InnerException != null)
                 {
                     Consoul.Write(tabs + "\tInnerException: ", ConsoleColor.Red);
+                    WriteException(exception.InnerException, tabDepth + 1);
                 }
             }
         }

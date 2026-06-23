@@ -18,8 +18,8 @@ namespace ConsoulLibrary
         /// </summary>
         public CursorPosition CurrentPosition => new CursorPosition()
         {
-            Left = Console.CursorLeft,
-            Top = Console.CursorTop,
+            Left = Consoul.ConsoleDriver.CursorLeft,
+            Top = Consoul.ConsoleDriver.CursorTop,
         };
 
         /// <summary>
@@ -29,8 +29,8 @@ namespace ConsoulLibrary
         {
             OriginalPosition = new CursorPosition()
             {
-                Left = Console.CursorLeft,
-                Top = Console.CursorTop
+                Left = Consoul.ConsoleDriver.CursorLeft,
+                Top = Consoul.ConsoleDriver.CursorTop
             };
         }
 
@@ -44,8 +44,8 @@ namespace ConsoulLibrary
 
             _disposed = true;
 
-            int bufferWidth = Console.BufferWidth;
-            int bufferHeight = Console.BufferHeight;
+            int bufferWidth = Consoul.ConsoleBufferWidth;
+            int bufferHeight = Consoul.ConsoleBufferHeight;
 
             int targetLeft = OriginalPosition.Left;
             int targetTop = OriginalPosition.Top;
@@ -68,7 +68,7 @@ namespace ConsoulLibrary
                 targetTop = 0;
             }
 
-            Console.SetCursorPosition(targetLeft, targetTop);
+            Consoul.ConsoleDriver.SetCursorPosition(targetLeft, targetTop);
         }
     }
 }

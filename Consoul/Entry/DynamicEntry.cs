@@ -4,7 +4,7 @@ namespace ConsoulLibrary
     /// <summary>
     /// A dynamic option message.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The model type associated with the dynamic entry.</typeparam>
     public class DynamicEntry<T> : IDynamicViewOption<T>
     {
         /// <summary>

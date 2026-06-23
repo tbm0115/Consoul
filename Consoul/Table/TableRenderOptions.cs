@@ -9,6 +9,9 @@ namespace ConsoulLibrary
     /// Options for how a <see cref="TableView"/> is rendered.
     /// </summary>
     public class TableRenderOptions {
+        /// <summary>
+        /// Gets or sets whether a leading choice column is included when normalizing table layout.
+        /// </summary>
         public bool IncludeChoices { get; set; } = false;
 
         /// <summary>
@@ -36,6 +39,9 @@ namespace ConsoulLibrary
         /// </summary>
         public ColorScheme SelectionScheme { get; set; } = new ColorScheme() { Color = ConsoleColor.Green, BackgroundColor = ConsoleColor.DarkGreen };
 
+        /// <summary>
+        /// Gets or sets the color scheme for the row currently under the navigation cursor.
+        /// </summary>
         public ColorScheme HighlightedScheme { get; set; } = RenderOptions.OptionScheme;
 
         /// <summary>
@@ -61,8 +67,11 @@ namespace ConsoulLibrary
         /// <summary>
         /// Maximum width of the table.
         /// </summary>
-        public int? MaximumTableWidth { get; private set; } = Console.BufferWidth;
+        public int? MaximumTableWidth { get; private set; }
 
+        /// <summary>
+        /// Gets a value indicating whether <see cref="Normalize(IEnumerable{IEnumerable{string}})"/> has been called.
+        /// </summary>
         public bool IsNormalized { get; private set; } = false;
 
         private decimal _tableWidthPercentage { get; set; } = 0.8m;
@@ -85,10 +94,19 @@ namespace ConsoulLibrary
         /// </summary>
         public TableRenderOptions() { }
 
+        internal int GetMaximumTableWidth()
+        {
+            return Math.Max(1, Math.Min(MaximumTableWidth ?? Consoul.ConsoleBufferWidth, Consoul.ConsoleBufferWidth));
+        }
+
+        /// <summary>
+        /// Calculates table width, margins, and column sizing for the provided content.
+        /// </summary>
+        /// <param name="contents">Rows used to infer the normalized table layout.</param>
         public void Normalize(IEnumerable<IEnumerable<string>> contents)
         {
-            MaximumTableWidth = (int)(Console.BufferWidth * TableWidthPercentage);
-            int widthRemainder = Console.BufferWidth - (int)MaximumTableWidth;
+            MaximumTableWidth = Math.Max(1, (int)(Consoul.ConsoleBufferWidth * TableWidthPercentage));
+            int widthRemainder = Consoul.ConsoleBufferWidth - (int)MaximumTableWidth;
             int marginLeft, marginRight;
             marginRight = widthRemainder / 2;
             marginLeft = marginRight;

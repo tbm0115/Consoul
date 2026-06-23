@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace ConsoulLibrary {
 
+    /// <summary>
+    /// Provides global rendering defaults for Consoul output, prompts, routines, and view behavior.
+    /// </summary>
     public static class RenderOptions
     {
         /// <summary>
@@ -14,6 +17,9 @@ namespace ConsoulLibrary {
             Color = ConsoleColor.White,
             BackgroundColor = ConsoleColor.Black
         };
+        /// <summary>
+        /// Gets the foreground color from <see cref="DefaultScheme"/>.
+        /// </summary>
         public static ConsoleColor DefaultColor => DefaultScheme.Color;
 
         /// <summary>
@@ -24,6 +30,9 @@ namespace ConsoulLibrary {
             Color = ConsoleColor.Yellow,
             BackgroundColor = ConsoleColor.Black
         };
+        /// <summary>
+        /// Gets the foreground color from <see cref="PromptScheme"/>.
+        /// </summary>
         public static ConsoleColor PromptColor => PromptScheme.Color;
 
         /// <summary>
@@ -34,6 +43,9 @@ namespace ConsoulLibrary {
             Color = ConsoleColor.Gray,
             BackgroundColor = ConsoleColor.Black
         };
+        /// <summary>
+        /// Gets the foreground color from <see cref="SubnoteScheme"/>.
+        /// </summary>
         public static ConsoleColor SubnoteColor => SubnoteScheme.Color;
 
         /// <summary>
@@ -44,6 +56,9 @@ namespace ConsoulLibrary {
             Color = ConsoleColor.Red,
             BackgroundColor = ConsoleColor.Black
         };
+        /// <summary>
+        /// Gets the foreground color from <see cref="InvalidScheme"/>.
+        /// </summary>
         public static ConsoleColor InvalidColor => InvalidScheme.Color;
 
         /// <summary>
@@ -54,6 +69,9 @@ namespace ConsoulLibrary {
             Color = ConsoleColor.DarkYellow,
             BackgroundColor = ConsoleColor.Black
         };
+        /// <summary>
+        /// Gets the foreground color from <see cref="OptionScheme"/>.
+        /// </summary>
         public static ConsoleColor OptionColor => OptionScheme.Color;
 
         /// <summary>
@@ -64,6 +82,9 @@ namespace ConsoulLibrary {
             Color = ConsoleColor.Cyan,
             BackgroundColor = ConsoleColor.Black
         };
+        /// <summary>
+        /// Gets the foreground color from <see cref="RoutineInputScheme"/>.
+        /// </summary>
         public static ConsoleColor RoutineInputColor => RoutineInputScheme.Color;
 
         /// <summary>
@@ -81,6 +102,9 @@ namespace ConsoulLibrary {
         /// </summary>
         public static string DefaultGoBackMessage { get; set; } = "←\tGo Back";
 
+        /// <summary>
+        /// Gets or sets the message shown when Consoul waits for the user to continue.
+        /// </summary>
         public static string ContinueMessage { get; set; } = "Press enter to continue…";
 
         /// <summary>
@@ -88,6 +112,9 @@ namespace ConsoulLibrary {
         /// </summary>
         public static bool WaitOnError { get; set; } = false;
 
+        /// <summary>
+        /// Defines how Consoul applies write suppression rules.
+        /// </summary>
         public enum WriteModes
         {
             /// <summary>

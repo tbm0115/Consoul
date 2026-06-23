@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -63,10 +62,10 @@ namespace ConsoulLibrary.Views.Editing
 
         private static string ResolveDisplayName(PropertyInfo property)
         {
-            var displayAttribute = property.GetCustomAttribute<DisplayAttribute>(true);
+            var displayAttribute = GetDisplayAttribute(property);
             if (displayAttribute != null)
             {
-                var name = displayAttribute.GetName();
+                var name = InvokeStringMethod(displayAttribute, "GetName");
                 if (!string.IsNullOrWhiteSpace(name))
                 {
                     return name;
@@ -84,10 +83,10 @@ namespace ConsoulLibrary.Views.Editing
 
         private static string ResolveDescription(PropertyInfo property)
         {
-            var displayAttribute = property.GetCustomAttribute<DisplayAttribute>(true);
+            var displayAttribute = GetDisplayAttribute(property);
             if (displayAttribute != null)
             {
-                var description = displayAttribute.GetDescription();
+                var description = InvokeStringMethod(displayAttribute, "GetDescription");
                 if (!string.IsNullOrWhiteSpace(description))
                 {
                     return description;
@@ -101,6 +100,22 @@ namespace ConsoulLibrary.Views.Editing
             }
 
             return null;
+        }
+
+        private static object GetDisplayAttribute(PropertyInfo property)
+        {
+            return property
+                .GetCustomAttributes(true)
+                .FirstOrDefault(attribute => string.Equals(
+                    attribute.GetType().FullName,
+                    "System.ComponentModel.DataAnnotations.DisplayAttribute",
+                    StringComparison.Ordinal));
+        }
+
+        private static string InvokeStringMethod(object target, string methodName)
+        {
+            var method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+            return method?.Invoke(target, null) as string;
         }
     }
 

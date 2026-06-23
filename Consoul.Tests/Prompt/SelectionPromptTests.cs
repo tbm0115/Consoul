@@ -5,8 +5,14 @@ using Xunit;
 
 namespace Consoul.Tests.Prompt
 {
+    /// <summary>
+    /// Tests selection prompt behavior.
+    /// </summary>
     public class SelectionPromptTests
     {
+        /// <summary>
+        /// Verifies that prompts repeat when the selected number is larger than the option count.
+        /// </summary>
         [Fact]
         public void Render_RepeatsWhenSelectionExceedsOptionCount()
         {

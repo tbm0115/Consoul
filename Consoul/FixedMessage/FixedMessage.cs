@@ -8,8 +8,11 @@ namespace ConsoulLibrary
     /// <summary>
     /// Represents text that is rendered in place within the console and can be edited after initial rendering.
     /// </summary>
-    public class FixedMessage
+    public class FixedMessage : IDisposable
     {
+        /// <summary>
+        /// Captures the fixed cursor left, cursor top, and console width used by the rendered message.
+        /// </summary>
         protected int _x, _y, _fw;
 
         /// <summary>
@@ -32,6 +35,7 @@ namespace ConsoulLibrary
         private bool _firstRender = true;
         private string _lastRenderedMessage = string.Empty;
         private ColorScheme? _lastRenderedScheme = null;
+        private bool _disposed;
 
         /// <summary>
         /// Character used to fill whitespace around message
@@ -60,7 +64,37 @@ namespace ConsoulLibrary
         /// </summary>
         ~FixedMessage()
         {
-            Consoul.WindowResized -= OnWindowResized; // Unsubscribe to prevent memory leaks
+            Dispose(false);
+        }
+
+        /// <summary>
+        /// Releases the resize listener and pending update resources used by the fixed message.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Releases resources used by the fixed message.
+        /// </summary>
+        /// <param name="disposing">Indicates whether managed resources should be disposed.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            Consoul.WindowResized -= OnWindowResized;
+            _cancellationTokenSource.Cancel();
+            if (disposing)
+            {
+                _cancellationTokenSource.Dispose();
+            }
+
+            _disposed = true;
         }
 
         /// <summary>
@@ -68,9 +102,9 @@ namespace ConsoulLibrary
         /// </summary>
         private void Initialize()
         {
-            _x = Console.CursorLeft;
-            _y = Console.CursorTop;
-            _fw = Console.BufferWidth;
+            _x = Consoul.ConsoleDriver.CursorLeft;
+            _y = Consoul.ConsoleDriver.CursorTop;
+            _fw = Consoul.ConsoleBufferWidth;
         }
 
         /// <summary>
@@ -78,6 +112,7 @@ namespace ConsoulLibrary
         /// </summary>
         public void Reset()
         {
+            _fw = Consoul.ConsoleBufferWidth;
             _firstRender = true;
 
             // Clear Message Space
@@ -86,10 +121,11 @@ namespace ConsoulLibrary
                 for (int i = 0; i < Height; i++)
                 {
                     var x = _x;
-                    if (x >= Console.BufferWidth)
+                    if (x >= Consoul.ConsoleBufferWidth)
                         x = 0;
-                    Console.SetCursorPosition(x, _y + i);
-                    Consoul.Write(new string(Whitespace, MaxWidth ?? _fw), writeLine: false);
+                    Consoul.ConsoleDriver.SetCursorPosition(x, _y + i);
+                    var clearWidth = Math.Min(MaxWidth ?? _fw, _fw);
+                    Consoul.Write(new string(Whitespace, Math.Max(0, clearWidth)), writeLine: false);
                 }
             }
         }
@@ -99,6 +135,7 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="message">Text to be rendered.</param>
         /// <param name="color">Text color</param>
+        /// <param name="backgroundColor">Background color for the rendered text.</param>
         public void Render(string message, ConsoleColor? color = null, ConsoleColor? backgroundColor = null)
         {
             if (_firstRender)
@@ -169,8 +206,10 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="message">Text to be rendered.</param>
         /// <param name="color">Text color</param>
+        /// <param name="backgroundColor">Background color for the rendered text.</param>
         private void RenderMessage(string message, ConsoleColor? color = null, ConsoleColor? backgroundColor = null)
         {
+            _fw = Consoul.ConsoleBufferWidth;
             if (message == null)
             {
                 message = string.Empty;
@@ -200,7 +239,7 @@ namespace ConsoulLibrary
             {
                 for (int i = 0; i < lines.Count; i++)
                 {
-                    Console.SetCursorPosition(_x, _y + i);
+                    Consoul.ConsoleDriver.SetCursorPosition(_x, _y + i);
                     Consoul.Write(lines[i], color: resolvedColor, backgroundColor: resolvedBackground, writeLine: false);
                 }
             }
@@ -222,6 +261,12 @@ namespace ConsoulLibrary
         private static System.Collections.Generic.List<string> SplitMessageIntoLines(string message, int width)
         {
             var lines = new System.Collections.Generic.List<string>();
+            if (width <= 0)
+            {
+                lines.Add(string.Empty);
+                return lines;
+            }
+
             int currentIndex = 0;
 
             while (currentIndex < message.Length)
@@ -241,7 +286,7 @@ namespace ConsoulLibrary
         {
             lock (_lock)
             {
-                _fw = Console.BufferWidth; // Update the current buffer width
+                _fw = Consoul.ConsoleBufferWidth; // Update the current buffer width
                 if (_pendingMessage != null)
                 {
                     RenderPendingMessage(); // If there's a pending message, render it

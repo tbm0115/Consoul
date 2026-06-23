@@ -5,17 +5,36 @@ using System.Linq;
 using System.Xml;
 
 namespace ConsoulLibrary {
+    /// <summary>
+    /// Loads and saves scripted Consoul routines in XML format.
+    /// </summary>
     public class XmlRoutine : Routine
     {
         private XmlDocument _xml { get; set; }
 
+        /// <summary>
+        /// Gets or sets the routine document name.
+        /// </summary>
         public string Name { get; set; }
 
+        /// <summary>
+        /// Gets or sets the time the routine document was created.
+        /// </summary>
         public DateTime DateCreated { get; set; } = DateTime.UtcNow;
 
+        /// <summary>
+        /// Gets or sets the named routine inputs stored by the XML document.
+        /// </summary>
         public Dictionary<string, List<RoutineInput>> XmlRoutines { get; set; } = new Dictionary<string, List<RoutineInput>>();
+
+        /// <summary>
+        /// Gets or sets variables associated with the XML routine document.
+        /// </summary>
         public Dictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
 
+        /// <summary>
+        /// Initializes a new XML routine document.
+        /// </summary>
         public XmlRoutine() {
             _xml = new XmlDocument();
             Name = Guid.NewGuid().ToString("n");
@@ -23,6 +42,11 @@ namespace ConsoulLibrary {
                 XmlRoutines.Add(Guid.NewGuid().ToString("n"), Routines.UserInputs.ToList());
         }
 
+        /// <summary>
+        /// Loads an XML routine document from disk.
+        /// </summary>
+        /// <param name="filepath">Path to the XML routine file.</param>
+        /// <param name="routineName">Optional named routine to enqueue from the document.</param>
         public XmlRoutine(string filepath, string routineName = "") : this() {
             _xml.Load(filepath);
 
@@ -56,6 +80,10 @@ namespace ConsoulLibrary {
                     base.Enqueue(selectedRoutineInput);
         }
 
+        /// <summary>
+        /// Saves recorded routine inputs to an XML file.
+        /// </summary>
+        /// <param name="filepath">Destination XML file path.</param>
         public void SaveInputs(string filepath) {
             XmlNode xRoot, xMeta;
             if (_xml != null)

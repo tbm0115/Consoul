@@ -11,6 +11,7 @@
     <Company />
     <Version>2.0.2</Version>
     <PackageReleaseNotes>Added exception to logging.</PackageReleaseNotes>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <AssemblyVersion>2.0.2</AssemblyVersion>
     <FileVersion>2.0.2</FileVersion>
     <PackageIcon>Consoul_Small.png</PackageIcon>
@@ -37,15 +38,11 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
-    <PackageReference Include="System.Text.Json" Version="6.0.9" />
+    <None Remove="README.md" />
+    <None Include="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

@@ -1,10 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Text.Json;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Views.Editing;
 
@@ -25,6 +25,7 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="entity">The entity being edited.</param>
         /// <param name="bindingAttr">Binding flags describing the accessible properties.</param>
+        /// <param name="enableJsonEditor">Indicates whether the JSON-style editor option should be available.</param>
         public EditObjectView(object entity, BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, bool enableJsonEditor = true)
             : base()
         {
@@ -69,6 +70,11 @@ namespace ConsoulLibrary
         /// Indicates whether the JSON editor should highlight values using the default highlight scheme.
         /// </summary>
         public ConsoleColor HighlightColor { get; set; } = ConsoleColor.DarkCyan;
+
+        /// <summary>
+        /// Serializes values displayed by the JSON-style object editor.
+        /// </summary>
+        public static Func<object, Type, string> JsonValueSerializer { get; set; } = SerializeJsonValueWithoutDependencies;
 
         private EditablePropertyDescriptor CreateDescriptor(PropertyInfo property)
         {
@@ -351,6 +357,115 @@ namespace ConsoulLibrary
         {
             var editor = new JsonObjectEditor(this);
             editor.Run();
+        }
+
+        private static string SerializeJsonValueWithoutDependencies(object value, Type valueType)
+        {
+            if (value == null)
+            {
+                return "null";
+            }
+
+            Type type = Nullable.GetUnderlyingType(valueType ?? value.GetType()) ?? valueType ?? value.GetType();
+
+            if (type == typeof(string) || type == typeof(char) || type == typeof(Guid) || type == typeof(DateTime) || type.IsEnum)
+            {
+                return QuoteJsonString(Convert.ToString(value, CultureInfo.InvariantCulture));
+            }
+
+            if (type == typeof(bool))
+            {
+                return (bool)value ? "true" : "false";
+            }
+
+            if (IsNumericType(type))
+            {
+                return Convert.ToString(value, CultureInfo.InvariantCulture);
+            }
+
+            var enumerable = value as IEnumerable;
+            if (enumerable != null && !(value is string))
+            {
+                var values = enumerable.Cast<object>()
+                    .Select(item => SerializeJsonValueWithoutDependencies(item, item?.GetType() ?? typeof(object)));
+                return "[" + string.Join(", ", values) + "]";
+            }
+
+            return QuoteJsonString(value.ToString());
+        }
+
+        private static bool IsNumericType(Type type)
+        {
+            switch (Type.GetTypeCode(type))
+            {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.Single:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static string QuoteJsonString(string value)
+        {
+            if (value == null)
+            {
+                return "null";
+            }
+
+            var builder = new StringBuilder(value.Length + 2);
+            builder.Append('"');
+            foreach (char ch in value)
+            {
+                switch (ch)
+                {
+                    case '"':
+                        builder.Append("\\\"");
+                        break;
+                    case '\\':
+                        builder.Append("\\\\");
+                        break;
+                    case '\b':
+                        builder.Append("\\b");
+                        break;
+                    case '\f':
+                        builder.Append("\\f");
+                        break;
+                    case '\n':
+                        builder.Append("\\n");
+                        break;
+                    case '\r':
+                        builder.Append("\\r");
+                        break;
+                    case '\t':
+                        builder.Append("\\t");
+                        break;
+                    default:
+                        if (char.IsControl(ch))
+                        {
+                            builder.Append("\\u");
+                            builder.Append(((int)ch).ToString("x4", CultureInfo.InvariantCulture));
+                        }
+                        else
+                        {
+                            builder.Append(ch);
+                        }
+
+                        break;
+                }
+            }
+
+            builder.Append('"');
+            return builder.ToString();
         }
 
         private static object ConvertIfNeeded(object value, Type targetType)
@@ -1255,11 +1370,12 @@ namespace ConsoulLibrary
                 string json;
                 try
                 {
-                    json = JsonSerializer.Serialize(value, value.GetType());
+                    var serializer = EditObjectView.JsonValueSerializer ?? SerializeJsonValueWithoutDependencies;
+                    json = serializer(value, value.GetType());
                 }
                 catch
                 {
-                    json = JsonSerializer.Serialize(value != null ? value.ToString() : string.Empty);
+                    json = SerializeJsonValueWithoutDependencies(value != null ? value.ToString() : string.Empty, typeof(string));
                 }
 
                 return TokenizeJson(json);

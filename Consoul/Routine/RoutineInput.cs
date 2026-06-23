@@ -1,18 +1,24 @@
-﻿using Microsoft.Extensions.Configuration;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Xml;
 
 namespace ConsoulLibrary
 {
+    /// <summary>
+    /// Represents a single scripted routine input and its playback metadata.
+    /// </summary>
     public class RoutineInput {
         private string _value { get; set; }
+
+        /// <summary>
+        /// Gets or sets the input value, applying configured transforms when read.
+        /// </summary>
         public string Value {
             get{
                 string value = _value;
                 if (Transforms?.Length > 0)
                 {
-                    IConfigurationSection transforms = Routines.getAppSettings().GetSection("Transforms");
+                    RoutineSettingsSection transforms = Routines.getAppSettings().GetSection("Transforms");
                     foreach (InputTransform transform in Transforms)
                     {
                         if (transform.UseAppSettings)
@@ -41,30 +47,68 @@ namespace ConsoulLibrary
             }
         }
 
+        /// <summary>
+        /// Gets the elapsed time between the input request and response, when available.
+        /// </summary>
         public TimeSpan? Delay => ResponseTime != null ? ResponseTime - RequestTime : null;
 
+        /// <summary>
+        /// Gets the time the input was requested.
+        /// </summary>
         public DateTime RequestTime { get; private set; }
 
+        /// <summary>
+        /// Gets the time the input value was supplied.
+        /// </summary>
         public DateTime? ResponseTime { get; private set; }
 
+        /// <summary>
+        /// Gets or sets descriptive text for the routine input.
+        /// </summary>
         public string Description { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Gets or sets the registered prompt option associated with this input.
+        /// </summary>
         public RegisteredOption OptionReference { get; set; }
 
+        /// <summary>
+        /// Gets or sets transforms applied to the input value during playback.
+        /// </summary>
         public InputTransform[] Transforms { get; set; }
 
+        /// <summary>
+        /// Gets or sets how this routine input should be interpreted.
+        /// </summary>
         public InputMethod Method { get; set; } = InputMethod.Value;
 
+        /// <summary>
+        /// Defines how a routine input is matched to a prompt.
+        /// </summary>
         public enum InputMethod
         {
+            /// <summary>
+            /// Use the input value directly.
+            /// </summary>
             Value,
+
+            /// <summary>
+            /// Resolve the input by matching option text.
+            /// </summary>
             OptionText
         }
 
+        /// <summary>
+        /// Initializes a routine input and records the request time.
+        /// </summary>
         public RoutineInput() {
             RequestTime = DateTime.UtcNow;
         }
 
+        /// <summary>
+        /// Initializes a routine input from an XML node.
+        /// </summary>
+        /// <param name="xNode">XML node containing serialized routine input data.</param>
         public RoutineInput(XmlNode xNode) : this() {
             Value = xNode["Value"]?.InnerText;
             if (!string.IsNullOrEmpty(xNode["RequestTime"]?.InnerText))
@@ -88,6 +132,11 @@ namespace ConsoulLibrary
             }
         }
 
+        /// <summary>
+        /// Serializes this input to an XML node.
+        /// </summary>
+        /// <param name="xDoc">XML document used to create nodes.</param>
+        /// <returns>An XML node representing this routine input.</returns>
         public XmlNode ToXmlNode(XmlDocument xDoc) {
             XmlNode xInput = xDoc.CreateElement("Input");
             // TODO: Add Description and Groupings

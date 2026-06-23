@@ -15,14 +15,55 @@ namespace ConsoulLibrary {
     /// </summary>
     public static class Consoul
     {
+        /// <summary>
+        /// The selection index used by legacy prompt callers to represent an escape or cancellation choice.
+        /// </summary>
         [Obsolete("Use PromptResult.IsCanceled instead of sentinel values.")]
         public const int EscapeIndex = -100;
 
+        internal static IConsoleDriver ConsoleDriver { get; private set; } = new SystemConsoleDriver();
+
+        internal static int ConsoleBufferWidth => Math.Max(1, ConsoleDriver.BufferWidth);
+
+        internal static int ConsoleBufferHeight => Math.Max(1, ConsoleDriver.BufferHeight);
+
         internal static readonly string DefaultReadExitCode = Environment.NewLine;
+
+        internal static IDisposable UseConsoleDriver(IConsoleDriver consoleDriver)
+        {
+            if (consoleDriver == null)
+                throw new ArgumentNullException(nameof(consoleDriver));
+
+            var previous = ConsoleDriver;
+            ConsoleDriver = consoleDriver;
+            _lastKnownWidth = ConsoleBufferWidth;
+            return new ConsoleDriverScope(previous);
+        }
+
+        private sealed class ConsoleDriverScope : IDisposable
+        {
+            private readonly IConsoleDriver _previous;
+            private bool _disposed;
+
+            public ConsoleDriverScope(IConsoleDriver previous)
+            {
+                _previous = previous;
+            }
+
+            public void Dispose()
+            {
+                if (_disposed)
+                    return;
+
+                _disposed = true;
+                ConsoleDriver = _previous;
+                _lastKnownWidth = ConsoleBufferWidth;
+            }
+        }
 
         #region Window Resize Listener
         private static Timer _resizeCheckTimer;
-        private static int _lastKnownWidth = Console.BufferWidth;
+        private static int _lastKnownWidth = ConsoleBufferWidth;
         /// <summary>
         /// Event that is triggered whenever the console window is resized.
         /// </summary>
@@ -73,7 +114,7 @@ namespace ConsoulLibrary {
         /// </summary>
         private static void CheckForResize(object state)
         {
-            int newWidth = Console.BufferWidth;
+            int newWidth = ConsoleBufferWidth;
             if (newWidth != _lastKnownWidth)
             {
                 _lastKnownWidth = newWidth;
@@ -98,7 +139,7 @@ namespace ConsoulLibrary {
         /// Writes a new line as a break
         /// </summary>
         public static void LineBreak()
-            => Console.WriteLine();
+            => ConsoleDriver.WriteLine(string.Empty);
 
         /// <summary>
         /// Prompts the user to provide a string input.
@@ -190,7 +231,7 @@ namespace ConsoulLibrary {
         /// </summary>
         /// <param name="message">Display message</param>
         /// <param name="color">Color for Message. Defaults to <see cref="RenderOptions.DefaultColor"/></param>
-        /// <param name="backgroundColor">Color for the background. Defaults to <see cref="RenderOptions.BackgroundColor"/></param>
+        /// <param name="backgroundColor">Color for the background. Defaults to the background color from <see cref="RenderOptions.DefaultScheme"/>.</param>
         /// <param name="writeLine">Specifies whether to use <see cref="Console.WriteLine()"/> or <see cref="Console.Write(string)"/></param>
         internal static void WriteCore(string message, ConsoleColor color, ConsoleColor? backgroundColor = null, bool writeLine = true)
         {
@@ -198,11 +239,11 @@ namespace ConsoulLibrary {
             {
                 if (writeLine)
                 {
-                    Console.WriteLine(message);
+                    ConsoleDriver.WriteLine(message);
                 }
                 else
                 {
-                    Console.Write(message);
+                    ConsoleDriver.Write(message);
                 }
             }
         }
@@ -258,9 +299,9 @@ namespace ConsoulLibrary {
         /// Writes a formatted string to the console with flexible color formatting.
         /// </summary>
         /// <param name="template">The template string containing placeholders in the form "{PropertyName:Color}".</param>
-        /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
-        /// <param name="backgroundColor"><inheritdoc cref="Write" path="/param[@name='backgroundColor']"/></param>
-        /// <param name="writeLine"><inheritdoc cref="Write" path="/param[@name='writeLine']"/></param>
+        /// <param name="color">Optional foreground color for the rendered text.</param>
+        /// <param name="backgroundColor">Optional background color for the rendered text.</param>
+        /// <param name="writeLine">Indicates whether to append a newline after writing the message.</param>
         /// <param name="args">The values for the placeholders in the template.</param>
         public static void Write(string template, ConsoleColor? color = null, ConsoleColor? backgroundColor = null, bool writeLine = true, params object[] args)
         {
@@ -338,10 +379,10 @@ namespace ConsoulLibrary {
         /// Writes a formatted message for exceptions.
         /// </summary>
         /// <param name="ex">Exception to be written</param>
-        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="message">Optional context message to render before the exception details.</param>
         /// <param name="includeStackTrace">Flag to include stack trace in output</param>
-        /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
-        /// <param name="backgroundColor"><inheritdoc cref="Write" path="/param[@name='backgroundColor']"/></param>
+        /// <param name="color">Optional foreground color for the rendered exception text.</param>
+        /// <param name="backgroundColor">Optional background color for the rendered exception text.</param>
         public static void Write(Exception ex, string message = null, bool includeStackTrace = true, ConsoleColor? color = null, ConsoleColor? backgroundColor = null)
         {
             if (!string.IsNullOrEmpty(message))
@@ -405,9 +446,9 @@ namespace ConsoulLibrary {
             }
             else
             {
-                using (var stream = Console.OpenStandardInput())
+                using (var stream = ConsoleDriver.OpenStandardInput())
                 {
-                    input.Value = ReadFromStream(stream, Console.InputEncoding, cancellationToken, exitCode);
+                    input.Value = ReadFromStream(stream, ConsoleDriver.InputEncoding, cancellationToken, exitCode);
                 }
             }
 
@@ -515,13 +556,13 @@ namespace ConsoulLibrary {
 
                 while(!cancellationToken.IsCancellationRequested)
                 {
-                    key = Console.ReadKey(true);
+                    key = ConsoleDriver.ReadKey(true);
 
                     // Ignore any key other than Enter
                     if (key.Key == ConsoleKey.Enter)
                     {
                         //password = password.Substring(0, password.Length - 1);
-                        Console.WriteLine();
+                        ConsoleDriver.WriteLine(string.Empty);
 
                         break;
                     }
@@ -533,7 +574,7 @@ namespace ConsoulLibrary {
                     else if (key.Key == ConsoleKey.Backspace && password.Length > 0)
                     {
                         password = password.Substring(0, password.Length - 1);
-                        Console.Write("\b \b");
+                        ConsoleDriver.Write("\b \b");
                     }
                 }
                 input.Value = password;
@@ -580,16 +621,16 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Writes a message centered in the window in its current size.
         /// </summary>
-        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="message">Message to center.</param>
         /// <param name="maxWidth">Maximum width that the text can render (in character length)</param>
-        /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
-        /// <param name="backgroundColor"><inheritdoc cref="Write" path="/param[@name='backgroundColor']"/></param>
-        /// <param name="writeLine"><inheritdoc cref="Write" path="/param[@name='writeLine']"/></param>
+        /// <param name="color">Optional foreground color for the centered text.</param>
+        /// <param name="backgroundColor">Optional background color for the centered text.</param>
+        /// <param name="writeLine">Indicates whether to append a newline after writing the centered text.</param>
         /// <param name="whitespace">Character used to fill space around the <paramref name="message"/></param>
         public static void Center(string message, int maxWidth, ConsoleColor? color = null, ConsoleColor? backgroundColor = null, bool writeLine = true, char whitespace = ' ')
         {
             if (maxWidth == 0)
-                maxWidth = Console.BufferWidth;
+                maxWidth = ConsoleBufferWidth;
             string text = message.Length > maxWidth ? message.Substring(0, maxWidth - 1) + "…" : message;
 
             int remainder = maxWidth - text.Length - 1;
@@ -639,7 +680,7 @@ namespace ConsoulLibrary {
             {
                 if (clear)
                 {
-                    Console.Clear();
+                    ConsoleDriver.Clear();
                 }
                 Consoul.WriteCore(message, RenderOptions.PromptScheme);
                 Consoul.WriteCore(optionMessage, RenderOptions.SubnoteScheme);
@@ -657,7 +698,7 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Prompts the user with a simple list of choices.
         /// </summary>
-        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="message">Prompt message to display.</param>
         /// <param name="clear">Indicates whether or not to clear the console window.</param>
         /// <param name="options">Simple list of options.</param>
         /// <returns>Index of the option that was chosen. Returns -1 if selection was invalid.</returns>
@@ -669,7 +710,7 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Prompts the user with a simple list of choices.
         /// </summary>
-        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="message">Prompt message to display.</param>
         /// <param name="clear">Indicates whether or not to clear the console window.</param>
         /// <param name="options">Simple list of options.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
@@ -683,10 +724,11 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Prompts the user with a complex list of choices.
         /// </summary>
-        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="message">Prompt message to display.</param>
         /// <param name="options">Array of complex options.</param>
         /// <param name="clear"><inheritdoc cref="Prompt(string, bool, string[])" path="/param[@name='clear']"/></param>
-        /// <returns></returns>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>Index of the option that was chosen. Returns -1 if selection was invalid.</returns>
         public static int Prompt(string message, SelectOption[] options, bool clear = false, CancellationToken cancellationToken = default)
         {
             var result = (new SelectionPrompt(message, clear, options)).Render(cancellationToken);
@@ -696,7 +738,7 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Prompts the user to input a file path.
         /// </summary>
-        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="message">Prompt message to display.</param>
         /// <param name="checkExists">Indicates whether to check the file exists before allowing the user exit the loop.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Filepath string</returns>
@@ -715,7 +757,7 @@ namespace ConsoulLibrary {
         /// Prompts the user to input a file path with a suggested default path.
         /// </summary>
         /// <param name="defaultPath">The default file path the user must accept.</param>
-        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
+        /// <param name="message">Prompt message to display.</param>
         /// <param name="checkExists"><inheritdoc cref="PromptForFilepath(string, bool, CancellationToken)" path="/param[@name='checkExists']"/></param>
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Filepath string</returns>
@@ -733,16 +775,16 @@ namespace ConsoulLibrary {
         public static void Ding()
         {
             const char BEL = (char)7;
-            Console.Write(BEL);
+            ConsoleDriver.Write(BEL.ToString());
         }
 
         /// <summary>
         /// Displays a message in the console and plays <see cref="Ding"/>.
         /// </summary>
-        /// <param name="message"><inheritdoc cref="Write" path="/param[@name='message']"/></param>
-        /// <param name="color"><inheritdoc cref="Write" path="/param[@name='color']"/></param>
-        /// <param name="backgroundColor"><inheritdoc cref="Write" path="/param[@name='backgroundColor']"/></param>
-        /// <param name="writeLine"><inheritdoc cref="Write" path="/param[@name='writeLine']"/></param>
+        /// <param name="message">Message to display before playing the alert sound.</param>
+        /// <param name="color">Optional foreground color for the alert text.</param>
+        /// <param name="backgroundColor">Optional background color for the alert text.</param>
+        /// <param name="writeLine">Indicates whether to append a newline after writing the alert text.</param>
         public static void Alert(string message, ConsoleColor? color = null, ConsoleColor? backgroundColor = null, bool writeLine = true)
         {
             Write(message, color: color, backgroundColor: backgroundColor, writeLine: writeLine);

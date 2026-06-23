@@ -26,6 +26,7 @@ namespace ConsoulLibrary.Views.Editing
         /// <param name="documentation">Documentation describing the property.</param>
         /// <param name="editorOverride">Editor instance overriding the default editor resolution.</param>
         /// <param name="formatterOverride">Formatter instance overriding the default formatter resolution.</param>
+        /// <param name="layerProvider">Provider exposing additional editing layers for the property.</param>
         public EditablePropertyDescriptor(PropertyInfo property, PropertyDocumentation documentation, IPropertyEditor editorOverride, IPropertyValueFormatter formatterOverride, IPropertyLayerProvider layerProvider)
         {
             Property = property ?? throw new ArgumentNullException(nameof(property));

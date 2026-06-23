@@ -39,12 +39,16 @@ namespace ConsoulLibrary
             set => _navigationContext = value ?? new ViewNavigationContext();
         }
 
+        /// <summary>
+        /// Gets or sets the callback invoked after an option is selected.
+        /// </summary>
         public ChoiceCallback OnOptionSelected { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StaticView"/> class.
         /// The constructor initializes the view based on attributes and methods that define the options for the view.
         /// </summary>
+        /// <param name="callback">Optional callback invoked after an option is selected.</param>
         public StaticView(ChoiceCallback callback = null)
         {
             OnOptionSelected = callback;
@@ -177,7 +181,7 @@ namespace ConsoulLibrary
             _navigationContext.Reset();
             do
             {
-                Console.Clear();
+                Consoul.ConsoleDriver.Clear();
 
                 BannerEntry.Render(Title, RenderOptions.PromptColor);
 

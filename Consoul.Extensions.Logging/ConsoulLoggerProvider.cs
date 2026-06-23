@@ -1,11 +1,11 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 
 namespace ConsoulLibrary
 {
     /// <summary>
-    /// 
+    /// Provides <see cref="ConsoulLogger"/> instances.
     /// </summary>
     [ProviderAlias("Consoul")]
     public sealed class ConsoulLoggerProvider : ILoggerProvider
@@ -13,17 +13,11 @@ namespace ConsoulLibrary
         private readonly ConcurrentDictionary<string, ConsoulLogger> _loggers =
             new ConcurrentDictionary<string, ConsoulLogger>(StringComparer.OrdinalIgnoreCase);
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="categoryName"></param>
-        /// <returns></returns>
+        /// <inheritdoc />
         public ILogger CreateLogger(string categoryName) =>
             _loggers.GetOrAdd(categoryName, name => new ConsoulLogger());
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <inheritdoc />
         public void Dispose()
         {
             _loggers.Clear();

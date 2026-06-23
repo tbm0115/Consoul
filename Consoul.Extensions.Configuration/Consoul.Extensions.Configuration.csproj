@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>Optional Microsoft.Extensions.Configuration integration for Consoul routines.</Description>
+    <PackageProjectUrl>https://github.com/tbm0115/Consoul</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tbm0115/Consoul</RepositoryUrl>
+    <PackageTags>Console;Consoul;Terminal;Configuration;Routines;</PackageTags>
+    <Authors>tbm0115</Authors>
+    <Company />
+    <Version>2.0.2</Version>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <AssemblyVersion>2.0.2</AssemblyVersion>
+    <FileVersion>2.0.2</FileVersion>
+    <RootNamespace>ConsoulLibrary</RootNamespace>
+    <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Consoul\Consoul.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="README.md" />
+    <None Include="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.9" />
+  </ItemGroup>
+
+</Project>

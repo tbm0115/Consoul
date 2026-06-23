@@ -18,8 +18,8 @@ namespace ConsoulLibrary.Color
         public ColorScheme CurrentColor
             => new ColorScheme()
             {
-                BackgroundColor = Console.BackgroundColor,
-                Color = Console.ForegroundColor
+                BackgroundColor = Consoul.ConsoleDriver.BackgroundColor,
+                Color = Consoul.ConsoleDriver.ForegroundColor
             };
 
         /// <summary>
@@ -29,8 +29,8 @@ namespace ConsoulLibrary.Color
         {
             OriginalColor = new ColorScheme()
             {
-                BackgroundColor = Console.BackgroundColor,
-                Color = Console.ForegroundColor
+                BackgroundColor = Consoul.ConsoleDriver.BackgroundColor,
+                Color = Consoul.ConsoleDriver.ForegroundColor
             };
         }
 
@@ -51,18 +51,18 @@ namespace ConsoulLibrary.Color
         /// <param name="backgroundColor"><inheritdoc cref="Console.BackgroundColor"/></param>
         public void SetColorScheme(ConsoleColor color, ConsoleColor? backgroundColor = null)
         {
-            Console.ForegroundColor = color;
+            Consoul.ConsoleDriver.ForegroundColor = color;
             if (backgroundColor != null)
             {
-                Console.BackgroundColor = backgroundColor.Value;
+                Consoul.ConsoleDriver.BackgroundColor = backgroundColor.Value;
             }
         }
 
         /// <inheritdoc/>
         public void Dispose()
         {
-            Console.BackgroundColor = OriginalColor.BackgroundColor;
-            Console.ForegroundColor = OriginalColor.Color;
+            Consoul.ConsoleDriver.BackgroundColor = OriginalColor.BackgroundColor;
+            Consoul.ConsoleDriver.ForegroundColor = OriginalColor.Color;
         }
     }
 }

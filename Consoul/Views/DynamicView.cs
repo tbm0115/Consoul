@@ -11,13 +11,16 @@ namespace ConsoulLibrary
     /// <summary>
     /// An abstract view that relies on an underlying model to dynamically change the labels and colors of choices whenever the view re-renders.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="T">The model type used by the dynamic view.</typeparam>
     public abstract class DynamicView<T> : IView, INavigationAwareView
     {
         private bool _goBackRequested = false;
         private string _goBackMessage = RenderOptions.DefaultGoBackMessage;
         private ViewNavigationContext _navigationContext = new ViewNavigationContext();
 
+        /// <summary>
+        /// Gets or sets the label used for the generated navigation option that returns to the previous view.
+        /// </summary>
         protected string GoBackMessage
         {
             get
@@ -58,8 +61,15 @@ namespace ConsoulLibrary
         /// </summary>
         public T Model { get; set; }
 
+        /// <summary>
+        /// Gets or sets the callback invoked after an option is selected.
+        /// </summary>
         public ChoiceCallback OnOptionSelected { get; set; }
 
+        /// <summary>
+        /// Initializes a dynamic view and discovers attributed option methods.
+        /// </summary>
+        /// <param name="callback">Optional callback invoked after an option is selected.</param>
         public DynamicView(ChoiceCallback callback = null)
         {
             OnOptionSelected = callback;
@@ -142,7 +152,7 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
-        /// Triggers the choice to go back to the previous view (or exit to the main <see cref="Program.Main"/> if this is the top view)
+        /// Triggers the choice to go back to the previous view, or exits navigation if this is the top view.
         /// </summary>
         public void GoBack()
         {

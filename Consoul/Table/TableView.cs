@@ -9,20 +9,34 @@ namespace ConsoulLibrary
     /// <summary>
     /// Delegate for handling when a <see cref="TableView"/> query yields no results.
     /// </summary>
-    /// <param name="sender"></param>
-    /// <param name="e"></param>
+    /// <param name="sender">The table that raised the event.</param>
+    /// <param name="e">Details about the query that yielded no rows.</param>
     public delegate void TableQueryYieldsNoResults(object sender, TableQueryYieldsNoResultsEventArgs e);
 
-    public class TableRow
+    /// <summary>
+    /// Represents a rendered table row composed of multiple table cells.
+    /// </summary>
+    public class TableRow : IDisposable
     {
         private readonly TableRenderOptions _renderOptions;
 
+        /// <summary>
+        /// Gets the number of cells in the row.
+        /// </summary>
         public int CellCount => _contents.Count;
 
         private readonly List<TableCell> _contents = new List<TableCell>();
+
+        /// <summary>
+        /// Gets the cells contained by this row.
+        /// </summary>
         public IEnumerable<TableCell> Contents => _contents;
 
-
+        /// <summary>
+        /// Initializes a row with the provided cell contents.
+        /// </summary>
+        /// <param name="contents">Cell text values for the row.</param>
+        /// <param name="options">Render options applied to cells in this row.</param>
         public TableRow(IEnumerable<string> contents, TableRenderOptions options = default)
         {
             _renderOptions = options;
@@ -45,7 +59,7 @@ namespace ConsoulLibrary
 
         private int GetTableWidth()
         {
-            int configuredWidth = Math.Min(_renderOptions?.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            int configuredWidth = _renderOptions?.GetMaximumTableWidth() ?? Consoul.ConsoleBufferWidth;
 
             if (_contents.Count == 0)
             {
@@ -57,61 +71,75 @@ namespace ConsoulLibrary
             return Math.Min(width, configuredWidth);
         }
 
+        /// <summary>
+        /// Gets the width the row will occupy when rendered.
+        /// </summary>
+        /// <returns>The row render width in console cells.</returns>
         public int GetRenderWidth() => GetTableWidth();
 
+        /// <summary>
+        /// Renders the row with optional color schemes for content and separator lines.
+        /// </summary>
+        /// <param name="contentScheme">Optional color scheme for cell content.</param>
+        /// <param name="lineScheme">Optional color scheme for row separators.</param>
+        /// <param name="isHeader">Indicates whether the row is a header row.</param>
         public void Render(ColorScheme? contentScheme = null, ColorScheme? lineScheme = null, bool isHeader = false)
         {
             string line = _renderOptions.Lines.VerticalCharacter.ToString();
             bool showVertical = isHeader
                 ? _renderOptions?.Lines?.HeaderVertical ?? true
                 : _renderOptions?.Lines?.ContentVertical ?? true;
-            int rowTop = Console.CursorTop;
-            int rowLeft = Console.CursorLeft;
+            int rowTop = Consoul.ConsoleDriver.CursorTop;
+            int rowLeft = Consoul.ConsoleDriver.CursorLeft;
 
             if (showVertical)
             {
                 Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
             }
 
-            int currentLeft = Console.CursorLeft;
+            int currentLeft = Consoul.ConsoleDriver.CursorLeft;
             for (int i = 0; i < _contents.Count; i++)
             {
                 var cell = _contents[i];
-                int startLeft = Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1));
-                int availableWidth = Math.Max(0, Console.BufferWidth - startLeft);
+                int startLeft = Math.Max(0, Math.Min(currentLeft, Consoul.ConsoleBufferWidth - 1));
+                int availableWidth = Math.Max(0, Consoul.ConsoleBufferWidth - startLeft);
                 int renderWidth = Math.Min(Math.Max(0, cell.CellWidth), availableWidth);
 
-                Console.SetCursorPosition(startLeft, rowTop);
+                Consoul.ConsoleDriver.SetCursorPosition(startLeft, rowTop);
                 cell.Render(renderWidth, contentScheme);
 
                 currentLeft = startLeft + renderWidth;
-                if (currentLeft >= Console.BufferWidth)
+                if (currentLeft >= Consoul.ConsoleBufferWidth)
                 {
-                    currentLeft = Console.BufferWidth - 1;
+                    currentLeft = Consoul.ConsoleBufferWidth - 1;
                 }
 
                 if (showVertical)
                 {
-                    Console.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1)), rowTop);
+                    Consoul.ConsoleDriver.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Consoul.ConsoleBufferWidth - 1)), rowTop);
                     Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
-                    currentLeft = Console.CursorLeft;
+                    currentLeft = Consoul.ConsoleDriver.CursorLeft;
                 }
                 else
                 {
-                    Console.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Console.BufferWidth - 1)), rowTop);
+                    Consoul.ConsoleDriver.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Consoul.ConsoleBufferWidth - 1)), rowTop);
                 }
             }
 
             if (_contents.Count == 0 && showVertical)
             {
-                int closingLeft = Math.Min(rowLeft + GetTableWidth() - 1, Console.BufferWidth - 1);
-                Console.SetCursorPosition(Math.Max(0, closingLeft), rowTop);
+                int closingLeft = Math.Min(rowLeft + GetTableWidth() - 1, Consoul.ConsoleBufferWidth - 1);
+                Consoul.ConsoleDriver.SetCursorPosition(Math.Max(0, closingLeft), rowTop);
                 Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
             }
 
             Consoul.Write(string.Empty);
         }
 
+        /// <summary>
+        /// Updates existing cells with new content values.
+        /// </summary>
+        /// <param name="contents">New cell text values.</param>
         public void Update(IEnumerable<string> contents)
         {
             string[] values = contents.ToArray();
@@ -122,6 +150,10 @@ namespace ConsoulLibrary
             }
         }
 
+        /// <summary>
+        /// Applies calculated column widths to this row's cells.
+        /// </summary>
+        /// <param name="columnWidths">Column widths indexed by cell position.</param>
         public void ApplyColumnWidths(IReadOnlyList<int> columnWidths)
         {
             if (columnWidths == null)
@@ -135,6 +167,11 @@ namespace ConsoulLibrary
             }
         }
 
+        /// <summary>
+        /// Gets the length of the cell content at the specified index.
+        /// </summary>
+        /// <param name="index">Zero-based cell index.</param>
+        /// <returns>The content length, or 0 when the index is outside the row.</returns>
         public int GetCellContentLength(int index)
         {
             if (index < 0 || index >= _contents.Count)
@@ -144,13 +181,30 @@ namespace ConsoulLibrary
 
             return (_contents[index].Contents ?? string.Empty).Length;
         }
+
+        /// <summary>
+        /// Releases fixed message resources used by the row cells.
+        /// </summary>
+        public void Dispose()
+        {
+            foreach (var cell in _contents)
+            {
+                cell.Dispose();
+            }
+        }
     }
 
-    public class TableCell
+    /// <summary>
+    /// Represents a single rendered table cell.
+    /// </summary>
+    public class TableCell : IDisposable
     {
         private readonly TableRenderOptions _renderOptions;
 
         private int _cellWidth;
+        /// <summary>
+        /// Gets or sets the width reserved for this cell.
+        /// </summary>
         public int CellWidth
         {
             get => _cellWidth;
@@ -163,6 +217,9 @@ namespace ConsoulLibrary
         }
 
         private string _contents;
+        /// <summary>
+        /// Gets or sets the text rendered inside this cell.
+        /// </summary>
         public string Contents
         {
             get => _contents;
@@ -175,6 +232,12 @@ namespace ConsoulLibrary
         private FixedMessage _message;
         private bool _hasRendered;
 
+        /// <summary>
+        /// Initializes a table cell with content and a maximum width.
+        /// </summary>
+        /// <param name="content">Text rendered inside the cell.</param>
+        /// <param name="maxWidth">Maximum width reserved for the cell.</param>
+        /// <param name="options">Render options applied to this cell.</param>
         public TableCell(string content, int maxWidth, TableRenderOptions options = default)
         {
             _renderOptions = options;
@@ -184,6 +247,11 @@ namespace ConsoulLibrary
             _message = new FixedMessage(_cellWidth);
         }
 
+        /// <summary>
+        /// Renders the cell at its fixed position.
+        /// </summary>
+        /// <param name="overrideWidth">Optional width to use for this render pass.</param>
+        /// <param name="contentScheme">Optional color scheme for the cell content.</param>
         public void Render(int? overrideWidth = null, ColorScheme? contentScheme = null)
         {
             int width = overrideWidth.HasValue ? Math.Max(0, overrideWidth.Value) : _cellWidth;
@@ -227,10 +295,24 @@ namespace ConsoulLibrary
             _message.Render(contents, contentScheme?.Color, contentScheme?.BackgroundColor);
             _hasRendered = true;
         }
+
+        /// <summary>
+        /// Releases the fixed message resource used by the cell.
+        /// </summary>
+        public void Dispose()
+        {
+            _message?.Dispose();
+        }
     }
 
-    public class TableView
+    /// <summary>
+    /// Renders and prompts over tabular data in the console.
+    /// </summary>
+    public class TableView : IDisposable
     {
+        /// <summary>
+        /// Gets or sets the options used to render table layout, borders, and colors.
+        /// </summary>
         public TableRenderOptions TableRenderOptions { get; set; }
 
         private TableNavigator _tableNavigator;
@@ -241,8 +323,25 @@ namespace ConsoulLibrary
         private List<TableRow> _rows = new List<TableRow>();
         private List<int> _columnWidths = new List<int>();
 
+        /// <summary>
+        /// Occurs when a table query yields no matching rows.
+        /// </summary>
         public event TableQueryYieldsNoResults QueryYieldsNoResults;
 
+        /// <summary>
+        /// Raises the <see cref="QueryYieldsNoResults"/> event.
+        /// </summary>
+        /// <param name="message">Message associated with the empty query result.</param>
+        /// <param name="query">Query text that yielded no rows.</param>
+        protected virtual void OnQueryYieldsNoResults(string message, string query)
+        {
+            QueryYieldsNoResults?.Invoke(this, new TableQueryYieldsNoResultsEventArgs(message, query));
+        }
+
+        /// <summary>
+        /// Initializes a table view with optional render options.
+        /// </summary>
+        /// <param name="options">Render options used by this table view.</param>
         public TableView(TableRenderOptions options = default)
         {
             TableRenderOptions = options ?? new TableRenderOptions();
@@ -261,12 +360,18 @@ namespace ConsoulLibrary
             _tableNavigator = new TableNavigator(_rows.Count);
         }
 
+        /// <summary>
+        /// Renders the table and optional heading message.
+        /// </summary>
+        /// <param name="message">Optional message rendered before the table.</param>
+        /// <param name="color">Optional foreground color for the message.</param>
+        /// <param name="clearConsole">Indicates whether to clear the console before rendering.</param>
         public void Render(string message = default, ConsoleColor? color = null, bool clearConsole = true)
         {
             if (clearConsole)
-                Console.Clear();
+                Consoul.ConsoleDriver.Clear();
             else
-                Console.SetCursorPosition(0, 0);
+                Consoul.ConsoleDriver.SetCursorPosition(0, 0);
 
             if (!string.IsNullOrEmpty(message))
             {
@@ -349,6 +454,7 @@ namespace ConsoulLibrary
         /// <param name="color">Optional color for the message text.</param>
         /// <param name="allowEmpty">Specifies whether the user is allowed to skip the selection.</param>
         /// <param name="clearConsole">If <c>true</c>, clears the console before rendering.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
         /// <returns>The selected row index, or null if the user chooses to exit without a selection.</returns>
 
         public int? Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true, CancellationToken cancellationToken = default)
@@ -367,7 +473,7 @@ namespace ConsoulLibrary
                     Consoul.Write($"\nCurrent input: {inputBuffer}", ConsoleColor.Cyan);
                 }
 
-                var keyInfo = Console.ReadKey(intercept: true);
+                var keyInfo = Consoul.ConsoleDriver.ReadKey(intercept: true);
 
                 if (keyInfo.Key == ConsoleKey.UpArrow)
                 {
@@ -435,12 +541,20 @@ namespace ConsoulLibrary
         }
 
 
+        /// <summary>
+        /// Adds a header cell to the table.
+        /// </summary>
+        /// <param name="label">Header text to add.</param>
         public void AddHeader(string label)
         {
             _header.Add(label);
             //TableRenderOptions.Normalize(Contents);
         }
 
+        /// <summary>
+        /// Adds multiple header cells to the table.
+        /// </summary>
+        /// <param name="labels">Header texts to add.</param>
         public void AddHeaders(params string[] labels)
         {
             foreach (var label in labels)
@@ -476,6 +590,11 @@ namespace ConsoulLibrary
             }
         }
 
+        /// <summary>
+        /// Adds multiple rows to the table.
+        /// </summary>
+        /// <param name="rows">Rows to add.</param>
+        /// <param name="renderAfterAdding">If <c>true</c>, renders the table after each row is added.</param>
         public void AddRows(IEnumerable<IEnumerable<string>> rows, bool renderAfterAdding = false)
         {
             foreach (var row in rows)
@@ -491,7 +610,7 @@ namespace ConsoulLibrary
                 RecalculateColumnWidths();
             }
 
-            int configuredWidth = Math.Min(TableRenderOptions.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            int configuredWidth = TableRenderOptions.GetMaximumTableWidth();
             if (_columnWidths.Count == 0)
             {
                 return configuredWidth;
@@ -520,7 +639,7 @@ namespace ConsoulLibrary
                 return;
             }
 
-            int configuredWidth = Math.Min(TableRenderOptions.MaximumTableWidth ?? Console.BufferWidth, Console.BufferWidth);
+            int configuredWidth = TableRenderOptions.GetMaximumTableWidth();
             int separators = columnCount + 1;
             int availableWidth = Math.Max(0, configuredWidth - separators);
 
@@ -656,12 +775,31 @@ namespace ConsoulLibrary
                 : TableRenderOptions.ContentScheme2;
         }
 
+        /// <summary>
+        /// Creates a table with headers and rows.
+        /// </summary>
+        /// <param name="items">Rows to add to the table.</param>
+        /// <param name="columnNames">Header labels for the table.</param>
+        /// <returns>A table view containing the provided headers and rows.</returns>
         public static TableView Create(IEnumerable<IEnumerable<string>> items, params string[] columnNames)
         {
             var table = new TableView();
             table.AddHeaders(columnNames);
             table.AddRows(items);
             return table;
+        }
+
+        /// <summary>
+        /// Releases resize listeners and fixed message resources used by the table.
+        /// </summary>
+        public void Dispose()
+        {
+            Consoul.WindowResized -= OnWindowResized;
+            _header?.Dispose();
+            foreach (var row in _rows)
+            {
+                row.Dispose();
+            }
         }
     }
 }
