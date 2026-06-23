@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +17,8 @@ namespace ConsoulLibrary {
     {
         [Obsolete("Use PromptResult.IsCanceled instead of sentinel values.")]
         public const int EscapeIndex = -100;
+
+        internal static readonly string DefaultReadExitCode = Environment.NewLine;
 
         #region Window Resize Listener
         private static Timer _resizeCheckTimer;
@@ -354,14 +357,14 @@ namespace ConsoulLibrary {
         /// Reads user input from the console.
         /// </summary>
         /// <returns>Response from the user.</returns>
-        public static string Read() => Read("\r\n");
+        public static string Read() => Read(DefaultReadExitCode);
 
         /// <summary>
         /// Waits for user input and reads the user response.
         /// </summary>
         /// <param name="exitCode">Reference to the string that indicates the end of stream.</param>
         /// <returns>Value from the user</returns>
-        public static string Read(string exitCode = "\r\n")
+        public static string Read(string exitCode)
         {
             using (var cancelSource = new CancellationTokenSource())
             {
@@ -373,9 +376,16 @@ namespace ConsoulLibrary {
         /// Asynchronously reads any input from the user and allows the operation to be cancelled at any time.
         /// </summary>
         /// <param name="cancellationToken">Reference to the cancellation token to stop the read operation.</param>
+        /// <returns>Response from the user.</returns>
+        public static string Read(CancellationToken cancellationToken) => Read(cancellationToken, DefaultReadExitCode);
+
+        /// <summary>
+        /// Asynchronously reads any input from the user and allows the operation to be cancelled at any time.
+        /// </summary>
+        /// <param name="cancellationToken">Reference to the cancellation token to stop the read operation.</param>
         /// <param name="exitCode">Reference to the string that indicates the end of stream.</param>
         /// <returns>Response from the user.</returns>
-        public static string Read(CancellationToken cancellationToken = default, string exitCode = "\r\n")
+        public static string Read(CancellationToken cancellationToken, string exitCode)
         {
             RoutineInput input = new RoutineInput();
             if (Routines.HasBuffer())
@@ -395,38 +405,10 @@ namespace ConsoulLibrary {
             }
             else
             {
-                string userInput = string.Empty;
                 using (var stream = Console.OpenStandardInput())
                 {
-                    byte[] data = new byte[1];
-                    while (!cancellationToken.IsCancellationRequested)
-                    {
-                        using (var readCanceller = new CancellationTokenSource(TimeSpan.FromMilliseconds(500)))
-                        {
-                            try
-                            {
-                                stream.ReadAsync(data, 0, data.Length, readCanceller.Token).Wait(cancellationToken);
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                break;
-                            }
-
-                            if (data.Length > 0 && data[0] >= 0)
-                            {
-                                userInput += Console.InputEncoding.GetString(data);
-                            }
-
-                            if (userInput.EndsWith(exitCode))
-                            {
-                                userInput = userInput.Substring(0, userInput.Length - exitCode.Length);
-                                break;
-                            }
-                        }
-                    }
-                    stream.Close();
+                    input.Value = ReadFromStream(stream, Console.InputEncoding, cancellationToken, exitCode);
                 }
-                input.Value = userInput;
             }
 
             if (Routines.PromptRegistry.Any())
@@ -439,6 +421,69 @@ namespace ConsoulLibrary {
                 Routines.UserInputs.Push(input);
 
             return input.Value;
+        }
+
+        internal static string ReadFromStream(Stream stream, Encoding encoding, CancellationToken cancellationToken, string exitCode)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+            if (encoding == null)
+                throw new ArgumentNullException(nameof(encoding));
+            if (exitCode == null)
+                throw new ArgumentNullException(nameof(exitCode));
+
+            string userInput = string.Empty;
+            byte[] data = new byte[1];
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                int bytesRead;
+                using (var readCanceller = new CancellationTokenSource(TimeSpan.FromMilliseconds(500)))
+                {
+                    try
+                    {
+                        bytesRead = stream.ReadAsync(data, 0, data.Length, readCanceller.Token).GetAwaiter().GetResult();
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                }
+
+                if (bytesRead <= 0)
+                    break;
+
+                userInput += encoding.GetString(data, 0, bytesRead);
+
+                if (TryTrimReadExitCode(userInput, exitCode, out userInput))
+                    break;
+            }
+
+            return userInput;
+        }
+
+        private static bool TryTrimReadExitCode(string userInput, string exitCode, out string trimmedInput)
+        {
+            if (IsLineTerminatorExitCode(exitCode))
+            {
+                if (TryTrimSuffix(userInput, "\r\n", out trimmedInput))
+                    return true;
+                if (TryTrimSuffix(userInput, "\n", out trimmedInput))
+                    return true;
+            }
+
+            return TryTrimSuffix(userInput, exitCode, out trimmedInput);
+        }
+
+        private static bool IsLineTerminatorExitCode(string exitCode) => exitCode == "\r\n" || exitCode == "\n";
+
+        private static bool TryTrimSuffix(string value, string suffix, out string trimmedValue)
+        {
+            trimmedValue = value;
+            if (!value.EndsWith(suffix, StringComparison.Ordinal))
+                return false;
+
+            trimmedValue = value.Substring(0, value.Length - suffix.Length);
+            return true;
         }
 
         /// <summary>
