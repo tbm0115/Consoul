@@ -36,5 +36,14 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="index">The zero-based index that was selected.</param>
         public static PromptResult FromSelection(int index) => new PromptResult(index, false);
+
+        /// <summary>
+        /// Converts a prompt result to its selected index for Spectre-style assignment snippets.
+        /// </summary>
+        /// <param name="result">The prompt result to convert.</param>
+        public static implicit operator int(PromptResult result)
+        {
+            return result.Index;
+        }
     }
 }

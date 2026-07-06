@@ -47,6 +47,38 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Selection prompts can customize invalid selection copy with raw markup.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_CustomInvalidSelectionMessageMarkup_RendersVisibleText()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "9", "1" }));
+
+                try
+                {
+                    var prompt = new SelectionPrompt("Pick action", clear: false, "Preview", "Deploy")
+                        .WithInvalidSelectionMessage("[yellow]Choose an available action[/] [[prod]]");
+
+                    PromptResult result = prompt.Render();
+
+                    Assert.True(result.HasSelection);
+                    Assert.Equal(0, result.Index);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Choose an available action") && write.Color == ConsoleColor.Yellow);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.DoesNotContain("Invalid selection!", scope.Driver.Text);
+                    Assert.DoesNotContain("[yellow]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
         /// Default and escape prompt inputs preserve behavior while rendering headlessly.
         /// </summary>
         [Fact]
@@ -80,6 +112,576 @@ namespace ConsoulLibrary.Tests.Rendering
                     Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
                 }
             }
+        }
+
+        /// <summary>
+        /// Selection prompt titles, options, and descriptions parse raw markup without leaking tags.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_RawMarkupText_RendersVisibleTextAndFiltersByVisibleContent()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "/Deploy", "1" }));
+
+                try
+                {
+                    var prompt = new SelectionPrompt("[cyan]Pick target[/] [[prod]]", clear: false)
+                        .SearchEnabled();
+                    prompt.AddDescribed("[green]Deploy[/] [[prod]]", "[white on navy]Ships release[/] to [[prod]]");
+                    prompt.AddChoices("[yellow]Preview[/]");
+
+                    PromptResult result = prompt.Render();
+
+                    Assert.True(result.HasSelection);
+                    Assert.Equal(0, result.Index);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Pick target") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy") && write.Color == ConsoleColor.Green);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Ships release") && write.Color == ConsoleColor.White);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.DoesNotContain("[green]", scope.Driver.Text);
+                    Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                    Assert.DoesNotContain("[white on navy]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Selection prompt filter and paging helper templates parse markup while formatted filter values stay literal.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_FormattedHelpMarkup_RendersTemplateMarkupAndEscapesFilterValues()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "/[green]missing[/]", "/clear", "next", "2" }));
+
+                try
+                {
+                    var prompt = new SelectionPrompt("[cyan]Pick target[/]", clear: false)
+                    {
+                        FilterEnabled = true,
+                        PageSize = 1,
+                        FilterHelpText = "[cyan]Type {0}find[/]",
+                        ActiveFilterText = "[yellow]Filter[/]: {0} ({1})",
+                        NoFilterMatchesText = "[red]No matches for {0}[/]",
+                        MoreChoicesText = "[green]Page {3}/{4}[/]"
+                    };
+                    prompt.AddChoices("Development", "Production");
+
+                    PromptResult result = prompt.Render();
+
+                    Assert.True(result.HasSelection);
+                    Assert.Equal(1, result.Index);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Type /find") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Filter") && write.Color == ConsoleColor.Yellow);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("No matches for [green]missing[/]") && write.Color == ConsoleColor.Red);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Page 2/2") && write.Color == ConsoleColor.Green);
+                    Assert.DoesNotContain(scope.Driver.Writes, write => write.Text.Contains("missing") && write.Color == ConsoleColor.Green);
+                    Assert.Contains("[green]missing[/]", scope.Driver.Text);
+                    Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                    Assert.DoesNotContain("[yellow]", scope.Driver.Text);
+                    Assert.DoesNotContain("[red]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Keyboard search placeholder text parses raw markup without requiring a real console.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_KeyboardSearchPlaceholderMarkup_RendersVisibleText()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                scope.Driver.EnqueueKey(Enter());
+
+                var prompt = new SelectionPrompt("Pick action", clear: false)
+                {
+                    FilterEnabled = true,
+                    KeyboardNavigationEnabled = true,
+                    SearchPlaceholderText = "[cyan]Search actions[/] [[prod]]"
+                };
+                prompt.AddChoices("Preview", "Deploy");
+
+                PromptResult result = prompt.Render();
+
+                Assert.True(result.HasSelection);
+                Assert.Equal(0, result.Index);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Search actions") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains("[prod]", scope.Driver.Text);
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Disabled option reasons parse raw markup and unavailable feedback keeps the generated prefix literal.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_DisabledReasonMarkup_RendersVisibleReasonAndUnavailableMessage()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "/Approval", "2", "/clear", "1" }));
+
+                try
+                {
+                    var prompt = new SelectionPrompt("[cyan]Pick action[/]", clear: false)
+                    {
+                        FilterEnabled = true
+                    };
+                    prompt.Add("Preview");
+                    prompt.AddDisabled("[green]Deploy[/]", "[yellow]Approval required[/] [[prod]]");
+
+                    PromptResult result = prompt.Render();
+
+                    Assert.True(result.HasSelection);
+                    Assert.Equal(0, result.Index);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text == "Option unavailable: " && write.Color == RenderOptions.InvalidColor);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Approval required") && write.Color == ConsoleColor.Yellow);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.Contains("Filter: Approval", scope.Driver.Text);
+                    Assert.DoesNotContain("[yellow]", scope.Driver.Text);
+                    Assert.DoesNotContain("[green]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Multi-selection prompt titles and checkbox options parse raw markup without leaking tags.
+        /// </summary>
+        [Fact]
+        public void MultiSelectionPrompt_RawMarkupText_RendersVisibleText()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "1" }));
+
+                try
+                {
+                    var prompt = new MultiSelectionPrompt("[cyan]Pick tasks[/] [[prod]]", clear: false, allowEmpty: false);
+                    prompt.AddDescribed("[green]Build[/] [[prod]]", "[white on navy]Compile artifacts[/]");
+                    prompt.AddChoices("[yellow]Test[/]");
+
+                    MultiSelectionResult result = prompt.Render();
+
+                    Assert.False(result.IsCanceled);
+                    Assert.Contains(0, result.Indexes);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Pick tasks") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Build") && write.Color == ConsoleColor.Green);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Compile artifacts") && write.Color == ConsoleColor.White);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.DoesNotContain("[green]", scope.Driver.Text);
+                    Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                    Assert.DoesNotContain("[white on navy]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Multi-selection filter and paging helper templates parse markup while formatted filter values stay literal.
+        /// </summary>
+        [Fact]
+        public void MultiSelectionPrompt_FormattedHelpMarkup_RendersTemplateMarkupAndEscapesFilterValues()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "/[green]none[/]", "/clear", "all" }));
+
+                try
+                {
+                    var prompt = new MultiSelectionPrompt("[cyan]Pick checks[/]", clear: false, allowEmpty: false)
+                    {
+                        FilterEnabled = true,
+                        PageSize = 1,
+                        FilterHelpText = "[cyan]Use {0}query[/]",
+                        ActiveFilterText = "[blue]Filter[/]: {0}",
+                        NoFilterMatchesText = "[red]Nothing for {0}[/]",
+                        MoreChoicesText = "[magenta]Step {3}/{4}[/]"
+                    };
+                    prompt.AddChoices("Build", "Test");
+
+                    MultiSelectionResult result = prompt.Render();
+
+                    Assert.False(result.IsCanceled);
+                    Assert.Equal(new[] { 0, 1 }, result.Indexes);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Use /query") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Filter") && write.Color == ConsoleColor.Blue);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Nothing for [green]none[/]") && write.Color == ConsoleColor.Red);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Step 1/2") && write.Color == ConsoleColor.Magenta);
+                    Assert.DoesNotContain(scope.Driver.Writes, write => write.Text.Contains("none") && write.Color == ConsoleColor.Green);
+                    Assert.Contains("[green]none[/]", scope.Driver.Text);
+                    Assert.DoesNotContain("[blue]", scope.Driver.Text);
+                    Assert.DoesNotContain("[red]", scope.Driver.Text);
+                    Assert.DoesNotContain("[magenta]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Multi-selection disabled reasons parse raw markup and filter by visible reason text.
+        /// </summary>
+        [Fact]
+        public void MultiSelectionPrompt_DisabledReasonMarkup_RendersVisibleTextAndFiltersByReason()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "/Approval", "2", "/clear", "all" }));
+
+                try
+                {
+                    var prompt = new MultiSelectionPrompt("[cyan]Pick tasks[/]", clear: false, allowEmpty: false)
+                    {
+                        FilterEnabled = true
+                    };
+                    prompt.Add("Build");
+                    prompt.AddDisabled("[green]Deploy[/]", "[yellow]Approval required[/] [[prod]]");
+                    prompt.Add("Report");
+
+                    MultiSelectionResult result = prompt.Render();
+
+                    Assert.True(result.HasSelection);
+                    Assert.Equal(new[] { 0, 2 }, result.Indexes);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text == "Option unavailable: " && write.Color == RenderOptions.InvalidColor);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Approval required") && write.Color == ConsoleColor.Yellow);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.Contains("Filter: Approval", scope.Driver.Text);
+                    Assert.DoesNotContain("[yellow]", scope.Driver.Text);
+                    Assert.DoesNotContain("[green]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Multi-selection prompts can customize invalid selection copy while preserving disabled reason feedback.
+        /// </summary>
+        [Fact]
+        public void MultiSelectionPrompt_CustomInvalidSelectionMessageMarkup_RendersVisibleTextAndDisabledReason()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "9", "2", "1" }));
+
+                try
+                {
+                    var prompt = new MultiSelectionPrompt("Pick tasks", clear: false, allowEmpty: false)
+                    {
+                        InvalidSelectionMessage = "[yellow]Choose task indexes[/] [[prod]]"
+                    };
+                    prompt.Add("Build");
+                    prompt.AddDisabled("Deploy", "[cyan]Approval required[/] [[prod]]");
+
+                    MultiSelectionResult result = prompt.Render();
+
+                    Assert.True(result.HasSelection);
+                    Assert.Equal(new[] { 0 }, result.Indexes);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Choose task indexes") && write.Color == ConsoleColor.Yellow);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text == "Option unavailable: " && write.Color == RenderOptions.InvalidColor);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Approval required") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.DoesNotContain("Invalid selection!", scope.Driver.Text);
+                    Assert.DoesNotContain("[yellow]", scope.Driver.Text);
+                    Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Text prompt titles parse raw markup while generated hints remain literal.
+        /// </summary>
+        [Fact]
+        public void TextPrompt_RawMarkupMessage_RendersVisibleTextAndLiteralHints()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "3" }));
+
+                try
+                {
+                    TextPromptResult<int> result = Consoul.Text<int>("[cyan]Retry count[/] [[prod]]")
+                        .WithDefault(5)
+                        .Render();
+
+                    Assert.True(result.HasValue);
+                    Assert.Equal(3, result.Value);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Retry count") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.Contains("default: 5", scope.Driver.Text);
+                    Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Secret prompt titles parse raw markup without leaking the typed value.
+        /// </summary>
+        [Fact]
+        public void SecretPrompt_RawMarkupMessage_RendersVisibleTextWithoutLeakingSecret()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                EnqueueText(scope.Driver, "token-value");
+                scope.Driver.EnqueueKey(Enter());
+
+                SecretResult result = new SecretPrompt("[cyan]API key[/] [[prod]]").Render();
+
+                Assert.True(result.HasValue);
+                Assert.Equal("token-value", result.Value);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("API key") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains("[prod]", scope.Driver.Text);
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                Assert.DoesNotContain("token-value", scope.Driver.Text);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Legacy confirmation prompts parse raw markup in the message while yes/no suffixes remain literal.
+        /// </summary>
+        [Fact]
+        public void ConfirmPrompt_RawMarkupMessage_RendersVisibleTextAndLiteralChoices()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "y" }));
+
+                try
+                {
+                    ConfirmResult result = new ConfirmPrompt("[green]Deploy[/] [[prod]]").Render();
+
+                    Assert.True(result.HasValue);
+                    Assert.True(result.Value);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy") && write.Color == ConsoleColor.Green);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.Contains("[y/n]", scope.Driver.Text);
+                    Assert.DoesNotContain("[green]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Spectre-shaped confirmation prompts parse raw markup in the message while custom choice text remains literal.
+        /// </summary>
+        [Fact]
+        public void ConfirmationPrompt_RawMarkupMessage_RendersVisibleTextAndLiteralChoices()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "o" }));
+
+                try
+                {
+                    var prompt = new ConfirmationPrompt("[green]Deploy[/] [[prod]]")
+                    {
+                        Yes = 'o',
+                        No = 'x',
+                        DefaultValue = false
+                    };
+
+                    ConfirmResult result = prompt.Render();
+
+                    Assert.True(result.HasValue);
+                    Assert.True(result.Value);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy") && write.Color == ConsoleColor.Green);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.Contains("[o/X]", scope.Driver.Text);
+                    Assert.DoesNotContain("[green]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Text prompt validation copy parses raw markup while generated accepted-value messages keep model values literal.
+        /// </summary>
+        [Fact]
+        public void TextPrompt_RawMarkupValidationMessages_RenderVisibleTextAndGeneratedValuesStayLiteral()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "abc", "-1", "3" }));
+
+                try
+                {
+                    TextPromptResult<int> result = Consoul.Text<int>("Retry count")
+                        .WithInvalidMessage("[cyan]Enter a whole number[/] [[prod]]")
+                        .Validate(value => value >= 0 ? null : "[yellow]Retry count cannot be negative[/] [[prod]]")
+                        .Render();
+
+                    Assert.True(result.HasValue);
+                    Assert.Equal(3, result.Value);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Enter a whole number") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Retry count cannot be negative") && write.Color == ConsoleColor.Yellow);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                    Assert.DoesNotContain("[yellow]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "qa", "[green]prod[/]" }));
+
+                try
+                {
+                    TextPromptResult<string> result = Consoul.Text<string>("Environment")
+                        .AcceptOnly(new[] { "[green]prod[/]" })
+                        .Render();
+
+                    Assert.True(result.HasValue);
+                    Assert.Equal("[green]prod[/]", result.Value);
+                    Assert.Contains("[green]prod[/]", scope.Driver.Text);
+                    Assert.DoesNotContain(scope.Driver.Writes, write => write.Text.Contains("prod") && write.Color == ConsoleColor.Green);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Secret prompt required and validation messages parse raw markup without leaking the typed value.
+        /// </summary>
+        [Fact]
+        public void SecretPrompt_RawMarkupValidationMessages_RenderVisibleTextWithoutLeakingSecret()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                scope.Driver.EnqueueKey(Enter());
+                EnqueueText(scope.Driver, "tiny");
+                scope.Driver.EnqueueKey(Enter());
+                EnqueueText(scope.Driver, "long-secret");
+                scope.Driver.EnqueueKey(Enter());
+
+                SecretResult result = new SecretPrompt("Token")
+                    .RequiredErrorMessage("[cyan]Token is required[/] [[prod]]")
+                    .Validate(value => value.Length >= 8 ? null : "[yellow]Token length invalid[/] [[prod]]")
+                    .Render();
+
+                Assert.True(result.HasValue);
+                Assert.Equal("long-secret", result.Value);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Token is required") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Token length invalid") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains("[prod]", scope.Driver.Text);
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                Assert.DoesNotContain("[yellow]", scope.Driver.Text);
+                Assert.DoesNotContain("tiny", scope.Driver.Text);
+                Assert.DoesNotContain("long-secret", scope.Driver.Text);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Confirmation invalid-input messages parse raw markup for both Consoul and Spectre-shaped prompts.
+        /// </summary>
+        [Fact]
+        public void ConfirmationPrompts_RawMarkupInvalidMessages_RenderVisibleTextAndColors()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "maybe", "y", "later", "o" }));
+
+                try
+                {
+                    ConfirmResult confirm = new ConfirmPrompt("Deploy?")
+                        .ValidationErrorMessage("[cyan]Use yes or no[/] [[prod]]")
+                        .Render();
+
+                    var confirmationPrompt = new ConfirmationPrompt("Deploy with custom choice?")
+                    {
+                        Yes = 'o',
+                        No = 'x'
+                    }
+                    .InvalidChoiceMessage("[yellow]Choose o or x[/] [[prod]]");
+
+                    ConfirmResult confirmation = confirmationPrompt.Render();
+
+                    Assert.True(confirm.HasValue);
+                    Assert.True(confirm.Value);
+                    Assert.True(confirmation.HasValue);
+                    Assert.True(confirmation.Value);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Use yes or no") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Choose o or x") && write.Color == ConsoleColor.Yellow);
+                    Assert.Contains("[prod]", scope.Driver.Text);
+                    Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                    Assert.DoesNotContain("[yellow]", scope.Driver.Text);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        private static void EnqueueText(FakeConsoleDriver driver, string text)
+        {
+            foreach (char ch in text)
+            {
+                driver.EnqueueKey(new ConsoleKeyInfo(ch, ConsoleKey.A, false, false, false));
+            }
+        }
+
+        private static ConsoleKeyInfo Enter()
+        {
+            return new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false);
         }
 
         private sealed class TestRoutine : Routine

@@ -45,6 +45,101 @@ namespace ConsoulLibrary
         public ColorScheme HighlightedScheme { get; set; } = RenderOptions.OptionScheme;
 
         /// <summary>
+        /// Gets or sets a value indicating whether keyboard navigation help is rendered below the table.
+        /// </summary>
+        public bool ShowFooterHelp { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether configured column footer cells are rendered.
+        /// </summary>
+        public bool ShowFooters { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether header cells are rendered.
+        /// </summary>
+        public bool ShowHeaders { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether one-based row numbers are rendered as the first table column.
+        /// </summary>
+        public bool ShowRowNumbers { get; set; }
+
+        /// <summary>
+        /// Gets or sets the header text rendered above the row number column.
+        /// </summary>
+        public string RowNumberHeader { get; set; } = "#";
+
+        /// <summary>
+        /// Gets or sets the alignment used for the row number column.
+        /// </summary>
+        public TableCellAlignment RowNumberAlignment { get; set; } = TableCellAlignment.Right;
+
+        /// <summary>
+        /// Gets or sets the default alignment used for header cells.
+        /// </summary>
+        public TableCellAlignment HeaderAlignment { get; set; } = TableCellAlignment.Left;
+
+        /// <summary>
+        /// Gets or sets the default alignment used for content cells.
+        /// </summary>
+        public TableCellAlignment ContentAlignment { get; set; } = TableCellAlignment.Left;
+
+        /// <summary>
+        /// Gets or sets an optional title rendered above the table when no render message is supplied.
+        /// </summary>
+        public string Title { get; set; }
+
+        /// <summary>
+        /// Gets or sets the alignment used for the table title.
+        /// </summary>
+        public TextBlockAlignment TitleAlignment { get; set; } = TextBlockAlignment.Center;
+
+        /// <summary>
+        /// Gets or sets the color scheme used for the table title.
+        /// </summary>
+        public ColorScheme TitleScheme { get; set; } = RenderOptions.PromptScheme;
+
+        /// <summary>
+        /// Gets or sets an optional caption rendered below the table.
+        /// </summary>
+        public string Caption { get; set; }
+
+        /// <summary>
+        /// Gets or sets the alignment used for the table caption.
+        /// </summary>
+        public TextBlockAlignment CaptionAlignment { get; set; } = TextBlockAlignment.Left;
+
+        /// <summary>
+        /// Gets or sets the color scheme used for the table caption.
+        /// </summary>
+        public ColorScheme CaptionScheme { get; set; } = RenderOptions.SubnoteScheme;
+
+        /// <summary>
+        /// Gets or sets the color scheme used for column footer cells.
+        /// </summary>
+        public ColorScheme FooterScheme { get; set; } = RenderOptions.SubnoteScheme;
+
+        /// <summary>
+        /// Gets or sets a message rendered inside the table body when no rows are available.
+        /// </summary>
+        public string EmptyMessage { get; set; }
+
+        /// <summary>
+        /// Gets or sets the color scheme used for <see cref="EmptyMessage"/>.
+        /// </summary>
+        public ColorScheme EmptyMessageScheme { get; set; } = RenderOptions.SubnoteScheme;
+
+        /// <summary>
+        /// Gets or sets a summary rendered below the table.
+        /// </summary>
+        public string SummaryText { get; set; }
+
+        /// <summary>
+        /// Gets or sets the color scheme used for <see cref="SummaryText"/>.
+        /// </summary>
+        public ColorScheme SummaryScheme { get; set; } = RenderOptions.SubnoteScheme;
+
+        /// <summary>
         /// Left padding.
         /// </summary>
         public string LeftPad { get; private set; }
@@ -65,9 +160,40 @@ namespace ConsoulLibrary
         public char WhitespaceCharacater { get; set; } = (char)0x2588;
 
         /// <summary>
-        /// Maximum width of the table.
+        /// Gets or sets the character used for whitespace between table cell content and cell boundaries.
         /// </summary>
-        public int? MaximumTableWidth { get; private set; }
+        public char WhitespaceCharacter
+        {
+            get => WhitespaceCharacater;
+            set => WhitespaceCharacater = value;
+        }
+
+        private int? _maximumTableWidth;
+        private int? _normalizedMaximumTableWidth;
+
+        /// <summary>
+        /// Gets or sets the requested maximum width of the table.
+        /// </summary>
+        public int? MaximumTableWidth
+        {
+            get => _maximumTableWidth ?? _normalizedMaximumTableWidth;
+            set
+            {
+                if (value.HasValue && value.Value < 1)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), "Maximum table width must be greater than zero.");
+                }
+
+                _maximumTableWidth = value;
+                _normalizedMaximumTableWidth = null;
+                IsNormalized = false;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether table columns should expand to consume unused available width.
+        /// </summary>
+        public bool Expand { get; set; } = true;
 
         /// <summary>
         /// Gets a value indicating whether <see cref="Normalize(IEnumerable{IEnumerable{string}})"/> has been called.
@@ -86,6 +212,8 @@ namespace ConsoulLibrary
                 if (value > 1 || value < 0)
                     throw new ArgumentOutOfRangeException("Value must be between 0.0 and 1.0.");
                 _tableWidthPercentage = value;
+                _normalizedMaximumTableWidth = null;
+                IsNormalized = false;
             }
         }
 
@@ -96,7 +224,8 @@ namespace ConsoulLibrary
 
         internal int GetMaximumTableWidth()
         {
-            return Math.Max(1, Math.Min(MaximumTableWidth ?? Consoul.ConsoleBufferWidth, Consoul.ConsoleBufferWidth));
+            int requestedWidth = _maximumTableWidth ?? _normalizedMaximumTableWidth ?? Consoul.ConsoleBufferWidth;
+            return Math.Max(1, Math.Min(requestedWidth, Consoul.ConsoleBufferWidth));
         }
 
         /// <summary>
@@ -105,8 +234,9 @@ namespace ConsoulLibrary
         /// <param name="contents">Rows used to infer the normalized table layout.</param>
         public void Normalize(IEnumerable<IEnumerable<string>> contents)
         {
-            MaximumTableWidth = Math.Max(1, (int)(Consoul.ConsoleBufferWidth * TableWidthPercentage));
-            int widthRemainder = Consoul.ConsoleBufferWidth - (int)MaximumTableWidth;
+            int requestedWidth = _maximumTableWidth ?? (int)(Consoul.ConsoleBufferWidth * TableWidthPercentage);
+            _normalizedMaximumTableWidth = Math.Max(1, Math.Min(requestedWidth, Consoul.ConsoleBufferWidth));
+            int widthRemainder = Consoul.ConsoleBufferWidth - _normalizedMaximumTableWidth.Value;
             int marginLeft, marginRight;
             marginRight = widthRemainder / 2;
             marginLeft = marginRight;
@@ -120,7 +250,7 @@ namespace ConsoulLibrary
             if (columnCount == 0)
                 columnCount = 1;
 
-            ColumnSize = MaximumTableWidth / columnCount;
+            ColumnSize = _normalizedMaximumTableWidth.Value / columnCount;
             int maximumColumnSize = 0;
             if (contents != null && contents.Any())
                 maximumColumnSize = contents.SelectMany(o => o).Max(o => o.Length);
@@ -146,6 +276,11 @@ namespace ConsoulLibrary
             /// Character used to render vertical lines.
             /// </summary>
             public char VerticalCharacter { get; set; } = '│';
+
+            /// <summary>
+            /// Gets or sets the table border preset. The default preserves the legacy repeated-line rendering.
+            /// </summary>
+            public TableBorderStyle BorderStyle { get; set; } = TableBorderStyle.Simple;
 
             /// <summary>
             /// Flags whether to render a horizontal line for the header of the table.
@@ -176,6 +311,97 @@ namespace ConsoulLibrary
             /// Constructs a new instance of <see cref="TableLineDisplayOptions"/>
             /// </summary>
             public TableLineDisplayOptions() { }
+
+            internal bool UsesPresetBorder()
+            {
+                return BorderStyle != TableBorderStyle.Simple;
+            }
+
+            internal bool HasHorizontalLines()
+            {
+                return HeaderHorizontal || ContentHorizontal;
+            }
+
+            internal TableBorderCharacters GetBorderCharacters()
+            {
+                switch (BorderStyle)
+                {
+                    case TableBorderStyle.Square:
+                        return new TableBorderCharacters('┌', '┬', '┐', '├', '┼', '┤', '└', '┴', '┘', '│', '─');
+                    case TableBorderStyle.Rounded:
+                        return new TableBorderCharacters('╭', '┬', '╮', '├', '┼', '┤', '╰', '┴', '╯', '│', '─');
+                    case TableBorderStyle.Ascii:
+                        return new TableBorderCharacters('+', '+', '+', '+', '+', '+', '+', '+', '+', '|', '-');
+                    case TableBorderStyle.Heavy:
+                        return new TableBorderCharacters('┏', '┳', '┓', '┣', '╋', '┫', '┗', '┻', '┛', '┃', '━');
+                    case TableBorderStyle.Double:
+                        return new TableBorderCharacters('╔', '╦', '╗', '╠', '╬', '╣', '╚', '╩', '╝', '║', '═');
+                    default:
+                        return new TableBorderCharacters(
+                            HorizontalCharacter,
+                            HorizontalCharacter,
+                            HorizontalCharacter,
+                            HorizontalCharacter,
+                            HorizontalCharacter,
+                            HorizontalCharacter,
+                            HorizontalCharacter,
+                            HorizontalCharacter,
+                            HorizontalCharacter,
+                            VerticalCharacter,
+                            HorizontalCharacter);
+                }
+            }
+        }
+
+        internal struct TableBorderCharacters
+        {
+            public TableBorderCharacters(
+                char topLeft,
+                char topJoin,
+                char topRight,
+                char middleLeft,
+                char middleJoin,
+                char middleRight,
+                char bottomLeft,
+                char bottomJoin,
+                char bottomRight,
+                char vertical,
+                char horizontal)
+            {
+                TopLeft = topLeft;
+                TopJoin = topJoin;
+                TopRight = topRight;
+                MiddleLeft = middleLeft;
+                MiddleJoin = middleJoin;
+                MiddleRight = middleRight;
+                BottomLeft = bottomLeft;
+                BottomJoin = bottomJoin;
+                BottomRight = bottomRight;
+                Vertical = vertical;
+                Horizontal = horizontal;
+            }
+
+            public char TopLeft { get; }
+
+            public char TopJoin { get; }
+
+            public char TopRight { get; }
+
+            public char MiddleLeft { get; }
+
+            public char MiddleJoin { get; }
+
+            public char MiddleRight { get; }
+
+            public char BottomLeft { get; }
+
+            public char BottomJoin { get; }
+
+            public char BottomRight { get; }
+
+            public char Vertical { get; }
+
+            public char Horizontal { get; }
         }
     }
 }

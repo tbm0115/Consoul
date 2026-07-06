@@ -1,0 +1,224 @@
+using System;
+using ConsoulLibrary.Color;
+using ConsoulLibrary.Tests.Rendering;
+using Xunit;
+
+namespace ConsoulLibrary.Tests.Rendering
+{
+    /// <summary>
+    /// Responsive rendering tests for tree view helpers.
+    /// </summary>
+    public class TreeResponsiveRenderingTests
+    {
+        /// <summary>
+        /// Trees render nested and long content inside the active terminal width.
+        /// </summary>
+        /// <param name="width">The fake terminal width.</param>
+        [Theory]
+        [InlineData(18)]
+        [InlineData(32)]
+        [InlineData(80)]
+        public void Tree_LongNestedContent_DoesNotOverflow(int width)
+        {
+            using (var scope = new ConsoleDriverScope(width))
+            {
+                TreeNode root = CreateDeploymentTree();
+
+                Consoul.Tree(root);
+
+                VisualAssert.WroteText(scope.Driver, "Deployment");
+                VisualAssert.WroteText(scope.Driver, "|-- ");
+                VisualAssert.WroteText(scope.Driver, "`-- ");
+                VisualAssert.WroteText(scope.Driver, "Product");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Trees honor configured width and text or branch colors.
+        /// </summary>
+        [Fact]
+        public void Tree_CustomOptions_HonorWidthAndColors()
+        {
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                var options = new TreeOptions
+                {
+                    Width = 24,
+                    BranchScheme = new ColorScheme
+                    {
+                        Color = ConsoleColor.Green,
+                        BackgroundColor = ConsoleColor.Black
+                    },
+                    TextScheme = new ColorScheme
+                    {
+                        Color = ConsoleColor.Cyan,
+                        BackgroundColor = ConsoleColor.Black
+                    }
+                };
+
+                var root = new TreeNode("Root");
+                root.Add(new TreeNode("Highlighted child", new ColorScheme
+                {
+                    Color = ConsoleColor.Yellow,
+                    BackgroundColor = ConsoleColor.Black
+                }));
+
+                Consoul.Tree(root, options);
+
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Root") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("`-- ") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Highlighted") && write.Color == ConsoleColor.Yellow);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 24, "Tree line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Fluent tree color helpers accept Spectre-style style strings.
+        /// </summary>
+        [Fact]
+        public void Tree_FluentBuilder_AcceptsStyleStrings()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                var tree = new Tree("Root")
+                    .AsciiGuide()
+                    .Width(32)
+                    .TextColor("white on navy")
+                    .BranchColor("grey");
+                tree.AddNode("Worker");
+
+                AnsiConsole.Write(tree);
+
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Root") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Worker") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("`-- ") && write.Color == ConsoleColor.Gray);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Tree labels wrap by visible markup text instead of counting style tags as display width.
+        /// </summary>
+        /// <param name="width">The configured tree width.</param>
+        [Theory]
+        [InlineData(18)]
+        [InlineData(32)]
+        public void Tree_RawMarkupLabels_WrapByVisibleTextAndDoNotOverflow(int width)
+        {
+            using (var scope = new ConsoleDriverScope(width + 4))
+            {
+                var root = new TreeNode("[cyan]Deployment[/]");
+                root.Add("[green]ProductionClusterWithVeryLongNameWithoutNaturalBreaks[/]");
+                root.Add("Escaped [[literal]] value");
+
+                Consoul.Tree(root, new TreeOptions { Width = width });
+
+                VisualAssert.ContainsText(scope.Driver, "Deployment");
+                VisualAssert.ContainsText(scope.Driver, "Production");
+                VisualAssert.ContainsText(scope.Driver, "literal");
+                Assert.DoesNotContain("[green]", scope.Driver.Text);
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deployment") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Production") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[literal]"));
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= width, "Markup tree line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Trees can render only the root node children when the root is used as a logical grouping model.
+        /// </summary>
+        [Fact]
+        public void Tree_ExcludeRoot_RendersChildrenOnly()
+        {
+            using (var scope = new ConsoleDriverScope(40))
+            {
+                var root = new TreeNode("Hidden root");
+                root.Add("Visible child");
+
+                Consoul.Tree(root, new TreeOptions { IncludeRoot = false });
+
+                Assert.DoesNotContain("Hidden root", scope.Driver.Text);
+                VisualAssert.WroteText(scope.Driver, "Visible child");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Model-backed dynamic views can render trees as part of their view content.
+        /// </summary>
+        [Fact]
+        public void DynamicModelView_CanRenderTreeSections()
+        {
+            using (var scope = new ConsoleDriverScope(32))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "2" }));
+
+                try
+                {
+                    var model = new DeploymentModel
+                    {
+                        Environment = "Production",
+                        Service = "Worker"
+                    };
+
+                    var view = Consoul.View("Deployment", model)
+                        .RenderModel(deployment =>
+                        {
+                            Consoul.Tree("Deployment", root =>
+                            {
+                                root.Add("Environment: " + deployment.Environment);
+                                root.Add("Service: " + deployment.Service);
+                            });
+                        })
+                        .Option("Refresh", deployment => deployment.Service = "Api");
+
+                    view.Render();
+
+                    VisualAssert.WroteText(scope.Driver, "Environment: Production");
+                    VisualAssert.WroteText(scope.Driver, "Service: Worker");
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        private static TreeNode CreateDeploymentTree()
+        {
+            var root = new TreeNode("Deployment");
+            TreeNode targets = root.Add("Targets");
+            targets.Add("ProductionClusterWithVeryLongNameWithoutNaturalBreaks");
+            targets.Add("Staging");
+
+            TreeNode checks = root.Add("Checks", ConsoleColor.Yellow);
+            checks.Add("Database migration status waiting on operator approval");
+            checks.Add("Feature flags");
+
+            return root;
+        }
+
+        private sealed class DeploymentModel
+        {
+            public string Environment { get; set; } = string.Empty;
+
+            public string Service { get; set; } = string.Empty;
+        }
+
+        private sealed class TestRoutine : Routine
+        {
+            public TestRoutine(string[] inputs)
+            {
+                foreach (string input in inputs)
+                {
+                    Enqueue(new RoutineInput { Value = input });
+                }
+            }
+        }
+    }
+}

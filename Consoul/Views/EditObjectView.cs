@@ -5,27 +5,29 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Views.Editing;
 
 namespace ConsoulLibrary
 {
     /// <summary>
-    /// Creates a dynamic view to edit the properties of the given object.
+    /// Creates a dynamic object editor view for the properties of the given object.
     /// </summary>
     [View("Edit Object View", GoBackMessage = "<-- Save Changes and Go Back")]
     public class EditObjectView : DynamicView<object>
     {
         private readonly List<EditablePropertyDescriptor> _descriptors;
         private readonly BindingFlags _bindingFlags;
-        private readonly bool _jsonEditorEnabled;
+        private readonly bool _documentEditorEnabled;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditObjectView"/> class.
         /// </summary>
         /// <param name="entity">The entity being edited.</param>
         /// <param name="bindingAttr">Binding flags describing the accessible properties.</param>
-        /// <param name="enableJsonEditor">Indicates whether the JSON-style editor option should be available.</param>
+        /// <param name="enableJsonEditor">Compatibility parameter for existing callers. Set to <see langword="false"/> to disable the form document editor option.</param>
         public EditObjectView(object entity, BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, bool enableJsonEditor = true)
             : base()
         {
@@ -37,44 +39,78 @@ namespace ConsoulLibrary
             Model = entity;
             _bindingFlags = bindingAttr;
             var entityType = entity.GetType();
-            var jsonEditorEnabled = enableJsonEditor;
-            if (entityType.GetCustomAttribute<DisableJsonEditorAttribute>(true) != null)
+            var documentEditorEnabled = enableJsonEditor;
+            if (entityType.GetCustomAttribute<DisableFormDocumentEditorAttribute>(true) != null ||
+                entityType.GetCustomAttribute<DisableJsonEditorAttribute>(true) != null)
             {
-                jsonEditorEnabled = false;
+                documentEditorEnabled = false;
             }
 
-            _jsonEditorEnabled = jsonEditorEnabled;
+            _documentEditorEnabled = documentEditorEnabled;
             Title = BannerEntry.Render($"Edit {entityType.Name} View");
+            PromptFilterEnabled = true;
 
             _descriptors = entityType
                 .GetProperties(bindingAttr)
-                .Where(property => property.CanRead && property.CanWrite && !ShouldIgnore(property))
+                .Where(property =>
+                    property.CanRead &&
+                    property.GetIndexParameters().Length == 0 &&
+                    PropertyUiMetadata.IsEditable(property) &&
+                    !ShouldIgnore(property))
+                .OrderBy(PropertyUiMetadata.GetOrder)
                 .Select(property => CreateDescriptor(property))
                 .ToList();
 
-            if (_jsonEditorEnabled && _descriptors.Count > 0)
+            if (_documentEditorEnabled && _descriptors.Count > 0)
             {
                 _options.Add(new DynamicOption<object>(
-                    () => "Open JSON editor",
-                    () => OpenJsonEditor(),
-                    () => RenderOptions.OptionColor));
+                    () => DocumentEditorOptionLabel,
+                    cancellationToken => OpenDocumentEditor(cancellationToken),
+                    () => RenderOptions.OptionColor)
+                    .Describe("Browse and edit properties in the form document."));
             }
 
-            foreach (var descriptor in _descriptors)
-            {
-                AddLegacyOption(descriptor);
-            }
+            AddLegacyOptions(_descriptors);
         }
 
         /// <summary>
-        /// Indicates whether the JSON editor should highlight values using the default highlight scheme.
+        /// Indicates whether the form document editor should highlight values using the default highlight scheme.
         /// </summary>
         public ConsoleColor HighlightColor { get; set; } = ConsoleColor.DarkCyan;
 
         /// <summary>
-        /// Serializes values displayed by the JSON-style object editor.
+        /// Gets or sets the option label that opens the form document editor.
         /// </summary>
-        public static Func<object, Type, string> JsonValueSerializer { get; set; } = SerializeJsonValueWithoutDependencies;
+        public string DocumentEditorOptionLabel { get; set; } = "Open document editor";
+
+        /// <summary>
+        /// Gets a value indicating whether the form document editor option is enabled for this view.
+        /// </summary>
+        public bool IsDocumentEditorEnabled => _documentEditorEnabled;
+
+        private static Func<object, Type, string> _formValueSerializer = SerializeJsonValueWithoutDependencies;
+
+        /// <summary>
+        /// Serializes values displayed by the form document editor's JSON-style value layout.
+        /// </summary>
+        public static Func<object, Type, string> FormValueSerializer
+        {
+            get => _formValueSerializer;
+            set => _formValueSerializer = value ?? SerializeJsonValueWithoutDependencies;
+        }
+
+        /// <summary>
+        /// Gets or sets the serializer used by the form document editor's JSON-style value layout.
+        /// </summary>
+        /// <remarks>
+        /// This compatibility alias is retained for callers that adopted the original JSON editor terminology.
+        /// Prefer <see cref="FormValueSerializer"/> for new MVC-style object editor views.
+        /// </remarks>
+        public static Func<object, Type, string> JsonValueSerializer
+        {
+            get => FormValueSerializer;
+            set => FormValueSerializer = value;
+        }
 
         private EditablePropertyDescriptor CreateDescriptor(PropertyInfo property)
         {
@@ -137,20 +173,73 @@ namespace ConsoulLibrary
                 return false;
             }
 
-            return property.GetCustomAttribute<PropertyEditorIgnoreAttribute>(true) != null;
+            return PropertyUiMetadata.IsIgnored(property);
+        }
+
+        private void AddLegacyOptions(IEnumerable<EditablePropertyDescriptor> descriptors)
+        {
+            var groups = CreateDescriptorGroups(descriptors);
+            foreach (var group in groups)
+            {
+                if (!string.IsNullOrWhiteSpace(group.Name))
+                {
+                    _options.Add(DynamicOption<object>.Separator(group.Name, RenderOptions.SubnoteColor));
+                }
+
+                foreach (var descriptor in group.Descriptors)
+                {
+                    AddLegacyOption(descriptor);
+                }
+            }
+        }
+
+        private static List<DescriptorGroup> CreateDescriptorGroups(IEnumerable<EditablePropertyDescriptor> descriptors)
+        {
+            var groups = new List<DescriptorGroup>();
+            var groupsByName = new Dictionary<string, DescriptorGroup>(StringComparer.Ordinal);
+            DescriptorGroup ungrouped = null;
+
+            foreach (var descriptor in descriptors)
+            {
+                string groupName = PropertyUiMetadata.GetGroupName(descriptor.Property);
+                if (string.IsNullOrWhiteSpace(groupName))
+                {
+                    if (ungrouped == null)
+                    {
+                        ungrouped = new DescriptorGroup(null);
+                        groups.Add(ungrouped);
+                    }
+
+                    ungrouped.Descriptors.Add(descriptor);
+                    continue;
+                }
+
+                if (!groupsByName.TryGetValue(groupName, out var group))
+                {
+                    group = new DescriptorGroup(groupName);
+                    groupsByName.Add(groupName, group);
+                    groups.Add(group);
+                }
+
+                group.Descriptors.Add(descriptor);
+            }
+
+            return groups;
         }
 
         private void AddLegacyOption(EditablePropertyDescriptor descriptor)
         {
             var property = descriptor.Property;
             var propertyType = property.PropertyType;
+            string description = ResolveOptionDescription(descriptor);
 
             if (IsSimpleType(propertyType, out var simpleType))
             {
                 _options.Add(new DynamicOption<object>(
                     () => $"Edit {descriptor.DisplayName}: " + (property.GetValue(Model)?.ToString() ?? "<N/A>"),
-                    () => EditDescriptor(descriptor),
-                    () => ConsoleColor.Yellow));
+                    cancellationToken => EditDescriptorAsync(descriptor, cancellationToken),
+                    () => ConsoleColor.Yellow)
+                    .Describe(description));
                 return;
             }
 
@@ -160,15 +249,17 @@ namespace ConsoulLibrary
                 {
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}: {simpleElementType.Name}[{GetCollectionCount(Model, property)}]",
-                        () => EditDescriptor(descriptor),
-                        () => ConsoleColor.Green));
+                        cancellationToken => EditDescriptorAsync(descriptor, cancellationToken),
+                        () => ConsoleColor.Green)
+                        .Describe(description));
                 }
                 else
                 {
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}: {elementType.Name}[{GetCollectionCount(Model, property)}]",
-                        () => EditDescriptor(descriptor),
-                        () => ConsoleColor.Green));
+                        cancellationToken => EditDescriptorAsync(descriptor, cancellationToken),
+                        () => ConsoleColor.Green)
+                        .Describe(description));
                 }
 
                 return;
@@ -182,19 +273,22 @@ namespace ConsoulLibrary
                 {
                     _options.Add(new DynamicOption<object>(
                         () => $"Edit {descriptor.DisplayName}",
-                        () => EditDescriptor(descriptor),
-                        () => ConsoleColor.Green));
+                        cancellationToken => EditDescriptorAsync(descriptor, cancellationToken),
+                        () => ConsoleColor.Green)
+                        .Describe(description));
                 }
                 else
                 {
                     _options.Add(new DynamicOption<object>(
                         () => $"View {descriptor.DisplayName}",
-                        () =>
+                        cancellationToken =>
                         {
                             Consoul.Write($"Cannot render {descriptor.DisplayName} because it is a Dictionary with a complex key");
-                            Consoul.Wait();
+                            Consoul.Wait(cancellationToken: cancellationToken);
+                            return Task.CompletedTask;
                         },
-                        () => ConsoleColor.DarkRed));
+                        () => ConsoleColor.DarkRed)
+                        .Describe(description));
                 }
 
                 return;
@@ -202,14 +296,69 @@ namespace ConsoulLibrary
 
             _options.Add(new DynamicOption<object>(
                 () => $"Edit {descriptor.DisplayName}",
-                () => EditDescriptor(descriptor),
-                () => ConsoleColor.Green));
+                cancellationToken => EditDescriptorAsync(descriptor, cancellationToken),
+                () => ConsoleColor.Green)
+                .Describe(description));
         }
 
-        private void EditSimpleProperty(EditablePropertyDescriptor descriptor, Type propertyType)
+        private static string ResolveOptionDescription(EditablePropertyDescriptor descriptor)
         {
+            if (descriptor == null)
+            {
+                return null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(descriptor.Documentation.DisplayDescription))
+            {
+                return NormalizeOptionDescription(descriptor.Documentation.DisplayDescription);
+            }
+
+            if (!string.IsNullOrWhiteSpace(descriptor.Documentation.XmlSummary))
+            {
+                return NormalizeOptionDescription(descriptor.Documentation.XmlSummary);
+            }
+
+            return null;
+        }
+
+        private static string NormalizeOptionDescription(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var builder = new StringBuilder();
+            bool space = false;
+            foreach (char ch in value)
+            {
+                if (char.IsWhiteSpace(ch))
+                {
+                    if (!space)
+                    {
+                        builder.Append(' ');
+                        space = true;
+                    }
+                }
+                else
+                {
+                    builder.Append(ch);
+                    space = false;
+                }
+            }
+
+            return builder.ToString().Trim();
+        }
+
+        private void EditSimpleProperty(EditablePropertyDescriptor descriptor, Type propertyType, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             var editor = descriptor.EditorOverride ?? ResolveEditor(descriptor.Property);
-            var context = descriptor.CreateContext(Model);
+            var context = descriptor.CreateContext(Model, cancellationToken);
             if (editor.TryEdit(context, out var value))
             {
                 if (descriptor.FormatterOverride != null)
@@ -226,23 +375,39 @@ namespace ConsoulLibrary
             }
         }
 
-        private void EditComplexProperty(EditablePropertyDescriptor descriptor)
+        private void EditComplexProperty(EditablePropertyDescriptor descriptor, CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             var propertyValue = descriptor.Property.GetValue(Model) ?? Activator.CreateInstance(descriptor.Property.PropertyType);
-            var recursiveView = new EditObjectView(propertyValue, _bindingFlags, _jsonEditorEnabled);
-            recursiveView.Render();
+            var recursiveView = new EditObjectView(propertyValue, _bindingFlags, _documentEditorEnabled);
+            recursiveView.RenderAsync(cancellationToken).GetAwaiter().GetResult();
             descriptor.Property.SetValue(Model, recursiveView.Model);
         }
 
-        private object EditObject(PropertyInfo property, Type propertyType = null)
+        private object EditObject(PropertyInfo property, Type propertyType = null, CancellationToken cancellationToken = default)
         {
             var expectedType = propertyType ?? property.PropertyType;
-            return Consoul.Input($"Enter new {property.Name}\t({expectedType.Name})", expectedType);
+            return Consoul.Input($"Enter new {property.Name}\t({expectedType.Name})", expectedType, cancellationToken: cancellationToken);
         }
 
-        private void EditDescriptor(EditablePropertyDescriptor descriptor)
+        private Task EditDescriptorAsync(EditablePropertyDescriptor descriptor, CancellationToken cancellationToken)
         {
-            var context = descriptor.CreateContext(Model);
+            EditDescriptor(descriptor, cancellationToken);
+            return Task.CompletedTask;
+        }
+
+        private void EditDescriptor(EditablePropertyDescriptor descriptor, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            var context = descriptor.CreateContext(Model, cancellationToken);
             var layers = descriptor.GetLayers(context);
             if (layers.Count > 0)
             {
@@ -256,7 +421,7 @@ namespace ConsoulLibrary
                     layerChoices[index] = layer;
                 }
 
-                var result = prompt.Render();
+                var result = prompt.Render(cancellationToken);
                 if (result.IsCanceled || !result.HasSelection)
                 {
                     return;
@@ -264,7 +429,7 @@ namespace ConsoulLibrary
 
                 if (result.Index == defaultChoice)
                 {
-                    EditDescriptorUsingDefaultEditor(descriptor);
+                    EditDescriptorUsingDefaultEditor(descriptor, cancellationToken);
                     return;
                 }
 
@@ -288,7 +453,7 @@ namespace ConsoulLibrary
                 catch (Exception exception)
                 {
                     Consoul.WriteCore("Layer failed: " + exception.Message, RenderOptions.InvalidColor);
-                    Consoul.Wait();
+                    Consoul.Wait(cancellationToken: cancellationToken);
                     return;
                 }
 
@@ -302,20 +467,25 @@ namespace ConsoulLibrary
                     return;
                 }
 
-                EditDescriptorUsingDefaultEditor(descriptor);
+                EditDescriptorUsingDefaultEditor(descriptor, cancellationToken);
                 return;
             }
 
-            EditDescriptorUsingDefaultEditor(descriptor);
+            EditDescriptorUsingDefaultEditor(descriptor, cancellationToken);
         }
 
-        private void EditDescriptorUsingDefaultEditor(EditablePropertyDescriptor descriptor)
+        private void EditDescriptorUsingDefaultEditor(EditablePropertyDescriptor descriptor, CancellationToken cancellationToken = default)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             var propertyType = descriptor.Property.PropertyType;
 
             if (IsSimpleType(propertyType, out var simpleType))
             {
-                EditSimpleProperty(descriptor, simpleType);
+                EditSimpleProperty(descriptor, simpleType, cancellationToken);
                 return;
             }
 
@@ -323,11 +493,11 @@ namespace ConsoulLibrary
             {
                 if (IsSimpleType(elementType, out var simpleElementType))
                 {
-                    EditSimpleCollection(Model, descriptor.Property, simpleElementType);
+                    EditSimpleCollection(Model, descriptor.Property, simpleElementType, cancellationToken);
                 }
                 else
                 {
-                    EditComplexCollection(Model, descriptor.Property, elementType);
+                    EditComplexCollection(Model, descriptor.Property, elementType, cancellationToken);
                 }
 
                 return;
@@ -339,24 +509,30 @@ namespace ConsoulLibrary
             {
                 if (IsSimpleType(keyType, out var simpleKeyType))
                 {
-                    EditSimpleKeyDictionary(Model, descriptor, simpleKeyType, valueType);
+                    EditSimpleKeyDictionary(Model, descriptor, simpleKeyType, valueType, cancellationToken);
                 }
                 else
                 {
                     Consoul.Write($"Cannot render {descriptor.DisplayName} because it is a Dictionary with a complex key");
-                    Consoul.Wait();
+                    Consoul.Wait(cancellationToken: cancellationToken);
                 }
 
                 return;
             }
 
-            EditComplexProperty(descriptor);
+            EditComplexProperty(descriptor, cancellationToken);
         }
 
-        private void OpenJsonEditor()
+        private Task OpenDocumentEditor(CancellationToken cancellationToken)
         {
-            var editor = new JsonObjectEditor(this);
-            editor.Run();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.CompletedTask;
+            }
+
+            var editor = new ObjectFormDocumentEditor(this);
+            editor.Run(cancellationToken);
+            return Task.CompletedTask;
         }
 
         private static string SerializeJsonValueWithoutDependencies(object value, Type valueType)
@@ -481,7 +657,45 @@ namespace ConsoulLibrary
                 return value;
             }
 
-            return Convert.ChangeType(value, expectedType);
+            if (value is string text)
+            {
+                if (Nullable.GetUnderlyingType(targetType) != null && string.IsNullOrEmpty(text))
+                {
+                    return null;
+                }
+
+                if (expectedType.IsEnum)
+                {
+                    return Enum.Parse(expectedType, text, ignoreCase: true);
+                }
+
+                if (expectedType == typeof(Guid))
+                {
+                    return Guid.Parse(text);
+                }
+
+                if (expectedType == typeof(TimeSpan))
+                {
+                    return TimeSpan.Parse(text, CultureInfo.CurrentCulture);
+                }
+
+                if (expectedType == typeof(DateTimeOffset))
+                {
+                    return DateTimeOffset.Parse(text, CultureInfo.CurrentCulture);
+                }
+
+                if (expectedType == typeof(Uri))
+                {
+                    return new Uri(text, UriKind.RelativeOrAbsolute);
+                }
+
+                if (expectedType == typeof(Version))
+                {
+                    return Version.Parse(text);
+                }
+            }
+
+            return Convert.ChangeType(value, expectedType, CultureInfo.CurrentCulture);
         }
 
         private static IPropertyEditor ResolveEditor(PropertyInfo property)
@@ -545,7 +759,7 @@ namespace ConsoulLibrary
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 simpleType = Nullable.GetUnderlyingType(type);
-                return primitives.Contains(simpleType);
+                return simpleType != null && (simpleType.IsEnum || primitives.Contains(simpleType));
             }
 
             return false;
@@ -559,12 +773,33 @@ namespace ConsoulLibrary
                 return elementType != null;
             }
 
+            if (IsDictionaryLikeType(type))
+            {
+                elementType = null;
+                return false;
+            }
+
             if (type.IsGenericType)
             {
                 var genericTypeDef = type.GetGenericTypeDefinition();
-                if (genericTypeDef == typeof(List<>) || genericTypeDef == typeof(IEnumerable<>) || genericTypeDef == typeof(ICollection<>))
+                if (IsSupportedCollectionTypeDefinition(genericTypeDef))
                 {
                     elementType = type.GetGenericArguments()[0];
+                    return true;
+                }
+            }
+
+            foreach (Type interfaceType in type.GetInterfaces())
+            {
+                if (!interfaceType.IsGenericType)
+                {
+                    continue;
+                }
+
+                var genericTypeDef = interfaceType.GetGenericTypeDefinition();
+                if (IsSupportedCollectionTypeDefinition(genericTypeDef))
+                {
+                    elementType = interfaceType.GetGenericArguments()[0];
                     return true;
                 }
             }
@@ -573,9 +808,49 @@ namespace ConsoulLibrary
             return false;
         }
 
+        private static bool IsSupportedCollectionTypeDefinition(Type genericTypeDefinition)
+        {
+            return genericTypeDefinition == typeof(List<>) ||
+                genericTypeDefinition == typeof(IList<>) ||
+                genericTypeDefinition == typeof(ICollection<>) ||
+                genericTypeDefinition == typeof(IEnumerable<>) ||
+                genericTypeDefinition == typeof(IReadOnlyList<>) ||
+                genericTypeDefinition == typeof(IReadOnlyCollection<>) ||
+                genericTypeDefinition == typeof(ISet<>);
+        }
+
+        private static bool IsDictionaryLikeType(Type type)
+        {
+            if (type == null)
+            {
+                return false;
+            }
+
+            if (typeof(IDictionary).IsAssignableFrom(type))
+            {
+                return true;
+            }
+
+            Type keyType;
+            Type valueType;
+            return TryGetDictionaryTypes(type, out keyType, out valueType);
+        }
+
         private static bool IsDictionaryType(Type type, out Type keyType, out Type valueType)
         {
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+            if (TryGetDictionaryTypes(type, out keyType, out valueType))
+            {
+                return true;
+            }
+
+            keyType = null;
+            valueType = null;
+            return false;
+        }
+
+        private static bool TryGetDictionaryTypes(Type type, out Type keyType, out Type valueType)
+        {
+            if (type != null && type.IsGenericType && IsSupportedDictionaryTypeDefinition(type.GetGenericTypeDefinition()))
             {
                 var arguments = type.GetGenericArguments();
                 keyType = arguments[0];
@@ -583,9 +858,32 @@ namespace ConsoulLibrary
                 return true;
             }
 
+            if (type != null)
+            {
+                foreach (Type interfaceType in type.GetInterfaces())
+                {
+                    if (!interfaceType.IsGenericType || !IsSupportedDictionaryTypeDefinition(interfaceType.GetGenericTypeDefinition()))
+                    {
+                        continue;
+                    }
+
+                    var arguments = interfaceType.GetGenericArguments();
+                    keyType = arguments[0];
+                    valueType = arguments[1];
+                    return true;
+                }
+            }
+
             keyType = null;
             valueType = null;
             return false;
+        }
+
+        private static bool IsSupportedDictionaryTypeDefinition(Type genericTypeDefinition)
+        {
+            return genericTypeDefinition == typeof(Dictionary<,>) ||
+                genericTypeDefinition == typeof(IDictionary<,>) ||
+                genericTypeDefinition == typeof(IReadOnlyDictionary<,>);
         }
 
         private static int GetCollectionCount(object target, PropertyInfo propertyInfo)
@@ -635,40 +933,89 @@ namespace ConsoulLibrary
                 return;
             }
 
-            var convertedValues = values.Select(value => Convert.ChangeType(value, elementType)).ToArray();
+            var convertedValues = values.Select(value => ConvertIfNeeded(value, elementType)).ToArray();
 
             if (propertyType.IsArray)
             {
                 var array = Array.CreateInstance(elementType, convertedValues.Length);
                 Array.Copy(convertedValues, array, convertedValues.Length);
                 propertyInfo.SetValue(target, array);
+                return;
             }
-            else if (propertyType.IsGenericType)
+
+            var collection = CreateCollectionInstance(propertyType, elementType);
+            if (collection == null)
             {
-                var genericTypeDef = propertyType.GetGenericTypeDefinition();
+                return;
+            }
 
-                if (genericTypeDef == typeof(List<>))
+            foreach (var value in convertedValues)
+            {
+                AddCollectionValue(collection, value);
+            }
+
+            propertyInfo.SetValue(target, collection);
+        }
+
+        private static object CreateCollectionInstance(Type propertyType, Type elementType)
+        {
+            var listType = typeof(List<>).MakeGenericType(elementType);
+            if (propertyType.IsAssignableFrom(listType))
+            {
+                return Activator.CreateInstance(listType);
+            }
+
+            var setType = typeof(HashSet<>).MakeGenericType(elementType);
+            if (propertyType.IsAssignableFrom(setType))
+            {
+                return Activator.CreateInstance(setType);
+            }
+
+            if (!propertyType.IsInterface && !propertyType.IsAbstract)
+            {
+                try
                 {
-                    var listType = typeof(List<>).MakeGenericType(elementType);
-                    var list = (IList)Activator.CreateInstance(listType);
-                    foreach (var value in convertedValues)
+                    var collection = Activator.CreateInstance(propertyType);
+                    if (collection != null && HasCollectionAddMethod(collection.GetType(), elementType))
                     {
-                        list.Add(value);
+                        return collection;
                     }
-
-                    propertyInfo.SetValue(target, list);
                 }
-                else if (genericTypeDef == typeof(IEnumerable<>) || genericTypeDef == typeof(ICollection<>))
+                catch
                 {
-                    var listType = typeof(List<>).MakeGenericType(elementType);
-                    var list = (IList)Activator.CreateInstance(listType);
-                    foreach (var value in convertedValues)
-                    {
-                        list.Add(value);
-                    }
-
-                    propertyInfo.SetValue(target, list);
                 }
+            }
+
+            return null;
+        }
+
+        private static bool HasCollectionAddMethod(Type collectionType, Type elementType)
+        {
+            return collectionType.GetMethod("Add", new[] { elementType }) != null;
+        }
+
+        private static void AddCollectionValue(object collection, object value)
+        {
+            if (collection is IList list)
+            {
+                list.Add(value);
+                return;
+            }
+
+            var valueType = value != null ? value.GetType() : typeof(object);
+            var addMethod = collection.GetType().GetMethod("Add", new[] { valueType });
+            if (addMethod == null)
+            {
+                Type collectionElementType = GetElementType(collection.GetType());
+                if (collectionElementType != null)
+                {
+                    addMethod = collection.GetType().GetMethod("Add", new[] { collectionElementType });
+                }
+            }
+
+            if (addMethod != null)
+            {
+                addMethod.Invoke(collection, new[] { value });
             }
         }
 
@@ -687,17 +1034,35 @@ namespace ConsoulLibrary
             return null;
         }
 
-        private void EditSimpleKeyDictionary(object source, EditablePropertyDescriptor descriptor, Type simpleKeyType, Type elementType)
+        private void EditSimpleKeyDictionary(object source, EditablePropertyDescriptor descriptor, Type simpleKeyType, Type elementType, CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             var property = descriptor.Property;
             var originalValue = property.GetValue(source) as IDictionary;
             if (originalValue == null)
             {
-                originalValue = Activator.CreateInstance(property.PropertyType) as IDictionary;
+                try
+                {
+                    originalValue = Activator.CreateInstance(property.PropertyType) as IDictionary;
+                }
+                catch
+                {
+                    originalValue = null;
+                }
+
+                if (originalValue == null)
+                {
+                    originalValue = CreateDictionaryInstance(property.PropertyType, simpleKeyType, elementType);
+                }
+
                 if (originalValue == null)
                 {
                     Consoul.Write("Unable to create dictionary instance for " + descriptor.DisplayName + ".", RenderOptions.InvalidColor);
-                    Consoul.Wait();
+                    Consoul.Wait(cancellationToken: cancellationToken);
                     return;
                 }
             }
@@ -708,7 +1073,7 @@ namespace ConsoulLibrary
                 displayName = property.Name;
             }
 
-            var updatedDictionary = EditDictionaryEntries(displayName, originalValue, property.PropertyType, simpleKeyType, elementType);
+            var updatedDictionary = EditDictionaryEntries(displayName, originalValue, property.PropertyType, simpleKeyType, elementType, cancellationToken);
             if (property.CanWrite)
             {
                 property.SetValue(source, updatedDictionary);
@@ -727,10 +1092,10 @@ namespace ConsoulLibrary
             }
 
             Consoul.Write("Unable to update read-only dictionary for " + descriptor.DisplayName + ".", RenderOptions.InvalidColor);
-            Consoul.Wait();
+            Consoul.Wait(cancellationToken: cancellationToken);
         }
 
-        private IDictionary EditDictionaryEntries(string ownerDisplayName, IDictionary originalValue, Type dictionaryType, Type simpleKeyType, Type elementType)
+        private IDictionary EditDictionaryEntries(string ownerDisplayName, IDictionary originalValue, Type dictionaryType, Type simpleKeyType, Type elementType, CancellationToken cancellationToken)
         {
             var prompt = new SelectionPrompt("Choose an item to edit or remove, or add a new item");
             var entries = new List<KeyValuePair<object, object>>();
@@ -752,7 +1117,7 @@ namespace ConsoulLibrary
                 int addChoice = prompt.Add("Add", ConsoleColor.Green);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
-                var result = prompt.Render();
+                var result = prompt.Render(cancellationToken);
                 if (result.IsCanceled)
                 {
                     break;
@@ -765,7 +1130,7 @@ namespace ConsoulLibrary
 
                 if (result.Index == addChoice)
                 {
-                    var newKey = PromptForDictionaryKey(ownerDisplayName, simpleKeyType);
+                    var newKey = PromptForDictionaryKey(ownerDisplayName, simpleKeyType, cancellationToken);
                     if (newKey == null)
                     {
                         continue;
@@ -774,7 +1139,7 @@ namespace ConsoulLibrary
                     if (entries.Any(entry => KeysEqual(entry.Key, newKey)))
                     {
                         Consoul.Write("Key '" + newKey + "' already exists.", RenderOptions.InvalidColor);
-                        Consoul.Wait();
+                        Consoul.Wait(cancellationToken: cancellationToken);
                         continue;
                     }
 
@@ -794,7 +1159,7 @@ namespace ConsoulLibrary
                 }
 
                 var selection = entries[result.Index];
-                var updatedValue = EditDictionaryEntryValue(ownerDisplayName, selection.Key, selection.Value, elementType);
+                var updatedValue = EditDictionaryEntryValue(ownerDisplayName, selection.Key, selection.Value, elementType, cancellationToken);
                 entries[result.Index] = new KeyValuePair<object, object>(selection.Key, updatedValue);
             }
 
@@ -831,7 +1196,7 @@ namespace ConsoulLibrary
             return keyText + " = " + valueText;
         }
 
-        private static object PromptForDictionaryKey(string ownerDisplayName, Type simpleKeyType)
+        private static object PromptForDictionaryKey(string ownerDisplayName, Type simpleKeyType, CancellationToken cancellationToken)
         {
             if (simpleKeyType == null)
             {
@@ -839,15 +1204,15 @@ namespace ConsoulLibrary
             }
 
             var label = ownerDisplayName + " key";
-            return Consoul.Input("Enter new " + label + "\t(" + simpleKeyType.Name + ")", simpleKeyType);
+            return Consoul.Input("Enter new " + label + "\t(" + simpleKeyType.Name + ")", simpleKeyType, cancellationToken: cancellationToken);
         }
 
-        private object EditDictionaryEntryValue(string ownerDisplayName, object key, object currentValue, Type elementType)
+        private object EditDictionaryEntryValue(string ownerDisplayName, object key, object currentValue, Type elementType, CancellationToken cancellationToken)
         {
             if (elementType != null && IsSimpleType(elementType, out var simpleElementType))
             {
                 var label = ownerDisplayName + "[" + key + "]";
-                var value = Consoul.Input("Enter new " + label + "\t(" + simpleElementType.Name + ")", simpleElementType);
+                var value = Consoul.Input("Enter new " + label + "\t(" + simpleElementType.Name + ")", simpleElementType, cancellationToken: cancellationToken);
                 if (elementType != null)
                 {
                     return ConvertIfNeeded(value, elementType);
@@ -877,7 +1242,7 @@ namespace ConsoulLibrary
                     labelBuilder.Append(']');
 
                     var promptLabel = labelBuilder.ToString();
-                    var runtimeValue = Consoul.Input("Enter new " + promptLabel + "\t(" + runtimeSimpleType.Name + ")", runtimeSimpleType);
+                    var runtimeValue = Consoul.Input("Enter new " + promptLabel + "\t(" + runtimeSimpleType.Name + ")", runtimeSimpleType, cancellationToken: cancellationToken);
                     return ConvertIfNeeded(runtimeValue, runtimeType);
                 }
             }
@@ -900,7 +1265,7 @@ namespace ConsoulLibrary
                 }
 
                 var nestedName = ownerDisplayName + "[" + (key != null ? key.ToString() : string.Empty) + "]";
-                var updated = EditDictionaryEntries(nestedName, nestedDictionary, valueInstance.GetType(), nestedKeyType, nestedValueType);
+                var updated = EditDictionaryEntries(nestedName, nestedDictionary, valueInstance.GetType(), nestedKeyType, nestedValueType, cancellationToken);
                 return updated;
             }
 
@@ -910,7 +1275,7 @@ namespace ConsoulLibrary
                 if (nestedValue != null)
                 {
                     var nestedName = ownerDisplayName + "[" + (key != null ? key.ToString() : string.Empty) + "]";
-                    var updatedNested = EditDictionaryEntries(nestedName, nestedValue, elementType, declaredKeyType, declaredValueType);
+                    var updatedNested = EditDictionaryEntries(nestedName, nestedValue, elementType, declaredKeyType, declaredValueType, cancellationToken);
                     return updatedNested;
                 }
             }
@@ -923,12 +1288,12 @@ namespace ConsoulLibrary
             if (valueInstance == null)
             {
                 Consoul.Write("Unable to instantiate value for key '" + key + "'.", RenderOptions.InvalidColor);
-                Consoul.Wait();
+                Consoul.Wait(cancellationToken: cancellationToken);
                 return currentValue;
             }
 
-            var editor = new EditObjectView(valueInstance, _bindingFlags, _jsonEditorEnabled);
-            editor.Render();
+            var editor = new EditObjectView(valueInstance, _bindingFlags, _documentEditorEnabled);
+            editor.RenderAsync(cancellationToken).GetAwaiter().GetResult();
             return editor.Model;
         }
 
@@ -1000,7 +1365,7 @@ namespace ConsoulLibrary
             }
         }
 
-        private void EditSimpleCollection(object source, PropertyInfo property, Type simpleType)
+        private void EditSimpleCollection(object source, PropertyInfo property, Type simpleType, CancellationToken cancellationToken)
         {
             var prompt = new SelectionPrompt("Choose an item to edit or remove, or add a new item");
 
@@ -1019,7 +1384,7 @@ namespace ConsoulLibrary
                 int addChoice = prompt.Add("Add", ConsoleColor.Green);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
-                var result = prompt.Render();
+                var result = prompt.Render(cancellationToken);
                 if (result.IsCanceled)
                 {
                     break;
@@ -1034,7 +1399,7 @@ namespace ConsoulLibrary
                 choice = result.Index;
                 if (choice == addChoice)
                 {
-                    var newValue = EditObject(property, simpleType);
+                    var newValue = EditObject(property, simpleType, cancellationToken);
                     items.Add(ConvertIfNeeded(newValue, simpleType));
                 }
                 else if (choice == finishChoice)
@@ -1043,7 +1408,7 @@ namespace ConsoulLibrary
                 }
                 else
                 {
-                    var updatedValue = EditObject(property, simpleType);
+                    var updatedValue = EditObject(property, simpleType, cancellationToken);
                     items[choice] = ConvertIfNeeded(updatedValue, simpleType);
                 }
 
@@ -1053,7 +1418,7 @@ namespace ConsoulLibrary
             SetCollectionProperty(source, property, items);
         }
 
-        private void EditComplexCollection(object source, PropertyInfo property, Type complexType)
+        private void EditComplexCollection(object source, PropertyInfo property, Type complexType, CancellationToken cancellationToken)
         {
             var prompt = new SelectionPrompt("Choose an item to edit or remove, or add a new item");
 
@@ -1072,7 +1437,7 @@ namespace ConsoulLibrary
                 int addChoice = prompt.Add("Add", ConsoleColor.Green);
                 int finishChoice = prompt.Add("Finish", ConsoleColor.Gray);
 
-                var result = prompt.Render();
+                var result = prompt.Render(cancellationToken);
                 if (result.IsCanceled)
                 {
                     break;
@@ -1096,8 +1461,8 @@ namespace ConsoulLibrary
                 }
                 else
                 {
-                    var editItemView = new EditObjectView(items[choice], _bindingFlags, _jsonEditorEnabled);
-                    editItemView.Render();
+                    var editItemView = new EditObjectView(items[choice], _bindingFlags, _documentEditorEnabled);
+                    editItemView.RenderAsync(cancellationToken).GetAwaiter().GetResult();
                 }
 
                 choice = -1;
@@ -1117,27 +1482,50 @@ namespace ConsoulLibrary
             return new EditObjectView(entity, bindingAttr);
         }
 
-        private sealed class JsonObjectEditor
+        private sealed class DescriptorGroup
+        {
+            public DescriptorGroup(string name)
+            {
+                Name = name;
+                Descriptors = new List<EditablePropertyDescriptor>();
+            }
+
+            public string Name { get; }
+
+            public List<EditablePropertyDescriptor> Descriptors { get; }
+        }
+
+        private sealed class ObjectFormDocumentEditor
         {
             private readonly EditObjectView _view;
             private int _selectedIndex;
 
-            public JsonObjectEditor(EditObjectView view)
+            public ObjectFormDocumentEditor(EditObjectView view)
             {
                 _view = view;
             }
 
-            public void Run()
+            public void Run(CancellationToken cancellationToken = default)
             {
                 var previousCursorVisible = Consoul.ConsoleDriver.CursorVisible;
                 Consoul.ConsoleDriver.CursorVisible = false;
 
                 try
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
                     ConsoleKeyInfo keyInfo;
                     do
                     {
                         RenderDocument();
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
                         keyInfo = Consoul.ConsoleDriver.ReadKey(true);
 
                         if (keyInfo.Key == ConsoleKey.DownArrow || keyInfo.Key == ConsoleKey.RightArrow || keyInfo.Key == ConsoleKey.Tab)
@@ -1153,7 +1541,7 @@ namespace ConsoulLibrary
                             EditSelection();
                         }
                     }
-                    while (keyInfo.Key != ConsoleKey.Escape && keyInfo.Key != ConsoleKey.Backspace);
+                    while (!cancellationToken.IsCancellationRequested && keyInfo.Key != ConsoleKey.Escape && keyInfo.Key != ConsoleKey.Backspace);
                 }
                 finally
                 {
@@ -1258,7 +1646,7 @@ namespace ConsoulLibrary
             {
                 Consoul.ConsoleDriver.Clear();
                 Consoul.ConsoleDriver.WriteLine(_view.Title);
-                Consoul.ConsoleDriver.WriteLine("Press Esc to return to the editor.");
+                Consoul.ConsoleDriver.WriteLine("Press Esc to return to the object editor.");
                 Consoul.ConsoleDriver.WriteLine(string.Empty);
                 var lines = BuildDocument();
 
@@ -1350,7 +1738,7 @@ namespace ConsoulLibrary
                     CreateDefaultSegment(": ")
                 };
 
-                segments.AddRange(FormatJsonSegments(value));
+                segments.AddRange(FormatJsonSegments(value, descriptor.Property.PropertyType));
 
                 if (!string.IsNullOrEmpty(suffix))
                 {
@@ -1360,22 +1748,18 @@ namespace ConsoulLibrary
                 return new DocumentLine(segments, descriptorIndex);
             }
 
-            private static IEnumerable<DocumentSegment> FormatJsonSegments(object value)
+            private static IEnumerable<DocumentSegment> FormatJsonSegments(object value, Type valueType)
             {
-                if (value == null)
-                {
-                    return new[] { CreateDefaultSegment("null") };
-                }
-
                 string json;
                 try
                 {
-                    var serializer = EditObjectView.JsonValueSerializer ?? SerializeJsonValueWithoutDependencies;
-                    json = serializer(value, value.GetType());
+                    var serializer = EditObjectView.FormValueSerializer ?? SerializeJsonValueWithoutDependencies;
+                    var declaredType = valueType ?? value?.GetType() ?? typeof(object);
+                    json = serializer(value, declaredType) ?? SerializeJsonValueWithoutDependencies(value, declaredType);
                 }
                 catch
                 {
-                    json = SerializeJsonValueWithoutDependencies(value != null ? value.ToString() : string.Empty, typeof(string));
+                    json = SerializeJsonValueWithoutDependencies(value, valueType ?? value?.GetType() ?? typeof(object));
                 }
 
                 return TokenizeJson(json);

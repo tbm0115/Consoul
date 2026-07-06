@@ -6,7 +6,7 @@ namespace ConsoulLibrary
     /// <summary>
     /// A stylized rendering of text surrounded by repeating characters.
     /// </summary>
-    public class BannerEntry : IDisposable
+    public class BannerEntry : IDisposable, IRenderable
     {
         /// <summary>
         /// Width of the banner (default is the <see cref="Console.BufferWidth"/>).
@@ -20,6 +20,9 @@ namespace ConsoulLibrary
 
         private string _message;
         private ColorScheme _scheme;
+        private bool _hasRendered;
+        private int _left;
+        private int _top;
 
         /// <summary>
         /// Gets or sets the message rendered in the center of the banner.
@@ -58,7 +61,7 @@ namespace ConsoulLibrary
                 Color = RenderOptions.GetColorOrDefault(color),
                 BackgroundColor = RenderOptions.GetBackgroundColorOrDefault(backgroundColor)
             };
-            Width = Math.Max(Consoul.ConsoleBufferWidth - 1, message.Length);
+            Width = Math.Max(1, Consoul.ConsoleBufferWidth - 2);
         }
 
         /// <summary>
@@ -66,18 +69,73 @@ namespace ConsoulLibrary
         /// </summary>
         public void Render()
         {
-            // Generate the banner strings
-            string newline = "\r\n";
-            string border = new string(RepeatCharacter, Width+2);
-            int padding = (Width - _message.Length ) / 2;
-            string paddedMessage = new string(' ', padding) + _message + new string(' ', Width - padding - _message.Length+2);
+            if (!_hasRendered)
+            {
+                _left = Math.Max(0, Math.Min(Consoul.ConsoleDriver.CursorLeft, Consoul.ConsoleBufferWidth - 1));
+                _top = Consoul.ConsoleDriver.CursorTop;
+            }
 
-            // Render the banner
-            _messages[0].Render(border + newline, color: _scheme.Color, backgroundColor: _scheme.BackgroundColor);
-            _messages[1].Render(new string(' ', Width+2) + newline, color: _scheme.Color, backgroundColor: _scheme.BackgroundColor);
-            _messages[2].Render(paddedMessage, color: _scheme.Color, backgroundColor: _scheme.BackgroundColor);
-            _messages[3].Render(new string(' ', Width+2) + newline, color: _scheme.Color, backgroundColor: _scheme.BackgroundColor);
-            _messages[4].Render(border + newline, color: _scheme.Color, backgroundColor: _scheme.BackgroundColor);
+            int renderWidth = GetRenderWidth();
+            string border = new string(RepeatCharacter, renderWidth);
+            string blank = new string(' ', renderWidth);
+            string message = FitMessage(_message, renderWidth);
+            string paddedMessage = Center(message, renderWidth);
+            string[] lines = { border, blank, paddedMessage, blank, border };
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                _messages[i].MaxWidth = renderWidth;
+                _messages[i].Height = 1;
+
+                if (!_hasRendered)
+                {
+                    int lineTop = Math.Max(0, Math.Min(_top + i, Consoul.ConsoleDriver.BufferHeight - 1));
+                    Consoul.ConsoleDriver.SetCursorPosition(_left, lineTop);
+                }
+
+                _messages[i].Render(lines[i], color: _scheme.Color, backgroundColor: _scheme.BackgroundColor);
+            }
+
+            _hasRendered = true;
+
+            int nextTop = Math.Max(0, Math.Min(_top + lines.Length, Consoul.ConsoleDriver.BufferHeight - 1));
+            Consoul.ConsoleDriver.SetCursorPosition(_left, nextTop);
+        }
+
+        private int GetRenderWidth()
+        {
+            int availableWidth = Math.Max(1, Consoul.ConsoleBufferWidth - Math.Max(0, _left));
+            int requestedWidth = Width > 0 ? Width + 2 : availableWidth;
+            return Math.Max(1, Math.Min(requestedWidth, availableWidth));
+        }
+
+        private static string FitMessage(string message, int width)
+        {
+            message = message ?? string.Empty;
+            if (message.Length <= width)
+            {
+                return message;
+            }
+
+            if (width <= 1)
+            {
+                return message.Substring(0, width);
+            }
+
+            return message.Substring(0, width - 1) + "…";
+        }
+
+        private static string Center(string text, int width)
+        {
+            text = text ?? string.Empty;
+            if (text.Length >= width)
+            {
+                return text;
+            }
+
+            int leftPadding = (width - text.Length) / 2;
+            int rightPadding = width - text.Length - leftPadding;
+            return new string(' ', leftPadding) + text + new string(' ', rightPadding);
         }
 
         /// <summary>

@@ -1,14 +1,19 @@
-﻿using System;
-using System.Reflection;
+using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 
-namespace ConsoulLibrary {
+namespace ConsoulLibrary
+{
     /// <summary>
     /// Manages scripted routine input playback and recording state.
     /// </summary>
-    public static class Routines {
+    public static class Routines
+    {
+        private static RoutineSettingsSection appSettings = null;
+
         /// <summary>
         /// Gets or sets the prompt options registered for the current prompt.
         /// </summary>
@@ -18,8 +23,6 @@ namespace ConsoulLibrary {
         /// Gets the queued routine inputs waiting to be consumed.
         /// </summary>
         public static Queue<RoutineInput> InputBuffer { get; private set; } = new Queue<RoutineInput>();
-
-        private static RoutineSettingsSection appSettings = null;
 
         /// <summary>
         /// Gets the configured routine settings, loading default settings on first use.
@@ -58,12 +61,16 @@ namespace ConsoulLibrary {
         /// </summary>
         /// <param name="routine">Routine to activate.</param>
         /// <param name="name">Optional routine name shown in the console title.</param>
-        public static void InitializeRoutine(Routine routine, string name = null) {
+        public static void InitializeRoutine(Routine routine, string name = null)
+        {
             InputBuffer = routine;
             UseDelays = routine.UseDelays;
             if (!string.IsNullOrEmpty(name))
             {
-                Console.Title = $"Routine: {name} - " + Console.Title;
+                string title = Consoul.ConsoleDriver.Title;
+                Consoul.ConsoleDriver.Title = string.IsNullOrEmpty(title)
+                    ? $"Routine: {name}"
+                    : $"Routine: {name} - {title}";
             }
         }
 
@@ -75,13 +82,19 @@ namespace ConsoulLibrary {
         public static void InitializeRoutine(string[] args, object configuration = null)
         {
             if (configuration != null)
+            {
                 ConfigureAppSettings(RoutineSettingsSection.FromConfigurationObject(configuration));
+            }
 
             if (_checkRoutine(args))
+            {
                 return;
-            if (_checkXmlRoutine(args))
-                return;
+            }
 
+            if (_checkXmlRoutine(args))
+            {
+                return;
+            }
         }
 
         private static RoutineSettingsSection LoadDefaultAppSettings()
@@ -110,14 +123,21 @@ namespace ConsoulLibrary {
 
             return RoutineSettingsSection.Empty;
         }
-        private static bool _checkXmlRoutine(string[] args) {
+
+        private static bool _checkXmlRoutine(string[] args)
+        {
             string filePath = string.Empty;
             int idxXmlRoutineFlag = args.ToList().IndexOf("-XmlRoutine");
             if (idxXmlRoutineFlag < 0 || (idxXmlRoutineFlag + 1) >= args.Length)
+            {
                 return false;
+            }
+
             filePath = args[idxXmlRoutineFlag + 1];
-            if (!System.IO.File.Exists(filePath))
-                throw new System.IO.FileNotFoundException("Cannot find file.", filePath);
+            if (!File.Exists(filePath))
+            {
+                throw new FileNotFoundException("Cannot find file.", filePath);
+            }
 
             XmlRoutine xRoutine;
             string routineName = string.Empty;
@@ -133,33 +153,46 @@ namespace ConsoulLibrary {
                 xRoutine = new XmlRoutine(filePath);
                 routineName = xRoutine.Name;
             }
-            
+
             InitializeRoutine(xRoutine, routineName);
             return true;
         }
-        private static bool _checkRoutine(string[] args) {
+
+        private static bool _checkRoutine(string[] args)
+        {
             string assemblyName = string.Empty;
             int idxRoutineFlag = args.ToList().IndexOf("-Routine");
             if (idxRoutineFlag < 0 || (idxRoutineFlag + 1) >= args.Length)
-                return false; // Continue without error
+            {
+                return false;
+            }
+
             assemblyName = args[idxRoutineFlag + 1];
             Assembly assembly = Assembly.GetCallingAssembly();
 
-            Type[] allTypes = assembly.GetTypes();
+            Type[] routineTypes = assembly.GetTypes()
+                .Where(o => typeof(Routine).IsAssignableFrom(o) && !o.IsAbstract && o.GetConstructor(Type.EmptyTypes) != null)
+                .ToArray();
 
-            Type[] routineTypes = allTypes.Where(o => o.BaseType == typeof(Routine)).ToArray();
             if (!routineTypes.Any())
-                throw new NotImplementedException();
+            {
+                throw new InvalidOperationException("No Routine types with parameterless constructors were found in assembly '" + assembly.GetName().Name + "'.");
+            }
 
             Type routineType = routineTypes.FirstOrDefault(o => o.Name.Equals(assemblyName, StringComparison.OrdinalIgnoreCase));
             if (routineType == null)
-                throw new KeyNotFoundException();
+            {
+                string availableRoutines = string.Join(", ", routineTypes.Select(o => o.Name).OrderBy(o => o));
+                throw new KeyNotFoundException("Routine '" + assemblyName + "' was not found in assembly '" + assembly.GetName().Name + "'. Available routines: " + availableRoutines + ".");
+            }
 
-            Routine routine = routineType.GetConstructor(new Type[0]).Invoke(new object[0]) as Routine;
+            Routine routine = routineType.GetConstructor(Type.EmptyTypes).Invoke(new object[0]) as Routine;
             if (routine == null)
-                throw new TypeLoadException();
-            InitializeRoutine(routine, routineType.Name);
+            {
+                throw new TypeLoadException("Routine '" + routineType.FullName + "' could not be created.");
+            }
 
+            InitializeRoutine(routine, routineType.Name);
             return true;
         }
 
@@ -170,7 +203,10 @@ namespace ConsoulLibrary {
         public static RoutineInput Next()
         {
             if (InputBuffer.Count <= 0)
+            {
                 throw new IndexOutOfRangeException();
+            }
+
             return InputBuffer.Dequeue();
         }
 
@@ -181,7 +217,10 @@ namespace ConsoulLibrary {
         public static string Peek()
         {
             if (InputBuffer.Count <= 0)
+            {
                 throw new IndexOutOfRangeException();
+            }
+
             return InputBuffer.Peek().Value;
         }
 
@@ -198,19 +237,86 @@ namespace ConsoulLibrary {
         public static void RegisterOptions(SelectionPrompt prompt)
         {
             ClearRegisteredOptions();
-            PromptRegistry
-            .AddRange(
+            PromptRegistry.AddRange(
                 prompt
-                .Options
-                .Select(o =>
-                    new RegisteredOption()
+                    .Options
+                    .Where(o => !o.IsSeparator)
+                    .Select(o =>
                     {
-                        Index = o.Index,
-                        Prompt = prompt.Message,
-                        Text = o.Label
-                    }
-                )
-            );
+                        var registered = new RegisteredOption()
+                        {
+                            Index = o.Index,
+                            Prompt = prompt.Message,
+                            Text = o.Label,
+                            Description = o.Description,
+                            Shortcut = o.Shortcut,
+                            IsDisabled = o.IsDisabled,
+                            DisabledReason = o.DisabledReason
+                        };
+
+                        foreach (string term in o.SearchTerms.Where(term => !string.IsNullOrWhiteSpace(term)))
+                        {
+                            registered.SearchTerms.Add(term.Trim());
+                        }
+
+                        return registered;
+                    }));
+        }
+
+        /// <summary>
+        /// Resolves a routine input against registered prompt options without mutating the original recorded value.
+        /// </summary>
+        /// <param name="input">Routine input to resolve.</param>
+        /// <returns>The value that should be used by prompt parsing.</returns>
+        internal static string ResolveInputValue(RoutineInput input)
+        {
+            if (input == null)
+            {
+                return string.Empty;
+            }
+
+            string value = input.Value;
+            if (!PromptRegistry.Any())
+            {
+                return value;
+            }
+
+            RegisteredOption option = input.Method == RoutineInput.InputMethod.OptionText
+                ? FindOptionByText(value)
+                : FindOptionByUserInput(value);
+
+            if (option != null)
+            {
+                input.OptionReference = option;
+            }
+
+            if (input.Method == RoutineInput.InputMethod.OptionText && option != null)
+            {
+                return (option.Index + 1).ToString(CultureInfo.InvariantCulture);
+            }
+
+            return value;
+        }
+
+        private static RegisteredOption FindOptionByUserInput(string value)
+        {
+            RegisteredOption numericOption = PromptRegistry.FirstOrDefault(o => (o.Index + 1).ToString(CultureInfo.InvariantCulture) == value);
+            if (numericOption != null)
+            {
+                return numericOption;
+            }
+
+            return PromptRegistry.FirstOrDefault(o =>
+                !string.IsNullOrWhiteSpace(o.Shortcut) &&
+                string.Equals(o.Shortcut.Trim(), value, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static RegisteredOption FindOptionByText(string value)
+        {
+            return PromptRegistry.FirstOrDefault(o =>
+                string.Equals(o.Text, value, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(o.Shortcut, value, StringComparison.OrdinalIgnoreCase) ||
+                o.SearchTerms.Any(term => string.Equals(term, value, StringComparison.OrdinalIgnoreCase)));
         }
 
         /// <summary>

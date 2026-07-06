@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using ConsoulLibrary.Color;
@@ -19,6 +20,8 @@ namespace ConsoulLibrary
     public class TableRow : IDisposable
     {
         private readonly TableRenderOptions _renderOptions;
+        private IReadOnlyList<TableCellAlignment> _columnAlignments = Array.Empty<TableCellAlignment>();
+        private IReadOnlyList<Padding> _columnPaddings = Array.Empty<Padding>();
 
         /// <summary>
         /// Gets the number of cells in the row.
@@ -31,6 +34,13 @@ namespace ConsoulLibrary
         /// Gets the cells contained by this row.
         /// </summary>
         public IEnumerable<TableCell> Contents => _contents;
+
+        /// <summary>
+        /// Gets the cell at the specified index.
+        /// </summary>
+        /// <param name="index">Zero-based cell index.</param>
+        /// <returns>The table cell at the specified index.</returns>
+        public TableCell this[int index] => _contents[index];
 
         /// <summary>
         /// Initializes a row with the provided cell contents.
@@ -85,10 +95,18 @@ namespace ConsoulLibrary
         /// <param name="isHeader">Indicates whether the row is a header row.</param>
         public void Render(ColorScheme? contentScheme = null, ColorScheme? lineScheme = null, bool isHeader = false)
         {
-            string line = _renderOptions.Lines.VerticalCharacter.ToString();
+            string line = _renderOptions.Lines.GetBorderCharacters().Vertical.ToString();
             bool showVertical = isHeader
                 ? _renderOptions?.Lines?.HeaderVertical ?? true
                 : _renderOptions?.Lines?.ContentVertical ?? true;
+
+            int topPadding = ResolveVerticalPadding(top: true);
+            int bottomPadding = ResolveVerticalPadding(top: false);
+            for (int i = 0; i < topPadding; i++)
+            {
+                RenderPaddingRow(showVertical, line, contentScheme, lineScheme);
+            }
+
             int rowTop = Consoul.ConsoleDriver.CursorTop;
             int rowLeft = Consoul.ConsoleDriver.CursorLeft;
 
@@ -106,7 +124,7 @@ namespace ConsoulLibrary
                 int renderWidth = Math.Min(Math.Max(0, cell.CellWidth), availableWidth);
 
                 Consoul.ConsoleDriver.SetCursorPosition(startLeft, rowTop);
-                cell.Render(renderWidth, contentScheme);
+                cell.Render(renderWidth, contentScheme, ResolveCellAlignment(i, isHeader), ResolveCellPadding(i));
 
                 currentLeft = startLeft + renderWidth;
                 if (currentLeft >= Consoul.ConsoleBufferWidth)
@@ -134,6 +152,11 @@ namespace ConsoulLibrary
             }
 
             Consoul.Write(string.Empty);
+
+            for (int i = 0; i < bottomPadding; i++)
+            {
+                RenderPaddingRow(showVertical, line, contentScheme, lineScheme);
+            }
         }
 
         /// <summary>
@@ -143,10 +166,44 @@ namespace ConsoulLibrary
         public void Update(IEnumerable<string> contents)
         {
             string[] values = contents.ToArray();
-            int contentCount = values.Length;
-            for (int i = 0; i < contentCount && i < _contents.Count; i++)
+            for (int i = 0; i < values.Length; i++)
             {
-                _contents[i].Contents = values[i];
+                if (i < _contents.Count)
+                {
+                    _contents[i].Contents = values[i];
+                }
+                else
+                {
+                    Add(values[i]);
+                }
+            }
+
+            for (int i = values.Length; i < _contents.Count; i++)
+            {
+                _contents[i].Contents = string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Updates one cell in the row.
+        /// </summary>
+        /// <param name="columnIndex">Zero-based cell index.</param>
+        /// <param name="content">New cell text.</param>
+        public void UpdateCell(int columnIndex, string content)
+        {
+            if (columnIndex < 0 || columnIndex >= _contents.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(columnIndex));
+            }
+
+            _contents[columnIndex].Contents = content ?? string.Empty;
+        }
+
+        internal void EnsureCellCount(int count)
+        {
+            while (_contents.Count < count)
+            {
+                Add(string.Empty);
             }
         }
 
@@ -168,6 +225,24 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Applies per-column cell alignments to this row.
+        /// </summary>
+        /// <param name="columnAlignments">Column alignments indexed by cell position.</param>
+        public void ApplyColumnAlignments(IReadOnlyList<TableCellAlignment> columnAlignments)
+        {
+            _columnAlignments = columnAlignments ?? Array.Empty<TableCellAlignment>();
+        }
+
+        /// <summary>
+        /// Applies per-column cell padding to this row.
+        /// </summary>
+        /// <param name="columnPaddings">Column padding indexed by cell position.</param>
+        public void ApplyColumnPaddings(IReadOnlyList<Padding> columnPaddings)
+        {
+            _columnPaddings = columnPaddings ?? Array.Empty<Padding>();
+        }
+
+        /// <summary>
         /// Gets the length of the cell content at the specified index.
         /// </summary>
         /// <param name="index">Zero-based cell index.</param>
@@ -179,7 +254,110 @@ namespace ConsoulLibrary
                 return 0;
             }
 
-            return (_contents[index].Contents ?? string.Empty).Length;
+            return _contents[index].DisplayContentLength;
+        }
+
+        /// <summary>
+        /// Gets the desired rendered width for the cell content and configured padding.
+        /// </summary>
+        /// <param name="index">Zero-based cell index.</param>
+        /// <returns>The desired cell width, or 0 when the index is outside the row.</returns>
+        public int GetCellDesiredWidth(int index)
+        {
+            if (index < 0 || index >= _contents.Count)
+            {
+                return 0;
+            }
+
+            Padding padding = ResolveCellPadding(index);
+            return GetCellContentLength(index) + Math.Max(0, padding.Left) + Math.Max(0, padding.Right);
+        }
+
+        private TableCellAlignment ResolveCellAlignment(int index, bool isHeader)
+        {
+            if (_columnAlignments != null &&
+                index >= 0 &&
+                index < _columnAlignments.Count &&
+                _columnAlignments[index] != TableCellAlignment.Default)
+            {
+                return _columnAlignments[index];
+            }
+
+            TableCellAlignment alignment = isHeader
+                ? _renderOptions?.HeaderAlignment ?? TableCellAlignment.Left
+                : _renderOptions?.ContentAlignment ?? TableCellAlignment.Left;
+
+            return alignment == TableCellAlignment.Default ? TableCellAlignment.Left : alignment;
+        }
+
+        private Padding ResolveCellPadding(int index)
+        {
+            if (_columnPaddings != null && index >= 0 && index < _columnPaddings.Count && _columnPaddings[index] != null)
+            {
+                return _columnPaddings[index];
+            }
+
+            return new Padding(1, 0, 0, 0);
+        }
+
+        private int ResolveVerticalPadding(bool top)
+        {
+            int padding = 0;
+            for (int index = 0; index < _contents.Count; index++)
+            {
+                Padding cellPadding = ResolveCellPadding(index);
+                padding = Math.Max(padding, top ? cellPadding.Top : cellPadding.Bottom);
+            }
+
+            return padding;
+        }
+
+        private void RenderPaddingRow(bool showVertical, string verticalLine, ColorScheme? contentScheme, ColorScheme? lineScheme)
+        {
+            int rowTop = Consoul.ConsoleDriver.CursorTop;
+            int rowLeft = Consoul.ConsoleDriver.CursorLeft;
+
+            if (showVertical)
+            {
+                Consoul.Write(verticalLine, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+            }
+
+            int currentLeft = Consoul.ConsoleDriver.CursorLeft;
+            for (int index = 0; index < _contents.Count; index++)
+            {
+                TableCell cell = _contents[index];
+                int startLeft = Math.Max(0, Math.Min(currentLeft, Consoul.ConsoleBufferWidth - 1));
+                int availableWidth = Math.Max(0, Consoul.ConsoleBufferWidth - startLeft);
+                int renderWidth = Math.Min(Math.Max(0, cell.CellWidth), availableWidth);
+
+                Consoul.ConsoleDriver.SetCursorPosition(startLeft, rowTop);
+                if (renderWidth > 0)
+                {
+                    Consoul.Write(new string(' ', renderWidth), contentScheme?.Color, contentScheme?.BackgroundColor, writeLine: false);
+                }
+
+                currentLeft = startLeft + renderWidth;
+                if (currentLeft >= Consoul.ConsoleBufferWidth)
+                {
+                    currentLeft = Consoul.ConsoleBufferWidth - 1;
+                }
+
+                Consoul.ConsoleDriver.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Consoul.ConsoleBufferWidth - 1)), rowTop);
+                if (showVertical)
+                {
+                    Consoul.Write(verticalLine, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                    currentLeft = Consoul.ConsoleDriver.CursorLeft;
+                }
+            }
+
+            if (_contents.Count == 0 && showVertical)
+            {
+                int closingLeft = Math.Min(rowLeft + GetTableWidth() - 1, Consoul.ConsoleBufferWidth - 1);
+                Consoul.ConsoleDriver.SetCursorPosition(Math.Max(0, closingLeft), rowTop);
+                Consoul.Write(verticalLine, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+            }
+
+            Consoul.Write(string.Empty);
         }
 
         /// <summary>
@@ -229,6 +407,13 @@ namespace ConsoulLibrary
             }
         }
 
+        internal int DisplayContentLength => GetDisplayText(_contents).Length;
+
+        /// <summary>
+        /// Gets or sets the alignment used when no render-pass alignment is supplied.
+        /// </summary>
+        public TableCellAlignment Alignment { get; set; } = TableCellAlignment.Default;
+
         private FixedMessage _message;
         private bool _hasRendered;
 
@@ -252,7 +437,9 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="overrideWidth">Optional width to use for this render pass.</param>
         /// <param name="contentScheme">Optional color scheme for the cell content.</param>
-        public void Render(int? overrideWidth = null, ColorScheme? contentScheme = null)
+        /// <param name="alignment">Optional alignment for this render pass.</param>
+        /// <param name="padding">Optional padding applied inside the cell.</param>
+        public void Render(int? overrideWidth = null, ColorScheme? contentScheme = null, TableCellAlignment alignment = TableCellAlignment.Default, Padding padding = null)
         {
             int width = overrideWidth.HasValue ? Math.Max(0, overrideWidth.Value) : _cellWidth;
             _cellWidth = width;
@@ -270,30 +457,194 @@ namespace ConsoulLibrary
                 return;
             }
 
-            int innerWidth = Math.Max(0, width - 1);
-            string text = _contents ?? string.Empty;
+            Padding effectivePadding = padding ?? new Padding(1, 0, 0, 0);
+            int leftPadding = Math.Min(width, Math.Max(0, effectivePadding.Left));
+            int rightPadding = Math.Min(Math.Max(0, width - leftPadding), Math.Max(0, effectivePadding.Right));
+            int innerWidth = Math.Max(0, width - leftPadding - rightPadding);
+            TableCellAlignment effectiveAlignment = alignment != TableCellAlignment.Default
+                ? alignment
+                : Alignment;
 
-            if (innerWidth > 0 && text.Length > innerWidth)
-            {
-                int truncateLength = Math.Max(0, innerWidth - 1);
-                text = truncateLength > 0 ? text.Substring(0, truncateLength) + "…" : text.Substring(0, innerWidth);
-            }
-            else if (innerWidth == 0 && text.Length > width)
-            {
-                text = text.Substring(0, width);
-            }
+            ColorScheme defaultScheme = contentScheme ?? RenderOptions.DefaultScheme;
+            List<FixedMessageSegment> contentSegments = innerWidth == 0
+                ? new List<FixedMessageSegment>()
+                : TruncateSegments(ParseMarkupSegments(_contents, defaultScheme), innerWidth);
+            int contentLength = GetSegmentLength(contentSegments);
+            int alignmentPadding = Math.Max(0, innerWidth - contentLength);
+            int leftAlignmentPadding = ResolveLeftAlignmentPadding(alignmentPadding, effectiveAlignment);
+            int rightAlignmentPadding = alignmentPadding - leftAlignmentPadding;
 
-            string contents = innerWidth > 0
-                ? " " + text.PadRight(innerWidth)
-                : text;
+            var contents = new List<FixedMessageSegment>();
+            AddPaddingSegment(contents, leftPadding + leftAlignmentPadding, defaultScheme);
+            contents.AddRange(contentSegments);
+            AddPaddingSegment(contents, rightAlignmentPadding + rightPadding, defaultScheme);
+            PadSegmentsOrTrim(contents, width, defaultScheme);
 
             if (_hasRendered)
             {
                 _message.Reset();
             }
 
-            _message.Render(contents, contentScheme?.Color, contentScheme?.BackgroundColor);
+            _message.RenderSegments(contents, contentScheme?.Color, contentScheme?.BackgroundColor);
             _hasRendered = true;
+        }
+
+        private static string AlignText(string text, int width, TableCellAlignment alignment)
+        {
+            text = text ?? string.Empty;
+            width = Math.Max(0, width);
+            if (width == 0)
+            {
+                return string.Empty;
+            }
+
+            if (text.Length >= width)
+            {
+                return text.Length == width ? text : text.Substring(0, width);
+            }
+
+            int padding = width - text.Length;
+            switch (alignment)
+            {
+                case TableCellAlignment.Center:
+                    int left = padding / 2;
+                    int right = padding - left;
+                    return new string(' ', left) + text + new string(' ', right);
+                case TableCellAlignment.Right:
+                    return new string(' ', padding) + text;
+                default:
+                    return text.PadRight(width);
+            }
+        }
+
+        private static List<FixedMessageSegment> ParseMarkupSegments(string text, ColorScheme defaultScheme)
+        {
+            var segments = new List<FixedMessageSegment>();
+            foreach (MarkupSegment segment in MarkupEntry.Parse(text ?? string.Empty, defaultScheme))
+            {
+                if (segment.Text.Length > 0)
+                {
+                    segments.Add(new FixedMessageSegment(segment.Text, segment.Scheme, segment.Link));
+                }
+            }
+
+            return segments;
+        }
+
+        private static List<FixedMessageSegment> TruncateSegments(IList<FixedMessageSegment> segments, int width)
+        {
+            width = Math.Max(0, width);
+            if (width == 0 || segments == null || segments.Count == 0)
+            {
+                return new List<FixedMessageSegment>();
+            }
+
+            int totalLength = GetSegmentLength(segments);
+            if (totalLength <= width)
+            {
+                return new List<FixedMessageSegment>(segments);
+            }
+
+            int visibleLength = width <= 1 ? width : width - 1;
+            var truncated = TakeVisibleSegments(segments, visibleLength);
+            if (width > 1)
+            {
+                ColorScheme? scheme = truncated.Count > 0
+                    ? truncated[truncated.Count - 1].Scheme
+                    : (segments[0].Scheme ?? RenderOptions.DefaultScheme);
+                Link link = truncated.Count > 0 ? truncated[truncated.Count - 1].Link : segments[0].Link;
+                truncated.Add(new FixedMessageSegment("…", scheme, link));
+            }
+
+            return truncated;
+        }
+
+        private static List<FixedMessageSegment> TakeVisibleSegments(IList<FixedMessageSegment> segments, int width)
+        {
+            var result = new List<FixedMessageSegment>();
+            int remaining = Math.Max(0, width);
+            if (remaining == 0 || segments == null)
+            {
+                return result;
+            }
+
+            foreach (FixedMessageSegment segment in segments)
+            {
+                if (remaining == 0)
+                {
+                    break;
+                }
+
+                string text = segment.Text ?? string.Empty;
+                if (text.Length <= remaining)
+                {
+                    result.Add(segment);
+                    remaining -= text.Length;
+                    continue;
+                }
+
+                result.Add(new FixedMessageSegment(text.Substring(0, remaining), segment.Scheme, segment.Link));
+                remaining = 0;
+            }
+
+            return result;
+        }
+
+        private static int GetSegmentLength(IEnumerable<FixedMessageSegment> segments)
+        {
+            return (segments ?? Enumerable.Empty<FixedMessageSegment>()).Sum(segment => (segment.Text ?? string.Empty).Length);
+        }
+
+        private static int ResolveLeftAlignmentPadding(int totalPadding, TableCellAlignment alignment)
+        {
+            totalPadding = Math.Max(0, totalPadding);
+            switch (alignment)
+            {
+                case TableCellAlignment.Center:
+                    return totalPadding / 2;
+                case TableCellAlignment.Right:
+                    return totalPadding;
+                default:
+                    return 0;
+            }
+        }
+
+        private static void AddPaddingSegment(IList<FixedMessageSegment> segments, int count, ColorScheme scheme)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(new string(' ', count), scheme));
+        }
+
+        private static void PadSegmentsOrTrim(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        {
+            width = Math.Max(0, width);
+            int length = GetSegmentLength(segments);
+            if (length < width)
+            {
+                AddPaddingSegment(segments, width - length, scheme);
+                return;
+            }
+
+            if (length <= width)
+            {
+                return;
+            }
+
+            List<FixedMessageSegment> truncated = TakeVisibleSegments(segments, width);
+            segments.Clear();
+            foreach (FixedMessageSegment segment in truncated)
+            {
+                segments.Add(segment);
+            }
+        }
+
+        private static string GetDisplayText(string text)
+        {
+            return MarkupEntry.RemoveMarkupText(text ?? string.Empty);
         }
 
         /// <summary>
@@ -308,7 +659,7 @@ namespace ConsoulLibrary
     /// <summary>
     /// Renders and prompts over tabular data in the console.
     /// </summary>
-    public class TableView : IDisposable
+    public class TableView : IDisposable, IRenderable
     {
         /// <summary>
         /// Gets or sets the options used to render table layout, borders, and colors.
@@ -320,13 +671,32 @@ namespace ConsoulLibrary
 
         // FixedMessage instances for each row and header
         private TableRow _header { get; set; }
+        private TableRow _footer { get; set; }
         private List<TableRow> _rows = new List<TableRow>();
         private List<int> _columnWidths = new List<int>();
+        private readonly List<TableCellAlignment> _columnAlignments = new List<TableCellAlignment>();
+        private readonly List<int?> _columnPreferredWidths = new List<int?>();
+        private readonly List<Padding> _columnPaddings = new List<Padding>();
 
         /// <summary>
         /// Occurs when a table query yields no matching rows.
         /// </summary>
         public event TableQueryYieldsNoResults QueryYieldsNoResults;
+
+        /// <summary>
+        /// Gets the number of content rows in the table.
+        /// </summary>
+        public int RowCount => _rows.Count;
+
+        /// <summary>
+        /// Gets the number of configured header cells in the table.
+        /// </summary>
+        public int HeaderCount => _header?.CellCount ?? 0;
+
+        /// <summary>
+        /// Gets the content rows in the table.
+        /// </summary>
+        public IReadOnlyList<TableRow> ContentRows => _rows;
 
         /// <summary>
         /// Raises the <see cref="QueryYieldsNoResults"/> event.
@@ -347,6 +717,7 @@ namespace ConsoulLibrary
             TableRenderOptions = options ?? new TableRenderOptions();
             _tableInputHandler = new TableInputHandler();
             _header = new TableRow(new string[] { }, TableRenderOptions);
+            _footer = new TableRow(new string[] { }, TableRenderOptions);
             Consoul.WindowResized += OnWindowResized; // Subscribe to window resize event
         }
 
@@ -369,95 +740,45 @@ namespace ConsoulLibrary
         public void Render(string message = default, ConsoleColor? color = null, bool clearConsole = true)
         {
             if (clearConsole)
+            {
                 Consoul.ConsoleDriver.Clear();
+            }
             else
+            {
                 Consoul.ConsoleDriver.SetCursorPosition(0, 0);
-
-            if (!string.IsNullOrEmpty(message))
-            {
-                Consoul.Write(message, color, writeLine: true);
             }
 
-            RecalculateColumnWidths();
-            char line = TableRenderOptions.Lines.HorizontalCharacter;
-            int tableWidth = GetTableWidth();
-            string horizontalLine = new string(line, tableWidth);
-            ColorScheme? lineScheme = TableRenderOptions.Lines.Color;
-
-            bool hasHeader = _header != null && _header.CellCount > 0;
-            bool hasRows = _rows.Count > 0;
-
-            if (hasHeader || hasRows)
-            {
-                Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
-            }
-
-            if (hasHeader)
-            {
-                _header.Render(TableRenderOptions.HeaderScheme, lineScheme.GetValueOrDefault(), isHeader: true);
-                if (TableRenderOptions.Lines.HeaderHorizontal)
-                {
-                    Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
-                }
-            }
-
-            for (int i = 0; i < _rows.Count; i++)
-            {
-                if (TableRenderOptions.Lines.ContentHorizontal)
-                {
-                    Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
-                }
-
-                var contentScheme = GetRowContentScheme(i);
-                _rows[i].Render(contentScheme, lineScheme);
-            }
-
-            if (hasRows && TableRenderOptions.Lines.ContentHorizontal)
-            {
-                Consoul.Write(horizontalLine, lineScheme?.Color, lineScheme?.BackgroundColor);
-            }
-
-                //_headerMessage = new FixedMessage(Console.BufferWidth);
-                //_headerMessage.Render(string.Join(TableRenderOptions.Lines.VerticalCharacter.ToString(), _headers), ConsoleColor.White);
-
-                //// Render Rows using FixedMessage instances
-                //for (int i = 0; i < _contents.Count; i++)
-                //{
-                //    // Create FixedMessage instances if they do not exist
-                //    if (_rowMessages.Count <= i)
-                //        _rowMessages.Add(new FixedMessage(Console.BufferWidth));
-
-                //    bool isSelected = _tableNavigator != null && _tableNavigator.SelectedRows.Contains(i);
-                //    bool isHighlighted = _tableNavigator != null && _tableNavigator.CurrentRow == i;
-
-                //    // Render row with appropriate styling
-                //    var rowText = string.Join(" | ", _contents[i]);
-                //    var rowColor = isSelected
-                //        ? TableRenderOptions.SelectionScheme
-                //        : isHighlighted
-                //            ? TableRenderOptions.HighlightedScheme
-                //            : (i % 2 == 0
-                //                ? TableRenderOptions.ContentScheme1
-                //                : TableRenderOptions.ContentScheme2);
-
-                //    _rowMessages[i].Render(rowText, rowColor.Color, rowColor.BackgroundColor);
-                //}
-
-            // Optionally render footer prompts
-            Consoul.Write("Use Arrow Keys to navigate, Enter to confirm, Space to select/deselect, Escape to exit, or enter row number to jump.", ConsoleColor.Gray);
+            RenderCore(message, color);
         }
 
         /// <summary>
-        /// Prompts the user to select an option from the table and returns the selected row index.
+        /// Renders the table at the current cursor position without clearing the console or moving to the origin.
+        /// </summary>
+        /// <param name="message">Optional message rendered before the table.</param>
+        /// <param name="color">Optional foreground color for the message.</param>
+        public void RenderInline(string message = default, ConsoleColor? color = null)
+        {
+            RenderCore(message, color);
+        }
+
+        /// <summary>
+        /// Renders the table at the current cursor position when used as a reusable visual component.
+        /// </summary>
+        void IConsoulRenderable.Render()
+        {
+            RenderInline();
+        }
+
+        /// <summary>
+        /// Prompts the user to select one or more rows from the table.
         /// </summary>
         /// <param name="message">Optional message to display before prompting.</param>
         /// <param name="color">Optional color for the message text.</param>
-        /// <param name="allowEmpty">Specifies whether the user is allowed to skip the selection.</param>
+        /// <param name="allowEmpty">Specifies whether the user is allowed to accept an empty selection.</param>
         /// <param name="clearConsole">If <c>true</c>, clears the console before rendering.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>The selected row index, or null if the user chooses to exit without a selection.</returns>
-
-        public int? Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true, CancellationToken cancellationToken = default)
+        /// <returns>A result describing selected row indexes, cancellation, or accepted empty selection.</returns>
+        public TableSelectionResult Select(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true, CancellationToken cancellationToken = default)
         {
             if (_tableNavigator == null)
                 InitializeNavigator();
@@ -466,6 +787,11 @@ namespace ConsoulLibrary
 
             do
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return TableSelectionResult.Canceled();
+                }
+
                 Render(message, color, inputBuffer == "" && clearConsole);
 
                 if (!string.IsNullOrEmpty(inputBuffer))
@@ -474,6 +800,10 @@ namespace ConsoulLibrary
                 }
 
                 var keyInfo = Consoul.ConsoleDriver.ReadKey(intercept: true);
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return TableSelectionResult.Canceled();
+                }
 
                 if (keyInfo.Key == ConsoleKey.UpArrow)
                 {
@@ -497,26 +827,31 @@ namespace ConsoulLibrary
                         if (int.TryParse(inputBuffer, out int rowNumber) && rowNumber >= 1 && rowNumber <= _rows.Count)
                         {
                             _tableNavigator.SetCurrentRow(rowNumber - 1);
-                            return _tableNavigator.CurrentRow;
+                            return TableSelectionResult.FromSelection(_tableNavigator.CurrentRow);
                         }
                         inputBuffer = "";
                         continue;
                     }
                     else
                     {
+                        if (_tableNavigator.SelectedRows.Count > 0)
+                        {
+                            return TableSelectionResult.FromSelections(_tableNavigator.SelectedRows);
+                        }
+
                         if (_tableNavigator.CurrentRow >= 0)
                         {
-                            return _tableNavigator.CurrentRow;
+                            return TableSelectionResult.FromSelection(_tableNavigator.CurrentRow);
                         }
 
                         if (_tableNavigator.HoveredRow >= 0)
                         {
-                            return _tableNavigator.HoveredRow;
+                            return TableSelectionResult.FromSelection(_tableNavigator.HoveredRow);
                         }
 
                         if (allowEmpty)
                         {
-                            return null;
+                            return TableSelectionResult.Empty();
                         }
 
                         continue;
@@ -524,7 +859,7 @@ namespace ConsoulLibrary
                 }
                 else if (keyInfo.Key == ConsoleKey.Escape)
                 {
-                    return null;
+                    return TableSelectionResult.Canceled();
                 }
                 else if (char.IsDigit(keyInfo.KeyChar))
                 {
@@ -540,14 +875,39 @@ namespace ConsoulLibrary
             } while (true);
         }
 
+        /// <summary>
+        /// Prompts the user to select an option from the table and returns the selected row index.
+        /// </summary>
+        /// <param name="message">Optional message to display before prompting.</param>
+        /// <param name="color">Optional color for the message text.</param>
+        /// <param name="allowEmpty">Specifies whether the user is allowed to skip the selection.</param>
+        /// <param name="clearConsole">If <c>true</c>, clears the console before rendering.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The selected row index, or null if the user chooses to exit without a selection.</returns>
+        public int? Prompt(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true, CancellationToken cancellationToken = default)
+        {
+            TableSelectionResult result = Select(message, color, allowEmpty, clearConsole, cancellationToken);
+            return result.HasSelection ? result.Index : (int?)null;
+        }
+
 
         /// <summary>
         /// Adds a header cell to the table.
         /// </summary>
         /// <param name="label">Header text to add.</param>
-        public void AddHeader(string label)
+        /// <param name="alignment">Optional column alignment for this header and its cells.</param>
+        public void AddHeader(string label, TableCellAlignment alignment = TableCellAlignment.Default)
         {
             _header.Add(label);
+            if (alignment != TableCellAlignment.Default)
+            {
+                SetColumnAlignment(_header.CellCount - 1, alignment);
+            }
+            else
+            {
+                ApplyColumnAlignments();
+            }
+            ApplyColumnPaddings();
             //TableRenderOptions.Normalize(Contents);
         }
 
@@ -564,6 +924,25 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets header text for a single table column.
+        /// </summary>
+        /// <param name="columnIndex">Zero-based column index.</param>
+        /// <param name="label">Header text for the column.</param>
+        public void SetHeader(int columnIndex, string label)
+        {
+            if (columnIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(columnIndex));
+            }
+
+            _header.EnsureCellCount(columnIndex + 1);
+            _header.UpdateCell(columnIndex, label ?? string.Empty);
+            _header.ApplyColumnAlignments(_columnAlignments);
+            _header.ApplyColumnPaddings(_columnPaddings);
+            _columnWidths.Clear();
+        }
+
+        /// <summary>
         /// Adds a new row to the table and optionally re-renders the table.
         /// </summary>
         /// <param name="row">The new row to add.</param>
@@ -577,14 +956,43 @@ namespace ConsoulLibrary
             //    return;
             //}
 
-            _rows.Add(new TableRow(cellValues, TableRenderOptions));
+            var tableRow = new TableRow(cellValues, TableRenderOptions);
+            tableRow.ApplyColumnAlignments(_columnAlignments);
+            tableRow.ApplyColumnPaddings(_columnPaddings);
+            _rows.Add(tableRow);
             if (_tableNavigator != null)
             {
                 // Update the navigator to include the new row
-                _tableNavigator = new TableNavigator(_rows.Count);
+                ResetNavigator();
             }
 
             if (renderAfterAdding)
+            {
+                Render();
+            }
+        }
+
+        /// <summary>
+        /// Inserts a new row into the table and optionally re-renders the table.
+        /// </summary>
+        /// <param name="rowIndex">Zero-based index where the row should be inserted. Use <see cref="RowCount"/> to append.</param>
+        /// <param name="row">The new row to insert.</param>
+        /// <param name="renderAfterInserting">If <c>true</c>, renders the table after inserting the row.</param>
+        public void InsertRow(int rowIndex, IEnumerable<string> row, bool renderAfterInserting = false)
+        {
+            if (rowIndex < 0 || rowIndex > _rows.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(rowIndex));
+            }
+
+            string[] cellValues = (row ?? Enumerable.Empty<string>()).ToArray();
+            var tableRow = new TableRow(cellValues, TableRenderOptions);
+            tableRow.ApplyColumnAlignments(_columnAlignments);
+            tableRow.ApplyColumnPaddings(_columnPaddings);
+            _rows.Insert(rowIndex, tableRow);
+            ResetNavigator();
+
+            if (renderAfterInserting)
             {
                 Render();
             }
@@ -600,6 +1008,205 @@ namespace ConsoulLibrary
             foreach (var row in rows)
             {
                 AddRow(row, renderAfterAdding);
+            }
+        }
+
+        /// <summary>
+        /// Gets a content row by index.
+        /// </summary>
+        /// <param name="rowIndex">Zero-based row index.</param>
+        /// <returns>The content row at the specified index.</returns>
+        public TableRow GetRow(int rowIndex)
+        {
+            ThrowIfRowIndexOutOfRange(rowIndex);
+            return _rows[rowIndex];
+        }
+
+        /// <summary>
+        /// Removes one content row from the table.
+        /// </summary>
+        /// <param name="rowIndex">Zero-based row index.</param>
+        /// <param name="renderAfterRemoving">If <c>true</c>, renders the table after removing the row.</param>
+        public void RemoveRow(int rowIndex, bool renderAfterRemoving = false)
+        {
+            ThrowIfRowIndexOutOfRange(rowIndex);
+            _rows[rowIndex].Dispose();
+            _rows.RemoveAt(rowIndex);
+            ResetNavigator();
+
+            if (renderAfterRemoving)
+            {
+                Render();
+            }
+        }
+
+        /// <summary>
+        /// Removes every content row from the table.
+        /// </summary>
+        /// <param name="renderAfterClearing">If <c>true</c>, renders the table after clearing rows.</param>
+        public void ClearRows(bool renderAfterClearing = false)
+        {
+            foreach (var row in _rows)
+            {
+                row.Dispose();
+            }
+
+            _rows.Clear();
+            ResetNavigator();
+            if (renderAfterClearing)
+            {
+                Render();
+            }
+        }
+
+        /// <summary>
+        /// Updates a content row.
+        /// </summary>
+        /// <param name="rowIndex">Zero-based row index.</param>
+        /// <param name="contents">Replacement cell values.</param>
+        /// <param name="renderAfterUpdating">If <c>true</c>, renders the table after updating the row.</param>
+        public void UpdateRow(int rowIndex, IEnumerable<string> contents, bool renderAfterUpdating = false)
+        {
+            ThrowIfRowIndexOutOfRange(rowIndex);
+            _rows[rowIndex].Update(contents ?? Enumerable.Empty<string>());
+            _rows[rowIndex].ApplyColumnAlignments(_columnAlignments);
+            _rows[rowIndex].ApplyColumnPaddings(_columnPaddings);
+            if (renderAfterUpdating)
+            {
+                Render();
+            }
+        }
+
+        /// <summary>
+        /// Updates one content cell.
+        /// </summary>
+        /// <param name="rowIndex">Zero-based row index.</param>
+        /// <param name="columnIndex">Zero-based column index.</param>
+        /// <param name="content">Replacement cell text.</param>
+        /// <param name="renderAfterUpdating">If <c>true</c>, renders the table after updating the cell.</param>
+        public void UpdateCell(int rowIndex, int columnIndex, string content, bool renderAfterUpdating = false)
+        {
+            ThrowIfRowIndexOutOfRange(rowIndex);
+            _rows[rowIndex].UpdateCell(columnIndex, content);
+            if (renderAfterUpdating)
+            {
+                Render();
+            }
+        }
+
+        /// <summary>
+        /// Sets the alignment for a single table column.
+        /// </summary>
+        /// <param name="columnIndex">Zero-based column index.</param>
+        /// <param name="alignment">Alignment to apply to the column.</param>
+        public void SetColumnAlignment(int columnIndex, TableCellAlignment alignment)
+        {
+            if (columnIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(columnIndex));
+            }
+
+            while (_columnAlignments.Count <= columnIndex)
+            {
+                _columnAlignments.Add(TableCellAlignment.Default);
+            }
+
+            _columnAlignments[columnIndex] = alignment;
+            ApplyColumnAlignments();
+        }
+
+        /// <summary>
+        /// Sets alignments for multiple table columns.
+        /// </summary>
+        /// <param name="alignments">Column alignments indexed by cell position.</param>
+        public void SetColumnAlignments(params TableCellAlignment[] alignments)
+        {
+            _columnAlignments.Clear();
+            if (alignments != null && alignments.Length > 0)
+            {
+                _columnAlignments.AddRange(alignments);
+            }
+
+            ApplyColumnAlignments();
+        }
+
+        /// <summary>
+        /// Sets the preferred width for a single table column.
+        /// </summary>
+        /// <param name="columnIndex">Zero-based column index.</param>
+        /// <param name="width">Preferred column width, or <see langword="null"/> to use content-based allocation.</param>
+        public void SetColumnWidth(int columnIndex, int? width)
+        {
+            if (columnIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(columnIndex));
+            }
+
+            if (width.HasValue && width.Value < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(width), "Column width must be greater than zero.");
+            }
+
+            while (_columnPreferredWidths.Count <= columnIndex)
+            {
+                _columnPreferredWidths.Add(null);
+            }
+
+            _columnPreferredWidths[columnIndex] = width;
+            _columnWidths.Clear();
+        }
+
+        /// <summary>
+        /// Sets footer text for a single table column.
+        /// </summary>
+        /// <param name="columnIndex">Zero-based column index.</param>
+        /// <param name="footer">Footer text for the column.</param>
+        public void SetColumnFooter(int columnIndex, string footer)
+        {
+            if (columnIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(columnIndex));
+            }
+
+            _footer.EnsureCellCount(columnIndex + 1);
+            _footer.UpdateCell(columnIndex, footer ?? string.Empty);
+            _footer.ApplyColumnAlignments(_columnAlignments);
+            _footer.ApplyColumnPaddings(_columnPaddings);
+            _columnWidths.Clear();
+        }
+
+        /// <summary>
+        /// Sets padding for a single table column.
+        /// </summary>
+        /// <param name="columnIndex">Zero-based column index.</param>
+        /// <param name="padding">Padding to apply inside the column, or <see langword="null"/> to use the default cell padding.</param>
+        public void SetColumnPadding(int columnIndex, Padding padding)
+        {
+            if (columnIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(columnIndex));
+            }
+
+            while (_columnPaddings.Count <= columnIndex)
+            {
+                _columnPaddings.Add(null);
+            }
+
+            _columnPaddings[columnIndex] = padding?.Clone();
+            ApplyColumnPaddings();
+            _columnWidths.Clear();
+        }
+
+        private void ResetNavigator()
+        {
+            _tableNavigator = _tableNavigator == null ? null : new TableNavigator(_rows.Count);
+        }
+
+        private void ThrowIfRowIndexOutOfRange(int rowIndex)
+        {
+            if (rowIndex < 0 || rowIndex >= _rows.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(rowIndex));
             }
         }
 
@@ -630,7 +1237,10 @@ namespace ConsoulLibrary
         {
             int headerColumns = _header?.CellCount ?? 0;
             int rowColumns = _rows.Count == 0 ? 0 : _rows.Max(r => r.CellCount);
-            int columnCount = Math.Max(headerColumns, rowColumns);
+            int footerColumns = TableRenderOptions.ShowFooters ? _footer?.CellCount ?? 0 : 0;
+            int dataColumnCount = Math.Max(Math.Max(headerColumns, rowColumns), footerColumns);
+            bool showRowNumbers = ShouldRenderRowNumbers(dataColumnCount);
+            int columnCount = dataColumnCount + (showRowNumbers ? 1 : 0);
 
             _columnWidths.Clear();
 
@@ -645,19 +1255,33 @@ namespace ConsoulLibrary
 
             var desired = new int[columnCount];
 
+            int dataOffset = showRowNumbers ? 1 : 0;
+            if (showRowNumbers)
+            {
+                desired[0] = Math.Max(GetRowNumberHeader().Length, _rows.Count.ToString(CultureInfo.CurrentCulture).Length) + 1;
+            }
+
             if (_header != null)
             {
-                for (int i = 0; i < columnCount; i++)
+                for (int i = 0; i < dataColumnCount; i++)
                 {
-                    desired[i] = Math.Max(desired[i], _header.GetCellContentLength(i) + 1);
+                    desired[i + dataOffset] = Math.Max(desired[i + dataOffset], _header.GetCellDesiredWidth(i));
                 }
             }
 
             foreach (var row in _rows)
             {
-                for (int i = 0; i < columnCount; i++)
+                for (int i = 0; i < dataColumnCount; i++)
                 {
-                    desired[i] = Math.Max(desired[i], row.GetCellContentLength(i) + 1);
+                    desired[i + dataOffset] = Math.Max(desired[i + dataOffset], row.GetCellDesiredWidth(i));
+                }
+            }
+
+            if (_footer != null)
+            {
+                for (int i = 0; i < dataColumnCount; i++)
+                {
+                    desired[i + dataOffset] = Math.Max(desired[i + dataOffset], _footer.GetCellDesiredWidth(i));
                 }
             }
 
@@ -666,16 +1290,107 @@ namespace ConsoulLibrary
                 desired[i] = Math.Max(desired[i], 1);
             }
 
-            _columnWidths = AllocateColumnWidths(desired, availableWidth);
+            int?[] preferredWidths = BuildPreferredWidths(dataColumnCount, dataOffset, columnCount);
+            _columnWidths = AllocateColumnWidths(desired, availableWidth, preferredWidths, TableRenderOptions.Expand);
 
-            _header?.ApplyColumnWidths(_columnWidths);
+            if (!showRowNumbers)
+            {
+                _header?.ApplyColumnWidths(_columnWidths);
+                _footer?.ApplyColumnWidths(_columnWidths);
+                foreach (var row in _rows)
+                {
+                    row.ApplyColumnWidths(_columnWidths);
+                }
+            }
+
+            ApplyColumnAlignments();
+            ApplyColumnPaddings();
+        }
+
+        private void ApplyColumnAlignments()
+        {
+            _header?.ApplyColumnAlignments(_columnAlignments);
+            _footer?.ApplyColumnAlignments(_columnAlignments);
             foreach (var row in _rows)
             {
-                row.ApplyColumnWidths(_columnWidths);
+                row.ApplyColumnAlignments(_columnAlignments);
             }
         }
 
-        private static List<int> AllocateColumnWidths(IReadOnlyList<int> desired, int availableWidth)
+        private void ApplyColumnPaddings()
+        {
+            _header?.ApplyColumnPaddings(_columnPaddings);
+            _footer?.ApplyColumnPaddings(_columnPaddings);
+            foreach (var row in _rows)
+            {
+                row.ApplyColumnPaddings(_columnPaddings);
+            }
+        }
+
+        private bool ShouldRenderRowNumbers(int dataColumnCount)
+        {
+            return TableRenderOptions.ShowRowNumbers && dataColumnCount > 0;
+        }
+
+        private string GetRowNumberHeader()
+        {
+            return string.IsNullOrEmpty(TableRenderOptions.RowNumberHeader)
+                ? "#"
+                : TableRenderOptions.RowNumberHeader;
+        }
+
+        private IReadOnlyList<TableCellAlignment> GetRenderColumnAlignments()
+        {
+            if (!ShouldRenderRowNumbers(Math.Max(_header?.CellCount ?? 0, _rows.Count == 0 ? 0 : _rows.Max(r => r.CellCount))))
+            {
+                return _columnAlignments;
+            }
+
+            var alignments = new List<TableCellAlignment> { TableRenderOptions.RowNumberAlignment };
+            alignments.AddRange(_columnAlignments);
+            return alignments;
+        }
+
+        private IReadOnlyList<Padding> GetRenderColumnPaddings()
+        {
+            if (!ShouldRenderRowNumbers(Math.Max(_header?.CellCount ?? 0, _rows.Count == 0 ? 0 : _rows.Max(r => r.CellCount))))
+            {
+                return _columnPaddings;
+            }
+
+            var paddings = new List<Padding> { null };
+            paddings.AddRange(_columnPaddings);
+            return paddings;
+        }
+
+        private TableRow CreateNumberedHeaderRow()
+        {
+            return CreateNumberedRow(GetRowNumberHeader(), _header);
+        }
+
+        private TableRow CreateNumberedContentRow(int rowIndex)
+        {
+            string rowNumber = (rowIndex + 1).ToString(CultureInfo.CurrentCulture);
+            return CreateNumberedRow(rowNumber, _rows[rowIndex]);
+        }
+
+        private TableRow CreateNumberedFooterRow()
+        {
+            return CreateNumberedRow(string.Empty, _footer);
+        }
+
+        private TableRow CreateNumberedRow(string firstCell, TableRow sourceRow)
+        {
+            IEnumerable<string> cells = new[] { firstCell ?? string.Empty }
+                .Concat(sourceRow?.Contents.Select(cell => cell.Contents ?? string.Empty) ?? Enumerable.Empty<string>());
+            var row = new TableRow(cells, TableRenderOptions);
+            row.ApplyColumnWidths(_columnWidths);
+            row.ApplyColumnAlignments(GetRenderColumnAlignments());
+            row.ApplyColumnPaddings(GetRenderColumnPaddings());
+            return row;
+        }
+
+        private static List<int> AllocateColumnWidths(IReadOnlyList<int> desired, int availableWidth, bool expand)
         {
             int columnCount = desired.Count;
             var result = Enumerable.Repeat(0, columnCount).ToList();
@@ -692,6 +1407,11 @@ namespace ConsoulLibrary
                 for (int i = 0; i < columnCount; i++)
                 {
                     result[i] = desired[i];
+                }
+
+                if (!expand)
+                {
+                    return result;
                 }
 
                 int remaining = availableWidth - desiredTotal;
@@ -755,6 +1475,73 @@ namespace ConsoulLibrary
             return result;
         }
 
+        private static List<int> AllocateColumnWidths(IReadOnlyList<int> desired, int availableWidth, IReadOnlyList<int?> preferredWidths, bool expand)
+        {
+            if (preferredWidths == null || !preferredWidths.Any(width => width.HasValue))
+            {
+                return AllocateColumnWidths(desired, availableWidth, expand);
+            }
+
+            int columnCount = desired.Count;
+            var result = Enumerable.Repeat(0, columnCount).ToList();
+            if (columnCount == 0 || availableWidth <= 0)
+            {
+                return result;
+            }
+
+            var fixedIndexes = Enumerable.Range(0, columnCount)
+                .Where(index => index < preferredWidths.Count && preferredWidths[index].HasValue)
+                .ToList();
+
+            var fixedDesired = Enumerable.Repeat(0, columnCount).ToArray();
+            foreach (int index in fixedIndexes)
+            {
+                fixedDesired[index] = Math.Max(1, preferredWidths[index].Value);
+            }
+
+            int fixedTotal = fixedDesired.Sum();
+            if (fixedTotal >= availableWidth)
+            {
+                return AllocateColumnWidths(fixedDesired, availableWidth, expand);
+            }
+
+            foreach (int index in fixedIndexes)
+            {
+                result[index] = fixedDesired[index];
+            }
+
+            int remainingWidth = availableWidth - fixedTotal;
+            var flexibleIndexes = Enumerable.Range(0, columnCount)
+                .Where(index => !fixedIndexes.Contains(index))
+                .ToList();
+
+            if (flexibleIndexes.Count == 0)
+            {
+                return result;
+            }
+
+            List<int> flexibleDesired = flexibleIndexes.Select(index => desired[index]).ToList();
+            List<int> flexibleWidths = AllocateColumnWidths(flexibleDesired, remainingWidth, expand);
+
+            for (int index = 0; index < flexibleIndexes.Count; index++)
+            {
+                result[flexibleIndexes[index]] = flexibleWidths[index];
+            }
+
+            return result;
+        }
+
+        private int?[] BuildPreferredWidths(int dataColumnCount, int dataOffset, int columnCount)
+        {
+            var widths = new int?[columnCount];
+            for (int index = 0; index < dataColumnCount && index < _columnPreferredWidths.Count; index++)
+            {
+                widths[index + dataOffset] = _columnPreferredWidths[index];
+            }
+
+            return widths;
+        }
+
         private ColorScheme GetRowContentScheme(int rowIndex)
         {
             if (_tableNavigator != null)
@@ -773,6 +1560,304 @@ namespace ConsoulLibrary
             return rowIndex % 2 == 0
                 ? TableRenderOptions.ContentScheme1
                 : TableRenderOptions.ContentScheme2;
+        }
+
+        private void RenderCore(string message, ConsoleColor? color)
+        {
+            RecalculateColumnWidths();
+            int tableWidth = GetTableWidth();
+            string topLine = BuildHorizontalBorder(TableBorderLinePosition.Top, tableWidth);
+            string middleLine = BuildHorizontalBorder(TableBorderLinePosition.Middle, tableWidth);
+            string bottomLine = BuildHorizontalBorder(TableBorderLinePosition.Bottom, tableWidth);
+            ColorScheme? lineScheme = TableRenderOptions.Lines.Color;
+            string title = !string.IsNullOrWhiteSpace(message) ? message : TableRenderOptions.Title;
+            ColorScheme titleScheme = !string.IsNullOrWhiteSpace(message) && color.HasValue
+                ? new ColorScheme { Color = color.Value, BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor }
+                : TableRenderOptions.TitleScheme;
+
+            bool hasConfiguredHeader = _header != null && _header.CellCount > 0;
+            bool hasConfiguredFooter = TableRenderOptions.ShowFooters && HasConfiguredFooter();
+            int dataColumnCount = Math.Max(
+                Math.Max(_header?.CellCount ?? 0, _rows.Count == 0 ? 0 : _rows.Max(r => r.CellCount)),
+                hasConfiguredFooter ? _footer?.CellCount ?? 0 : 0);
+            bool showRowNumbers = ShouldRenderRowNumbers(dataColumnCount);
+            bool hasHeader = TableRenderOptions.ShowHeaders && hasConfiguredHeader;
+            bool hasRows = _rows.Count > 0;
+            bool hasEmptyMessage = !hasRows && !string.IsNullOrWhiteSpace(TableRenderOptions.EmptyMessage);
+            bool hasTableContent = hasHeader || hasRows || hasEmptyMessage || hasConfiguredFooter;
+            bool usePresetBorder = TableRenderOptions.Lines.UsesPresetBorder();
+            bool hasHorizontalLines = TableRenderOptions.Lines.HasHorizontalLines();
+
+            RenderTableText(title, tableWidth, titleScheme, TableRenderOptions.TitleAlignment);
+
+            if (hasTableContent && hasHorizontalLines)
+            {
+                Consoul.Write(topLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+            }
+
+            if (hasHeader)
+            {
+                if (showRowNumbers)
+                {
+                    using (var header = CreateNumberedHeaderRow())
+                    {
+                        header.Render(TableRenderOptions.HeaderScheme, lineScheme.GetValueOrDefault(), isHeader: true);
+                    }
+                }
+                else
+                {
+                    _header.Render(TableRenderOptions.HeaderScheme, lineScheme.GetValueOrDefault(), isHeader: true);
+                }
+
+                if (TableRenderOptions.Lines.HeaderHorizontal)
+                {
+                    Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                }
+            }
+
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                if (!usePresetBorder && TableRenderOptions.Lines.ContentHorizontal)
+                {
+                    Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                }
+
+                var contentScheme = GetRowContentScheme(i);
+                if (showRowNumbers)
+                {
+                    using (var row = CreateNumberedContentRow(i))
+                    {
+                        row.Render(contentScheme, lineScheme);
+                    }
+                }
+                else
+                {
+                    _rows[i].Render(contentScheme, lineScheme);
+                }
+
+                if (usePresetBorder && TableRenderOptions.Lines.ContentHorizontal && i < _rows.Count - 1)
+                {
+                    Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                }
+            }
+
+            if (hasEmptyMessage)
+            {
+                RenderEmptyMessage(tableWidth, lineScheme);
+            }
+
+            if (hasConfiguredFooter)
+            {
+                if (TableRenderOptions.Lines.ContentHorizontal && (hasRows || hasHeader || hasEmptyMessage))
+                {
+                    Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                }
+
+                if (showRowNumbers)
+                {
+                    using (var footer = CreateNumberedFooterRow())
+                    {
+                        footer.Render(TableRenderOptions.FooterScheme, lineScheme.GetValueOrDefault());
+                    }
+                }
+                else
+                {
+                    _footer.Render(TableRenderOptions.FooterScheme, lineScheme.GetValueOrDefault());
+                }
+            }
+
+            if ((hasRows || hasConfiguredFooter) && TableRenderOptions.Lines.ContentHorizontal)
+            {
+                Consoul.Write(usePresetBorder ? bottomLine : middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+            }
+            else if (usePresetBorder && (hasHeader || hasEmptyMessage || hasConfiguredFooter) && !hasRows)
+            {
+                Consoul.Write(bottomLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+            }
+            else if (!usePresetBorder && hasEmptyMessage && TableRenderOptions.Lines.ContentHorizontal)
+            {
+                Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+            }
+
+            RenderTableText(TableRenderOptions.Caption, tableWidth, TableRenderOptions.CaptionScheme, TableRenderOptions.CaptionAlignment);
+            RenderSummary(tableWidth);
+
+            if (TableRenderOptions.ShowFooterHelp)
+            {
+                Consoul.Write("Use Arrow Keys to navigate, Enter to confirm, Space to select/deselect, Escape to exit, or enter row number to jump.", ConsoleColor.Gray);
+            }
+        }
+
+        private bool HasConfiguredFooter()
+        {
+            return _footer != null &&
+                _footer.CellCount > 0 &&
+                _footer.Contents.Any(cell => !string.IsNullOrWhiteSpace(cell.Contents));
+        }
+
+        private enum TableBorderLinePosition
+        {
+            Top,
+            Middle,
+            Bottom
+        }
+
+        private string BuildHorizontalBorder(TableBorderLinePosition position, int width)
+        {
+            if (!TableRenderOptions.Lines.UsesPresetBorder())
+            {
+                return new string(TableRenderOptions.Lines.HorizontalCharacter, Math.Max(1, width));
+            }
+
+            TableRenderOptions.TableBorderCharacters border = TableRenderOptions.Lines.GetBorderCharacters();
+            char left;
+            char join;
+            char right;
+
+            switch (position)
+            {
+                case TableBorderLinePosition.Top:
+                    left = border.TopLeft;
+                    join = border.TopJoin;
+                    right = border.TopRight;
+                    break;
+                case TableBorderLinePosition.Bottom:
+                    left = border.BottomLeft;
+                    join = border.BottomJoin;
+                    right = border.BottomRight;
+                    break;
+                default:
+                    left = border.MiddleLeft;
+                    join = border.MiddleJoin;
+                    right = border.MiddleRight;
+                    break;
+            }
+
+            var builder = new System.Text.StringBuilder();
+            builder.Append(left);
+
+            if (_columnWidths.Count == 0)
+            {
+                builder.Append(new string(border.Horizontal, Math.Max(0, width - 2)));
+            }
+            else
+            {
+                for (int index = 0; index < _columnWidths.Count; index++)
+                {
+                    builder.Append(new string(border.Horizontal, Math.Max(0, _columnWidths[index])));
+                    builder.Append(index == _columnWidths.Count - 1 ? right : join);
+                }
+            }
+
+            return FitBorderLine(builder.ToString(), width);
+        }
+
+        private void RenderEmptyMessage(int tableWidth, ColorScheme? lineScheme)
+        {
+            ColorScheme emptyScheme = TableRenderOptions.EmptyMessageScheme;
+            TableRenderOptions.TableBorderCharacters border = TableRenderOptions.Lines.GetBorderCharacters();
+            string vertical = border.Vertical.ToString();
+            bool showVertical = TableRenderOptions.Lines.ContentVertical;
+            int innerWidth = Math.Max(1, tableWidth - (showVertical ? 2 : 0));
+
+            foreach (string wrappedLine in PanelEntry.WrapLines(TableRenderOptions.EmptyMessage, innerWidth))
+            {
+                string line = PadOrTrim(wrappedLine, innerWidth);
+                if (showVertical)
+                {
+                    Consoul.Write(vertical, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                }
+
+                Consoul.Write(line, emptyScheme.Color, emptyScheme.BackgroundColor, writeLine: false);
+
+                if (showVertical)
+                {
+                    Consoul.Write(vertical, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                }
+
+                Consoul.Write(string.Empty);
+            }
+        }
+
+        private static void RenderTableText(string text, int tableWidth, ColorScheme scheme, TextBlockAlignment alignment)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return;
+            }
+
+            int width = Math.Max(1, tableWidth);
+            foreach (string line in PanelEntry.WrapLines(text, width))
+            {
+                Consoul.Write(AlignText(line, width, alignment), scheme, true);
+            }
+        }
+
+        private void RenderSummary(int tableWidth)
+        {
+            if (string.IsNullOrWhiteSpace(TableRenderOptions.SummaryText))
+            {
+                return;
+            }
+
+            ColorScheme summaryScheme = TableRenderOptions.SummaryScheme;
+            int width = Math.Max(1, tableWidth);
+            foreach (string line in PanelEntry.WrapLines(TableRenderOptions.SummaryText, width))
+            {
+                Consoul.Write(AlignText(line, width, TextBlockAlignment.Left), summaryScheme.Color, summaryScheme.BackgroundColor);
+            }
+        }
+
+        private static string FitBorderLine(string line, int width)
+        {
+            width = Math.Max(1, width);
+            line = line ?? string.Empty;
+            if (line.Length == width)
+            {
+                return line;
+            }
+
+            if (line.Length > width)
+            {
+                return line.Substring(0, width);
+            }
+
+            return line.PadRight(width);
+        }
+
+        private static string AlignText(string text, int width, TextBlockAlignment alignment)
+        {
+            text = text ?? string.Empty;
+            width = Math.Max(1, width);
+            if (text.Length > width)
+            {
+                text = text.Substring(0, width);
+            }
+
+            int remaining = Math.Max(0, width - text.Length);
+            switch (alignment)
+            {
+                case TextBlockAlignment.Center:
+                    int left = remaining / 2;
+                    int right = remaining - left;
+                    return new string(' ', left) + text + new string(' ', right);
+                case TextBlockAlignment.Right:
+                    return new string(' ', remaining) + text;
+                default:
+                    return text.PadRight(width);
+            }
+        }
+
+        private static string PadOrTrim(string text, int width)
+        {
+            text = text ?? string.Empty;
+            width = Math.Max(1, width);
+            if (text.Length > width)
+            {
+                return text.Substring(0, width);
+            }
+
+            return text.PadRight(width);
         }
 
         /// <summary>

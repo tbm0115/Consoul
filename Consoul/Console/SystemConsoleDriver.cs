@@ -37,11 +37,40 @@ namespace ConsoulLibrary
 
         public Encoding InputEncoding => TryRead(() => Console.InputEncoding, Encoding.UTF8);
 
+        public string Title
+        {
+            get => TryRead(() => Console.Title, string.Empty);
+            set => TryWrite(() => Console.Title = value ?? string.Empty);
+        }
+
+        public bool IsInputRedirected => TryRead(() => Console.IsInputRedirected, true);
+
+        public bool IsOutputRedirected => TryRead(() => Console.IsOutputRedirected, true);
+
+        public bool IsErrorRedirected => TryRead(() => Console.IsErrorRedirected, true);
+
+        public bool IsVirtual => false;
+
         public void Write(string value) => TryWrite(() => Console.Write(value));
 
         public void WriteLine(string value) => TryWrite(() => Console.WriteLine(value));
 
+        public void WriteControl(string value) => TryWrite(() => Console.Write(value));
+
         public void Clear() => TryWrite(Console.Clear);
+
+        public void ClearLine(int top)
+        {
+            int targetTop = Math.Max(0, Math.Min(top, BufferHeight - 1));
+            int width = BufferWidth;
+            int clearWidth = targetTop >= BufferHeight - 1 ? Math.Max(0, width - 1) : width;
+            TryWrite(() =>
+            {
+                Console.SetCursorPosition(0, targetTop);
+                Console.Write(new string(' ', clearWidth));
+                Console.SetCursorPosition(0, targetTop);
+            });
+        }
 
         public void SetCursorPosition(int left, int top)
         {

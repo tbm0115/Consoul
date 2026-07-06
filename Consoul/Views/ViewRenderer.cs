@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -116,7 +118,7 @@ namespace ConsoulLibrary.Views
         {
             Type initialViewType = typeof(T);
             Stack<ViewStackEntry> navigationStack = new Stack<ViewStackEntry>();
-            navigationStack.Push(new ViewStackEntry(initialViewType, factory, configure));
+            navigationStack.Push(new ViewStackEntry(initialViewType, factory, configure, ResolveViewTypeTitle(initialViewType)));
 
             while (navigationStack.Count > 0)
             {
@@ -197,7 +199,13 @@ namespace ConsoulLibrary.Views
                     }
                 }
 
+                string currentDisplayName = ResolveViewTitle(viewInstance, currentViewType);
+                currentEntry = currentEntry.WithDisplayName(currentDisplayName);
+                navigationStack.Pop();
+                navigationStack.Push(currentEntry);
+
                 ViewNavigationContext navigationContext = new ViewNavigationContext();
+                navigationContext.SetBreadcrumbTrail(BuildBreadcrumbTrail(navigationStack, currentDisplayName));
                 if (viewInstance is INavigationAwareView navigationAwareView)
                 {
                     navigationAwareView.NavigationContext = navigationContext;
@@ -228,11 +236,7 @@ namespace ConsoulLibrary.Views
                 NavigationCommand command = navigationContext.Consume();
                 if (!command.HasValue)
                 {
-                    if (viewInstance.GoBackRequested)
-                    {
-                        navigationStack.Pop();
-                    }
-
+                    navigationStack.Pop();
                     continue;
                 }
 
@@ -260,7 +264,77 @@ namespace ConsoulLibrary.Views
 
         private static ViewStackEntry CreateStackEntry(NavigationCommand command)
         {
-            return new ViewStackEntry(command.TargetViewType, command.TargetFactory, command.ConfigureAction);
+            return new ViewStackEntry(command.TargetViewType, command.TargetFactory, command.ConfigureAction, ResolveViewTypeTitle(command.TargetViewType));
+        }
+
+        private static IEnumerable<string> BuildBreadcrumbTrail(Stack<ViewStackEntry> navigationStack, string currentDisplayName)
+        {
+            var trail = navigationStack
+                .Reverse()
+                .Select(entry => entry.DisplayName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToList();
+
+            if (trail.Count > 0 && !string.IsNullOrWhiteSpace(currentDisplayName))
+            {
+                trail[trail.Count - 1] = currentDisplayName;
+            }
+
+            return trail;
+        }
+
+        private static string ResolveViewTitle(IView view, Type fallbackType)
+        {
+            string title = view != null ? NormalizeTitle(view.Title) : null;
+            if (!string.IsNullOrWhiteSpace(title) && !HasLineBreak(view.Title))
+            {
+                return title;
+            }
+
+            return ResolveViewTypeTitle(fallbackType);
+        }
+
+        private static string ResolveViewTypeTitle(Type viewType)
+        {
+            if (viewType == null)
+            {
+                return "View";
+            }
+
+            var attribute = viewType.GetCustomAttribute<ViewAttribute>(true);
+            string title = NormalizeTitle(attribute?.Title);
+            if (!string.IsNullOrWhiteSpace(title))
+            {
+                return title;
+            }
+
+            return viewType.Name;
+        }
+
+        private static bool HasLineBreak(string value)
+        {
+            return value != null && value.IndexOfAny(new[] { '\r', '\n' }) >= 0;
+        }
+
+        private static string NormalizeTitle(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            string normalized = value
+                .Replace("\r\n", " ")
+                .Replace('\r', ' ')
+                .Replace('\n', ' ')
+                .Trim();
+
+            while (normalized.Contains("  "))
+            {
+                normalized = normalized.Replace("  ", " ");
+            }
+
+            return normalized;
         }
     }
 }

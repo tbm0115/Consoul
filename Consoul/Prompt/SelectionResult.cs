@@ -41,5 +41,14 @@ namespace ConsoulLibrary
         /// Gets a value indicating whether the prompt interaction produced a valid selection.
         /// </summary>
         public bool HasSelection => Result.HasSelection;
+
+        /// <summary>
+        /// Converts a selection result to its selected item for Spectre-style assignment snippets.
+        /// </summary>
+        /// <param name="result">The selection result to convert.</param>
+        public static implicit operator T(SelectionResult<T> result)
+        {
+            return result.SelectedItem;
+        }
     }
 }

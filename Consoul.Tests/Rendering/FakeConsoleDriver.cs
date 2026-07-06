@@ -12,6 +12,9 @@ namespace ConsoulLibrary.Tests.Rendering
     {
         private readonly List<StringBuilder> _lines = new List<StringBuilder>();
         private readonly Queue<ConsoleKeyInfo> _keys = new Queue<ConsoleKeyInfo>();
+        private readonly List<FakeConsoleWrite> _writes = new List<FakeConsoleWrite>();
+        private readonly List<string> _controlWrites = new List<string>();
+        private readonly object _sync = new object();
         private int _cursorLeft;
         private int _cursorTop;
 
@@ -38,71 +41,178 @@ namespace ConsoulLibrary.Tests.Rendering
 
         public Encoding InputEncoding => Encoding.UTF8;
 
+        public string Title { get; set; } = string.Empty;
+
+        public bool IsInputRedirected { get; set; }
+
+        public bool IsOutputRedirected { get; set; }
+
+        public bool IsErrorRedirected { get; set; }
+
+        public bool IsVirtual => true;
+
         public int ClearCount { get; private set; }
+
+        public int ClearLineCount { get; private set; }
 
         public List<string> InvalidCursorOperations { get; } = new List<string>();
 
-        public List<FakeConsoleWrite> Writes { get; } = new List<FakeConsoleWrite>();
+        public IReadOnlyList<FakeConsoleWrite> Writes
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _writes.ToArray();
+                }
+            }
+        }
 
-        public IReadOnlyList<string> Lines => _lines.Select(line => line.ToString()).ToArray();
+        public IReadOnlyList<string> ControlWrites
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _controlWrites.ToArray();
+                }
+            }
+        }
 
-        public string Text => string.Join("\n", Lines);
+        public IReadOnlyList<string> Lines
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _lines.Select(line => line.ToString()).ToArray();
+                }
+            }
+        }
+
+        public string Text
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return string.Join("\n", _lines.Select(line => line.ToString()));
+                }
+            }
+        }
 
         public void Resize(int width, int height = 200)
         {
-            BufferWidth = Math.Max(1, width);
-            BufferHeight = Math.Max(1, height);
-            _cursorLeft = Math.Max(0, Math.Min(_cursorLeft, BufferWidth - 1));
-            _cursorTop = Math.Max(0, Math.Min(_cursorTop, BufferHeight - 1));
+            lock (_sync)
+            {
+                BufferWidth = Math.Max(1, width);
+                BufferHeight = Math.Max(1, height);
+                foreach (StringBuilder line in _lines)
+                {
+                    if (line.Length > BufferWidth)
+                    {
+                        line.Length = BufferWidth;
+                    }
+                }
+
+                _cursorLeft = Math.Max(0, Math.Min(_cursorLeft, BufferWidth - 1));
+                _cursorTop = Math.Max(0, Math.Min(_cursorTop, BufferHeight - 1));
+            }
         }
 
-        public void EnqueueKey(ConsoleKeyInfo keyInfo) => _keys.Enqueue(keyInfo);
+        public void EnqueueKey(ConsoleKeyInfo keyInfo)
+        {
+            lock (_sync)
+            {
+                _keys.Enqueue(keyInfo);
+            }
+        }
 
         public void Write(string value)
         {
-            value = value ?? string.Empty;
-            Writes.Add(new FakeConsoleWrite(value, false, _cursorLeft, _cursorTop, ForegroundColor, BackgroundColor));
-
-            foreach (char ch in value)
+            lock (_sync)
             {
-                WriteCharacter(ch);
+                value = value ?? string.Empty;
+                _writes.Add(new FakeConsoleWrite(value, false, _cursorLeft, _cursorTop, ForegroundColor, BackgroundColor));
+
+                foreach (char ch in value)
+                {
+                    WriteCharacter(ch);
+                }
             }
         }
 
         public void WriteLine(string value)
         {
-            value = value ?? string.Empty;
-            Writes.Add(new FakeConsoleWrite(value, true, _cursorLeft, _cursorTop, ForegroundColor, BackgroundColor));
-            Write(value);
-            MoveToNextLine();
+            lock (_sync)
+            {
+                value = value ?? string.Empty;
+                _writes.Add(new FakeConsoleWrite(value, true, _cursorLeft, _cursorTop, ForegroundColor, BackgroundColor));
+                Write(value);
+                MoveToNextLine();
+            }
+        }
+
+        public void WriteControl(string value)
+        {
+            lock (_sync)
+            {
+                _controlWrites.Add(value ?? string.Empty);
+            }
         }
 
         public void Clear()
         {
-            ClearCount++;
-            _lines.Clear();
-            _cursorLeft = 0;
-            _cursorTop = 0;
-            EnsureLine(0);
+            lock (_sync)
+            {
+                ClearCount++;
+                _lines.Clear();
+                _cursorLeft = 0;
+                _cursorTop = 0;
+                EnsureLine(0);
+            }
+        }
+
+        public void ClearLine(int top)
+        {
+            lock (_sync)
+            {
+                ClearLineCount++;
+                if (top < 0 || top >= BufferHeight)
+                {
+                    InvalidCursorOperations.Add($"line {top} outside height {BufferHeight}");
+                }
+
+                _cursorLeft = 0;
+                _cursorTop = Math.Max(0, Math.Min(top, BufferHeight - 1));
+                EnsureLine(_cursorTop);
+                _lines[_cursorTop].Clear();
+            }
         }
 
         public void SetCursorPosition(int left, int top)
         {
-            if (left < 0 || left >= BufferWidth || top < 0 || top >= BufferHeight)
+            lock (_sync)
             {
-                InvalidCursorOperations.Add($"({left},{top}) outside {BufferWidth}x{BufferHeight}");
-            }
+                if (left < 0 || left >= BufferWidth || top < 0 || top >= BufferHeight)
+                {
+                    InvalidCursorOperations.Add($"({left},{top}) outside {BufferWidth}x{BufferHeight}");
+                }
 
-            _cursorLeft = Math.Max(0, Math.Min(left, BufferWidth - 1));
-            _cursorTop = Math.Max(0, Math.Min(top, BufferHeight - 1));
-            EnsureLine(_cursorTop);
+                _cursorLeft = Math.Max(0, Math.Min(left, BufferWidth - 1));
+                _cursorTop = Math.Max(0, Math.Min(top, BufferHeight - 1));
+                EnsureLine(_cursorTop);
+            }
         }
 
         public ConsoleKeyInfo ReadKey(bool intercept)
         {
-            if (_keys.Count > 0)
+            lock (_sync)
             {
-                return _keys.Dequeue();
+                if (_keys.Count > 0)
+                {
+                    return _keys.Dequeue();
+                }
             }
 
             return new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false);

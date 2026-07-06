@@ -22,11 +22,25 @@ namespace ConsoulLibrary
 
         Encoding InputEncoding { get; }
 
+        string Title { get; set; }
+
+        bool IsInputRedirected { get; }
+
+        bool IsOutputRedirected { get; }
+
+        bool IsErrorRedirected { get; }
+
+        bool IsVirtual { get; }
+
         void Write(string value);
 
         void WriteLine(string value);
 
+        void WriteControl(string value);
+
         void Clear();
+
+        void ClearLine(int top);
 
         void SetCursorPosition(int left, int top);
 

@@ -15,12 +15,17 @@ namespace ConsoulLibrary
         /// </summary>
         public string Value {
             get{
-                string value = _value;
+                string value = _value ?? string.Empty;
                 if (Transforms?.Length > 0)
                 {
                     RoutineSettingsSection transforms = Routines.getAppSettings().GetSection("Transforms");
                     foreach (InputTransform transform in Transforms)
                     {
+                        if (transform == null || string.IsNullOrEmpty(transform.Key))
+                        {
+                            continue;
+                        }
+
                         if (transform.UseAppSettings)
                         {
                             if (!string.IsNullOrEmpty(value))
@@ -34,7 +39,7 @@ namespace ConsoulLibrary
                         }
                         else
                         {
-                            value = value.Replace("{{" + transform.Key + "}}", transform.Value);
+                            value = value.Replace("{{" + transform.Key + "}}", transform.Value ?? string.Empty);
                         }
                     }
                 }
@@ -120,6 +125,9 @@ namespace ConsoulLibrary
                 Method = (InputMethod)Enum.Parse(typeof(InputMethod), xNode["Method"].InnerText);
             }
             Description = xNode["Description"]?.InnerText;
+            XmlNode optionReference = xNode["RegisteredOption"];
+            if (optionReference != null)
+                OptionReference = new RegisteredOption(optionReference);
             if (xNode["Transforms"] != null)
             {
                 XmlNodeList xTransforms = xNode.SelectNodes("Transforms/Transform");
@@ -139,13 +147,12 @@ namespace ConsoulLibrary
         /// <returns>An XML node representing this routine input.</returns>
         public XmlNode ToXmlNode(XmlDocument xDoc) {
             XmlNode xInput = xDoc.CreateElement("Input");
-            // TODO: Add Description and Groupings
-            xInput.AppendChild(xDoc.CreateElement("Value")).InnerText = _value;
+            xInput.AppendChild(xDoc.CreateElement("Value")).InnerText = _value ?? string.Empty;
             xInput.AppendChild(xDoc.CreateElement("RequestTime")).InnerText = RequestTime.ToString();
-            xInput.AppendChild(xDoc.CreateElement("ResponseTime")).InnerText = ResponseTime.ToString();
-            xInput.AppendChild(xDoc.CreateElement("Delay")).InnerText = Delay.Value.Ticks.ToString();
+            xInput.AppendChild(xDoc.CreateElement("ResponseTime")).InnerText = ResponseTime.HasValue ? ResponseTime.Value.ToString() : string.Empty;
+            xInput.AppendChild(xDoc.CreateElement("Delay")).InnerText = Delay.HasValue ? Delay.Value.Ticks.ToString() : string.Empty;
             xInput.AppendChild(xDoc.CreateElement("Method")).InnerText = Method.ToString();
-            xInput.AppendChild(xDoc.CreateElement("Description")).AppendChild(xDoc.CreateCDataSection(Description));
+            xInput.AppendChild(xDoc.CreateElement("Description")).AppendChild(xDoc.CreateCDataSection(Description ?? string.Empty));
             if (OptionReference != null)
                 xInput.AppendChild(OptionReference.ToXmlNode(xDoc));
             var xInputTransforms = xInput.AppendChild(xDoc.CreateElement("Transforms"));

@@ -1,0 +1,201 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using ConsoulLibrary.Color;
+using Xunit;
+
+namespace ConsoulLibrary.Tests.Rendering
+{
+    /// <summary>
+    /// Responsive rendering tests for sparkline view helpers.
+    /// </summary>
+    public class SparklineRenderingTests
+    {
+        /// <summary>
+        /// Sparklines render labels and trend characters within the active terminal width.
+        /// </summary>
+        /// <param name="width">The fake terminal width.</param>
+        [Theory]
+        [InlineData(12)]
+        [InlineData(32)]
+        [InlineData(80)]
+        public void Sparkline_TrendValues_DoNotOverflow(int width)
+        {
+            using (var scope = new ConsoleDriverScope(width))
+            {
+                Consoul.Sparkline(
+                    new[] { 1d, 3d, 2d, 5d, 8d, 13d, 21d },
+                    new SparklineOptions
+                    {
+                        Label = "Build duration trend",
+                        Width = width,
+                        ShowRange = true,
+                        Characters = "123456789"
+                    });
+
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("B"));
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Any(char.IsDigit));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Sparkline options honor custom colors, explicit ranges, and value formatting.
+        /// </summary>
+        [Fact]
+        public void Sparkline_CustomOptions_RenderColorsAndRange()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Consoul.Sparkline(new[] { -2d, 0d, 2d }, new SparklineOptions
+                {
+                    Width = 32,
+                    Label = "Temp",
+                    MinimumValue = -4,
+                    MaximumValue = 4,
+                    ShowRange = true,
+                    Characters = "abc",
+                    ValueFormatter = value => value.ToString("0.0"),
+                    LabelScheme = Scheme(ConsoleColor.Yellow),
+                    LineScheme = Scheme(ConsoleColor.Cyan),
+                    RangeScheme = Scheme(ConsoleColor.DarkGray)
+                });
+
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Temp") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("c") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("-4.0..4.0") && write.Color == ConsoleColor.DarkGray);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Sparkline labels treat raw markup as styled visible text.
+        /// </summary>
+        /// <param name="width">The configured sparkline width.</param>
+        [Theory]
+        [InlineData(24)]
+        [InlineData(40)]
+        public void Sparkline_RawMarkupLabel_DoesNotLeakTagsOrOverflow(int width)
+        {
+            using (var scope = new ConsoleDriverScope(width))
+            {
+                Consoul.Sparkline(new[] { 1d, 3d, 2d, 5d, 8d }, new SparklineOptions
+                {
+                    Width = width,
+                    Label = "[cyan]Duration [[prod]][/]",
+                    LabelWidth = Math.Min(18, width - 4),
+                    Characters = "123456789",
+                    LabelScheme = Scheme(ConsoleColor.DarkGray),
+                    LineScheme = Scheme(ConsoleColor.Green)
+                });
+
+                VisualAssert.ContainsText(scope.Driver, "Duration [prod]");
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Duration [prod]") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Any(char.IsDigit) && write.Color == ConsoleColor.Green);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= width, "Raw markup sparkline line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Sparkline rendering ignores non-finite values and handles flat data.
+        /// </summary>
+        [Fact]
+        public void Sparkline_NonFiniteAndFlatValues_RenderSafely()
+        {
+            using (var scope = new ConsoleDriverScope(24))
+            {
+                Consoul.Sparkline(new[] { double.NaN, 5d, double.PositiveInfinity, 5d }, new SparklineOptions
+                {
+                    Width = 20,
+                    Characters = ".#"
+                });
+
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("#"));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Builder overloads add values fluently before rendering.
+        /// </summary>
+        [Fact]
+        public void Sparkline_BuilderOverload_AddsValues()
+        {
+            using (var scope = new ConsoleDriverScope(32))
+            {
+                Consoul.Sparkline(line =>
+                {
+                    line.Add(1).Add(2).Add(3);
+                }, new SparklineOptions { Label = "Rate", Characters = "abc" });
+
+                VisualAssert.WroteText(scope.Driver, "Rate");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("c"));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Model-backed dynamic views can render sparkline sections.
+        /// </summary>
+        [Fact]
+        public void DynamicModelView_CanRenderSparklineSections()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "2" }));
+
+                try
+                {
+                    var model = new DashboardModel
+                    {
+                        Durations = new List<double> { 12, 10, 11, 8, 7, 9 }
+                    };
+
+                    var view = Consoul.View("Dashboard", model)
+                        .RenderModel(dashboard =>
+                        {
+                            Consoul.Sparkline(dashboard.Durations, "Duration", width: 36, color: ConsoleColor.Green);
+                        })
+                        .Option("Refresh", dashboard => dashboard.Durations.Add(6));
+
+                    view.Render();
+
+                    VisualAssert.WroteText(scope.Driver, "Duration");
+                    Assert.Contains(scope.Driver.Writes, write => write.Color == ConsoleColor.Green);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Enumerable.Empty<string>()));
+                }
+            }
+        }
+
+        private static ColorScheme Scheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
+        }
+
+        private sealed class DashboardModel
+        {
+            public List<double> Durations { get; set; } = new List<double>();
+        }
+
+        private sealed class TestRoutine : Routine
+        {
+            public TestRoutine(IEnumerable<string> inputs)
+            {
+                foreach (string input in inputs)
+                {
+                    Enqueue(new RoutineInput { Value = input });
+                }
+            }
+        }
+    }
+}

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Description>Optional System.Text.Json integration for Consoul object editor rendering.</Description>
+    <Description>Optional System.Text.Json integration for Consoul form/object editor value rendering and JSON snapshots.</Description>
     <PackageProjectUrl>https://github.com/tbm0115/Consoul</PackageProjectUrl>
     <RepositoryUrl>https://github.com/tbm0115/Consoul</RepositoryUrl>
     <PackageTags>Console;Consoul;Terminal;Json;</PackageTags>
@@ -32,7 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Text.Json" Version="10.0.9" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
 
 </Project>

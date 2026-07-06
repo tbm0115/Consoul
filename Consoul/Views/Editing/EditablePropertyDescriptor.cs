@@ -1,11 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 
 namespace ConsoulLibrary.Views.Editing
 {
     /// <summary>
-    /// Represents a property that can be edited within the JSON editor experience.
+    /// Represents a property that can be edited within the object editor experience.
     /// </summary>
     public sealed class EditablePropertyDescriptor
     {
@@ -73,8 +74,19 @@ namespace ConsoulLibrary.Views.Editing
         /// <returns>The constructed edit context.</returns>
         public PropertyEditContext CreateContext(object model)
         {
+            return CreateContext(model, CancellationToken.None);
+        }
+
+        /// <summary>
+        /// Creates a context describing the property for editing.
+        /// </summary>
+        /// <param name="model">Model containing the property.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests while editing.</param>
+        /// <returns>The constructed edit context.</returns>
+        public PropertyEditContext CreateContext(object model, CancellationToken cancellationToken)
+        {
             var value = Property.GetValue(model);
-            return new PropertyEditContext(model, Property, Documentation, value);
+            return new PropertyEditContext(model, Property, Documentation, value, cancellationToken);
         }
 
         /// <summary>
