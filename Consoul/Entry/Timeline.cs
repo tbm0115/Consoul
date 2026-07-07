@@ -217,14 +217,14 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                AddStep(
+                AddStep(TimelineItem.Create(
                     titleSelector(item),
+                    titleColorSelector(item),
+                    markerColorSelector != null ? markerColorSelector(item) : (SpectreColor?)null,
+                    descriptionColorSelector != null ? descriptionColorSelector(item) : (SpectreColor?)null,
                     stateSelector != null ? stateSelector(item) : TimelineItemState.Pending,
                     descriptionSelector != null ? descriptionSelector(item) : null,
-                    timestampSelector != null ? timestampSelector(item) : null,
-                    ResolveColor(item, titleColorSelector),
-                    ResolveColor(item, markerColorSelector),
-                    ResolveColor(item, descriptionColorSelector));
+                    timestampSelector != null ? timestampSelector(item) : null));
             }
 
             return this;
@@ -270,14 +270,14 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                AddStep(
+                AddStep(TimelineItem.Create(
                     titleSelector(item),
+                    titleColorSelector(item),
+                    markerColorSelector != null ? markerColorSelector(item) : (RgbColor?)null,
+                    descriptionColorSelector != null ? descriptionColorSelector(item) : (RgbColor?)null,
                     stateSelector != null ? stateSelector(item) : TimelineItemState.Pending,
                     descriptionSelector != null ? descriptionSelector(item) : null,
-                    timestampSelector != null ? timestampSelector(item) : null,
-                    ResolveColor(item, titleColorSelector),
-                    ResolveColor(item, markerColorSelector),
-                    ResolveColor(item, descriptionColorSelector));
+                    timestampSelector != null ? timestampSelector(item) : null));
             }
 
             return this;
@@ -600,6 +600,37 @@ namespace ConsoulLibrary
         public Timeline TitleColor(ConsoleColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
+            Options.TitleForegroundRgb = null;
+            Options.TitleBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default title foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The title foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline TitleColor(SpectreColor color)
+        {
+            Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
+            Options.TitleForegroundRgb = color.ToRgbColor();
+            Options.TitleBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default title foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The title foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline TitleColor(RgbColor color)
+        {
+            Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
+            Options.TitleForegroundRgb = color;
+            Options.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -610,7 +641,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline TitleColor(Style style)
         {
-            Options.TitleScheme = Scheme(style, Options.ResolveTitleScheme());
+            ApplyTitleStyle(style);
             return this;
         }
 
@@ -621,7 +652,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline TitleColor(string style)
         {
-            Options.TitleScheme = Style.ParseScheme(style, Options.ResolveTitleScheme());
+            ApplyTitleStyle(Style.Parse(style));
             return this;
         }
 
@@ -633,6 +664,37 @@ namespace ConsoulLibrary
         public Timeline DescriptionColor(ConsoleColor color)
         {
             Options.DescriptionScheme = Scheme(color);
+            Options.DescriptionDecoration = Decoration.None;
+            Options.DescriptionForegroundRgb = null;
+            Options.DescriptionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the description foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The description foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline DescriptionColor(SpectreColor color)
+        {
+            Options.DescriptionScheme = Scheme(color);
+            Options.DescriptionDecoration = Decoration.None;
+            Options.DescriptionForegroundRgb = color.ToRgbColor();
+            Options.DescriptionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the description foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The description foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline DescriptionColor(RgbColor color)
+        {
+            Options.DescriptionScheme = Scheme(color);
+            Options.DescriptionDecoration = Decoration.None;
+            Options.DescriptionForegroundRgb = color;
+            Options.DescriptionBackgroundRgb = null;
             return this;
         }
 
@@ -643,7 +705,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline DescriptionColor(Style style)
         {
-            Options.DescriptionScheme = Scheme(style, Options.ResolveDescriptionScheme());
+            ApplyDescriptionStyle(style);
             return this;
         }
 
@@ -654,7 +716,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline DescriptionColor(string style)
         {
-            Options.DescriptionScheme = Style.ParseScheme(style, Options.ResolveDescriptionScheme());
+            ApplyDescriptionStyle(Style.Parse(style));
             return this;
         }
 
@@ -665,7 +727,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline PendingColor(ConsoleColor color)
         {
-            Options.PendingScheme = Scheme(color);
+            ApplyPendingStyle(Scheme(color), Decoration.None, null, null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the pending marker foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The pending marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline PendingColor(SpectreColor color)
+        {
+            ApplyPendingStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the pending marker foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The pending marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline PendingColor(RgbColor color)
+        {
+            ApplyPendingStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -676,7 +760,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline PendingColor(Style style)
         {
-            Options.PendingScheme = Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Pending));
+            ApplyPendingStyle(style);
             return this;
         }
 
@@ -687,7 +771,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline PendingColor(string style)
         {
-            Options.PendingScheme = Style.ParseScheme(style, Options.ResolveMarkerScheme(TimelineItemState.Pending));
+            ApplyPendingStyle(Style.Parse(style));
             return this;
         }
 
@@ -698,7 +782,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline ActiveColor(ConsoleColor color)
         {
-            Options.ActiveScheme = Scheme(color);
+            ApplyActiveStyle(Scheme(color), Decoration.None, null, null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the active marker foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The active marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline ActiveColor(SpectreColor color)
+        {
+            ApplyActiveStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the active marker foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The active marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline ActiveColor(RgbColor color)
+        {
+            ApplyActiveStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -709,7 +815,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline ActiveColor(Style style)
         {
-            Options.ActiveScheme = Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Active));
+            ApplyActiveStyle(style);
             return this;
         }
 
@@ -720,7 +826,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline ActiveColor(string style)
         {
-            Options.ActiveScheme = Style.ParseScheme(style, Options.ResolveMarkerScheme(TimelineItemState.Active));
+            ApplyActiveStyle(Style.Parse(style));
             return this;
         }
 
@@ -731,7 +837,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline CompleteColor(ConsoleColor color)
         {
-            Options.CompleteScheme = Scheme(color);
+            ApplyCompleteStyle(Scheme(color), Decoration.None, null, null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the completed marker foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The completed marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline CompleteColor(SpectreColor color)
+        {
+            ApplyCompleteStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the completed marker foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The completed marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline CompleteColor(RgbColor color)
+        {
+            ApplyCompleteStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -742,7 +870,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline CompleteColor(Style style)
         {
-            Options.CompleteScheme = Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Complete));
+            ApplyCompleteStyle(style);
             return this;
         }
 
@@ -753,7 +881,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline CompleteColor(string style)
         {
-            Options.CompleteScheme = Style.ParseScheme(style, Options.ResolveMarkerScheme(TimelineItemState.Complete));
+            ApplyCompleteStyle(Style.Parse(style));
             return this;
         }
 
@@ -764,7 +892,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline WarningColor(ConsoleColor color)
         {
-            Options.WarningScheme = Scheme(color);
+            ApplyWarningStyle(Scheme(color), Decoration.None, null, null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the warning marker foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The warning marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline WarningColor(SpectreColor color)
+        {
+            ApplyWarningStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the warning marker foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The warning marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline WarningColor(RgbColor color)
+        {
+            ApplyWarningStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -775,7 +925,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline WarningColor(Style style)
         {
-            Options.WarningScheme = Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Warning));
+            ApplyWarningStyle(style);
             return this;
         }
 
@@ -786,7 +936,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline WarningColor(string style)
         {
-            Options.WarningScheme = Style.ParseScheme(style, Options.ResolveMarkerScheme(TimelineItemState.Warning));
+            ApplyWarningStyle(Style.Parse(style));
             return this;
         }
 
@@ -797,7 +947,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline ErrorColor(ConsoleColor color)
         {
-            Options.ErrorScheme = Scheme(color);
+            ApplyErrorStyle(Scheme(color), Decoration.None, null, null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the error marker foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The error marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline ErrorColor(SpectreColor color)
+        {
+            ApplyErrorStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the error marker foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The error marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline ErrorColor(RgbColor color)
+        {
+            ApplyErrorStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -808,7 +980,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline ErrorColor(Style style)
         {
-            Options.ErrorScheme = Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Error));
+            ApplyErrorStyle(style);
             return this;
         }
 
@@ -819,7 +991,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline ErrorColor(string style)
         {
-            Options.ErrorScheme = Style.ParseScheme(style, Options.ResolveMarkerScheme(TimelineItemState.Error));
+            ApplyErrorStyle(Style.Parse(style));
             return this;
         }
 
@@ -830,7 +1002,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline SkippedColor(ConsoleColor color)
         {
-            Options.SkippedScheme = Scheme(color);
+            ApplySkippedStyle(Scheme(color), Decoration.None, null, null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the skipped marker foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The skipped marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline SkippedColor(SpectreColor color)
+        {
+            ApplySkippedStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the skipped marker foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The skipped marker foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline SkippedColor(RgbColor color)
+        {
+            ApplySkippedStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -841,7 +1035,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline SkippedColor(Style style)
         {
-            Options.SkippedScheme = Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Skipped));
+            ApplySkippedStyle(style);
             return this;
         }
 
@@ -852,7 +1046,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline SkippedColor(string style)
         {
-            Options.SkippedScheme = Style.ParseScheme(style, Options.ResolveMarkerScheme(TimelineItemState.Skipped));
+            ApplySkippedStyle(Style.Parse(style));
             return this;
         }
 
@@ -864,6 +1058,37 @@ namespace ConsoulLibrary
         public Timeline ConnectorColor(ConsoleColor color)
         {
             Options.ConnectorScheme = Scheme(color);
+            Options.ConnectorDecoration = Decoration.None;
+            Options.ConnectorForegroundRgb = null;
+            Options.ConnectorBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the connector foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The connector foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline ConnectorColor(SpectreColor color)
+        {
+            Options.ConnectorScheme = Scheme(color);
+            Options.ConnectorDecoration = Decoration.None;
+            Options.ConnectorForegroundRgb = color.ToRgbColor();
+            Options.ConnectorBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the connector foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The connector foreground color.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline ConnectorColor(RgbColor color)
+        {
+            Options.ConnectorScheme = Scheme(color);
+            Options.ConnectorDecoration = Decoration.None;
+            Options.ConnectorForegroundRgb = color;
+            Options.ConnectorBackgroundRgb = null;
             return this;
         }
 
@@ -874,7 +1099,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline ConnectorColor(Style style)
         {
-            Options.ConnectorScheme = Scheme(style, Options.ResolveConnectorScheme());
+            ApplyConnectorStyle(style);
             return this;
         }
 
@@ -885,22 +1110,110 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Timeline"/> instance.</returns>
         public Timeline ConnectorColor(string style)
         {
-            Options.ConnectorScheme = Style.ParseScheme(style, Options.ResolveConnectorScheme());
+            ApplyConnectorStyle(Style.Parse(style));
             return this;
         }
 
-        private static ConsoleColor? ResolveColor<T>(T item, Func<T, SpectreColor> selector)
+        private void ApplyTitleStyle(Style style)
         {
-            return selector == null
-                ? (ConsoleColor?)null
-                : selector(item).ToConsoleColor();
+            Options.TitleScheme = Scheme(style, Options.ResolveTitleScheme());
+            Options.TitleDecoration = style?.Decoration ?? Decoration.None;
+            Options.TitleForegroundRgb = style?.ForegroundRgb;
+            Options.TitleBackgroundRgb = style?.BackgroundRgb;
         }
 
-        private static ConsoleColor? ResolveColor<T>(T item, Func<T, RgbColor> selector)
+        private void ApplyDescriptionStyle(Style style)
         {
-            return selector == null
-                ? (ConsoleColor?)null
-                : selector(item).ToConsoleColor();
+            Options.DescriptionScheme = Scheme(style, Options.ResolveDescriptionScheme());
+            Options.DescriptionDecoration = style?.Decoration ?? Decoration.None;
+            Options.DescriptionForegroundRgb = style?.ForegroundRgb;
+            Options.DescriptionBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyPendingStyle(Style style)
+        {
+            ApplyPendingStyle(Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Pending)), style?.Decoration ?? Decoration.None, style?.ForegroundRgb, style?.BackgroundRgb);
+        }
+
+        private void ApplyPendingStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            Options.PendingScheme = scheme;
+            Options.PendingDecoration = decoration;
+            Options.PendingForegroundRgb = foregroundRgb;
+            Options.PendingBackgroundRgb = backgroundRgb;
+        }
+
+        private void ApplyActiveStyle(Style style)
+        {
+            ApplyActiveStyle(Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Active)), style?.Decoration ?? Decoration.None, style?.ForegroundRgb, style?.BackgroundRgb);
+        }
+
+        private void ApplyActiveStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            Options.ActiveScheme = scheme;
+            Options.ActiveDecoration = decoration;
+            Options.ActiveForegroundRgb = foregroundRgb;
+            Options.ActiveBackgroundRgb = backgroundRgb;
+        }
+
+        private void ApplyCompleteStyle(Style style)
+        {
+            ApplyCompleteStyle(Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Complete)), style?.Decoration ?? Decoration.None, style?.ForegroundRgb, style?.BackgroundRgb);
+        }
+
+        private void ApplyCompleteStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            Options.CompleteScheme = scheme;
+            Options.CompleteDecoration = decoration;
+            Options.CompleteForegroundRgb = foregroundRgb;
+            Options.CompleteBackgroundRgb = backgroundRgb;
+        }
+
+        private void ApplyWarningStyle(Style style)
+        {
+            ApplyWarningStyle(Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Warning)), style?.Decoration ?? Decoration.None, style?.ForegroundRgb, style?.BackgroundRgb);
+        }
+
+        private void ApplyWarningStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            Options.WarningScheme = scheme;
+            Options.WarningDecoration = decoration;
+            Options.WarningForegroundRgb = foregroundRgb;
+            Options.WarningBackgroundRgb = backgroundRgb;
+        }
+
+        private void ApplyErrorStyle(Style style)
+        {
+            ApplyErrorStyle(Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Error)), style?.Decoration ?? Decoration.None, style?.ForegroundRgb, style?.BackgroundRgb);
+        }
+
+        private void ApplyErrorStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            Options.ErrorScheme = scheme;
+            Options.ErrorDecoration = decoration;
+            Options.ErrorForegroundRgb = foregroundRgb;
+            Options.ErrorBackgroundRgb = backgroundRgb;
+        }
+
+        private void ApplySkippedStyle(Style style)
+        {
+            ApplySkippedStyle(Scheme(style, Options.ResolveMarkerScheme(TimelineItemState.Skipped)), style?.Decoration ?? Decoration.None, style?.ForegroundRgb, style?.BackgroundRgb);
+        }
+
+        private void ApplySkippedStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            Options.SkippedScheme = scheme;
+            Options.SkippedDecoration = decoration;
+            Options.SkippedForegroundRgb = foregroundRgb;
+            Options.SkippedBackgroundRgb = backgroundRgb;
+        }
+
+        private void ApplyConnectorStyle(Style style)
+        {
+            Options.ConnectorScheme = Scheme(style, Options.ResolveConnectorScheme());
+            Options.ConnectorDecoration = style?.Decoration ?? Decoration.None;
+            Options.ConnectorForegroundRgb = style?.ForegroundRgb;
+            Options.ConnectorBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)
@@ -910,6 +1223,16 @@ namespace ConsoulLibrary
                 Color = color,
                 BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
             };
+        }
+
+        private static ColorScheme Scheme(SpectreColor color)
+        {
+            return Scheme(color.ToConsoleColor());
+        }
+
+        private static ColorScheme Scheme(RgbColor color)
+        {
+            return Scheme(color.ToConsoleColor());
         }
 
         private static ColorScheme Scheme(Style style, ColorScheme fallback)

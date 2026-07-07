@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using ConsoulLibrary.Color;
 using Xunit;
@@ -96,6 +98,69 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= width, "Raw markup sparkline line exceeded configured width: " + line));
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Sparkline style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Sparkline_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var sparkline = new Sparkline(new[] { 1d, 3d, 2d, 5d, 8d })
+                .Width(60)
+                .Label("Duration")
+                .LabelColor("bold #22c55e")
+                .LineColor("#336699")
+                .RangeColor("underline #112233")
+                .ShowRange()
+                .Characters("123456789");
+
+            console.Write(sparkline);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mDuration", output);
+            Assert.Contains("\u001b[38;2;51;102;153m", output);
+            Assert.Contains("\u001b[4;38;2;17;34;51m1..8", output);
+        }
+
+        /// <summary>
+        /// Sparkline RGB helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void Sparkline_RgbHelpersEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var sparkline = new Sparkline(new[] { 1d, 3d, 2d, 5d, 8d })
+                .Width(60)
+                .Label("API")
+                .LabelColor(RgbColor.FromHex("#445566"))
+                .LineColor(RgbColor.FromHex("#336699"))
+                .RangeColor(RgbColor.FromHex("#112233"))
+                .ShowRange()
+                .Characters("123456789");
+
+            console.Write(sparkline);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239mAPI", output);
+            Assert.Contains("\u001b[38;5;60m", output);
+            Assert.Contains("\u001b[38;5;234m1..8", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

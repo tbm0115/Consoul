@@ -83,15 +83,22 @@ namespace ConsoulLibrary
         /// <param name="defaultStyle">Optional default style applied to untagged text.</param>
         public static void Render(string markup, bool writeLine, Style defaultStyle)
         {
-            ColorScheme defaultScheme = defaultStyle != null
-                ? defaultStyle.ToColorScheme(RenderOptions.DefaultScheme)
-                : RenderOptions.DefaultScheme;
+            StyledColorScheme defaultScheme = defaultStyle != null
+                ? StyledColorScheme.FromStyle(defaultStyle, RenderOptions.DefaultScheme)
+                : StyledColorScheme.FromScheme(RenderOptions.DefaultScheme);
+            Decoration defaultDecoration = defaultStyle != null ? defaultStyle.Decoration : Decoration.None;
 
-            foreach (MarkupSegment segment in Parse(markup, defaultScheme))
+            foreach (MarkupSegment segment in Parse(markup, defaultScheme, defaultDecoration))
             {
                 if (segment.Text.Length > 0)
                 {
-                    TerminalLinkWriter.WriteText(segment.Text, segment.Scheme, segment.Link);
+                    TerminalLinkWriter.WriteText(
+                        segment.Text,
+                        segment.Scheme,
+                        segment.Link,
+                        segment.Decoration,
+                        segment.ForegroundRgb,
+                        segment.BackgroundRgb);
                 }
             }
 
@@ -182,9 +189,19 @@ namespace ConsoulLibrary
 
         internal static IEnumerable<MarkupSegment> Parse(string markup, ColorScheme defaultScheme)
         {
+            return Parse(markup, defaultScheme, Decoration.None);
+        }
+
+        internal static IEnumerable<MarkupSegment> Parse(string markup, ColorScheme defaultScheme, Decoration defaultDecoration)
+        {
+            return Parse(markup, StyledColorScheme.FromScheme(defaultScheme), defaultDecoration);
+        }
+
+        internal static IEnumerable<MarkupSegment> Parse(string markup, StyledColorScheme defaultScheme, Decoration defaultDecoration)
+        {
             markup = Emoji.Replace(markup);
 
-            var stack = new List<MarkupState> { new MarkupState(defaultScheme, null) };
+            var stack = new List<MarkupState> { new MarkupState(defaultScheme, defaultDecoration, null) };
             var text = new StringBuilder();
 
             int index = 0;
@@ -210,7 +227,7 @@ namespace ConsoulLibrary
 
                     string tag = markup.Substring(index + 1, closeIndex - index - 1);
                     MarkupState currentState = stack[stack.Count - 1];
-                    if (IsCloseTag(tag, currentState.Scheme))
+                    if (IsCloseTag(tag, currentState.Scheme, currentState.Decoration))
                     {
                         if (stack.Count > 1)
                         {
@@ -232,17 +249,25 @@ namespace ConsoulLibrary
                         continue;
                     }
 
-                    ColorScheme nextScheme;
+                    StyledColorScheme nextScheme;
+                    Decoration nextDecoration;
                     Link nextLink;
                     bool hasLink;
-                    if (TryParseTag(tag, currentState.Scheme, out nextScheme, out nextLink, out hasLink))
+                    if (TryParseTag(
+                        tag,
+                        currentState.Scheme,
+                        currentState.Decoration,
+                        out nextScheme,
+                        out nextDecoration,
+                        out nextLink,
+                        out hasLink))
                     {
                         foreach (MarkupSegment segment in Flush(text, currentState))
                         {
                             yield return segment;
                         }
 
-                        stack.Add(new MarkupState(nextScheme, hasLink ? nextLink : currentState.Link));
+                        stack.Add(new MarkupState(nextScheme, nextDecoration, hasLink ? nextLink : currentState.Link));
                         index = closeIndex + 1;
                         continue;
                     }
@@ -276,7 +301,7 @@ namespace ConsoulLibrary
                 yield break;
             }
 
-            yield return new MarkupSegment(text.ToString(), state.Scheme, state.Link);
+            yield return new MarkupSegment(text.ToString(), state.Scheme, state.Decoration, state.Link);
             text.Length = 0;
         }
 
@@ -287,23 +312,52 @@ namespace ConsoulLibrary
 
         private static bool TryParseTag(string tag, ColorScheme currentScheme, out ColorScheme scheme)
         {
+            StyledColorScheme richScheme;
+            Decoration ignoredDecoration;
             Link ignoredLink;
             bool ignoredHasLink;
-            return TryParseTag(tag, currentScheme, out scheme, out ignoredLink, out ignoredHasLink);
+            bool parsed = TryParseTag(
+                tag,
+                StyledColorScheme.FromScheme(currentScheme),
+                Decoration.None,
+                out richScheme,
+                out ignoredDecoration,
+                out ignoredLink,
+                out ignoredHasLink);
+            scheme = richScheme.Scheme;
+            return parsed;
         }
 
-        private static bool TryParseTag(string tag, ColorScheme currentScheme, out ColorScheme scheme, out Link link, out bool hasLink)
+        private static bool TryParseTag(
+            string tag,
+            StyledColorScheme currentScheme,
+            Decoration currentDecoration,
+            out StyledColorScheme scheme,
+            out Decoration decoration,
+            out Link link,
+            out bool hasLink)
         {
             tag = (tag ?? string.Empty).Trim();
             link = null;
             hasLink = false;
-            if (TryResolveScheme(tag, out scheme))
+            decoration = currentDecoration;
+            ColorScheme resolvedScheme;
+            if (TryResolveScheme(tag, out resolvedScheme))
             {
+                scheme = StyledColorScheme.FromScheme(resolvedScheme);
                 return true;
             }
 
             string contentTag;
-            if (TryParseContentTag(tag, currentScheme, out contentTag, out scheme, out link, out hasLink))
+            if (TryParseContentTag(
+                tag,
+                currentScheme,
+                currentDecoration,
+                out contentTag,
+                out scheme,
+                out decoration,
+                out link,
+                out hasLink))
             {
                 tag = contentTag;
                 if (string.IsNullOrWhiteSpace(tag))
@@ -311,8 +365,9 @@ namespace ConsoulLibrary
                     return true;
                 }
 
-                if (TryResolveScheme(tag, out scheme))
+                if (TryResolveScheme(tag, out resolvedScheme))
                 {
+                    scheme = StyledColorScheme.FromScheme(resolvedScheme);
                     return true;
                 }
             }
@@ -335,29 +390,34 @@ namespace ConsoulLibrary
                 }
             }
 
-            ConsoleColor foreground;
-            if (!TryParseColor(foregroundToken, out foreground))
+            ParsedColor foreground;
+            if (!TryParseColorToken(foregroundToken, out foreground))
             {
                 scheme = currentScheme;
+                decoration = currentDecoration;
                 return false;
             }
 
-            ConsoleColor background = currentScheme.BackgroundColor;
-            if (!string.IsNullOrWhiteSpace(backgroundToken) && !TryParseColor(backgroundToken, out background))
+            ParsedColor background = new ParsedColor(currentScheme.Scheme.BackgroundColor, currentScheme.BackgroundRgb);
+            if (!string.IsNullOrWhiteSpace(backgroundToken) && !TryParseColorToken(backgroundToken, out background))
             {
                 scheme = currentScheme;
+                decoration = currentDecoration;
                 return false;
             }
 
-            scheme = new ColorScheme
-            {
-                Color = foreground,
-                BackgroundColor = background
-            };
+            scheme = new StyledColorScheme(
+                new ColorScheme
+                {
+                    Color = foreground.Color,
+                    BackgroundColor = background.Color
+                },
+                foreground.Rgb,
+                background.Rgb);
             return true;
         }
 
-        private static bool IsCloseTag(string tag, ColorScheme currentScheme)
+        private static bool IsCloseTag(string tag, StyledColorScheme currentScheme, Decoration currentDecoration)
         {
             tag = (tag ?? string.Empty).Trim();
             if (tag == "/")
@@ -376,27 +436,52 @@ namespace ConsoulLibrary
                 return true;
             }
 
-            ColorScheme ignored;
-            return TryParseTag(closingTag, currentScheme, out ignored);
+            StyledColorScheme ignored;
+            Decoration ignoredDecoration;
+            Link ignoredLink;
+            bool ignoredHasLink;
+            return TryParseTag(
+                closingTag,
+                currentScheme,
+                currentDecoration,
+                out ignored,
+                out ignoredDecoration,
+                out ignoredLink,
+                out ignoredHasLink);
         }
 
         private static bool TryParseContentTag(string tag, ColorScheme currentScheme, out string contentTag, out ColorScheme scheme)
         {
+            StyledColorScheme richScheme;
+            Decoration ignoredDecoration;
             Link ignoredLink;
             bool ignoredHasLink;
-            return TryParseContentTag(tag, currentScheme, out contentTag, out scheme, out ignoredLink, out ignoredHasLink);
+            bool parsed = TryParseContentTag(
+                tag,
+                StyledColorScheme.FromScheme(currentScheme),
+                Decoration.None,
+                out contentTag,
+                out richScheme,
+                out ignoredDecoration,
+                out ignoredLink,
+                out ignoredHasLink);
+            scheme = richScheme.Scheme;
+            return parsed;
         }
 
         private static bool TryParseContentTag(
             string tag,
-            ColorScheme currentScheme,
+            StyledColorScheme currentScheme,
+            Decoration currentDecoration,
             out string contentTag,
-            out ColorScheme scheme,
+            out StyledColorScheme scheme,
+            out Decoration decoration,
             out Link link,
             out bool hasLink)
         {
             contentTag = tag ?? string.Empty;
             scheme = currentScheme;
+            decoration = currentDecoration;
             link = null;
             hasLink = false;
 
@@ -426,12 +511,14 @@ namespace ConsoulLibrary
 
             bool removedStyle = false;
             bool removedLink = false;
+            Decoration parsedDecoration = Decoration.None;
             var builder = new StringBuilder(contentTag.Length);
             foreach (string token in tokens)
             {
                 if (IsStyleToken(token))
                 {
                     removedStyle = true;
+                    parsedDecoration |= Style.ParseDecorationToken(token);
                     continue;
                 }
 
@@ -462,6 +549,7 @@ namespace ConsoulLibrary
             }
 
             contentTag = builder.ToString();
+            decoration = currentDecoration | parsedDecoration;
             return true;
         }
 
@@ -564,9 +652,24 @@ namespace ConsoulLibrary
 
         internal static bool TryParseColor(string token, out ConsoleColor color)
         {
-            string normalized = NormalizeToken(token);
-            if (TryParseHexColor(token, out color))
+            ParsedColor parsed;
+            if (TryParseColorToken(token, out parsed))
             {
+                color = parsed.Color;
+                return true;
+            }
+
+            color = RenderOptions.DefaultColor;
+            return false;
+        }
+
+        private static bool TryParseColorToken(string token, out ParsedColor color)
+        {
+            string normalized = NormalizeToken(token);
+            RgbColor rgbColor;
+            if (RgbColor.TryFromHex(token, out rgbColor))
+            {
+                color = new ParsedColor(rgbColor.ToConsoleColor(), rgbColor);
                 return true;
             }
 
@@ -578,8 +681,9 @@ namespace ConsoulLibrary
             {
                 normalized = "darkgray";
             }
-            else if (TryParseColorAlias(normalized, out color))
+            else if (TryParseColorAlias(normalized, out ConsoleColor aliasColor))
             {
+                color = new ParsedColor(aliasColor, null);
                 return true;
             }
 
@@ -587,12 +691,12 @@ namespace ConsoulLibrary
             {
                 if (NormalizeToken(candidate.ToString()) == normalized)
                 {
-                    color = candidate;
+                    color = new ParsedColor(candidate, null);
                     return true;
                 }
             }
 
-            color = RenderOptions.DefaultColor;
+            color = default(ParsedColor);
             return false;
         }
 
@@ -742,15 +846,31 @@ namespace ConsoulLibrary
 
         private readonly struct MarkupState
         {
-            public MarkupState(ColorScheme scheme, Link link)
+            public MarkupState(StyledColorScheme scheme, Decoration decoration, Link link)
             {
                 Scheme = scheme;
+                Decoration = decoration;
                 Link = link;
             }
 
-            public ColorScheme Scheme { get; }
+            public StyledColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
 
             public Link Link { get; }
+        }
+
+        private readonly struct ParsedColor
+        {
+            public ParsedColor(ConsoleColor color, RgbColor? rgb)
+            {
+                Color = color;
+                Rgb = rgb;
+            }
+
+            public ConsoleColor Color { get; }
+
+            public RgbColor? Rgb { get; }
         }
 
         private sealed class EscapingFormatProvider : IFormatProvider, ICustomFormatter
@@ -798,20 +918,39 @@ namespace ConsoulLibrary
     internal sealed class MarkupSegment
     {
         public MarkupSegment(string text, ColorScheme scheme)
-            : this(text, scheme, null)
+            : this(text, scheme, Decoration.None, null)
         {
         }
 
         public MarkupSegment(string text, ColorScheme scheme, Link link)
+            : this(text, scheme, Decoration.None, link)
+        {
+        }
+
+        public MarkupSegment(string text, ColorScheme scheme, Decoration decoration, Link link)
+            : this(text, StyledColorScheme.FromScheme(scheme), decoration, link)
+        {
+        }
+
+        public MarkupSegment(string text, StyledColorScheme scheme, Decoration decoration, Link link)
         {
             Text = text ?? string.Empty;
-            Scheme = scheme;
+            Scheme = scheme.Scheme;
+            ForegroundRgb = scheme.ForegroundRgb;
+            BackgroundRgb = scheme.BackgroundRgb;
+            Decoration = decoration;
             Link = link;
         }
 
         public string Text { get; }
 
         public ColorScheme Scheme { get; }
+
+        public RgbColor? ForegroundRgb { get; }
+
+        public RgbColor? BackgroundRgb { get; }
+
+        public Decoration Decoration { get; }
 
         public Link Link { get; }
     }

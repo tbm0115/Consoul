@@ -48,7 +48,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart AddItem(string label, double value, SpectreColor color)
         {
-            Add(new BarChartItem(label, value, Scheme(color)));
+            Add(BarChartItem.Create(label, value, color));
             return this;
         }
 
@@ -61,7 +61,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart AddItem(string label, double value, RgbColor color)
         {
-            Add(new BarChartItem(label, value, Scheme(color)));
+            Add(BarChartItem.Create(label, value, color));
             return this;
         }
 
@@ -74,7 +74,11 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart AddItem(string label, double value, string style)
         {
-            Add(new BarChartItem(label, value, Scheme(style, Options.ResolveBarScheme())));
+            Add(BarChartItem.Create(
+                label,
+                value,
+                string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style),
+                Options.ResolveBarScheme()));
             return this;
         }
 
@@ -87,7 +91,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart AddItem(string label, double value, Style style)
         {
-            Add(new BarChartItem(label, value, style?.ToColorScheme(Options.ResolveBarScheme())));
+            Add(BarChartItem.Create(label, value, style, Options.ResolveBarScheme()));
             return this;
         }
 
@@ -505,6 +509,9 @@ namespace ConsoulLibrary
         public BarChart LabelColor(ConsoleColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = null;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -516,6 +523,9 @@ namespace ConsoulLibrary
         public BarChart LabelColor(SpectreColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color.ToRgbColor();
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -527,6 +537,9 @@ namespace ConsoulLibrary
         public BarChart LabelColor(RgbColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -537,7 +550,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart LabelColor(Style style)
         {
-            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(style);
             return this;
         }
 
@@ -548,7 +561,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart LabelColor(string style)
         {
-            Options.LabelScheme = Style.ParseScheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(Style.Parse(style));
             return this;
         }
 
@@ -560,6 +573,9 @@ namespace ConsoulLibrary
         public BarChart BarColor(ConsoleColor color)
         {
             Options.BarScheme = Scheme(color);
+            Options.BarDecoration = Decoration.None;
+            Options.BarForegroundRgb = null;
+            Options.BarBackgroundRgb = null;
             return this;
         }
 
@@ -571,6 +587,9 @@ namespace ConsoulLibrary
         public BarChart BarColor(SpectreColor color)
         {
             Options.BarScheme = Scheme(color);
+            Options.BarDecoration = Decoration.None;
+            Options.BarForegroundRgb = color.ToRgbColor();
+            Options.BarBackgroundRgb = null;
             return this;
         }
 
@@ -582,6 +601,9 @@ namespace ConsoulLibrary
         public BarChart BarColor(RgbColor color)
         {
             Options.BarScheme = Scheme(color);
+            Options.BarDecoration = Decoration.None;
+            Options.BarForegroundRgb = color;
+            Options.BarBackgroundRgb = null;
             return this;
         }
 
@@ -592,7 +614,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart BarColor(Style style)
         {
-            Options.BarScheme = Scheme(style, Options.ResolveBarScheme());
+            ApplyBarStyle(style);
             return this;
         }
 
@@ -603,7 +625,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart BarColor(string style)
         {
-            Options.BarScheme = Style.ParseScheme(style, Options.ResolveBarScheme());
+            ApplyBarStyle(Style.Parse(style));
             return this;
         }
 
@@ -615,6 +637,9 @@ namespace ConsoulLibrary
         public BarChart ValueColor(ConsoleColor color)
         {
             Options.ValueScheme = Scheme(color);
+            Options.ValueDecoration = Decoration.None;
+            Options.ValueForegroundRgb = null;
+            Options.ValueBackgroundRgb = null;
             return this;
         }
 
@@ -626,6 +651,9 @@ namespace ConsoulLibrary
         public BarChart ValueColor(SpectreColor color)
         {
             Options.ValueScheme = Scheme(color);
+            Options.ValueDecoration = Decoration.None;
+            Options.ValueForegroundRgb = color.ToRgbColor();
+            Options.ValueBackgroundRgb = null;
             return this;
         }
 
@@ -637,6 +665,9 @@ namespace ConsoulLibrary
         public BarChart ValueColor(RgbColor color)
         {
             Options.ValueScheme = Scheme(color);
+            Options.ValueDecoration = Decoration.None;
+            Options.ValueForegroundRgb = color;
+            Options.ValueBackgroundRgb = null;
             return this;
         }
 
@@ -647,7 +678,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart ValueColor(Style style)
         {
-            Options.ValueScheme = Scheme(style, Options.ResolveValueScheme());
+            ApplyValueStyle(style);
             return this;
         }
 
@@ -658,8 +689,32 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart ValueColor(string style)
         {
-            Options.ValueScheme = Style.ParseScheme(style, Options.ResolveValueScheme());
+            ApplyValueStyle(Style.Parse(style));
             return this;
+        }
+
+        private void ApplyLabelStyle(Style style)
+        {
+            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            Options.LabelDecoration = style?.Decoration ?? Decoration.None;
+            Options.LabelForegroundRgb = style?.ForegroundRgb;
+            Options.LabelBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyBarStyle(Style style)
+        {
+            Options.BarScheme = Scheme(style, Options.ResolveBarScheme());
+            Options.BarDecoration = style?.Decoration ?? Decoration.None;
+            Options.BarForegroundRgb = style?.ForegroundRgb;
+            Options.BarBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyValueStyle(Style style)
+        {
+            Options.ValueScheme = Scheme(style, Options.ResolveValueScheme());
+            Options.ValueDecoration = style?.Decoration ?? Decoration.None;
+            Options.ValueForegroundRgb = style?.ForegroundRgb;
+            Options.ValueBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)
@@ -686,11 +741,5 @@ namespace ConsoulLibrary
             return (style ?? Style.Plain).ToColorScheme(fallback);
         }
 
-        private static ColorScheme? Scheme(string style, ColorScheme fallback)
-        {
-            return string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.ParseScheme(style, fallback);
-        }
     }
 }

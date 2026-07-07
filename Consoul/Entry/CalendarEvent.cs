@@ -40,7 +40,13 @@ namespace ConsoulLibrary
         /// <param name="day">The event day.</param>
         /// <param name="customHighlightStyle">Optional style used for the event day.</param>
         public CalendarEvent(string description, int year, int month, int day, Style customHighlightStyle = null)
-            : base(new DateTime(year, month, day), description ?? string.Empty, ResolveScheme(customHighlightStyle))
+            : base(
+                new DateTime(year, month, day),
+                description ?? string.Empty,
+                ResolveScheme(customHighlightStyle),
+                customHighlightStyle?.Decoration,
+                customHighlightStyle?.ForegroundRgb,
+                customHighlightStyle?.BackgroundRgb)
         {
             _customHighlightStyle = customHighlightStyle;
         }
@@ -91,6 +97,9 @@ namespace ConsoulLibrary
             {
                 _customHighlightStyle = value;
                 Scheme = ResolveScheme(value);
+                Decoration = value?.Decoration;
+                ForegroundRgb = value?.ForegroundRgb;
+                BackgroundRgb = value?.BackgroundRgb;
             }
         }
 

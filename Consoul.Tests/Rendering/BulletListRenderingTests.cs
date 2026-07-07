@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -82,6 +84,72 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Build package") && write.Color == ConsoleColor.Yellow);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Bullet-list style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void BulletList_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var list = new BulletList()
+                .Width(60)
+                .TextColor("bold #22c55e")
+                .MarkerColor("#445566")
+                .AddItems("Build");
+            list.AddItemStyled("API", "#336699", "#778899");
+
+            console.Write(list);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;68;85;102m- \u001b[39m", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94mBuild\u001b[22;39m", output);
+            Assert.Contains("\u001b[38;2;119;136;153m- \u001b[39m", output);
+            Assert.Contains("\u001b[38;2;51;102;153mAPI\u001b[39m", output);
+        }
+
+        /// <summary>
+        /// Bullet-list RGB selectors use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void BulletList_RgbSelectorsEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var items = new[]
+            {
+                new
+                {
+                    Name = "API",
+                    TextColor = RgbColor.FromHex("#336699"),
+                    MarkerColor = RgbColor.FromHex("#445566")
+                }
+            };
+
+            var list = new BulletList()
+                .Width(60)
+                .AddItems(items, item => item.Name, item => item.TextColor, item => item.MarkerColor);
+
+            console.Write(list);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239m- \u001b[39m", output);
+            Assert.Contains("\u001b[38;5;60mAPI\u001b[39m", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

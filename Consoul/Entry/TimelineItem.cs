@@ -1,5 +1,7 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -56,14 +58,59 @@ namespace ConsoulLibrary
         public ColorScheme? MarkerScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets optional ANSI decoration used for the marker.
+        /// </summary>
+        public Decoration? MarkerDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the marker on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? MarkerForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the marker on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? MarkerBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets an optional color scheme for the title.
         /// </summary>
         public ColorScheme? TitleScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets optional ANSI decoration used for the title.
+        /// </summary>
+        public Decoration? TitleDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the title on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TitleForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the title on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TitleBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets an optional color scheme for the description.
         /// </summary>
         public ColorScheme? DescriptionScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional ANSI decoration used for the description.
+        /// </summary>
+        public Decoration? DescriptionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the description on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the description on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a timeline item.
@@ -94,6 +141,67 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Creates a timeline item using Spectre-style color facades.
+        /// </summary>
+        /// <param name="title">The primary item text.</param>
+        /// <param name="titleColor">Foreground color used for the title.</param>
+        /// <param name="markerColor">Optional foreground color used for the marker.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the description.</param>
+        /// <param name="state">The rendered item state.</param>
+        /// <param name="description">Optional descriptive text rendered below the title.</param>
+        /// <param name="timestamp">Optional timestamp rendered before the title.</param>
+        /// <returns>A configured <see cref="TimelineItem"/> instance.</returns>
+        public static TimelineItem Create(
+            string title,
+            SpectreColor titleColor,
+            SpectreColor? markerColor = null,
+            SpectreColor? descriptionColor = null,
+            TimelineItemState state = TimelineItemState.Pending,
+            string description = null,
+            DateTimeOffset? timestamp = null)
+        {
+            return Create(
+                title,
+                titleColor.ToRgbColor(),
+                markerColor.HasValue ? markerColor.Value.ToRgbColor() : (RgbColor?)null,
+                descriptionColor.HasValue ? descriptionColor.Value.ToRgbColor() : (RgbColor?)null,
+                state,
+                description,
+                timestamp);
+        }
+
+        /// <summary>
+        /// Creates a timeline item using RGB foreground colors.
+        /// </summary>
+        /// <param name="title">The primary item text.</param>
+        /// <param name="titleColor">Foreground color used for the title.</param>
+        /// <param name="markerColor">Optional foreground color used for the marker.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the description.</param>
+        /// <param name="state">The rendered item state.</param>
+        /// <param name="description">Optional descriptive text rendered below the title.</param>
+        /// <param name="timestamp">Optional timestamp rendered before the title.</param>
+        /// <returns>A configured <see cref="TimelineItem"/> instance.</returns>
+        public static TimelineItem Create(
+            string title,
+            RgbColor titleColor,
+            RgbColor? markerColor = null,
+            RgbColor? descriptionColor = null,
+            TimelineItemState state = TimelineItemState.Pending,
+            string description = null,
+            DateTimeOffset? timestamp = null)
+        {
+            return new TimelineItem(title, state, description, timestamp)
+            {
+                TitleScheme = Scheme(titleColor.ToConsoleColor()),
+                MarkerScheme = markerColor.HasValue ? Scheme(markerColor.Value.ToConsoleColor()) : (ColorScheme?)null,
+                DescriptionScheme = descriptionColor.HasValue ? Scheme(descriptionColor.Value.ToConsoleColor()) : (ColorScheme?)null,
+                TitleForegroundRgb = titleColor,
+                MarkerForegroundRgb = markerColor,
+                DescriptionForegroundRgb = descriptionColor
+            };
+        }
+
+        /// <summary>
         /// Creates a timeline item using reusable style objects.
         /// </summary>
         /// <param name="title">The primary item text.</param>
@@ -113,12 +221,16 @@ namespace ConsoulLibrary
             string description = null,
             DateTimeOffset? timestamp = null)
         {
-            return new TimelineItem(title, state, description, timestamp)
+            var item = new TimelineItem(title, state, description, timestamp)
             {
                 TitleScheme = Scheme(titleStyle),
                 MarkerScheme = Scheme(markerStyle),
                 DescriptionScheme = Scheme(descriptionStyle)
             };
+            ApplyTitleStyle(item, titleStyle);
+            ApplyMarkerStyle(item, markerStyle);
+            ApplyDescriptionStyle(item, descriptionStyle);
+            return item;
         }
 
         /// <summary>
@@ -141,12 +253,50 @@ namespace ConsoulLibrary
             string markerStyle = null,
             string descriptionStyle = null)
         {
-            return new TimelineItem(title, state, description, timestamp)
+            return Create(
+                title,
+                string.IsNullOrWhiteSpace(titleStyle) ? null : Style.Parse(titleStyle),
+                string.IsNullOrWhiteSpace(markerStyle) ? null : Style.Parse(markerStyle),
+                string.IsNullOrWhiteSpace(descriptionStyle) ? null : Style.Parse(descriptionStyle),
+                state,
+                description,
+                timestamp);
+        }
+
+        private static void ApplyTitleStyle(TimelineItem item, Style style)
+        {
+            if (item == null || style == null)
             {
-                TitleScheme = string.IsNullOrWhiteSpace(titleStyle) ? (ColorScheme?)null : Style.Parse(titleStyle).ToColorScheme(RenderOptions.DefaultScheme),
-                MarkerScheme = string.IsNullOrWhiteSpace(markerStyle) ? (ColorScheme?)null : Style.Parse(markerStyle).ToColorScheme(RenderOptions.DefaultScheme),
-                DescriptionScheme = string.IsNullOrWhiteSpace(descriptionStyle) ? (ColorScheme?)null : Style.Parse(descriptionStyle).ToColorScheme(RenderOptions.DefaultScheme)
-            };
+                return;
+            }
+
+            item.TitleDecoration = style.Decoration;
+            item.TitleForegroundRgb = style.ForegroundRgb;
+            item.TitleBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static void ApplyMarkerStyle(TimelineItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.MarkerDecoration = style.Decoration;
+            item.MarkerForegroundRgb = style.ForegroundRgb;
+            item.MarkerBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static void ApplyDescriptionStyle(TimelineItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.DescriptionDecoration = style.Decoration;
+            item.DescriptionForegroundRgb = style.ForegroundRgb;
+            item.DescriptionBackgroundRgb = style.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

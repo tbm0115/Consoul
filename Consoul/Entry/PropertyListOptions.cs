@@ -1,4 +1,5 @@
 using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -33,6 +34,21 @@ namespace ConsoulLibrary
         public ColorScheme? LabelScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the default ANSI decoration used for labels.
+        /// </summary>
+        public Decoration LabelDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB foreground color used for labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB background color used for labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for separators.
         /// </summary>
         public ColorScheme? SeparatorScheme { get; set; }
@@ -41,6 +57,21 @@ namespace ConsoulLibrary
         /// Gets or sets the default color scheme used for values.
         /// </summary>
         public ColorScheme? ValueScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default ANSI decoration used for values.
+        /// </summary>
+        public Decoration ValueDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB foreground color used for values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB background color used for values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current property list options.
@@ -55,8 +86,14 @@ namespace ConsoulLibrary
                 Separator = Separator,
                 IndentWrappedValues = IndentWrappedValues,
                 LabelScheme = LabelScheme,
+                LabelDecoration = LabelDecoration,
+                LabelForegroundRgb = LabelForegroundRgb,
+                LabelBackgroundRgb = LabelBackgroundRgb,
                 SeparatorScheme = SeparatorScheme,
-                ValueScheme = ValueScheme
+                ValueScheme = ValueScheme,
+                ValueDecoration = ValueDecoration,
+                ValueForegroundRgb = ValueForegroundRgb,
+                ValueBackgroundRgb = ValueBackgroundRgb
             };
         }
 

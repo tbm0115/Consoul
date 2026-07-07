@@ -78,10 +78,20 @@ namespace ConsoulLibrary
 
             int innerWidth = Math.Max(1, width - leftPadding - rightPadding);
             ColorScheme scheme = _options.ResolveScheme();
+            Decoration decoration = _options.Decoration;
+            RgbColor? foregroundRgb = _options.ForegroundRgb;
+            RgbColor? backgroundRgb = _options.BackgroundRgb;
 
             WriteBlankLines(topPadding, scheme);
 
-            foreach (System.Collections.Generic.List<FixedMessageSegment> line in GetRenderSegmentLines(Content, innerWidth, _options.Overflow, scheme))
+            foreach (System.Collections.Generic.List<FixedMessageSegment> line in GetRenderSegmentLines(
+                Content,
+                innerWidth,
+                _options.Overflow,
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb))
             {
                 System.Collections.Generic.List<FixedMessageSegment> aligned = MarkupRenderText.AlignSegments(line, innerWidth, _options.Alignment, scheme);
                 MarkupRenderText.WriteSegments(
@@ -136,14 +146,18 @@ namespace ConsoulLibrary
             string content,
             int width,
             Overflow overflow,
-            ColorScheme scheme)
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             if (overflow == ConsoulLibrary.Overflow.Wrap)
             {
-                return MarkupRenderText.WrapSegments(content, width, scheme);
+                return MarkupRenderText.WrapSegments(content, width, scheme, decoration, foregroundRgb, backgroundRgb);
             }
 
-            System.Collections.Generic.List<System.Collections.Generic.List<FixedMessageSegment>> lines = MarkupRenderText.GetLogicalLines(content, scheme);
+            System.Collections.Generic.List<System.Collections.Generic.List<FixedMessageSegment>> lines =
+                MarkupRenderText.GetLogicalLines(content, scheme, decoration, foregroundRgb, backgroundRgb);
             var rendered = new System.Collections.Generic.List<System.Collections.Generic.List<FixedMessageSegment>>();
             string ellipsis = overflow == ConsoulLibrary.Overflow.Ellipsis ? "..." : null;
             foreach (System.Collections.Generic.List<FixedMessageSegment> line in lines)

@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
 
@@ -81,6 +83,94 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 36, "Timeline line exceeded configured width: " + line));
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Timeline style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Timeline_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var timeline = new Timeline()
+                .Width(60)
+                .TitleColor("bold #22c55e")
+                .DescriptionColor("underline #112233")
+                .CompleteColor("#336699")
+                .ConnectorColor("italic #778899")
+                .AddComplete("Build", "Artifacts ready")
+                .AddStepStyled(
+                    "Deploy",
+                    TimelineItemState.Warning,
+                    "Needs owner",
+                    titleStyle: "italic #abcdef",
+                    markerStyle: "bold #fedcba",
+                    descriptionStyle: "underline #445566");
+
+            console.Write(timeline);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;51;102;153m[x]", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94mBuild", output);
+            Assert.Contains("\u001b[4;38;2;17;34;51mArtifacts ready", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153m|", output);
+            Assert.Contains("\u001b[1;38;2;254;220;186m[!]", output);
+            Assert.Contains("\u001b[3;38;2;171;205;239mDeploy", output);
+            Assert.Contains("\u001b[4;38;2;68;85;102mNeeds owner", output);
+        }
+
+        /// <summary>
+        /// Timeline RGB selector helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void Timeline_RgbSelectorsEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var steps = new[]
+            {
+                new StyledTimelineStep
+                {
+                    Title = "API",
+                    State = TimelineItemState.Complete,
+                    Description = "Healthy",
+                    TitleColor = RgbColor.FromHex("#445566"),
+                    MarkerColor = RgbColor.FromHex("#336699"),
+                    DescriptionColor = RgbColor.FromHex("#112233")
+                }
+            };
+
+            var timeline = new Timeline()
+                .Width(60)
+                .AddSteps(
+                    steps,
+                    item => item.Title,
+                    item => item.TitleColor,
+                    item => item.MarkerColor,
+                    item => item.DescriptionColor,
+                    item => item.State,
+                    item => item.Description);
+
+            console.Write(timeline);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;60m[x]", output);
+            Assert.Contains("\u001b[38;5;239mAPI", output);
+            Assert.Contains("\u001b[38;5;234mHealthy", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>
@@ -237,6 +327,21 @@ namespace ConsoulLibrary.Tests.Rendering
             public string Name { get; set; } = string.Empty;
 
             public bool Ready { get; set; }
+        }
+
+        private sealed class StyledTimelineStep
+        {
+            public string Title { get; set; } = string.Empty;
+
+            public TimelineItemState State { get; set; }
+
+            public string Description { get; set; } = string.Empty;
+
+            public RgbColor TitleColor { get; set; }
+
+            public RgbColor MarkerColor { get; set; }
+
+            public RgbColor DescriptionColor { get; set; }
         }
 
         private sealed class TestRoutine : Routine

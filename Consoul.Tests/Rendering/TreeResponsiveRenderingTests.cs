@@ -1,6 +1,9 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Rendering
@@ -96,6 +99,73 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("`-- ") && write.Color == ConsoleColor.Gray);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Tree style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Tree_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var tree = new Tree("Root")
+                .AsciiGuide()
+                .Width(60)
+                .TextColor("bold #22c55e")
+                .BranchColor("#445566");
+            tree.AddNode("API", "#336699");
+            tree.AddNode("Worker", Style.Parse("underline #778899"));
+            tree.AddNode("Captured", RgbColor.FromHex("#112233"));
+
+            console.Write(tree);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mRoot\u001b[22;39m", output);
+            Assert.Contains("\u001b[38;2;68;85;102m|-- \u001b[39m", output);
+            Assert.Contains("\u001b[38;2;51;102;153mAPI\u001b[39m", output);
+            Assert.Contains("\u001b[4;38;2;119;136;153mWorker\u001b[24;39m", output);
+            Assert.Contains("\u001b[1;38;2;17;34;51mCaptured\u001b[22;39m", output);
+        }
+
+        /// <summary>
+        /// Tree style helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void Tree_StyleHelpersEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var items = new[]
+            {
+                new { Name = "API", Color = RgbColor.FromHex("#336699") }
+            };
+
+            var tree = new Tree(new Markup("[bold #22c55e]Root[/]"))
+                .AsciiGuide()
+                .Width(60)
+                .BranchColor("#445566")
+                .AddNodes(items, item => item.Name, item => item.Color);
+
+            console.Write(tree);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;5;41mRoot\u001b[22;39m", output);
+            Assert.Contains("\u001b[38;5;239m`-- \u001b[39m", output);
+            Assert.Contains("\u001b[38;5;60mAPI\u001b[39m", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

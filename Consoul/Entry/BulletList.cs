@@ -181,11 +181,25 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(textColorSelector));
             }
 
-            return AddItems(
-                items,
-                textSelector,
-                ToConsoleColorSelector(textColorSelector),
-                ToConsoleColorSelector(markerColorSelector));
+            if (textSelector == null)
+            {
+                throw new ArgumentNullException(nameof(textSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                AddItem(BulletListItem.Create(
+                    textSelector(item),
+                    textColorSelector(item),
+                    markerColorSelector != null ? markerColorSelector(item) : (SpectreColor?)null));
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -208,11 +222,25 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(textColorSelector));
             }
 
-            return AddItems(
-                items,
-                textSelector,
-                ToConsoleColorSelector(textColorSelector),
-                ToConsoleColorSelector(markerColorSelector));
+            if (textSelector == null)
+            {
+                throw new ArgumentNullException(nameof(textSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                AddItem(BulletListItem.Create(
+                    textSelector(item),
+                    textColorSelector(item),
+                    markerColorSelector != null ? markerColorSelector(item) : (RgbColor?)null));
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -365,20 +393,6 @@ namespace ConsoulLibrary
             return this;
         }
 
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, SpectreColor> selector)
-        {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
-        }
-
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, RgbColor> selector)
-        {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
-        }
-
         /// <summary>
         /// Sets the requested render width.
         /// </summary>
@@ -462,6 +476,9 @@ namespace ConsoulLibrary
         public BulletList MarkerColor(ConsoleColor color)
         {
             Options.MarkerScheme = Scheme(color);
+            Options.MarkerDecoration = Decoration.None;
+            Options.MarkerForegroundRgb = null;
+            Options.MarkerBackgroundRgb = null;
             return this;
         }
 
@@ -473,6 +490,9 @@ namespace ConsoulLibrary
         public BulletList MarkerColor(SpectreColor color)
         {
             Options.MarkerScheme = Scheme(color);
+            Options.MarkerDecoration = Decoration.None;
+            Options.MarkerForegroundRgb = color.ToRgbColor();
+            Options.MarkerBackgroundRgb = null;
             return this;
         }
 
@@ -484,6 +504,9 @@ namespace ConsoulLibrary
         public BulletList MarkerColor(RgbColor color)
         {
             Options.MarkerScheme = Scheme(color);
+            Options.MarkerDecoration = Decoration.None;
+            Options.MarkerForegroundRgb = color;
+            Options.MarkerBackgroundRgb = null;
             return this;
         }
 
@@ -494,7 +517,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BulletList"/> instance.</returns>
         public BulletList MarkerColor(Style style)
         {
-            Options.MarkerScheme = Scheme(style, Options.ResolveMarkerScheme());
+            ApplyMarkerStyle(style);
             return this;
         }
 
@@ -505,7 +528,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BulletList"/> instance.</returns>
         public BulletList MarkerColor(string style)
         {
-            Options.MarkerScheme = Style.ParseScheme(style, Options.ResolveMarkerScheme());
+            ApplyMarkerStyle(Style.Parse(style));
             return this;
         }
 
@@ -517,6 +540,9 @@ namespace ConsoulLibrary
         public BulletList TextColor(ConsoleColor color)
         {
             Options.TextScheme = Scheme(color);
+            Options.TextDecoration = Decoration.None;
+            Options.TextForegroundRgb = null;
+            Options.TextBackgroundRgb = null;
             return this;
         }
 
@@ -528,6 +554,9 @@ namespace ConsoulLibrary
         public BulletList TextColor(SpectreColor color)
         {
             Options.TextScheme = Scheme(color);
+            Options.TextDecoration = Decoration.None;
+            Options.TextForegroundRgb = color.ToRgbColor();
+            Options.TextBackgroundRgb = null;
             return this;
         }
 
@@ -539,6 +568,9 @@ namespace ConsoulLibrary
         public BulletList TextColor(RgbColor color)
         {
             Options.TextScheme = Scheme(color);
+            Options.TextDecoration = Decoration.None;
+            Options.TextForegroundRgb = color;
+            Options.TextBackgroundRgb = null;
             return this;
         }
 
@@ -549,7 +581,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BulletList"/> instance.</returns>
         public BulletList TextColor(Style style)
         {
-            Options.TextScheme = Scheme(style, Options.ResolveTextScheme());
+            ApplyTextStyle(style);
             return this;
         }
 
@@ -560,8 +592,24 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BulletList"/> instance.</returns>
         public BulletList TextColor(string style)
         {
-            Options.TextScheme = Style.ParseScheme(style, Options.ResolveTextScheme());
+            ApplyTextStyle(Style.Parse(style));
             return this;
+        }
+
+        private void ApplyMarkerStyle(Style style)
+        {
+            Options.MarkerScheme = Scheme(style, Options.ResolveMarkerScheme());
+            Options.MarkerDecoration = style?.Decoration ?? Decoration.None;
+            Options.MarkerForegroundRgb = style?.ForegroundRgb;
+            Options.MarkerBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyTextStyle(Style style)
+        {
+            Options.TextScheme = Scheme(style, Options.ResolveTextScheme());
+            Options.TextDecoration = style?.Decoration ?? Decoration.None;
+            Options.TextForegroundRgb = style?.ForegroundRgb;
+            Options.TextBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

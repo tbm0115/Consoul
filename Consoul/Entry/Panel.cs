@@ -568,6 +568,8 @@ namespace ConsoulLibrary
         public Panel ContentColor(ConsoleColor color)
         {
             Options.ContentScheme = Scheme(color);
+            Options.ContentForegroundRgb = null;
+            Options.ContentBackgroundRgb = null;
             return this;
         }
 
@@ -579,6 +581,8 @@ namespace ConsoulLibrary
         public Panel ContentColor(SpectreColor color)
         {
             Options.ContentScheme = Scheme(color);
+            Options.ContentForegroundRgb = color.ToRgbColor();
+            Options.ContentBackgroundRgb = null;
             return this;
         }
 
@@ -590,6 +594,8 @@ namespace ConsoulLibrary
         public Panel ContentColor(RgbColor color)
         {
             Options.ContentScheme = Scheme(color);
+            Options.ContentForegroundRgb = color;
+            Options.ContentBackgroundRgb = null;
             return this;
         }
 
@@ -600,7 +606,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Panel"/> instance.</returns>
         public Panel ContentColor(string style)
         {
-            Options.ContentScheme = Style.ParseScheme(style, Options.ContentScheme ?? RenderOptions.DefaultScheme);
+            ApplyContentStyle(Style.Parse(style));
             return this;
         }
 
@@ -611,7 +617,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Panel"/> instance.</returns>
         public Panel ContentColor(Style style)
         {
-            Options.ContentScheme = Scheme(style, Options.ContentScheme ?? RenderOptions.DefaultScheme);
+            ApplyContentStyle(style);
             return this;
         }
 
@@ -623,6 +629,8 @@ namespace ConsoulLibrary
         public Panel BorderColor(ConsoleColor color)
         {
             Options.BorderScheme = Scheme(color);
+            Options.BorderForegroundRgb = null;
+            Options.BorderBackgroundRgb = null;
             return this;
         }
 
@@ -634,6 +642,8 @@ namespace ConsoulLibrary
         public Panel BorderColor(SpectreColor color)
         {
             Options.BorderScheme = Scheme(color);
+            Options.BorderForegroundRgb = color.ToRgbColor();
+            Options.BorderBackgroundRgb = null;
             return this;
         }
 
@@ -645,6 +655,8 @@ namespace ConsoulLibrary
         public Panel BorderColor(RgbColor color)
         {
             Options.BorderScheme = Scheme(color);
+            Options.BorderForegroundRgb = color;
+            Options.BorderBackgroundRgb = null;
             return this;
         }
 
@@ -655,7 +667,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Panel"/> instance.</returns>
         public Panel BorderColor(string style)
         {
-            Options.BorderScheme = Style.ParseScheme(style, Options.BorderScheme ?? RenderOptions.DefaultScheme);
+            ApplyBorderStyle(Style.Parse(style));
             return this;
         }
 
@@ -666,7 +678,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Panel"/> instance.</returns>
         public Panel BorderColor(Style style)
         {
-            Options.BorderScheme = Scheme(style, Options.BorderScheme ?? RenderOptions.DefaultScheme);
+            ApplyBorderStyle(style);
             return this;
         }
 
@@ -678,6 +690,8 @@ namespace ConsoulLibrary
         public Panel HeaderColor(ConsoleColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleForegroundRgb = null;
+            Options.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -689,6 +703,8 @@ namespace ConsoulLibrary
         public Panel HeaderColor(SpectreColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleForegroundRgb = color.ToRgbColor();
+            Options.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -700,6 +716,8 @@ namespace ConsoulLibrary
         public Panel HeaderColor(RgbColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleForegroundRgb = color;
+            Options.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -710,7 +728,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Panel"/> instance.</returns>
         public Panel HeaderColor(string style)
         {
-            Options.TitleScheme = Style.ParseScheme(style, Options.TitleScheme ?? RenderOptions.DefaultScheme);
+            ApplyHeaderStyle(Style.Parse(style));
             return this;
         }
 
@@ -721,7 +739,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Panel"/> instance.</returns>
         public Panel HeaderColor(Style style)
         {
-            Options.TitleScheme = Scheme(style, Options.TitleScheme ?? RenderOptions.DefaultScheme);
+            ApplyHeaderStyle(style);
             return this;
         }
 
@@ -733,6 +751,8 @@ namespace ConsoulLibrary
         public Panel FooterColor(ConsoleColor color)
         {
             Options.FooterScheme = Scheme(color);
+            Options.FooterForegroundRgb = null;
+            Options.FooterBackgroundRgb = null;
             return this;
         }
 
@@ -744,6 +764,8 @@ namespace ConsoulLibrary
         public Panel FooterColor(SpectreColor color)
         {
             Options.FooterScheme = Scheme(color);
+            Options.FooterForegroundRgb = color.ToRgbColor();
+            Options.FooterBackgroundRgb = null;
             return this;
         }
 
@@ -755,6 +777,8 @@ namespace ConsoulLibrary
         public Panel FooterColor(RgbColor color)
         {
             Options.FooterScheme = Scheme(color);
+            Options.FooterForegroundRgb = color;
+            Options.FooterBackgroundRgb = null;
             return this;
         }
 
@@ -765,7 +789,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Panel"/> instance.</returns>
         public Panel FooterColor(string style)
         {
-            Options.FooterScheme = Style.ParseScheme(style, Options.FooterScheme ?? RenderOptions.DefaultScheme);
+            ApplyFooterStyle(Style.Parse(style));
             return this;
         }
 
@@ -776,7 +800,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Panel"/> instance.</returns>
         public Panel FooterColor(Style style)
         {
-            Options.FooterScheme = Scheme(style, Options.FooterScheme ?? RenderOptions.DefaultScheme);
+            ApplyFooterStyle(style);
             return this;
         }
 
@@ -814,7 +838,7 @@ namespace ConsoulLibrary
 
             if (style != null)
             {
-                Options.TitleScheme = Scheme(style, Options.TitleScheme ?? RenderOptions.DefaultScheme);
+                ApplyHeaderStyle(style);
             }
 
             return this;
@@ -831,10 +855,42 @@ namespace ConsoulLibrary
 
             if (style != null)
             {
-                Options.FooterScheme = Scheme(style, Options.FooterScheme ?? RenderOptions.DefaultScheme);
+                ApplyFooterStyle(style);
             }
 
             return this;
+        }
+
+        private void ApplyBorderStyle(Style style)
+        {
+            Options.BorderScheme = Scheme(style, Options.BorderScheme ?? RenderOptions.DefaultScheme);
+            Options.BorderDecoration = style?.Decoration ?? Decoration.None;
+            Options.BorderForegroundRgb = style?.ForegroundRgb;
+            Options.BorderBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyContentStyle(Style style)
+        {
+            Options.ContentScheme = Scheme(style, Options.ContentScheme ?? RenderOptions.DefaultScheme);
+            Options.ContentDecoration = style?.Decoration ?? Decoration.None;
+            Options.ContentForegroundRgb = style?.ForegroundRgb;
+            Options.ContentBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyHeaderStyle(Style style)
+        {
+            Options.TitleScheme = Scheme(style, Options.TitleScheme ?? RenderOptions.DefaultScheme);
+            Options.TitleDecoration = style?.Decoration ?? Decoration.None;
+            Options.TitleForegroundRgb = style?.ForegroundRgb;
+            Options.TitleBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyFooterStyle(Style style)
+        {
+            Options.FooterScheme = Scheme(style, Options.FooterScheme ?? RenderOptions.DefaultScheme);
+            Options.FooterDecoration = style?.Decoration ?? Decoration.None;
+            Options.FooterForegroundRgb = style?.ForegroundRgb;
+            Options.FooterBackgroundRgb = style?.BackgroundRgb;
         }
 
         private Panel MutatePadding(Action<Padding> mutate)

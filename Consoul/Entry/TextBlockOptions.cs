@@ -48,6 +48,21 @@ namespace ConsoulLibrary
         public ColorScheme? Scheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the text decoration applied to untagged text block content on ANSI-capable terminals.
+        /// </summary>
+        public Decoration Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit foreground color used for untagged text block content on true-color terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit background color used for untagged text block content on true-color terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
+
+        /// <summary>
         /// Creates a copy of the current text block options.
         /// </summary>
         /// <returns>A new <see cref="TextBlockOptions"/> instance with the same values.</returns>
@@ -62,7 +77,10 @@ namespace ConsoulLibrary
                 RightPadding = RightPadding,
                 TopPadding = TopPadding,
                 BottomPadding = BottomPadding,
-                Scheme = Scheme
+                Scheme = Scheme,
+                Decoration = Decoration,
+                ForegroundRgb = ForegroundRgb,
+                BackgroundRgb = BackgroundRgb
             };
         }
 

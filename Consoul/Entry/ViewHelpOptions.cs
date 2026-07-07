@@ -1,4 +1,5 @@
 using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -58,9 +59,39 @@ namespace ConsoulLibrary
         public ColorScheme? TitleScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for the title rule.
+        /// </summary>
+        public Decoration TitleDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the title rule on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TitleForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the title rule on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TitleBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for action labels.
         /// </summary>
         public ColorScheme? LabelScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for action labels.
+        /// </summary>
+        public Decoration LabelDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for action labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for action labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the color scheme used for shortcut text.
@@ -68,9 +99,39 @@ namespace ConsoulLibrary
         public ColorScheme? ShortcutScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for shortcut text.
+        /// </summary>
+        public Decoration ShortcutDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for shortcut text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ShortcutForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for shortcut text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ShortcutBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for descriptions.
         /// </summary>
         public ColorScheme? DescriptionScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for descriptions.
+        /// </summary>
+        public Decoration DescriptionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for descriptions on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for descriptions on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the color scheme used for disabled reasons.
@@ -78,9 +139,39 @@ namespace ConsoulLibrary
         public ColorScheme? DisabledScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for disabled reasons.
+        /// </summary>
+        public Decoration DisabledDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for disabled reasons on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DisabledForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for disabled reasons on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DisabledBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for separators.
         /// </summary>
         public ColorScheme? SeparatorScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for separators.
+        /// </summary>
+        public Decoration SeparatorDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for separators on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SeparatorForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for separators on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SeparatorBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current view help options.
@@ -100,11 +191,29 @@ namespace ConsoulLibrary
                 ShortcutSuffix = ShortcutSuffix,
                 DisabledPrefix = DisabledPrefix,
                 TitleScheme = TitleScheme,
+                TitleDecoration = TitleDecoration,
+                TitleForegroundRgb = TitleForegroundRgb,
+                TitleBackgroundRgb = TitleBackgroundRgb,
                 LabelScheme = LabelScheme,
+                LabelDecoration = LabelDecoration,
+                LabelForegroundRgb = LabelForegroundRgb,
+                LabelBackgroundRgb = LabelBackgroundRgb,
                 ShortcutScheme = ShortcutScheme,
+                ShortcutDecoration = ShortcutDecoration,
+                ShortcutForegroundRgb = ShortcutForegroundRgb,
+                ShortcutBackgroundRgb = ShortcutBackgroundRgb,
                 DescriptionScheme = DescriptionScheme,
+                DescriptionDecoration = DescriptionDecoration,
+                DescriptionForegroundRgb = DescriptionForegroundRgb,
+                DescriptionBackgroundRgb = DescriptionBackgroundRgb,
                 DisabledScheme = DisabledScheme,
-                SeparatorScheme = SeparatorScheme
+                DisabledDecoration = DisabledDecoration,
+                DisabledForegroundRgb = DisabledForegroundRgb,
+                DisabledBackgroundRgb = DisabledBackgroundRgb,
+                SeparatorScheme = SeparatorScheme,
+                SeparatorDecoration = SeparatorDecoration,
+                SeparatorForegroundRgb = SeparatorForegroundRgb,
+                SeparatorBackgroundRgb = SeparatorBackgroundRgb
             };
         }
 
@@ -136,6 +245,55 @@ namespace ConsoulLibrary
         internal ColorScheme ResolveSeparatorScheme()
         {
             return SeparatorScheme ?? RenderOptions.SubnoteScheme;
+        }
+
+        internal StyledText ResolveTitleStyle()
+        {
+            return new StyledText(ResolveTitleScheme(), TitleDecoration, TitleForegroundRgb, TitleBackgroundRgb);
+        }
+
+        internal StyledText ResolveLabelStyle()
+        {
+            return new StyledText(ResolveLabelScheme(), LabelDecoration, LabelForegroundRgb, LabelBackgroundRgb);
+        }
+
+        internal StyledText ResolveShortcutStyle()
+        {
+            return new StyledText(ResolveShortcutScheme(), ShortcutDecoration, ShortcutForegroundRgb, ShortcutBackgroundRgb);
+        }
+
+        internal StyledText ResolveDescriptionStyle()
+        {
+            return new StyledText(ResolveDescriptionScheme(), DescriptionDecoration, DescriptionForegroundRgb, DescriptionBackgroundRgb);
+        }
+
+        internal StyledText ResolveDisabledStyle()
+        {
+            return new StyledText(ResolveDisabledScheme(), DisabledDecoration, DisabledForegroundRgb, DisabledBackgroundRgb);
+        }
+
+        internal StyledText ResolveSeparatorStyle()
+        {
+            return new StyledText(ResolveSeparatorScheme(), SeparatorDecoration, SeparatorForegroundRgb, SeparatorBackgroundRgb);
+        }
+
+        internal readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

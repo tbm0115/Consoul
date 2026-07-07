@@ -1,5 +1,6 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -64,14 +65,59 @@ namespace ConsoulLibrary
         public ColorScheme? LabelScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for labels.
+        /// </summary>
+        public Decoration LabelDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the default color scheme used for bars.
         /// </summary>
         public ColorScheme? BarScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for bars.
+        /// </summary>
+        public Decoration BarDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for bars on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BarForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for bars on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BarBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for values.
         /// </summary>
         public ColorScheme? ValueScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for values.
+        /// </summary>
+        public Decoration ValueDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current bar chart options.
@@ -92,8 +138,17 @@ namespace ConsoulLibrary
                 EmptyCharacter = EmptyCharacter,
                 ValueFormatter = ValueFormatter,
                 LabelScheme = LabelScheme,
+                LabelDecoration = LabelDecoration,
+                LabelForegroundRgb = LabelForegroundRgb,
+                LabelBackgroundRgb = LabelBackgroundRgb,
                 BarScheme = BarScheme,
-                ValueScheme = ValueScheme
+                BarDecoration = BarDecoration,
+                BarForegroundRgb = BarForegroundRgb,
+                BarBackgroundRgb = BarBackgroundRgb,
+                ValueScheme = ValueScheme,
+                ValueDecoration = ValueDecoration,
+                ValueForegroundRgb = ValueForegroundRgb,
+                ValueBackgroundRgb = ValueBackgroundRgb
             };
         }
 

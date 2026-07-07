@@ -870,6 +870,8 @@ namespace ConsoulLibrary
         public Table TitleColor(ConsoleColor color)
         {
             TableRenderOptions.TitleScheme = Scheme(color);
+            TableRenderOptions.TitleForegroundRgb = null;
+            TableRenderOptions.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -881,6 +883,8 @@ namespace ConsoulLibrary
         public Table TitleColor(SpectreColor color)
         {
             TableRenderOptions.TitleScheme = Scheme(color);
+            TableRenderOptions.TitleForegroundRgb = color.ToRgbColor();
+            TableRenderOptions.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -892,6 +896,8 @@ namespace ConsoulLibrary
         public Table TitleColor(RgbColor color)
         {
             TableRenderOptions.TitleScheme = Scheme(color);
+            TableRenderOptions.TitleForegroundRgb = color;
+            TableRenderOptions.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -902,7 +908,11 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table TitleColor(string style)
         {
-            TableRenderOptions.TitleScheme = Style.ParseScheme(style, TableRenderOptions.TitleScheme);
+            Style parsed = Style.Parse(style);
+            TableRenderOptions.TitleScheme = parsed.ToColorScheme(TableRenderOptions.TitleScheme);
+            TableRenderOptions.TitleDecoration = parsed.Decoration;
+            TableRenderOptions.TitleForegroundRgb = parsed.ForegroundRgb;
+            TableRenderOptions.TitleBackgroundRgb = parsed.BackgroundRgb;
             return this;
         }
 
@@ -914,6 +924,9 @@ namespace ConsoulLibrary
         public Table TitleColor(Style style)
         {
             TableRenderOptions.TitleScheme = Scheme(style, TableRenderOptions.TitleScheme);
+            TableRenderOptions.TitleDecoration = style?.Decoration ?? Decoration.None;
+            TableRenderOptions.TitleForegroundRgb = style?.ForegroundRgb;
+            TableRenderOptions.TitleBackgroundRgb = style?.BackgroundRgb;
             return this;
         }
 
@@ -925,6 +938,8 @@ namespace ConsoulLibrary
         public Table CaptionColor(ConsoleColor color)
         {
             TableRenderOptions.CaptionScheme = Scheme(color);
+            TableRenderOptions.CaptionForegroundRgb = null;
+            TableRenderOptions.CaptionBackgroundRgb = null;
             return this;
         }
 
@@ -936,6 +951,8 @@ namespace ConsoulLibrary
         public Table CaptionColor(SpectreColor color)
         {
             TableRenderOptions.CaptionScheme = Scheme(color);
+            TableRenderOptions.CaptionForegroundRgb = color.ToRgbColor();
+            TableRenderOptions.CaptionBackgroundRgb = null;
             return this;
         }
 
@@ -947,6 +964,8 @@ namespace ConsoulLibrary
         public Table CaptionColor(RgbColor color)
         {
             TableRenderOptions.CaptionScheme = Scheme(color);
+            TableRenderOptions.CaptionForegroundRgb = color;
+            TableRenderOptions.CaptionBackgroundRgb = null;
             return this;
         }
 
@@ -957,7 +976,11 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table CaptionColor(string style)
         {
-            TableRenderOptions.CaptionScheme = Style.ParseScheme(style, TableRenderOptions.CaptionScheme);
+            Style parsed = Style.Parse(style);
+            TableRenderOptions.CaptionScheme = parsed.ToColorScheme(TableRenderOptions.CaptionScheme);
+            TableRenderOptions.CaptionDecoration = parsed.Decoration;
+            TableRenderOptions.CaptionForegroundRgb = parsed.ForegroundRgb;
+            TableRenderOptions.CaptionBackgroundRgb = parsed.BackgroundRgb;
             return this;
         }
 
@@ -969,6 +992,9 @@ namespace ConsoulLibrary
         public Table CaptionColor(Style style)
         {
             TableRenderOptions.CaptionScheme = Scheme(style, TableRenderOptions.CaptionScheme);
+            TableRenderOptions.CaptionDecoration = style?.Decoration ?? Decoration.None;
+            TableRenderOptions.CaptionForegroundRgb = style?.ForegroundRgb;
+            TableRenderOptions.CaptionBackgroundRgb = style?.BackgroundRgb;
             return this;
         }
 
@@ -1588,6 +1614,9 @@ namespace ConsoulLibrary
             if (style != null)
             {
                 TableRenderOptions.TitleScheme = Scheme(style, TableRenderOptions.TitleScheme);
+                TableRenderOptions.TitleDecoration = style.Decoration;
+                TableRenderOptions.TitleForegroundRgb = style.ForegroundRgb;
+                TableRenderOptions.TitleBackgroundRgb = style.BackgroundRgb;
             }
 
             return this;
@@ -1605,6 +1634,9 @@ namespace ConsoulLibrary
             if (style != null)
             {
                 TableRenderOptions.CaptionScheme = Scheme(style, TableRenderOptions.CaptionScheme);
+                TableRenderOptions.CaptionDecoration = style.Decoration;
+                TableRenderOptions.CaptionForegroundRgb = style.ForegroundRgb;
+                TableRenderOptions.CaptionBackgroundRgb = style.BackgroundRgb;
             }
 
             return this;

@@ -77,12 +77,45 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a child node to the root node with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="text">The text rendered for the child node.</param>
+        /// <param name="color">The foreground color used for the child node.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(string text, SpectreColor color)
+        {
+            return Root.AddNode(text, color);
+        }
+
+        /// <summary>
+        /// Adds a child node to the root node with an RGB foreground color.
+        /// </summary>
+        /// <param name="text">The text rendered for the child node.</param>
+        /// <param name="color">The RGB foreground color used for the child node.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(string text, RgbColor color)
+        {
+            return Root.AddNode(text, color);
+        }
+
+        /// <summary>
         /// Adds a child node to the root node using Spectre-style style text.
         /// </summary>
         /// <param name="text">The text rendered for the child node.</param>
         /// <param name="style">Optional style used for the child node, such as <c>green</c> or <c>white on blue</c>.</param>
         /// <returns>The added child node.</returns>
         public TreeNode AddNode(string text, string style)
+        {
+            return Root.AddNode(text, style);
+        }
+
+        /// <summary>
+        /// Adds a child node to the root node using a reusable style object.
+        /// </summary>
+        /// <param name="text">The text rendered for the child node.</param>
+        /// <param name="style">Optional style used for the child node.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(string text, Style style)
         {
             return Root.AddNode(text, style);
         }
@@ -101,6 +134,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a child node to the root node with a Spectre-style foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The child node content.</param>
+        /// <param name="color">The foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(object content, SpectreColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Root.AddNode(content, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a child node to the root node with an RGB foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The child node content.</param>
+        /// <param name="color">The RGB foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(object content, RgbColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Root.AddNode(content, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
         /// Adds a child node to the root node using Spectre-style style text, formatting plain object values with the current culture and capturing renderable values.
         /// </summary>
         /// <param name="content">The child node content.</param>
@@ -109,6 +168,19 @@ namespace ConsoulLibrary
         /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
         /// <returns>The added child node.</returns>
         public TreeNode AddNode(object content, string style, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Root.AddNode(content, style, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a child node to the root node using a reusable style object, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The child node content.</param>
+        /// <param name="style">Optional style used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(object content, Style style, int? captureWidth = null, int captureHeight = 20)
         {
             return Root.AddNode(content, style, captureWidth, captureHeight);
         }
@@ -277,6 +349,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a child node with captured renderable content and a Spectre-style foreground color to the root node.
+        /// </summary>
+        /// <param name="renderable">The renderable content used as the child node label.</param>
+        /// <param name="color">The foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(IConsoulRenderable renderable, SpectreColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Root.AddNode(renderable, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a child node with captured renderable content and an RGB foreground color to the root node.
+        /// </summary>
+        /// <param name="renderable">The renderable content used as the child node label.</param>
+        /// <param name="color">The RGB foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(IConsoulRenderable renderable, RgbColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Root.AddNode(renderable, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
         /// Adds a child node with captured renderable content and Spectre-style style text to the root node.
         /// </summary>
         /// <param name="renderable">The renderable content used as the child node label.</param>
@@ -285,6 +383,19 @@ namespace ConsoulLibrary
         /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
         /// <returns>The added child node.</returns>
         public TreeNode AddNode(IConsoulRenderable renderable, string style, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Root.AddNode(renderable, style, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a child node with captured renderable content and a reusable style object to the root node.
+        /// </summary>
+        /// <param name="renderable">The renderable content used as the child node label.</param>
+        /// <param name="style">Optional style used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(IConsoulRenderable renderable, Style style, int? captureWidth = null, int captureHeight = 20)
         {
             return Root.AddNode(renderable, style, captureWidth, captureHeight);
         }
@@ -405,6 +516,37 @@ namespace ConsoulLibrary
         public Tree TextColor(ConsoleColor color)
         {
             Options.TextScheme = Scheme(color);
+            Options.TextDecoration = Decoration.None;
+            Options.TextForegroundRgb = null;
+            Options.TextBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default node text foreground color from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The default node text foreground color.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree TextColor(SpectreColor color)
+        {
+            Options.TextScheme = Scheme(color);
+            Options.TextDecoration = Decoration.None;
+            Options.TextForegroundRgb = color.ToRgbColor();
+            Options.TextBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default node text foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The default node text foreground color.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree TextColor(RgbColor color)
+        {
+            Options.TextScheme = Scheme(color);
+            Options.TextDecoration = Decoration.None;
+            Options.TextForegroundRgb = color;
+            Options.TextBackgroundRgb = null;
             return this;
         }
 
@@ -415,7 +557,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Tree"/> instance.</returns>
         public Tree TextColor(string style)
         {
-            Options.TextScheme = Style.ParseScheme(style, Options.TextScheme ?? RenderOptions.DefaultScheme);
+            ApplyTextStyle(Style.Parse(style));
             return this;
         }
 
@@ -426,7 +568,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Tree"/> instance.</returns>
         public Tree TextColor(Style style)
         {
-            Options.TextScheme = Scheme(style, Options.TextScheme ?? RenderOptions.DefaultScheme);
+            ApplyTextStyle(style);
             return this;
         }
 
@@ -438,6 +580,37 @@ namespace ConsoulLibrary
         public Tree BranchColor(ConsoleColor color)
         {
             Options.BranchScheme = Scheme(color);
+            Options.BranchDecoration = Decoration.None;
+            Options.BranchForegroundRgb = null;
+            Options.BranchBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the branch prefix foreground color from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The branch prefix foreground color.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree BranchColor(SpectreColor color)
+        {
+            Options.BranchScheme = Scheme(color);
+            Options.BranchDecoration = Decoration.None;
+            Options.BranchForegroundRgb = color.ToRgbColor();
+            Options.BranchBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the branch prefix foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The branch prefix foreground color.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree BranchColor(RgbColor color)
+        {
+            Options.BranchScheme = Scheme(color);
+            Options.BranchDecoration = Decoration.None;
+            Options.BranchForegroundRgb = color;
+            Options.BranchBackgroundRgb = null;
             return this;
         }
 
@@ -448,7 +621,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Tree"/> instance.</returns>
         public Tree BranchColor(string style)
         {
-            Options.BranchScheme = Style.ParseScheme(style, Options.BranchScheme ?? RenderOptions.DefaultScheme);
+            ApplyBranchStyle(Style.Parse(style));
             return this;
         }
 
@@ -459,7 +632,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Tree"/> instance.</returns>
         public Tree BranchColor(Style style)
         {
-            Options.BranchScheme = Scheme(style, Options.BranchScheme ?? RenderOptions.DefaultScheme);
+            ApplyBranchStyle(style);
             return this;
         }
 
@@ -470,6 +643,32 @@ namespace ConsoulLibrary
                 Color = color,
                 BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
             };
+        }
+
+        private static ColorScheme Scheme(SpectreColor color)
+        {
+            return Scheme(color.ToConsoleColor());
+        }
+
+        private static ColorScheme Scheme(RgbColor color)
+        {
+            return Scheme(color.ToConsoleColor());
+        }
+
+        private void ApplyTextStyle(Style style)
+        {
+            Options.TextScheme = Scheme(style, Options.TextScheme ?? RenderOptions.DefaultScheme);
+            Options.TextDecoration = style?.Decoration ?? Decoration.None;
+            Options.TextForegroundRgb = style?.ForegroundRgb;
+            Options.TextBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyBranchStyle(Style style)
+        {
+            Options.BranchScheme = Scheme(style, Options.BranchScheme ?? RenderOptions.DefaultScheme);
+            Options.BranchDecoration = style?.Decoration ?? Decoration.None;
+            Options.BranchForegroundRgb = style?.ForegroundRgb;
+            Options.BranchBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(Style style, ColorScheme fallback)

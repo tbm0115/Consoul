@@ -238,15 +238,15 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                AddMetric(
+                AddMetric(MetricItem.Create(
                     labelSelector(item),
                     valueSelector(item),
+                    labelColorSelector(item),
+                    valueColorSelector != null ? valueColorSelector(item) : (SpectreColor?)null,
+                    noteColorSelector != null ? noteColorSelector(item) : (SpectreColor?)null,
                     unitSelector != null ? unitSelector(item) : null,
                     noteSelector != null ? noteSelector(item) : null,
-                    kindSelector != null ? kindSelector(item) : MetricKind.Default,
-                    ResolveColor(item, labelColorSelector),
-                    ResolveColor(item, valueColorSelector),
-                    ResolveColor(item, noteColorSelector));
+                    kindSelector != null ? kindSelector(item) : MetricKind.Default));
             }
 
             return this;
@@ -299,15 +299,15 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                AddMetric(
+                AddMetric(MetricItem.Create(
                     labelSelector(item),
                     valueSelector(item),
+                    labelColorSelector(item),
+                    valueColorSelector != null ? valueColorSelector(item) : (RgbColor?)null,
+                    noteColorSelector != null ? noteColorSelector(item) : (RgbColor?)null,
                     unitSelector != null ? unitSelector(item) : null,
                     noteSelector != null ? noteSelector(item) : null,
-                    kindSelector != null ? kindSelector(item) : MetricKind.Default,
-                    ResolveColor(item, labelColorSelector),
-                    ResolveColor(item, valueColorSelector),
-                    ResolveColor(item, noteColorSelector));
+                    kindSelector != null ? kindSelector(item) : MetricKind.Default));
             }
 
             return this;
@@ -531,6 +531,9 @@ namespace ConsoulLibrary
         public Metrics LabelColor(ConsoleColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = null;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -542,6 +545,9 @@ namespace ConsoulLibrary
         public Metrics LabelColor(SpectreColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color.ToRgbColor();
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -553,6 +559,9 @@ namespace ConsoulLibrary
         public Metrics LabelColor(RgbColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -563,7 +572,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics LabelColor(Style style)
         {
-            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(style);
             return this;
         }
 
@@ -574,7 +583,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics LabelColor(string style)
         {
-            Options.LabelScheme = Style.ParseScheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(Style.Parse(style));
             return this;
         }
 
@@ -586,6 +595,9 @@ namespace ConsoulLibrary
         public Metrics ValueColor(ConsoleColor color)
         {
             Options.ValueScheme = Scheme(color);
+            Options.ValueDecoration = Decoration.None;
+            Options.ValueForegroundRgb = null;
+            Options.ValueBackgroundRgb = null;
             return this;
         }
 
@@ -597,6 +609,9 @@ namespace ConsoulLibrary
         public Metrics ValueColor(SpectreColor color)
         {
             Options.ValueScheme = Scheme(color);
+            Options.ValueDecoration = Decoration.None;
+            Options.ValueForegroundRgb = color.ToRgbColor();
+            Options.ValueBackgroundRgb = null;
             return this;
         }
 
@@ -608,6 +623,9 @@ namespace ConsoulLibrary
         public Metrics ValueColor(RgbColor color)
         {
             Options.ValueScheme = Scheme(color);
+            Options.ValueDecoration = Decoration.None;
+            Options.ValueForegroundRgb = color;
+            Options.ValueBackgroundRgb = null;
             return this;
         }
 
@@ -618,7 +636,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics ValueColor(Style style)
         {
-            Options.ValueScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Default));
+            ApplyValueStyle(style);
             return this;
         }
 
@@ -629,7 +647,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics ValueColor(string style)
         {
-            Options.ValueScheme = Style.ParseScheme(style, Options.ResolveValueScheme(MetricKind.Default));
+            ApplyValueStyle(Style.Parse(style));
             return this;
         }
 
@@ -641,6 +659,9 @@ namespace ConsoulLibrary
         public Metrics NoteColor(ConsoleColor color)
         {
             Options.NoteScheme = Scheme(color);
+            Options.NoteDecoration = Decoration.None;
+            Options.NoteForegroundRgb = null;
+            Options.NoteBackgroundRgb = null;
             return this;
         }
 
@@ -652,6 +673,9 @@ namespace ConsoulLibrary
         public Metrics NoteColor(SpectreColor color)
         {
             Options.NoteScheme = Scheme(color);
+            Options.NoteDecoration = Decoration.None;
+            Options.NoteForegroundRgb = color.ToRgbColor();
+            Options.NoteBackgroundRgb = null;
             return this;
         }
 
@@ -663,6 +687,9 @@ namespace ConsoulLibrary
         public Metrics NoteColor(RgbColor color)
         {
             Options.NoteScheme = Scheme(color);
+            Options.NoteDecoration = Decoration.None;
+            Options.NoteForegroundRgb = color;
+            Options.NoteBackgroundRgb = null;
             return this;
         }
 
@@ -673,7 +700,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics NoteColor(Style style)
         {
-            Options.NoteScheme = Scheme(style, Options.ResolveNoteScheme());
+            ApplyNoteStyle(style);
             return this;
         }
 
@@ -684,7 +711,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics NoteColor(string style)
         {
-            Options.NoteScheme = Style.ParseScheme(style, Options.ResolveNoteScheme());
+            ApplyNoteStyle(Style.Parse(style));
             return this;
         }
 
@@ -696,6 +723,9 @@ namespace ConsoulLibrary
         public Metrics InfoColor(ConsoleColor color)
         {
             Options.InfoScheme = Scheme(color);
+            Options.InfoDecoration = Decoration.None;
+            Options.InfoForegroundRgb = null;
+            Options.InfoBackgroundRgb = null;
             return this;
         }
 
@@ -707,6 +737,9 @@ namespace ConsoulLibrary
         public Metrics InfoColor(SpectreColor color)
         {
             Options.InfoScheme = Scheme(color);
+            Options.InfoDecoration = Decoration.None;
+            Options.InfoForegroundRgb = color.ToRgbColor();
+            Options.InfoBackgroundRgb = null;
             return this;
         }
 
@@ -718,6 +751,9 @@ namespace ConsoulLibrary
         public Metrics InfoColor(RgbColor color)
         {
             Options.InfoScheme = Scheme(color);
+            Options.InfoDecoration = Decoration.None;
+            Options.InfoForegroundRgb = color;
+            Options.InfoBackgroundRgb = null;
             return this;
         }
 
@@ -728,7 +764,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics InfoColor(Style style)
         {
-            Options.InfoScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Info));
+            ApplyInfoStyle(style);
             return this;
         }
 
@@ -739,7 +775,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics InfoColor(string style)
         {
-            Options.InfoScheme = Style.ParseScheme(style, Options.ResolveValueScheme(MetricKind.Info));
+            ApplyInfoStyle(Style.Parse(style));
             return this;
         }
 
@@ -751,6 +787,9 @@ namespace ConsoulLibrary
         public Metrics SuccessColor(ConsoleColor color)
         {
             Options.SuccessScheme = Scheme(color);
+            Options.SuccessDecoration = Decoration.None;
+            Options.SuccessForegroundRgb = null;
+            Options.SuccessBackgroundRgb = null;
             return this;
         }
 
@@ -762,6 +801,9 @@ namespace ConsoulLibrary
         public Metrics SuccessColor(SpectreColor color)
         {
             Options.SuccessScheme = Scheme(color);
+            Options.SuccessDecoration = Decoration.None;
+            Options.SuccessForegroundRgb = color.ToRgbColor();
+            Options.SuccessBackgroundRgb = null;
             return this;
         }
 
@@ -773,6 +815,9 @@ namespace ConsoulLibrary
         public Metrics SuccessColor(RgbColor color)
         {
             Options.SuccessScheme = Scheme(color);
+            Options.SuccessDecoration = Decoration.None;
+            Options.SuccessForegroundRgb = color;
+            Options.SuccessBackgroundRgb = null;
             return this;
         }
 
@@ -783,7 +828,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics SuccessColor(Style style)
         {
-            Options.SuccessScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Success));
+            ApplySuccessStyle(style);
             return this;
         }
 
@@ -794,7 +839,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics SuccessColor(string style)
         {
-            Options.SuccessScheme = Style.ParseScheme(style, Options.ResolveValueScheme(MetricKind.Success));
+            ApplySuccessStyle(Style.Parse(style));
             return this;
         }
 
@@ -806,6 +851,9 @@ namespace ConsoulLibrary
         public Metrics WarningColor(ConsoleColor color)
         {
             Options.WarningScheme = Scheme(color);
+            Options.WarningDecoration = Decoration.None;
+            Options.WarningForegroundRgb = null;
+            Options.WarningBackgroundRgb = null;
             return this;
         }
 
@@ -817,6 +865,9 @@ namespace ConsoulLibrary
         public Metrics WarningColor(SpectreColor color)
         {
             Options.WarningScheme = Scheme(color);
+            Options.WarningDecoration = Decoration.None;
+            Options.WarningForegroundRgb = color.ToRgbColor();
+            Options.WarningBackgroundRgb = null;
             return this;
         }
 
@@ -828,6 +879,9 @@ namespace ConsoulLibrary
         public Metrics WarningColor(RgbColor color)
         {
             Options.WarningScheme = Scheme(color);
+            Options.WarningDecoration = Decoration.None;
+            Options.WarningForegroundRgb = color;
+            Options.WarningBackgroundRgb = null;
             return this;
         }
 
@@ -838,7 +892,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics WarningColor(Style style)
         {
-            Options.WarningScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Warning));
+            ApplyWarningStyle(style);
             return this;
         }
 
@@ -849,7 +903,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics WarningColor(string style)
         {
-            Options.WarningScheme = Style.ParseScheme(style, Options.ResolveValueScheme(MetricKind.Warning));
+            ApplyWarningStyle(Style.Parse(style));
             return this;
         }
 
@@ -861,6 +915,9 @@ namespace ConsoulLibrary
         public Metrics ErrorColor(ConsoleColor color)
         {
             Options.ErrorScheme = Scheme(color);
+            Options.ErrorDecoration = Decoration.None;
+            Options.ErrorForegroundRgb = null;
+            Options.ErrorBackgroundRgb = null;
             return this;
         }
 
@@ -872,6 +929,9 @@ namespace ConsoulLibrary
         public Metrics ErrorColor(SpectreColor color)
         {
             Options.ErrorScheme = Scheme(color);
+            Options.ErrorDecoration = Decoration.None;
+            Options.ErrorForegroundRgb = color.ToRgbColor();
+            Options.ErrorBackgroundRgb = null;
             return this;
         }
 
@@ -883,6 +943,9 @@ namespace ConsoulLibrary
         public Metrics ErrorColor(RgbColor color)
         {
             Options.ErrorScheme = Scheme(color);
+            Options.ErrorDecoration = Decoration.None;
+            Options.ErrorForegroundRgb = color;
+            Options.ErrorBackgroundRgb = null;
             return this;
         }
 
@@ -893,7 +956,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics ErrorColor(Style style)
         {
-            Options.ErrorScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Error));
+            ApplyErrorStyle(style);
             return this;
         }
 
@@ -904,22 +967,64 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Metrics"/> instance.</returns>
         public Metrics ErrorColor(string style)
         {
-            Options.ErrorScheme = Style.ParseScheme(style, Options.ResolveValueScheme(MetricKind.Error));
+            ApplyErrorStyle(Style.Parse(style));
             return this;
         }
 
-        private static ConsoleColor? ResolveColor<T>(T item, Func<T, SpectreColor> selector)
+        private void ApplyLabelStyle(Style style)
         {
-            return selector == null
-                ? (ConsoleColor?)null
-                : selector(item).ToConsoleColor();
+            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            Options.LabelDecoration = style?.Decoration ?? Decoration.None;
+            Options.LabelForegroundRgb = style?.ForegroundRgb;
+            Options.LabelBackgroundRgb = style?.BackgroundRgb;
         }
 
-        private static ConsoleColor? ResolveColor<T>(T item, Func<T, RgbColor> selector)
+        private void ApplyValueStyle(Style style)
         {
-            return selector == null
-                ? (ConsoleColor?)null
-                : selector(item).ToConsoleColor();
+            Options.ValueScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Default));
+            Options.ValueDecoration = style?.Decoration ?? Decoration.None;
+            Options.ValueForegroundRgb = style?.ForegroundRgb;
+            Options.ValueBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyNoteStyle(Style style)
+        {
+            Options.NoteScheme = Scheme(style, Options.ResolveNoteScheme());
+            Options.NoteDecoration = style?.Decoration ?? Decoration.None;
+            Options.NoteForegroundRgb = style?.ForegroundRgb;
+            Options.NoteBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyInfoStyle(Style style)
+        {
+            Options.InfoScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Info));
+            Options.InfoDecoration = style?.Decoration ?? Decoration.None;
+            Options.InfoForegroundRgb = style?.ForegroundRgb;
+            Options.InfoBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplySuccessStyle(Style style)
+        {
+            Options.SuccessScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Success));
+            Options.SuccessDecoration = style?.Decoration ?? Decoration.None;
+            Options.SuccessForegroundRgb = style?.ForegroundRgb;
+            Options.SuccessBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyWarningStyle(Style style)
+        {
+            Options.WarningScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Warning));
+            Options.WarningDecoration = style?.Decoration ?? Decoration.None;
+            Options.WarningForegroundRgb = style?.ForegroundRgb;
+            Options.WarningBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyErrorStyle(Style style)
+        {
+            Options.ErrorScheme = Scheme(style, Options.ResolveValueScheme(MetricKind.Error));
+            Options.ErrorDecoration = style?.Decoration ?? Decoration.None;
+            Options.ErrorForegroundRgb = style?.ForegroundRgb;
+            Options.ErrorBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -132,6 +134,69 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("/") && write.Color == ConsoleColor.Yellow);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// TextPath style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void TextPath_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new TextPath(@"C:\repo\src\Program.cs")
+                .Width(80)
+                .Separator("/")
+                .RootColor("#112233")
+                .DirectoryStyle(Style.Parse("bold #22c55e"))
+                .StemColor("#336699")
+                .ExtensionColor("#778899")
+                .SeparatorColor("#445566"));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;17;34;51mC:\u001b[39m", output);
+            Assert.Contains("\u001b[38;2;68;85;102m/\u001b[39m", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94mrepo\u001b[22;39m", output);
+            Assert.Contains("\u001b[38;2;51;102;153mProgram\u001b[39m", output);
+            Assert.Contains("\u001b[38;2;119;136;153m.cs\u001b[39m", output);
+        }
+
+        /// <summary>
+        /// TextPath style helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void TextPath_StyleHelpersEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            console.Write(new TextPath(@"C:\repo\src\Program.cs")
+                .Width(80)
+                .Separator("/")
+                .RootColor("#112233")
+                .DirectoryColor("#22c55e")
+                .StemColor("#336699")
+                .ExtensionColor("#778899")
+                .SeparatorColor("#445566"));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;234mC:\u001b[39m", output);
+            Assert.Contains("\u001b[38;5;239m/\u001b[39m", output);
+            Assert.Contains("\u001b[38;5;41mrepo\u001b[39m", output);
+            Assert.Contains("\u001b[38;5;60mProgram\u001b[39m", output);
+            Assert.Contains("\u001b[38;5;102m.cs\u001b[39m", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

@@ -416,7 +416,13 @@ namespace ConsoulLibrary
                         Width = options.Width,
                         Title = options.ValidTitle,
                         SuccessScheme = options.ValidScheme,
-                        ContentScheme = options.ValidMessageScheme
+                        SuccessDecoration = options.ValidDecoration,
+                        SuccessForegroundRgb = options.ValidForegroundRgb,
+                        SuccessBackgroundRgb = options.ValidBackgroundRgb,
+                        ContentScheme = options.ValidMessageScheme,
+                        ContentDecoration = options.ValidMessageDecoration,
+                        ContentForegroundRgb = options.ValidMessageForegroundRgb,
+                        ContentBackgroundRgb = options.ValidMessageBackgroundRgb
                     });
                 return;
             }
@@ -434,8 +440,17 @@ namespace ConsoulLibrary
                 {
                     Width = checklistWidth,
                     LabelScheme = options.IssueScheme,
+                    LabelDecoration = options.IssueDecoration,
+                    LabelForegroundRgb = options.IssueForegroundRgb,
+                    LabelBackgroundRgb = options.IssueBackgroundRgb,
                     DescriptionScheme = options.IssueScheme,
-                    ErrorScheme = options.InvalidScheme
+                    DescriptionDecoration = options.IssueDecoration,
+                    DescriptionForegroundRgb = options.IssueForegroundRgb,
+                    DescriptionBackgroundRgb = options.IssueBackgroundRgb,
+                    ErrorScheme = options.InvalidScheme,
+                    ErrorDecoration = options.InvalidDecoration,
+                    ErrorForegroundRgb = options.InvalidForegroundRgb,
+                    ErrorBackgroundRgb = options.InvalidBackgroundRgb
                 }),
                 CalloutKind.Error,
                 new CalloutOptions
@@ -443,7 +458,13 @@ namespace ConsoulLibrary
                     Width = options.Width,
                     Title = options.InvalidTitle,
                     ErrorScheme = options.InvalidScheme,
-                    ContentScheme = options.IssueScheme
+                    ErrorDecoration = options.InvalidDecoration,
+                    ErrorForegroundRgb = options.InvalidForegroundRgb,
+                    ErrorBackgroundRgb = options.InvalidBackgroundRgb,
+                    ContentScheme = options.IssueScheme,
+                    ContentDecoration = options.IssueDecoration,
+                    ContentForegroundRgb = options.IssueForegroundRgb,
+                    ContentBackgroundRgb = options.IssueBackgroundRgb
                 },
                 captureWidth: checklistWidth);
         }

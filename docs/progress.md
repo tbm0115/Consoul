@@ -143,7 +143,7 @@ AnsiConsole.Live(new LiveDisplayOptions { Title = "Queue" }).Start(live =>
 
 `Spinner.Known` includes common migration aliases such as `Pipe`, `Line2`, `SimpleDots`, `SimpleDotsScrolling`, `Dots2` through `Dots12`, `Star2`, `Flip`, `Hamburger`, `GrowVertical`, `GrowHorizontal`, `Balloon`, `Noise`, `Bounce`, `BoxBounce`, `BouncingBar`, `BouncingBall`, `Arrow`, `Triangle`, `Circle`, `Toggle`, `Clock`, `Moon`, `Pong`, and `BetaWave` so quick status POCs can reuse familiar spinner names while staying dependency-free.
 
-Spinner, status, and single progress-bar messages can contain raw Spectre-style markup. Frames, active prefixes, success/failure prefixes, and bar glyphs remain literal, while the message body preserves parsed colors and escaped bracket text:
+Spinner, status, and single progress-bar messages can contain raw Spectre-style markup. Frames, active prefixes, success/failure prefixes, and bar glyphs remain literal, while the message body preserves parsed colors, RGB/hex metadata, ANSI-capable text decorations, and escaped bracket text:
 
 ```csharp
 Consoul.Status("[yellow]Preparing[/] [[prod]]", status =>
@@ -187,7 +187,7 @@ download.Value = 1024;
 download.Complete("Package ready");
 ```
 
-Task descriptions can contain raw Spectre-style markup in both the default progress row and `TaskDescriptionColumn` rows. Consoul trims and pads by visible text, renders parsed colors, and keeps escaped brackets such as `[[prod]]` literal:
+Task descriptions can contain raw Spectre-style markup in both the default progress row and `TaskDescriptionColumn` rows. Consoul trims and pads by visible text, renders parsed colors plus RGB/hex metadata and ANSI-capable text decorations, and keeps escaped brackets such as `[[prod]]` literal:
 
 ```csharp
 ProgressTask publish = progress.AddTask("[green]Build[/] for [[prod]]", 4);

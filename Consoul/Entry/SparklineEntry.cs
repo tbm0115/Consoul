@@ -91,17 +91,36 @@ namespace ConsoulLibrary
             Layout layout = ResolveLayout(width);
             if (layout.LabelWidth > 0)
             {
-                ColorScheme labelScheme = _options.ResolveLabelScheme();
-                MarkupRenderText.WriteSegments(PadOrTrimSegments(_options.Label, layout.LabelWidth, labelScheme), labelScheme, false);
+                StyledText labelStyle = ResolveLabelStyle();
+                MarkupRenderText.WriteSegments(PadOrTrimSegments(_options.Label, layout.LabelWidth, labelStyle), labelStyle.Scheme, false);
                 Consoul.Write(" ", RenderOptions.DefaultScheme, false);
             }
 
-            Consoul.Write(BuildLine(layout.LineWidth), _options.ResolveLineScheme(), !layout.ShowRange);
+            StyledText lineStyle = ResolveLineStyle();
+            TerminalLinkWriter.WriteText(
+                BuildLine(layout.LineWidth),
+                lineStyle.Scheme,
+                null,
+                lineStyle.Decoration,
+                lineStyle.ForegroundRgb,
+                lineStyle.BackgroundRgb);
+            if (!layout.ShowRange)
+            {
+                Consoul.Write(string.Empty);
+            }
 
             if (layout.ShowRange)
             {
+                StyledText rangeStyle = ResolveRangeStyle();
                 Consoul.Write(" ", RenderOptions.DefaultScheme, false);
-                Consoul.Write(PadOrTrim(BuildRangeText(), layout.RangeWidth), _options.ResolveRangeScheme(), true);
+                TerminalLinkWriter.WriteText(
+                    PadOrTrim(BuildRangeText(), layout.RangeWidth),
+                    rangeStyle.Scheme,
+                    null,
+                    rangeStyle.Decoration,
+                    rangeStyle.ForegroundRgb,
+                    rangeStyle.BackgroundRgb);
+                Consoul.Write(string.Empty);
             }
         }
 
@@ -216,14 +235,62 @@ namespace ConsoulLibrary
             return _options.FormatValue(minimum) + ".." + _options.FormatValue(maximum);
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(string text, int width, ColorScheme scheme)
+        private StyledText ResolveLabelStyle()
+        {
+            return new StyledText(
+                _options.ResolveLabelScheme(),
+                _options.LabelDecoration,
+                _options.LabelForegroundRgb,
+                _options.LabelBackgroundRgb);
+        }
+
+        private StyledText ResolveLineStyle()
+        {
+            return new StyledText(
+                _options.ResolveLineScheme(),
+                _options.LineDecoration,
+                _options.LineForegroundRgb,
+                _options.LineBackgroundRgb);
+        }
+
+        private StyledText ResolveRangeStyle()
+        {
+            return new StyledText(
+                _options.ResolveRangeScheme(),
+                _options.RangeDecoration,
+                _options.RangeForegroundRgb,
+                _options.RangeBackgroundRgb);
+        }
+
+        private static List<FixedMessageSegment> PadOrTrimSegments(string text, int width, StyledText style)
         {
             width = Math.Max(0, width);
             List<FixedMessageSegment> result = MarkupRenderText.TruncateSegments(
-                MarkupRenderText.ParseSegments(NormalizeInline(text), scheme),
+                MarkupRenderText.ParseSegments(
+                    NormalizeInline(text),
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb),
                 width);
-            MarkupRenderText.AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), scheme);
+            AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), style);
             return result;
+        }
+
+        private static void AddPadding(IList<FixedMessageSegment> segments, int count, StyledText style)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                style.Scheme,
+                style.Decoration,
+                null,
+                style.ForegroundRgb,
+                style.BackgroundRgb));
         }
 
         private static string PadOrTrim(string text, int width)
@@ -262,6 +329,25 @@ namespace ConsoulLibrary
             public bool ShowRange { get; }
 
             public int RangeWidth { get; }
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

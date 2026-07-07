@@ -171,16 +171,33 @@ namespace ConsoulLibrary
             string continuationPrefix = new string(' ', firstPrefix.Length);
             ColorScheme markerScheme = item.MarkerScheme ?? _options.ResolveMarkerScheme();
             ColorScheme textScheme = item.TextScheme ?? _options.ResolveTextScheme();
+            Decoration textDecoration = item.TextDecoration ?? (item.TextScheme.HasValue ? Decoration.None : _options.TextDecoration);
+            RgbColor? textForegroundRgb = item.TextForegroundRgb ?? (item.TextScheme.HasValue ? null : _options.TextForegroundRgb);
+            RgbColor? textBackgroundRgb = item.TextBackgroundRgb ?? (item.TextScheme.HasValue ? null : _options.TextBackgroundRgb);
+            Decoration markerDecoration = item.MarkerDecoration ?? (item.MarkerScheme.HasValue ? Decoration.None : _options.MarkerDecoration);
+            RgbColor? markerForegroundRgb = item.MarkerForegroundRgb ?? (item.MarkerScheme.HasValue ? null : _options.MarkerForegroundRgb);
+            RgbColor? markerBackgroundRgb = item.MarkerBackgroundRgb ?? (item.MarkerScheme.HasValue ? null : _options.MarkerBackgroundRgb);
             IList<List<FixedMessageSegment>> lines = MarkupRenderText.WrapSegments(
                 item.Text,
                 Math.Max(1, width - Math.Min(firstPrefix.Length, width - 1)),
-                textScheme);
+                textScheme,
+                textDecoration,
+                textForegroundRgb,
+                textBackgroundRgb);
 
             for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
             {
                 bool firstLine = lineIndex == 0;
                 string prefix = firstLine ? firstPrefix : continuationPrefix;
-                WriteLine(prefix, lines[lineIndex], firstLine ? markerScheme : RenderOptions.DefaultScheme, textScheme, width);
+                WriteLine(
+                    prefix,
+                    lines[lineIndex],
+                    firstLine ? markerScheme : RenderOptions.DefaultScheme,
+                    textScheme,
+                    width,
+                    firstLine ? markerDecoration : Decoration.None,
+                    firstLine ? markerForegroundRgb : null,
+                    firstLine ? markerBackgroundRgb : null);
             }
         }
 
@@ -189,7 +206,10 @@ namespace ConsoulLibrary
             IList<FixedMessageSegment> text,
             ColorScheme prefixScheme,
             ColorScheme textScheme,
-            int width)
+            int width,
+            Decoration prefixDecoration,
+            RgbColor? prefixForegroundRgb,
+            RgbColor? prefixBackgroundRgb)
         {
             string visiblePrefix = ClipPrefix(prefix, width);
             int contentWidth = Math.Max(0, width - visiblePrefix.Length);
@@ -197,7 +217,13 @@ namespace ConsoulLibrary
 
             if (visiblePrefix.Length > 0)
             {
-                Consoul.Write(visiblePrefix, prefixScheme, false);
+                TerminalLinkWriter.WriteText(
+                    visiblePrefix,
+                    prefixScheme,
+                    null,
+                    prefixDecoration,
+                    prefixForegroundRgb,
+                    prefixBackgroundRgb);
             }
 
             MarkupRenderText.WriteSegments(visibleText, textScheme, true);

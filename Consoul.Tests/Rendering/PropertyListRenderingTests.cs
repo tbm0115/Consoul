@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Views.Editing;
 using Xunit;
@@ -158,6 +160,89 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Green") && write.Color == ConsoleColor.DarkCyan);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Property-list style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void PropertyList_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            Style defaultLabel = Style.Parse("bold #22c55e");
+            Style defaultValue = Style.Parse("#778899");
+            var entry = new PropertyListEntry(new PropertyListOptions
+            {
+                Width = 60,
+                LabelWidth = 14,
+                LabelScheme = defaultLabel.ToColorScheme(RenderOptions.DefaultScheme),
+                LabelDecoration = defaultLabel.Decoration,
+                LabelForegroundRgb = defaultLabel.ForegroundRgb,
+                LabelBackgroundRgb = defaultLabel.BackgroundRgb,
+                ValueScheme = defaultValue.ToColorScheme(RenderOptions.DefaultScheme),
+                ValueDecoration = defaultValue.Decoration,
+                ValueForegroundRgb = defaultValue.ForegroundRgb,
+                ValueBackgroundRgb = defaultValue.BackgroundRgb
+            });
+
+            entry.Add("Default", "Inherited");
+            entry.Add("Build", "Ready", "underline #112233", "#336699");
+
+            console.Write(entry);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mDefault", output);
+            Assert.Contains("\u001b[38;2;119;136;153mInherited", output);
+            Assert.Contains("\u001b[38;2;51;102;153mBuild", output);
+            Assert.Contains("\u001b[4;38;2;17;34;51mReady", output);
+        }
+
+        /// <summary>
+        /// Property-list RGB selectors use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void PropertyList_RgbSelectorsEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var items = new[]
+            {
+                new
+                {
+                    Label = "API",
+                    Value = "Ready",
+                    LabelColor = RgbColor.FromHex("#445566"),
+                    ValueColor = RgbColor.FromHex("#336699")
+                }
+            };
+
+            var entry = new PropertyListEntry(new PropertyListOptions { Width = 60, LabelWidth = 14 });
+            entry.AddItems(
+                items,
+                item => item.Label,
+                item => item.Value,
+                item => item.ValueColor,
+                item => item.LabelColor);
+
+            console.Write(entry);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239mAPI", output);
+            Assert.Contains("\u001b[38;5;60mReady", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

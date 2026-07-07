@@ -250,12 +250,31 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(valueColorSelector));
             }
 
-            return AddItems(
-                items,
-                labelSelector,
-                valueSelector,
-                ToConsoleColorSelector(valueColorSelector),
-                ToConsoleColorSelector(labelColorSelector));
+            if (labelSelector == null)
+            {
+                throw new ArgumentNullException(nameof(labelSelector));
+            }
+
+            if (valueSelector == null)
+            {
+                throw new ArgumentNullException(nameof(valueSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                Add(PropertyListItem.Create(
+                    labelSelector(item),
+                    valueSelector(item),
+                    valueColorSelector(item),
+                    labelColorSelector != null ? labelColorSelector(item) : (SpectreColor?)null));
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -280,12 +299,31 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(valueColorSelector));
             }
 
-            return AddItems(
-                items,
-                labelSelector,
-                valueSelector,
-                ToConsoleColorSelector(valueColorSelector),
-                ToConsoleColorSelector(labelColorSelector));
+            if (labelSelector == null)
+            {
+                throw new ArgumentNullException(nameof(labelSelector));
+            }
+
+            if (valueSelector == null)
+            {
+                throw new ArgumentNullException(nameof(valueSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                Add(PropertyListItem.Create(
+                    labelSelector(item),
+                    valueSelector(item),
+                    valueColorSelector(item),
+                    labelColorSelector != null ? labelColorSelector(item) : (RgbColor?)null));
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -379,20 +417,6 @@ namespace ConsoulLibrary
             }
 
             return this;
-        }
-
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, SpectreColor> selector)
-        {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
-        }
-
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, RgbColor> selector)
-        {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
         }
 
         /// <summary>
@@ -600,18 +624,24 @@ namespace ConsoulLibrary
 
         private void RenderTwoColumn(PropertyListItem item, Layout layout)
         {
-            ColorScheme labelScheme = item.LabelScheme ?? _options.ResolveLabelScheme();
-            ColorScheme valueScheme = item.ValueScheme ?? _options.ResolveValueScheme();
+            StyledText labelStyle = ResolveLabelStyle(item);
+            StyledText valueStyle = ResolveValueStyle(item);
             ColorScheme separatorScheme = _options.ResolveSeparatorScheme();
-            IList<List<FixedMessageSegment>> valueLines = MarkupRenderText.WrapSegments(item.Value, layout.ValueWidth, valueScheme);
+            IList<List<FixedMessageSegment>> valueLines = MarkupRenderText.WrapSegments(
+                item.Value,
+                layout.ValueWidth,
+                valueStyle.Scheme,
+                valueStyle.Decoration,
+                valueStyle.ForegroundRgb,
+                valueStyle.BackgroundRgb);
 
-            List<FixedMessageSegment> label = PadOrTrimSegments(item.Label, layout.LabelWidth, labelScheme);
+            List<FixedMessageSegment> label = PadOrTrimSegments(item.Label, layout.LabelWidth, labelStyle);
             string separator = PadOrTrim(layout.Separator, layout.Separator.Length);
             for (int index = 0; index < valueLines.Count; index++)
             {
                 if (index == 0)
                 {
-                    MarkupRenderText.WriteSegments(label, labelScheme, false);
+                    MarkupRenderText.WriteSegments(label, labelStyle.Scheme, false);
                     Consoul.Write(separator, separatorScheme, false);
                 }
                 else
@@ -622,37 +652,95 @@ namespace ConsoulLibrary
                     Consoul.Write(prefix, RenderOptions.DefaultScheme, false);
                 }
 
-                MarkupRenderText.WriteSegments(PadOrTrimSegments(valueLines[index], layout.ValueWidth, valueScheme), valueScheme, true);
+                MarkupRenderText.WriteSegments(PadOrTrimSegments(valueLines[index], layout.ValueWidth, valueStyle), valueStyle.Scheme, true);
             }
         }
 
         private void RenderStacked(PropertyListItem item, int width)
         {
-            ColorScheme labelScheme = item.LabelScheme ?? _options.ResolveLabelScheme();
-            ColorScheme valueScheme = item.ValueScheme ?? _options.ResolveValueScheme();
+            StyledText labelStyle = ResolveLabelStyle(item);
+            StyledText valueStyle = ResolveValueStyle(item);
 
-            foreach (List<FixedMessageSegment> labelLine in MarkupRenderText.WrapSegments(item.Label, width, labelScheme))
+            foreach (List<FixedMessageSegment> labelLine in MarkupRenderText.WrapSegments(
+                item.Label,
+                width,
+                labelStyle.Scheme,
+                labelStyle.Decoration,
+                labelStyle.ForegroundRgb,
+                labelStyle.BackgroundRgb))
             {
-                MarkupRenderText.WriteSegments(PadOrTrimSegments(labelLine, width, labelScheme), labelScheme, true);
+                MarkupRenderText.WriteSegments(PadOrTrimSegments(labelLine, width, labelStyle), labelStyle.Scheme, true);
             }
 
-            foreach (List<FixedMessageSegment> valueLine in MarkupRenderText.WrapSegments(item.Value, width, valueScheme))
+            foreach (List<FixedMessageSegment> valueLine in MarkupRenderText.WrapSegments(
+                item.Value,
+                width,
+                valueStyle.Scheme,
+                valueStyle.Decoration,
+                valueStyle.ForegroundRgb,
+                valueStyle.BackgroundRgb))
             {
-                MarkupRenderText.WriteSegments(PadOrTrimSegments(valueLine, width, valueScheme), valueScheme, true);
+                MarkupRenderText.WriteSegments(PadOrTrimSegments(valueLine, width, valueStyle), valueStyle.Scheme, true);
             }
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(string text, int width, ColorScheme scheme)
+        private StyledText ResolveLabelStyle(PropertyListItem item)
         {
-            return PadOrTrimSegments(MarkupRenderText.ParseSegments(text, scheme), width, scheme);
+            ColorScheme scheme = item.LabelScheme ?? _options.ResolveLabelScheme();
+            bool hasItemScheme = item.LabelScheme.HasValue;
+            return new StyledText(
+                scheme,
+                item.LabelDecoration ?? (hasItemScheme ? Decoration.None : _options.LabelDecoration),
+                item.LabelForegroundRgb ?? (hasItemScheme ? null : _options.LabelForegroundRgb),
+                item.LabelBackgroundRgb ?? (hasItemScheme ? null : _options.LabelBackgroundRgb));
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        private StyledText ResolveValueStyle(PropertyListItem item)
+        {
+            ColorScheme scheme = item.ValueScheme ?? _options.ResolveValueScheme();
+            bool hasItemScheme = item.ValueScheme.HasValue;
+            return new StyledText(
+                scheme,
+                item.ValueDecoration ?? (hasItemScheme ? Decoration.None : _options.ValueDecoration),
+                item.ValueForegroundRgb ?? (hasItemScheme ? null : _options.ValueForegroundRgb),
+                item.ValueBackgroundRgb ?? (hasItemScheme ? null : _options.ValueBackgroundRgb));
+        }
+
+        private static List<FixedMessageSegment> PadOrTrimSegments(string text, int width, StyledText style)
+        {
+            return PadOrTrimSegments(
+                MarkupRenderText.ParseSegments(
+                    text,
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb),
+                width,
+                style);
+        }
+
+        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, StyledText style)
         {
             width = Math.Max(0, width);
             List<FixedMessageSegment> result = MarkupRenderText.TruncateSegments(segments, width);
-            MarkupRenderText.AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), scheme);
+            AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), style);
             return result;
+        }
+
+        private static void AddPadding(IList<FixedMessageSegment> segments, int count, StyledText style)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                style.Scheme,
+                style.Decoration,
+                null,
+                style.ForegroundRgb,
+                style.BackgroundRgb));
         }
 
         private static string PadOrTrim(string text, int width)
@@ -833,6 +921,25 @@ namespace ConsoulLibrary
             public string Separator { get; }
 
             public int ValueWidth { get; }
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

@@ -100,6 +100,21 @@ namespace ConsoulLibrary
         public ColorScheme TitleScheme { get; set; } = RenderOptions.PromptScheme;
 
         /// <summary>
+        /// Gets or sets the text decoration used for the table title on ANSI-capable terminals.
+        /// </summary>
+        public Decoration TitleDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for the table title on true-color terminals.
+        /// </summary>
+        public RgbColor? TitleForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for the table title on true-color terminals.
+        /// </summary>
+        public RgbColor? TitleBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets an optional caption rendered below the table.
         /// </summary>
         public string Caption { get; set; }
@@ -113,6 +128,21 @@ namespace ConsoulLibrary
         /// Gets or sets the color scheme used for the table caption.
         /// </summary>
         public ColorScheme CaptionScheme { get; set; } = RenderOptions.SubnoteScheme;
+
+        /// <summary>
+        /// Gets or sets the text decoration used for the table caption on ANSI-capable terminals.
+        /// </summary>
+        public Decoration CaptionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for the table caption on true-color terminals.
+        /// </summary>
+        public RgbColor? CaptionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for the table caption on true-color terminals.
+        /// </summary>
+        public RgbColor? CaptionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the color scheme used for column footer cells.
@@ -130,6 +160,21 @@ namespace ConsoulLibrary
         public ColorScheme EmptyMessageScheme { get; set; } = RenderOptions.SubnoteScheme;
 
         /// <summary>
+        /// Gets or sets the text decoration used for <see cref="EmptyMessage"/> on ANSI-capable terminals.
+        /// </summary>
+        public Decoration EmptyMessageDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for <see cref="EmptyMessage"/> on true-color terminals.
+        /// </summary>
+        public RgbColor? EmptyMessageForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for <see cref="EmptyMessage"/> on true-color terminals.
+        /// </summary>
+        public RgbColor? EmptyMessageBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets a summary rendered below the table.
         /// </summary>
         public string SummaryText { get; set; }
@@ -138,6 +183,21 @@ namespace ConsoulLibrary
         /// Gets or sets the color scheme used for <see cref="SummaryText"/>.
         /// </summary>
         public ColorScheme SummaryScheme { get; set; } = RenderOptions.SubnoteScheme;
+
+        /// <summary>
+        /// Gets or sets the text decoration used for <see cref="SummaryText"/> on ANSI-capable terminals.
+        /// </summary>
+        public Decoration SummaryDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for <see cref="SummaryText"/> on true-color terminals.
+        /// </summary>
+        public RgbColor? SummaryForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for <see cref="SummaryText"/> on true-color terminals.
+        /// </summary>
+        public RgbColor? SummaryBackgroundRgb { get; set; }
 
         /// <summary>
         /// Left padding.

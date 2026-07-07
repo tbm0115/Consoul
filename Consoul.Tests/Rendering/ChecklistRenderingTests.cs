@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -106,6 +108,90 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Package is ready.") && write.Color == ConsoleColor.Yellow);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Checklist style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Checklist_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var checklist = new Checklist()
+                .Width(60)
+                .LabelColor("bold #22c55e")
+                .DescriptionColor("#778899")
+                .AddItem("Default", ChecklistItemState.Pending, "Inherited")
+                .AddItemStyled(
+                    "Build",
+                    ChecklistItemState.Complete,
+                    "Ready",
+                    labelStyle: "#336699",
+                    markerStyle: "#445566",
+                    descriptionStyle: "underline #112233");
+
+            console.Write(checklist);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mDefault\u001b[22;39m", output);
+            Assert.Contains("\u001b[38;2;119;136;153mInherited", output);
+            Assert.Contains("\u001b[38;2;68;85;102m[x]\u001b[39m", output);
+            Assert.Contains("\u001b[38;2;51;102;153mBuild\u001b[39m", output);
+            Assert.Contains("\u001b[4;38;2;17;34;51mReady", output);
+        }
+
+        /// <summary>
+        /// Checklist RGB selectors use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void Checklist_RgbSelectorsEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var items = new[]
+            {
+                new
+                {
+                    Name = "API",
+                    State = ChecklistItemState.Complete,
+                    Description = "Ready",
+                    LabelColor = RgbColor.FromHex("#336699"),
+                    MarkerColor = RgbColor.FromHex("#445566"),
+                    DescriptionColor = RgbColor.FromHex("#778899")
+                }
+            };
+
+            var checklist = new Checklist()
+                .Width(60)
+                .AddItems(
+                    items,
+                    item => item.Name,
+                    item => item.State,
+                    item => item.Description,
+                    item => item.LabelColor,
+                    item => item.MarkerColor,
+                    item => item.DescriptionColor);
+
+            console.Write(checklist);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239m[x]\u001b[39m", output);
+            Assert.Contains("\u001b[38;5;60mAPI\u001b[39m", output);
+            Assert.Contains("\u001b[38;5;102mReady", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

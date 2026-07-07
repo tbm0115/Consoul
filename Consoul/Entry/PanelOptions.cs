@@ -92,9 +92,39 @@ namespace ConsoulLibrary
         public ColorScheme? BorderScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the text decoration applied to border characters on ANSI-capable terminals.
+        /// </summary>
+        public Decoration BorderDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit border foreground color used on true-color terminals.
+        /// </summary>
+        public RgbColor? BorderForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit border background color used on true-color terminals.
+        /// </summary>
+        public RgbColor? BorderBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for content text.
         /// </summary>
         public ColorScheme? ContentScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the text decoration applied to untagged content on ANSI-capable terminals.
+        /// </summary>
+        public Decoration ContentDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit content foreground color used for untagged content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit content background color used for untagged content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the color scheme used for the title.
@@ -102,9 +132,39 @@ namespace ConsoulLibrary
         public ColorScheme? TitleScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the text decoration applied to the title on ANSI-capable terminals.
+        /// </summary>
+        public Decoration TitleDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit title foreground color used on true-color terminals.
+        /// </summary>
+        public RgbColor? TitleForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit title background color used on true-color terminals.
+        /// </summary>
+        public RgbColor? TitleBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for the footer.
         /// </summary>
         public ColorScheme? FooterScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the text decoration applied to the footer on ANSI-capable terminals.
+        /// </summary>
+        public Decoration FooterDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit footer foreground color used on true-color terminals.
+        /// </summary>
+        public RgbColor? FooterForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit footer background color used on true-color terminals.
+        /// </summary>
+        public RgbColor? FooterBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current panel options.
@@ -130,9 +190,21 @@ namespace ConsoulLibrary
                 Horizontal = Horizontal,
                 Vertical = Vertical,
                 BorderScheme = BorderScheme,
+                BorderDecoration = BorderDecoration,
+                BorderForegroundRgb = BorderForegroundRgb,
+                BorderBackgroundRgb = BorderBackgroundRgb,
                 ContentScheme = ContentScheme,
+                ContentDecoration = ContentDecoration,
+                ContentForegroundRgb = ContentForegroundRgb,
+                ContentBackgroundRgb = ContentBackgroundRgb,
                 TitleScheme = TitleScheme,
-                FooterScheme = FooterScheme
+                TitleDecoration = TitleDecoration,
+                TitleForegroundRgb = TitleForegroundRgb,
+                TitleBackgroundRgb = TitleBackgroundRgb,
+                FooterScheme = FooterScheme,
+                FooterDecoration = FooterDecoration,
+                FooterForegroundRgb = FooterForegroundRgb,
+                FooterBackgroundRgb = FooterBackgroundRgb
             };
         }
 

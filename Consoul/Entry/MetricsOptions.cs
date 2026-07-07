@@ -1,5 +1,6 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -39,9 +40,39 @@ namespace ConsoulLibrary
         public ColorScheme? LabelScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the default ANSI decoration used for metric labels.
+        /// </summary>
+        public Decoration LabelDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB foreground color used for metric labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB background color used for metric labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the default color scheme used for metric values.
         /// </summary>
         public ColorScheme? ValueScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default ANSI decoration used for metric values.
+        /// </summary>
+        public Decoration ValueDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB foreground color used for default metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB background color used for default metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the color scheme used for metric notes.
@@ -49,9 +80,39 @@ namespace ConsoulLibrary
         public ColorScheme? NoteScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the default ANSI decoration used for metric notes.
+        /// </summary>
+        public Decoration NoteDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB foreground color used for metric notes on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? NoteForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB background color used for metric notes on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? NoteBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for informational metric values.
         /// </summary>
         public ColorScheme? InfoScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for informational metric values.
+        /// </summary>
+        public Decoration InfoDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for informational metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InfoForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for informational metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InfoBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the color scheme used for successful or healthy metric values.
@@ -59,14 +120,59 @@ namespace ConsoulLibrary
         public ColorScheme? SuccessScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for successful or healthy metric values.
+        /// </summary>
+        public Decoration SuccessDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for successful or healthy metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SuccessForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for successful or healthy metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SuccessBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for warning metric values.
         /// </summary>
         public ColorScheme? WarningScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for warning metric values.
+        /// </summary>
+        public Decoration WarningDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for warning metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? WarningForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for warning metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? WarningBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for error or unhealthy metric values.
         /// </summary>
         public ColorScheme? ErrorScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for error or unhealthy metric values.
+        /// </summary>
+        public Decoration ErrorDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for error or unhealthy metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ErrorForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for error or unhealthy metric values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ErrorBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current metrics options.
@@ -82,12 +188,33 @@ namespace ConsoulLibrary
                 ColumnGap = ColumnGap,
                 ShowNotes = ShowNotes,
                 LabelScheme = LabelScheme,
+                LabelDecoration = LabelDecoration,
+                LabelForegroundRgb = LabelForegroundRgb,
+                LabelBackgroundRgb = LabelBackgroundRgb,
                 ValueScheme = ValueScheme,
+                ValueDecoration = ValueDecoration,
+                ValueForegroundRgb = ValueForegroundRgb,
+                ValueBackgroundRgb = ValueBackgroundRgb,
                 NoteScheme = NoteScheme,
+                NoteDecoration = NoteDecoration,
+                NoteForegroundRgb = NoteForegroundRgb,
+                NoteBackgroundRgb = NoteBackgroundRgb,
                 InfoScheme = InfoScheme,
+                InfoDecoration = InfoDecoration,
+                InfoForegroundRgb = InfoForegroundRgb,
+                InfoBackgroundRgb = InfoBackgroundRgb,
                 SuccessScheme = SuccessScheme,
+                SuccessDecoration = SuccessDecoration,
+                SuccessForegroundRgb = SuccessForegroundRgb,
+                SuccessBackgroundRgb = SuccessBackgroundRgb,
                 WarningScheme = WarningScheme,
-                ErrorScheme = ErrorScheme
+                WarningDecoration = WarningDecoration,
+                WarningForegroundRgb = WarningForegroundRgb,
+                WarningBackgroundRgb = WarningBackgroundRgb,
+                ErrorScheme = ErrorScheme,
+                ErrorDecoration = ErrorDecoration,
+                ErrorForegroundRgb = ErrorForegroundRgb,
+                ErrorBackgroundRgb = ErrorBackgroundRgb
             };
         }
 

@@ -48,7 +48,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart AddItem(string label, double value, SpectreColor color)
         {
-            Add(new BreakdownChartItem(label, value, Scheme(color)));
+            Add(BreakdownChartItem.Create(label, value, color));
             return this;
         }
 
@@ -61,7 +61,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart AddItem(string label, double value, RgbColor color)
         {
-            Add(new BreakdownChartItem(label, value, Scheme(color)));
+            Add(BreakdownChartItem.Create(label, value, color));
             return this;
         }
 
@@ -74,7 +74,11 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart AddItem(string label, double value, string style)
         {
-            Add(new BreakdownChartItem(label, value, Scheme(style, Options.ResolveSegmentScheme())));
+            Add(BreakdownChartItem.Create(
+                label,
+                value,
+                string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style),
+                Options.ResolveSegmentScheme()));
             return this;
         }
 
@@ -87,7 +91,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart AddItem(string label, double value, Style style)
         {
-            Add(new BreakdownChartItem(label, value, style?.ToColorScheme(Options.ResolveSegmentScheme())));
+            Add(BreakdownChartItem.Create(label, value, style, Options.ResolveSegmentScheme()));
             return this;
         }
 
@@ -567,6 +571,9 @@ namespace ConsoulLibrary
         public BreakdownChart SegmentColor(ConsoleColor color)
         {
             Options.SegmentScheme = Scheme(color);
+            Options.SegmentDecoration = Decoration.None;
+            Options.SegmentForegroundRgb = null;
+            Options.SegmentBackgroundRgb = null;
             return this;
         }
 
@@ -578,6 +585,9 @@ namespace ConsoulLibrary
         public BreakdownChart SegmentColor(SpectreColor color)
         {
             Options.SegmentScheme = Scheme(color);
+            Options.SegmentDecoration = Decoration.None;
+            Options.SegmentForegroundRgb = color.ToRgbColor();
+            Options.SegmentBackgroundRgb = null;
             return this;
         }
 
@@ -589,6 +599,9 @@ namespace ConsoulLibrary
         public BreakdownChart SegmentColor(RgbColor color)
         {
             Options.SegmentScheme = Scheme(color);
+            Options.SegmentDecoration = Decoration.None;
+            Options.SegmentForegroundRgb = color;
+            Options.SegmentBackgroundRgb = null;
             return this;
         }
 
@@ -599,7 +612,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart SegmentColor(Style style)
         {
-            Options.SegmentScheme = Scheme(style, Options.ResolveSegmentScheme());
+            ApplySegmentStyle(style);
             return this;
         }
 
@@ -610,7 +623,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart SegmentColor(string style)
         {
-            Options.SegmentScheme = Style.ParseScheme(style, Options.ResolveSegmentScheme());
+            ApplySegmentStyle(Style.Parse(style));
             return this;
         }
 
@@ -622,6 +635,9 @@ namespace ConsoulLibrary
         public BreakdownChart LabelColor(ConsoleColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = null;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -633,6 +649,9 @@ namespace ConsoulLibrary
         public BreakdownChart LabelColor(SpectreColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color.ToRgbColor();
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -644,6 +663,9 @@ namespace ConsoulLibrary
         public BreakdownChart LabelColor(RgbColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -654,7 +676,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart LabelColor(Style style)
         {
-            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(style);
             return this;
         }
 
@@ -665,7 +687,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart LabelColor(string style)
         {
-            Options.LabelScheme = Style.ParseScheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(Style.Parse(style));
             return this;
         }
 
@@ -677,6 +699,9 @@ namespace ConsoulLibrary
         public BreakdownChart ValueColor(ConsoleColor color)
         {
             Options.ValueScheme = Scheme(color);
+            Options.ValueDecoration = Decoration.None;
+            Options.ValueForegroundRgb = null;
+            Options.ValueBackgroundRgb = null;
             return this;
         }
 
@@ -688,6 +713,9 @@ namespace ConsoulLibrary
         public BreakdownChart ValueColor(SpectreColor color)
         {
             Options.ValueScheme = Scheme(color);
+            Options.ValueDecoration = Decoration.None;
+            Options.ValueForegroundRgb = color.ToRgbColor();
+            Options.ValueBackgroundRgb = null;
             return this;
         }
 
@@ -699,6 +727,9 @@ namespace ConsoulLibrary
         public BreakdownChart ValueColor(RgbColor color)
         {
             Options.ValueScheme = Scheme(color);
+            Options.ValueDecoration = Decoration.None;
+            Options.ValueForegroundRgb = color;
+            Options.ValueBackgroundRgb = null;
             return this;
         }
 
@@ -709,7 +740,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart ValueColor(Style style)
         {
-            Options.ValueScheme = Scheme(style, Options.ResolveValueScheme());
+            ApplyValueStyle(style);
             return this;
         }
 
@@ -720,8 +751,32 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart ValueColor(string style)
         {
-            Options.ValueScheme = Style.ParseScheme(style, Options.ResolveValueScheme());
+            ApplyValueStyle(Style.Parse(style));
             return this;
+        }
+
+        private void ApplySegmentStyle(Style style)
+        {
+            Options.SegmentScheme = Scheme(style, Options.ResolveSegmentScheme());
+            Options.SegmentDecoration = style?.Decoration ?? Decoration.None;
+            Options.SegmentForegroundRgb = style?.ForegroundRgb;
+            Options.SegmentBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyLabelStyle(Style style)
+        {
+            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            Options.LabelDecoration = style?.Decoration ?? Decoration.None;
+            Options.LabelForegroundRgb = style?.ForegroundRgb;
+            Options.LabelBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyValueStyle(Style style)
+        {
+            Options.ValueScheme = Scheme(style, Options.ResolveValueScheme());
+            Options.ValueDecoration = style?.Decoration ?? Decoration.None;
+            Options.ValueForegroundRgb = style?.ForegroundRgb;
+            Options.ValueBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)
@@ -748,11 +803,5 @@ namespace ConsoulLibrary
             return (style ?? Style.Plain).ToColorScheme(fallback);
         }
 
-        private static ColorScheme? Scheme(string style, ColorScheme fallback)
-        {
-            return string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.ParseScheme(style, fallback);
-        }
     }
 }

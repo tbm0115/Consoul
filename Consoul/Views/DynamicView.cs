@@ -498,17 +498,12 @@ namespace ConsoulLibrary
             {
                 if (option.IsSeparator)
                 {
-                    help.AddSeparator(option.Entry.SetMessage(), option.Entry.SetColor());
+                    help.Add(option.ToHelpItem(option.Entry.SetMessage()));
                     continue;
                 }
 
                 string disabledReason = option.IsEnabled ? null : option.DisabledReason;
-                help.Add(
-                    option.Entry.SetMessage(),
-                    option.Description,
-                    option.Shortcut,
-                    disabledReason,
-                    option.Entry.SetColor());
+                help.Add(option.ToHelpItem(option.Entry.SetMessage(), disabledReason));
             }
 
             if (includeGoBack)
@@ -572,7 +567,8 @@ namespace ConsoulLibrary
             ViewHelpOptions options = null,
             bool waitForInput = true)
         {
-            return HelpOption(label, title, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, options, waitForInput);
+            return HelpOption(label, title, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, options, waitForInput)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -593,7 +589,8 @@ namespace ConsoulLibrary
             ViewHelpOptions options = null,
             bool waitForInput = true)
         {
-            return HelpOption(label, title, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, options, waitForInput);
+            return HelpOption(label, title, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, options, waitForInput)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -614,7 +611,8 @@ namespace ConsoulLibrary
             ViewHelpOptions options = null,
             bool waitForInput = true)
         {
-            return HelpOption(label, title, (ConsoleColor?)color.ToConsoleColor(), shortcut, options, waitForInput);
+            return HelpOption(label, title, (ConsoleColor?)color.ToConsoleColor(), shortcut, options, waitForInput)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -635,7 +633,8 @@ namespace ConsoulLibrary
             ViewHelpOptions options = null,
             bool waitForInput = true)
         {
-            return HelpOption(label, title, (ConsoleColor?)color.ToConsoleColor(), shortcut, options, waitForInput);
+            return HelpOption(label, title, (ConsoleColor?)color.ToConsoleColor(), shortcut, options, waitForInput)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -706,7 +705,8 @@ namespace ConsoulLibrary
             string shortcut = "cmd",
             bool clear = true)
         {
-            return CommandPaletteOption(label, message, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, clear);
+            return CommandPaletteOption(label, message, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, clear)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -725,7 +725,8 @@ namespace ConsoulLibrary
             string shortcut = "cmd",
             bool clear = true)
         {
-            return CommandPaletteOption(label, message, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, clear);
+            return CommandPaletteOption(label, message, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, clear)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -744,7 +745,8 @@ namespace ConsoulLibrary
             string shortcut = "cmd",
             bool clear = true)
         {
-            return CommandPaletteOption(label, message, (ConsoleColor?)color.ToConsoleColor(), shortcut, clear);
+            return CommandPaletteOption(label, message, (ConsoleColor?)color.ToConsoleColor(), shortcut, clear)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -763,7 +765,8 @@ namespace ConsoulLibrary
             string shortcut = "cmd",
             bool clear = true)
         {
-            return CommandPaletteOption(label, message, (ConsoleColor?)color.ToConsoleColor(), shortcut, clear);
+            return CommandPaletteOption(label, message, (ConsoleColor?)color.ToConsoleColor(), shortcut, clear)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -8522,7 +8525,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Action action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8535,7 +8538,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Action action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8548,7 +8551,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Func<Task> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8561,7 +8564,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Func<Task> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8574,7 +8577,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Func<CancellationToken, Task> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8587,7 +8590,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Func<CancellationToken, Task> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8600,7 +8603,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Action<T> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8613,7 +8616,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Action<T> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8626,7 +8629,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Func<T, Task> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8639,7 +8642,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Func<T, Task> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8652,7 +8655,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Func<T, CancellationToken, Task> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8665,7 +8668,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> AddOption(string label, Func<T, CancellationToken, Task> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, color, description);
         }
 
         /// <summary>
@@ -8950,7 +8953,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action action, string style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -8962,7 +8966,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action action, Style style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -8997,7 +9002,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action action, string style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9010,7 +9016,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action action, Style style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9034,7 +9041,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<Task> action, string style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9046,7 +9054,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<Task> action, Style style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9077,7 +9086,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<Task> action, string style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9090,7 +9100,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<Task> action, Style style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9114,7 +9125,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<CancellationToken, Task> action, string style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9126,7 +9138,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<CancellationToken, Task> action, Style style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9157,7 +9170,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<CancellationToken, Task> action, string style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9170,7 +9184,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<CancellationToken, Task> action, Style style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9194,7 +9209,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action<T> action, string style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9206,7 +9222,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action<T> action, Style style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9241,7 +9258,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action<T> action, string style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9254,7 +9272,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action<T> action, Style style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9278,7 +9297,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, Task> action, string style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9290,7 +9310,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, Task> action, Style style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9321,7 +9342,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, Task> action, string style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9334,7 +9356,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, Task> action, Style style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9358,7 +9381,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, CancellationToken, Task> action, string style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9370,7 +9394,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, CancellationToken, Task> action, Style style)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9396,7 +9421,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, CancellationToken, Task> action, string style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -9409,7 +9435,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, CancellationToken, Task> action, Style style, string description)
         {
-            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description);
+            return Option(label, action, ResolveStyle(style, RenderOptions.OptionColor), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9422,7 +9449,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -9435,7 +9463,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9448,7 +9477,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<Task> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -9461,7 +9491,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<Task> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9474,7 +9505,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<CancellationToken, Task> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -9487,7 +9519,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<CancellationToken, Task> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9500,7 +9533,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action<T> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -9513,7 +9547,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Action<T> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9526,7 +9561,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, Task> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -9539,7 +9575,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, Task> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9552,7 +9589,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, CancellationToken, Task> action, SpectreColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -9565,7 +9603,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(string label, Func<T, CancellationToken, Task> action, RgbColor color, string description = null)
         {
-            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return Option(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9589,7 +9628,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Action<T> action, Func<T, string> style)
         {
-            return Option(label, action, StyleColor(style), null);
+            return Option(label, action, StyleColor(style), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9601,7 +9641,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Action<T> action, Func<T, Style> style)
         {
-            return Option(label, action, StyleColor(style), null);
+            return Option(label, action, StyleColor(style), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9613,7 +9654,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Action<T> action, Func<T, SpectreColor> color)
         {
-            return Option(label, action, StyleColor(color), null);
+            return Option(label, action, StyleColor(color), null)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9625,7 +9667,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Action<T> action, Func<T, RgbColor> color)
         {
-            return Option(label, action, StyleColor(color), null);
+            return Option(label, action, StyleColor(color), null)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9660,7 +9703,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Action<T> action, Func<T, string> style, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(style), description);
+            return Option(label, action, StyleColor(style), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9673,7 +9717,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Action<T> action, Func<T, Style> style, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(style), description);
+            return Option(label, action, StyleColor(style), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9686,7 +9731,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Action<T> action, Func<T, SpectreColor> color, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(color), description);
+            return Option(label, action, StyleColor(color), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9699,7 +9745,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Action<T> action, Func<T, RgbColor> color, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(color), description);
+            return Option(label, action, StyleColor(color), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9723,7 +9770,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, Task> action, Func<T, string> style)
         {
-            return Option(label, action, StyleColor(style), null);
+            return Option(label, action, StyleColor(style), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9735,7 +9783,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, Task> action, Func<T, Style> style)
         {
-            return Option(label, action, StyleColor(style), null);
+            return Option(label, action, StyleColor(style), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9747,7 +9796,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, Task> action, Func<T, SpectreColor> color)
         {
-            return Option(label, action, StyleColor(color), null);
+            return Option(label, action, StyleColor(color), null)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9759,7 +9809,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, Task> action, Func<T, RgbColor> color)
         {
-            return Option(label, action, StyleColor(color), null);
+            return Option(label, action, StyleColor(color), null)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9790,7 +9841,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, Task> action, Func<T, string> style, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(style), description);
+            return Option(label, action, StyleColor(style), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9803,7 +9855,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, Task> action, Func<T, Style> style, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(style), description);
+            return Option(label, action, StyleColor(style), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9816,7 +9869,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, Task> action, Func<T, SpectreColor> color, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(color), description);
+            return Option(label, action, StyleColor(color), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9829,7 +9883,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, Task> action, Func<T, RgbColor> color, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(color), description);
+            return Option(label, action, StyleColor(color), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9853,7 +9908,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, string> style)
         {
-            return Option(label, action, StyleColor(style), null);
+            return Option(label, action, StyleColor(style), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9865,7 +9921,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, Style> style)
         {
-            return Option(label, action, StyleColor(style), null);
+            return Option(label, action, StyleColor(style), null)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9877,7 +9934,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, SpectreColor> color)
         {
-            return Option(label, action, StyleColor(color), null);
+            return Option(label, action, StyleColor(color), null)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9889,7 +9947,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, RgbColor> color)
         {
-            return Option(label, action, StyleColor(color), null);
+            return Option(label, action, StyleColor(color), null)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9926,7 +9985,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, string> style, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(style), description);
+            return Option(label, action, StyleColor(style), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9939,7 +9999,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, Style> style, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(style), description);
+            return Option(label, action, StyleColor(style), description)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -9952,7 +10013,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, SpectreColor> color, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(color), description);
+            return Option(label, action, StyleColor(color), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9965,7 +10027,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Option(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, RgbColor> color, Func<T, string> description)
         {
-            return Option(label, action, StyleColor(color), description);
+            return Option(label, action, StyleColor(color), description)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -9998,7 +10061,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(string label, Action<T> action, Func<T, bool> isEnabled, string disabledReason, string style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor));
+            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor))
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -10012,7 +10076,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(string label, Action<T> action, Func<T, bool> isEnabled, string disabledReason, Style style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor));
+            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10045,7 +10110,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(string label, Func<Task> action, Func<T, bool> isEnabled, string disabledReason, string style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor));
+            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor))
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -10059,7 +10125,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(string label, Func<Task> action, Func<T, bool> isEnabled, string disabledReason, Style style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor));
+            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10092,7 +10159,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(string label, Func<T, Task> action, Func<T, bool> isEnabled, string disabledReason, string style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor));
+            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor))
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -10106,7 +10174,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(string label, Func<T, Task> action, Func<T, bool> isEnabled, string disabledReason, Style style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor));
+            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10139,7 +10208,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(string label, Func<T, CancellationToken, Task> action, Func<T, bool> isEnabled, string disabledReason, string style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor));
+            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor))
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -10153,7 +10223,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(string label, Func<T, CancellationToken, Task> action, Func<T, bool> isEnabled, string disabledReason, Style style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor));
+            return OptionWhen(label, action, isEnabled, disabledReason, ResolveStyle(style, RenderOptions.OptionColor))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10190,7 +10261,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Action<T> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, string> style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10204,7 +10276,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Action<T> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, Style> style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10217,7 +10290,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Action<T> action, Func<T, bool> isEnabled, Func<T, SpectreColor> color)
         {
-            return OptionWhen(label, action, isEnabled, null, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, null, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10230,7 +10304,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Action<T> action, Func<T, bool> isEnabled, Func<T, RgbColor> color)
         {
-            return OptionWhen(label, action, isEnabled, null, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, null, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10244,7 +10319,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Action<T> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, SpectreColor> color)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10258,7 +10334,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Action<T> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, RgbColor> color)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10291,7 +10368,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, Task> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, string> style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10305,7 +10383,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, Task> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, Style> style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10318,7 +10397,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, Task> action, Func<T, bool> isEnabled, Func<T, SpectreColor> color)
         {
-            return OptionWhen(label, action, isEnabled, null, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, null, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10331,7 +10411,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, Task> action, Func<T, bool> isEnabled, Func<T, RgbColor> color)
         {
-            return OptionWhen(label, action, isEnabled, null, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, null, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10345,7 +10426,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, Task> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, SpectreColor> color)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10359,7 +10441,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, Task> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, RgbColor> color)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10403,7 +10486,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, string> style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10417,7 +10501,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, Style> style)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(style))
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10430,7 +10515,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, bool> isEnabled, Func<T, SpectreColor> color)
         {
-            return OptionWhen(label, action, isEnabled, null, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, null, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10443,7 +10529,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, bool> isEnabled, Func<T, RgbColor> color)
         {
-            return OptionWhen(label, action, isEnabled, null, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, null, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10457,7 +10544,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, SpectreColor> color)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10471,7 +10559,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> OptionWhen(Func<T, string> label, Func<T, CancellationToken, Task> action, Func<T, bool> isEnabled, Func<T, string> disabledReason, Func<T, RgbColor> color)
         {
-            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color));
+            return OptionWhen(label, action, isEnabled, disabledReason, StyleColor(color))
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -10514,7 +10603,8 @@ namespace ConsoulLibrary
             string style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -10533,7 +10623,8 @@ namespace ConsoulLibrary
             Style style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10576,7 +10667,8 @@ namespace ConsoulLibrary
             string style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -10595,7 +10687,8 @@ namespace ConsoulLibrary
             Style style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10638,7 +10731,8 @@ namespace ConsoulLibrary
             string style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -10657,7 +10751,8 @@ namespace ConsoulLibrary
             Style style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10700,7 +10795,8 @@ namespace ConsoulLibrary
             string style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -10719,7 +10815,8 @@ namespace ConsoulLibrary
             Style style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, ResolveStyle(style, RenderOptions.OptionColor), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10762,7 +10859,8 @@ namespace ConsoulLibrary
             Func<T, string> style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10781,7 +10879,8 @@ namespace ConsoulLibrary
             Func<T, Style> style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10824,7 +10923,8 @@ namespace ConsoulLibrary
             Func<T, string> style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10843,7 +10943,8 @@ namespace ConsoulLibrary
             Func<T, Style> style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10886,7 +10987,8 @@ namespace ConsoulLibrary
             Func<T, string> style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10905,7 +11007,8 @@ namespace ConsoulLibrary
             Func<T, Style> style,
             ValidationSummaryOptions validationOptions = null)
         {
-            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions);
+            return OptionWhenValid(label, action, disabledReason, StyleColor(style), validationOptions)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10947,7 +11050,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Action action, string style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -10961,7 +11065,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Action action, Style style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -10994,7 +11099,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<Task> action, string style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -11008,7 +11114,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<Task> action, Style style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11041,7 +11148,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<CancellationToken, Task> action, string style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -11055,7 +11163,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<CancellationToken, Task> action, Style style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11097,7 +11206,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Action<T> action, string style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -11111,7 +11221,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Action<T> action, Style style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11144,7 +11255,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<T, Task> action, string style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -11158,7 +11270,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<T, Task> action, Style style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11186,7 +11299,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<T, CancellationToken, Task> action, string style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -11200,7 +11314,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<T, CancellationToken, Task> action, Style style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11214,7 +11329,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Action action, SpectreColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -11228,7 +11344,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Action action, RgbColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11242,7 +11359,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<Task> action, SpectreColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -11256,7 +11374,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<Task> action, RgbColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11270,7 +11389,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<CancellationToken, Task> action, SpectreColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -11284,7 +11404,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<CancellationToken, Task> action, RgbColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11298,7 +11419,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Action<T> action, SpectreColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -11312,7 +11434,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Action<T> action, RgbColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11326,7 +11449,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<T, Task> action, SpectreColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -11340,7 +11464,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<T, Task> action, RgbColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11354,7 +11479,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<T, CancellationToken, Task> action, SpectreColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -11368,7 +11494,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(string label, string confirmationMessage, Func<T, CancellationToken, Task> action, RgbColor color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11405,7 +11532,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Action<T> action, Func<T, string> style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11419,7 +11547,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Action<T> action, Func<T, Style> style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11433,7 +11562,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Action<T> action, Func<T, SpectreColor> color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11447,7 +11577,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Action<T> action, Func<T, RgbColor> color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11480,7 +11611,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Func<T, Task> action, Func<T, string> style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11494,7 +11626,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Func<T, Task> action, Func<T, Style> style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11508,7 +11641,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Func<T, Task> action, Func<T, SpectreColor> color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11522,7 +11656,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Func<T, Task> action, Func<T, RgbColor> color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11575,7 +11710,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Func<T, CancellationToken, Task> action, Func<T, string> style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11589,7 +11725,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Func<T, CancellationToken, Task> action, Func<T, Style> style, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(style), defaultValue)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -11603,7 +11740,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Func<T, CancellationToken, Task> action, Func<T, SpectreColor> color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -11617,7 +11755,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ConfirmOption(Func<T, string> label, Func<T, string> confirmationMessage, Func<T, CancellationToken, Task> action, Func<T, RgbColor> color, bool? defaultValue = false)
         {
-            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue);
+            return ConfirmOption(label, confirmationMessage, action, StyleColor(color), defaultValue)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -12110,6 +12249,62 @@ namespace ConsoulLibrary
             return this;
         }
 
+        private DynamicView<T> StyleLastOption(Style style)
+        {
+            if (style != null)
+            {
+                GetLastSelectableOption("style the last option").UseStyle(style);
+            }
+
+            return this;
+        }
+
+        private DynamicView<T> StyleLastOption(Func<T, string> style)
+        {
+            if (style != null)
+            {
+                GetLastSelectableOption("style the last option").UseStyle(() => style(Model));
+            }
+
+            return this;
+        }
+
+        private DynamicView<T> StyleLastOption(Func<T, Style> style)
+        {
+            if (style != null)
+            {
+                GetLastSelectableOption("style the last option").UseStyle(() => style(Model));
+            }
+
+            return this;
+        }
+
+        private DynamicView<T> ColorLastOption(RgbColor color)
+        {
+            GetLastSelectableOption("color the last option").UseColor(color);
+            return this;
+        }
+
+        private DynamicView<T> ColorLastOption(Func<T, SpectreColor> color)
+        {
+            if (color != null)
+            {
+                GetLastSelectableOption("color the last option").UseColor(() => color(Model));
+            }
+
+            return this;
+        }
+
+        private DynamicView<T> ColorLastOption(Func<T, RgbColor> color)
+        {
+            if (color != null)
+            {
+                GetLastSelectableOption("color the last option").UseColor(() => color(Model));
+            }
+
+            return this;
+        }
+
         /// <summary>
         /// Adds helper text to the most recently added option.
         /// </summary>
@@ -12441,6 +12636,11 @@ namespace ConsoulLibrary
             return style == null ? fallback : style.ToForegroundColor(fallback);
         }
 
+        private static Style ParseStyle(string style)
+        {
+            return string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style);
+        }
+
         private static bool IsModelValid(T model, ValidationSummaryOptions validationOptions)
         {
             return ValidationSummaryEntry.Validate(model, validationOptions).IsValid;
@@ -12515,7 +12715,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Navigate<TView>(string label, string style, bool replace = false) where TView : IView
         {
-            return Navigate<TView>(label, ResolveStyle(style, RenderOptions.OptionColor), replace);
+            return Navigate<TView>(label, ResolveStyle(style, RenderOptions.OptionColor), replace)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -12528,7 +12729,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Navigate<TView>(string label, Style style, bool replace = false) where TView : IView
         {
-            return Navigate<TView>(label, ResolveStyle(style, RenderOptions.OptionColor), replace);
+            return Navigate<TView>(label, ResolveStyle(style, RenderOptions.OptionColor), replace)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -12567,7 +12769,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Navigate<TView>(string label, Func<TView> viewFactory, string style, bool replace = false) where TView : IView
         {
-            return Navigate<TView>(label, viewFactory, ResolveStyle(style, RenderOptions.OptionColor), replace);
+            return Navigate<TView>(label, viewFactory, ResolveStyle(style, RenderOptions.OptionColor), replace)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -12581,7 +12784,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Navigate<TView>(string label, Func<TView> viewFactory, Style style, bool replace = false) where TView : IView
         {
-            return Navigate<TView>(label, viewFactory, ResolveStyle(style, RenderOptions.OptionColor), replace);
+            return Navigate<TView>(label, viewFactory, ResolveStyle(style, RenderOptions.OptionColor), replace)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -12594,7 +12798,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Navigate<TView>(string label, SpectreColor color, bool replace = false) where TView : IView
         {
-            return Navigate<TView>(label, (ConsoleColor?)color.ToConsoleColor(), replace);
+            return Navigate<TView>(label, (ConsoleColor?)color.ToConsoleColor(), replace)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -12607,7 +12812,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Navigate<TView>(string label, RgbColor color, bool replace = false) where TView : IView
         {
-            return Navigate<TView>(label, (ConsoleColor?)color.ToConsoleColor(), replace);
+            return Navigate<TView>(label, (ConsoleColor?)color.ToConsoleColor(), replace)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -12621,7 +12827,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Navigate<TView>(string label, Func<TView> viewFactory, SpectreColor color, bool replace = false) where TView : IView
         {
-            return Navigate<TView>(label, viewFactory, (ConsoleColor?)color.ToConsoleColor(), replace);
+            return Navigate<TView>(label, viewFactory, (ConsoleColor?)color.ToConsoleColor(), replace)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -12635,7 +12842,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Navigate<TView>(string label, Func<TView> viewFactory, RgbColor color, bool replace = false) where TView : IView
         {
-            return Navigate<TView>(label, viewFactory, (ConsoleColor?)color.ToConsoleColor(), replace);
+            return Navigate<TView>(label, viewFactory, (ConsoleColor?)color.ToConsoleColor(), replace)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -12868,7 +13076,8 @@ namespace ConsoulLibrary
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
             bool enableDocumentEditor = true)
         {
-            return EditModel(label, ResolveStyle(style, RenderOptions.OptionColor), bindingAttr, enableDocumentEditor);
+            return EditModel(label, ResolveStyle(style, RenderOptions.OptionColor), bindingAttr, enableDocumentEditor)
+                .StyleLastOption(ParseStyle(style));
         }
 
         /// <summary>
@@ -12885,7 +13094,8 @@ namespace ConsoulLibrary
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
             bool enableDocumentEditor = true)
         {
-            return EditModel(label, ResolveStyle(style, RenderOptions.OptionColor), bindingAttr, enableDocumentEditor);
+            return EditModel(label, ResolveStyle(style, RenderOptions.OptionColor), bindingAttr, enableDocumentEditor)
+                .StyleLastOption(style);
         }
 
         /// <summary>
@@ -12902,7 +13112,8 @@ namespace ConsoulLibrary
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
             bool enableDocumentEditor = true)
         {
-            return EditModel(label, (ConsoleColor?)color.ToConsoleColor(), bindingAttr, enableDocumentEditor);
+            return EditModel(label, (ConsoleColor?)color.ToConsoleColor(), bindingAttr, enableDocumentEditor)
+                .ColorLastOption(color.ToRgbColor());
         }
 
         /// <summary>
@@ -12919,7 +13130,8 @@ namespace ConsoulLibrary
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
             bool enableDocumentEditor = true)
         {
-            return EditModel(label, (ConsoleColor?)color.ToConsoleColor(), bindingAttr, enableDocumentEditor);
+            return EditModel(label, (ConsoleColor?)color.ToConsoleColor(), bindingAttr, enableDocumentEditor)
+                .ColorLastOption(color);
         }
 
         /// <summary>
@@ -13195,23 +13407,13 @@ namespace ConsoulLibrary
                 {
                     if (option.IsSeparator)
                     {
-                        prompt.AddSeparator(option.Entry.SetMessage(), option.Entry.SetColor());
+                        SelectOption separator = prompt.AddSeparator(option.Entry.SetMessage(), option.ResolveStyle().Scheme.Color);
+                        option.ApplyStyleTo(separator);
                         continue;
                     }
 
                     selectableOptions.Add(option);
-                    string label = option.Entry.SetMessage();
-                    string description = option.Description;
-                    string shortcut = option.Shortcut;
-                    AddPromptOption(
-                        prompt,
-                        label,
-                        description,
-                        shortcut,
-                        option.Entry.SetColor(),
-                        option.IsEnabled,
-                        option.DisabledReason,
-                        option.SearchTerms);
+                    AddPromptOption(prompt, option);
                 }
 
                 prompt.Add(_goBackMessage, RenderOptions.SubnoteColor);
@@ -13419,20 +13621,13 @@ namespace ConsoulLibrary
 
                 if (option.IsSeparator)
                 {
-                    prompt.AddSeparator(option.Entry.SetMessage(), option.Entry.SetColor());
+                    SelectOption separator = prompt.AddSeparator(option.Entry.SetMessage(), option.ResolveStyle().Scheme.Color);
+                    option.ApplyStyleTo(separator);
                     continue;
                 }
 
                 selectableOptions.Add(option);
-                AddPaletteOption(
-                    prompt,
-                    option.Entry.SetMessage(),
-                    option.Description,
-                    option.Shortcut,
-                    option.Entry.SetColor(),
-                    option.IsEnabled,
-                    option.DisabledReason,
-                    option.SearchTerms);
+                AddPromptOption(prompt, option);
             }
 
             PromptResult result = prompt.Render(cancellationToken);
@@ -13449,29 +13644,16 @@ namespace ConsoulLibrary
             return result;
         }
 
-        private static void AddPaletteOption(
-            SelectionPrompt prompt,
-            string label,
-            string description,
-            string shortcut,
-            ConsoleColor color,
-            bool isEnabled,
-            string disabledReason,
-            IEnumerable<string> searchTerms)
-        {
-            AddPromptOption(prompt, label, description, shortcut, color, isEnabled, disabledReason, searchTerms);
-        }
-
         private static void AddPromptOption(
             SelectionPrompt prompt,
-            string label,
-            string description,
-            string shortcut,
-            ConsoleColor color,
-            bool isEnabled,
-            string disabledReason,
-            IEnumerable<string> searchTerms)
+            DynamicOption<T> option)
         {
+            string label = option.Entry.SetMessage();
+            string description = option.Description;
+            string shortcut = option.Shortcut;
+            bool isEnabled = option.IsEnabled;
+            string disabledReason = option.DisabledReason;
+            ConsoleColor color = option.ResolveStyle().Scheme.Color;
             int index;
             if (!isEnabled)
             {
@@ -13479,26 +13661,27 @@ namespace ConsoulLibrary
                 {
                     if (string.IsNullOrWhiteSpace(shortcut))
                     {
-                        index = prompt.AddDisabled(label, disabledReason);
+                        index = prompt.AddDisabled(label, disabledReason, color);
                     }
                     else
                     {
-                        index = prompt.AddDisabledShortcut(label, shortcut, disabledReason);
+                        index = prompt.AddDisabledShortcut(label, shortcut, disabledReason, color);
                     }
                 }
                 else
                 {
                     if (string.IsNullOrWhiteSpace(shortcut))
                     {
-                        index = prompt.AddDisabledDescribed(label, description, disabledReason);
+                        index = prompt.AddDisabledDescribed(label, description, disabledReason, color);
                     }
                     else
                     {
-                        index = prompt.AddDisabledDescribedShortcut(label, description, shortcut, disabledReason);
+                        index = prompt.AddDisabledDescribedShortcut(label, description, shortcut, disabledReason, color);
                     }
                 }
 
-                prompt.AddSearchTerms(index, searchTerms);
+                option.ApplyStyleTo(FindPromptOption(prompt, index), disabled: true);
+                prompt.AddSearchTerms(index, option.SearchTerms);
                 return;
             }
 
@@ -13513,7 +13696,8 @@ namespace ConsoulLibrary
                     index = prompt.AddShortcut(label, shortcut, color);
                 }
 
-                prompt.AddSearchTerms(index, searchTerms);
+                option.ApplyStyleTo(FindPromptOption(prompt, index));
+                prompt.AddSearchTerms(index, option.SearchTerms);
                 return;
             }
 
@@ -13526,7 +13710,13 @@ namespace ConsoulLibrary
                 index = prompt.AddDescribedShortcut(label, description, shortcut, color);
             }
 
-            prompt.AddSearchTerms(index, searchTerms);
+            option.ApplyStyleTo(FindPromptOption(prompt, index));
+            prompt.AddSearchTerms(index, option.SearchTerms);
+        }
+
+        private static SelectOption FindPromptOption(SelectionPrompt prompt, int index)
+        {
+            return prompt.Options.First(item => !item.IsSeparator && item.Index == index);
         }
 
         private static IEnumerable<string> NormalizeSearchTerms(object searchTerms)

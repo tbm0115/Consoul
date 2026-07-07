@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -192,33 +193,41 @@ namespace ConsoulLibrary
         private void RenderItem(TimelineItem item, Layout layout, bool hasNext)
         {
             string marker = PadOrTrim(_options.ResolveMarker(item.State), layout.MarkerWidth);
-            ColorScheme markerScheme = item.MarkerScheme ?? _options.ResolveMarkerScheme(item.State);
-            ColorScheme titleScheme = item.TitleScheme ?? _options.ResolveTitleScheme();
-            ColorScheme descriptionScheme = item.DescriptionScheme ?? _options.ResolveDescriptionScheme();
+            StyledText markerStyle = ResolveMarkerStyle(item);
+            StyledText titleStyle = ResolveTitleStyle(item);
+            StyledText descriptionStyle = ResolveDescriptionStyle(item);
             IList<List<FixedMessageSegment>> titleLines = MarkupRenderText.WrapSegments(
                 BuildTitle(item),
                 layout.ContentWidth,
-                titleScheme);
-            WriteLines(marker, markerScheme, titleLines, titleScheme, layout);
+                titleStyle.Scheme,
+                titleStyle.Decoration,
+                titleStyle.ForegroundRgb,
+                titleStyle.BackgroundRgb);
+            WriteLines(marker, markerStyle, titleLines, titleStyle, layout);
 
             if (_options.ShowDescriptions && !string.IsNullOrWhiteSpace(item.Description))
             {
                 string connector = hasNext ? PadOrTrim(_options.Connector, layout.MarkerWidth) : PadOrTrim(string.Empty, layout.MarkerWidth);
-                ColorScheme connectorScheme = _options.ShowConnectors ? _options.ResolveConnectorScheme() : RenderOptions.DefaultScheme;
+                StyledText connectorStyle = _options.ShowConnectors
+                    ? ResolveConnectorStyle()
+                    : new StyledText(RenderOptions.DefaultScheme, Decoration.None, null, null);
                 IList<List<FixedMessageSegment>> descriptionLines = MarkupRenderText.WrapSegments(
                     item.Description,
                     layout.ContentWidth,
-                    descriptionScheme);
-                WriteLines(_options.ShowConnectors ? connector : PadOrTrim(string.Empty, layout.MarkerWidth), connectorScheme, descriptionLines, descriptionScheme, layout);
+                    descriptionStyle.Scheme,
+                    descriptionStyle.Decoration,
+                    descriptionStyle.ForegroundRgb,
+                    descriptionStyle.BackgroundRgb);
+                WriteLines(_options.ShowConnectors ? connector : PadOrTrim(string.Empty, layout.MarkerWidth), connectorStyle, descriptionLines, descriptionStyle, layout);
             }
 
             if (_options.ShowConnectors && hasNext)
             {
                 WriteLines(
                     PadOrTrim(_options.Connector, layout.MarkerWidth),
-                    _options.ResolveConnectorScheme(),
+                    ResolveConnectorStyle(),
                     new[] { new List<FixedMessageSegment>() },
-                    RenderOptions.DefaultScheme,
+                    new StyledText(RenderOptions.DefaultScheme, Decoration.None, null, null),
                     layout);
             }
         }
@@ -237,9 +246,9 @@ namespace ConsoulLibrary
 
         private void WriteLines(
             string marker,
-            ColorScheme markerScheme,
+            StyledText markerStyle,
             IList<List<FixedMessageSegment>> contentLines,
-            ColorScheme contentScheme,
+            StyledText contentStyle,
             Layout layout)
         {
             foreach (List<FixedMessageSegment> contentLine in contentLines)
@@ -248,12 +257,120 @@ namespace ConsoulLibrary
                 string gap = new string(' ', layout.Gap);
                 int contentWidth = Math.Max(1, layout.Width - markerText.Length - gap.Length);
 
-                Consoul.Write(markerText, markerScheme, false);
+                TerminalLinkWriter.WriteText(
+                    markerText,
+                    markerStyle.Scheme,
+                    null,
+                    markerStyle.Decoration,
+                    markerStyle.ForegroundRgb,
+                    markerStyle.BackgroundRgb);
                 Consoul.Write(gap, RenderOptions.DefaultScheme, false);
                 List<FixedMessageSegment> content = MarkupRenderText.TruncateSegments(contentLine, contentWidth);
-                MarkupRenderText.AddPadding(content, Math.Max(0, contentWidth - MarkupRenderText.GetLength(content)), contentScheme);
-                MarkupRenderText.WriteSegments(content, contentScheme, true);
+                AddPadding(content, Math.Max(0, contentWidth - MarkupRenderText.GetLength(content)), contentStyle);
+                MarkupRenderText.WriteSegments(content, contentStyle.Scheme, true);
             }
+        }
+
+        private StyledText ResolveMarkerStyle(TimelineItem item)
+        {
+            ColorScheme scheme = item.MarkerScheme ?? _options.ResolveMarkerScheme(item.State);
+            bool hasItemScheme = item.MarkerScheme.HasValue;
+            StyledText optionStyle = ResolveOptionMarkerStyle(item.State);
+            return new StyledText(
+                scheme,
+                item.MarkerDecoration ?? (hasItemScheme ? Decoration.None : optionStyle.Decoration),
+                item.MarkerForegroundRgb ?? (hasItemScheme ? null : optionStyle.ForegroundRgb),
+                item.MarkerBackgroundRgb ?? (hasItemScheme ? null : optionStyle.BackgroundRgb));
+        }
+
+        private StyledText ResolveTitleStyle(TimelineItem item)
+        {
+            ColorScheme scheme = item.TitleScheme ?? _options.ResolveTitleScheme();
+            bool hasItemScheme = item.TitleScheme.HasValue;
+            return new StyledText(
+                scheme,
+                item.TitleDecoration ?? (hasItemScheme ? Decoration.None : _options.TitleDecoration),
+                item.TitleForegroundRgb ?? (hasItemScheme ? null : _options.TitleForegroundRgb),
+                item.TitleBackgroundRgb ?? (hasItemScheme ? null : _options.TitleBackgroundRgb));
+        }
+
+        private StyledText ResolveDescriptionStyle(TimelineItem item)
+        {
+            ColorScheme scheme = item.DescriptionScheme ?? _options.ResolveDescriptionScheme();
+            bool hasItemScheme = item.DescriptionScheme.HasValue;
+            return new StyledText(
+                scheme,
+                item.DescriptionDecoration ?? (hasItemScheme ? Decoration.None : _options.DescriptionDecoration),
+                item.DescriptionForegroundRgb ?? (hasItemScheme ? null : _options.DescriptionForegroundRgb),
+                item.DescriptionBackgroundRgb ?? (hasItemScheme ? null : _options.DescriptionBackgroundRgb));
+        }
+
+        private StyledText ResolveConnectorStyle()
+        {
+            return new StyledText(
+                _options.ResolveConnectorScheme(),
+                _options.ConnectorDecoration,
+                _options.ConnectorForegroundRgb,
+                _options.ConnectorBackgroundRgb);
+        }
+
+        private StyledText ResolveOptionMarkerStyle(TimelineItemState state)
+        {
+            switch (state)
+            {
+                case TimelineItemState.Active:
+                    return new StyledText(
+                        _options.ResolveMarkerScheme(state),
+                        _options.ActiveDecoration,
+                        _options.ActiveForegroundRgb,
+                        _options.ActiveBackgroundRgb);
+                case TimelineItemState.Complete:
+                    return new StyledText(
+                        _options.ResolveMarkerScheme(state),
+                        _options.CompleteDecoration,
+                        _options.CompleteForegroundRgb,
+                        _options.CompleteBackgroundRgb);
+                case TimelineItemState.Warning:
+                    return new StyledText(
+                        _options.ResolveMarkerScheme(state),
+                        _options.WarningDecoration,
+                        _options.WarningForegroundRgb,
+                        _options.WarningBackgroundRgb);
+                case TimelineItemState.Error:
+                    return new StyledText(
+                        _options.ResolveMarkerScheme(state),
+                        _options.ErrorDecoration,
+                        _options.ErrorForegroundRgb,
+                        _options.ErrorBackgroundRgb);
+                case TimelineItemState.Skipped:
+                    return new StyledText(
+                        _options.ResolveMarkerScheme(state),
+                        _options.SkippedDecoration,
+                        _options.SkippedForegroundRgb,
+                        _options.SkippedBackgroundRgb);
+                default:
+                    return new StyledText(
+                        _options.ResolveMarkerScheme(state),
+                        _options.PendingDecoration,
+                        _options.PendingForegroundRgb,
+                        _options.PendingBackgroundRgb);
+            }
+        }
+
+        private static void AddPadding(IList<FixedMessageSegment> segments, int count, StyledText style)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                style.Scheme,
+                style.Decoration,
+                null,
+                style.ForegroundRgb,
+                style.BackgroundRgb));
         }
 
         private static string PadOrTrim(string text, int width)
@@ -285,6 +402,25 @@ namespace ConsoulLibrary
             public int Gap { get; }
 
             public int ContentWidth { get; }
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

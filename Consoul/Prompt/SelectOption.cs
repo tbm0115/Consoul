@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -63,6 +65,21 @@ namespace ConsoulLibrary
         public ConsoleColor Color { get; set; }
 
         /// <summary>
+        /// Gets or sets optional ANSI decoration used for this option label.
+        /// </summary>
+        public Decoration? Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for this option label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for this option label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the zero-based index reference for this option.
         /// </summary>
         public int Index { get; set; }
@@ -96,6 +113,21 @@ namespace ConsoulLibrary
         /// Gets or sets the display color used when <see cref="IsDisabled"/> is <c>true</c>.
         /// </summary>
         public ConsoleColor DisabledColor { get; set; } = ConsoleColor.DarkGray;
+
+        /// <summary>
+        /// Gets or sets optional ANSI decoration used when this option is disabled.
+        /// </summary>
+        public Decoration? DisabledDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used when this option is disabled on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DisabledForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used when this option is disabled on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DisabledBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether this item is a display-only separator.
@@ -189,6 +221,33 @@ namespace ConsoulLibrary
         public SelectOption UseColor(ConsoleColor color)
         {
             Color = color;
+            Decoration = null;
+            ForegroundRgb = null;
+            BackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the display color for this option from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The option foreground color.</param>
+        /// <returns>The current <see cref="SelectOption"/> instance.</returns>
+        public SelectOption UseColor(SpectreColor color)
+        {
+            return UseColor(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the display color for this option from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The option foreground color.</param>
+        /// <returns>The current <see cref="SelectOption"/> instance.</returns>
+        public SelectOption UseColor(RgbColor color)
+        {
+            Color = color.ToConsoleColor();
+            Decoration = ConsoulLibrary.Decoration.None;
+            ForegroundRgb = color;
+            BackgroundRgb = null;
             return this;
         }
 
@@ -199,7 +258,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectOption"/> instance.</returns>
         public SelectOption UseStyle(Style style)
         {
-            Color = PromptRenderHelpers.ResolveStyleColor(style, Color);
+            ApplyStyle(style);
             return this;
         }
 
@@ -210,8 +269,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectOption"/> instance.</returns>
         public SelectOption UseStyle(string style)
         {
-            Color = ConsoulLibrary.Style.ParseForeground(style, Color);
-            return this;
+            return UseStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -222,6 +280,33 @@ namespace ConsoulLibrary
         public SelectOption UseDisabledColor(ConsoleColor color)
         {
             DisabledColor = color;
+            DisabledDecoration = null;
+            DisabledForegroundRgb = null;
+            DisabledBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the display color used when this option is disabled from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The disabled option foreground color.</param>
+        /// <returns>The current <see cref="SelectOption"/> instance.</returns>
+        public SelectOption UseDisabledColor(SpectreColor color)
+        {
+            return UseDisabledColor(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the display color used when this option is disabled from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The disabled option foreground color.</param>
+        /// <returns>The current <see cref="SelectOption"/> instance.</returns>
+        public SelectOption UseDisabledColor(RgbColor color)
+        {
+            DisabledColor = color.ToConsoleColor();
+            DisabledDecoration = ConsoulLibrary.Decoration.None;
+            DisabledForegroundRgb = color;
+            DisabledBackgroundRgb = null;
             return this;
         }
 
@@ -232,7 +317,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectOption"/> instance.</returns>
         public SelectOption UseDisabledStyle(Style style)
         {
-            DisabledColor = PromptRenderHelpers.ResolveStyleColor(style, DisabledColor);
+            ApplyDisabledStyle(style);
             return this;
         }
 
@@ -243,8 +328,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectOption"/> instance.</returns>
         public SelectOption UseDisabledStyle(string style)
         {
-            DisabledColor = ConsoulLibrary.Style.ParseForeground(style, DisabledColor);
-            return this;
+            return UseDisabledStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -327,9 +411,77 @@ namespace ConsoulLibrary
             };
         }
 
+        /// <summary>
+        /// Creates a display-only separator for grouped prompt options using a Spectre-style color facade.
+        /// </summary>
+        /// <param name="label">Optional separator label.</param>
+        /// <param name="color">The separator foreground color.</param>
+        /// <returns>A configured separator option.</returns>
+        public static SelectOption Separator(string label, SpectreColor color)
+        {
+            return Separator(label, color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Creates a display-only separator for grouped prompt options using an RGB foreground color.
+        /// </summary>
+        /// <param name="label">Optional separator label.</param>
+        /// <param name="color">The separator foreground color.</param>
+        /// <returns>A configured separator option.</returns>
+        public static SelectOption Separator(string label, RgbColor color)
+        {
+            return Separator(label, (ConsoleColor?)color.ToConsoleColor()).UseColor(color);
+        }
+
+        /// <summary>
+        /// Creates a display-only separator for grouped prompt options using a reusable style object.
+        /// </summary>
+        /// <param name="label">Optional separator label.</param>
+        /// <param name="style">Optional separator style.</param>
+        /// <returns>A configured separator option.</returns>
+        public static SelectOption Separator(string label, Style style)
+        {
+            SelectOption option = Separator(label, style == null ? (ConsoleColor?)null : style.ToForegroundColor(RenderOptions.SubnoteColor));
+            option.ApplyStyle(style);
+            return option;
+        }
+
+        /// <summary>
+        /// Creates a display-only separator for grouped prompt options using Spectre-style style text.
+        /// </summary>
+        /// <param name="label">Optional separator label.</param>
+        /// <param name="style">Optional separator style text.</param>
+        /// <returns>A configured separator option.</returns>
+        public static SelectOption SeparatorStyled(string label = null, string style = null)
+        {
+            return Separator(label, string.IsNullOrWhiteSpace(style) ? null : ConsoulLibrary.Style.Parse(style));
+        }
+
         internal void AttachChildFactory(Func<SelectOption, string, ConsoleColor?, bool, OptionRenderStyle, SelectOption> childFactory)
         {
             _childFactory = childFactory;
+        }
+
+        internal PromptRenderHelpers.StyledText ResolveStyle()
+        {
+            return PromptRenderHelpers.FromComponents(
+                Color,
+                Decoration ?? ConsoulLibrary.Decoration.None,
+                ForegroundRgb,
+                BackgroundRgb);
+        }
+
+        internal PromptRenderHelpers.StyledText ResolveDisabledStyle(Style fallbackStyle)
+        {
+            PromptRenderHelpers.StyledText style = PromptRenderHelpers.FromComponents(
+                DisabledColor,
+                DisabledDecoration ?? ConsoulLibrary.Decoration.None,
+                DisabledForegroundRgb,
+                DisabledBackgroundRgb);
+
+            return fallbackStyle == null
+                ? style
+                : PromptRenderHelpers.ResolveStyle(fallbackStyle, style.Scheme.Color);
         }
 
         internal void AddChildOption(SelectOption child)
@@ -343,6 +495,32 @@ namespace ConsoulLibrary
             child.Parent = this;
             child.Depth = Depth + 1;
             _children.Add(child);
+        }
+
+        private void ApplyStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            Color = style.ToForegroundColor(Color);
+            Decoration = style.Decoration;
+            ForegroundRgb = style.ForegroundRgb;
+            BackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyDisabledStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            DisabledColor = style.ToForegroundColor(DisabledColor);
+            DisabledDecoration = style.Decoration;
+            DisabledForegroundRgb = style.ForegroundRgb;
+            DisabledBackgroundRgb = style.BackgroundRgb;
         }
 
         /// <summary>

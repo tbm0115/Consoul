@@ -2,6 +2,8 @@ using ConsoulLibrary.Color;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -67,6 +69,48 @@ namespace ConsoulLibrary
             ConsoleColor? descriptionColor = null)
         {
             ShortcutItem item = ShortcutItem.Create(key, description, disabled, keyColor, descriptionColor);
+            _items.Add(item);
+            return item;
+        }
+
+        /// <summary>
+        /// Adds a shortcut item using Spectre-style color facades.
+        /// </summary>
+        /// <param name="key">The key or command token.</param>
+        /// <param name="description">The action description.</param>
+        /// <param name="keyColor">Foreground color used for the key token.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the action description.</param>
+        /// <param name="disabled">A value indicating whether the shortcut should render as disabled.</param>
+        /// <returns>The added shortcut item.</returns>
+        public ShortcutItem Add(
+            string key,
+            string description,
+            SpectreColor keyColor,
+            SpectreColor? descriptionColor = null,
+            bool disabled = false)
+        {
+            ShortcutItem item = ShortcutItem.Create(key, description, keyColor, descriptionColor, disabled);
+            _items.Add(item);
+            return item;
+        }
+
+        /// <summary>
+        /// Adds a shortcut item using RGB foreground colors.
+        /// </summary>
+        /// <param name="key">The key or command token.</param>
+        /// <param name="description">The action description.</param>
+        /// <param name="keyColor">Foreground color used for the key token.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the action description.</param>
+        /// <param name="disabled">A value indicating whether the shortcut should render as disabled.</param>
+        /// <returns>The added shortcut item.</returns>
+        public ShortcutItem Add(
+            string key,
+            string description,
+            RgbColor keyColor,
+            RgbColor? descriptionColor = null,
+            bool disabled = false)
+        {
+            ShortcutItem item = ShortcutItem.Create(key, description, keyColor, descriptionColor, disabled);
             _items.Add(item);
             return item;
         }
@@ -157,7 +201,13 @@ namespace ConsoulLibrary
             {
                 foreach (FixedMessageSegment segment in line)
                 {
-                    TerminalLinkWriter.WriteText(segment.Text, segment.Scheme ?? RenderOptions.DefaultScheme, segment.Link);
+                    TerminalLinkWriter.WriteText(
+                        segment.Text,
+                        segment.Scheme ?? RenderOptions.DefaultScheme,
+                        segment.Link,
+                        segment.Decoration,
+                        segment.ForegroundRgb,
+                        segment.BackgroundRgb);
                 }
 
                 Consoul.Write(string.Empty, RenderOptions.DefaultScheme, true);
@@ -225,7 +275,7 @@ namespace ConsoulLibrary
 
                 if (needsSeparator)
                 {
-                    current.Add(new FixedMessageSegment(separator, _options.ResolveSeparatorScheme()));
+                    current.Add(CreateSegment(separator, ResolveSeparatorStyle()));
                     currentLength += separator.Length;
                 }
 
@@ -249,25 +299,25 @@ namespace ConsoulLibrary
             string key = Normalize(item.Key);
             string description = Normalize(item.Description);
             string gap = _options.KeyDescriptionSeparator ?? string.Empty;
-            ColorScheme keyScheme = item.Disabled ? _options.ResolveDisabledScheme() : item.KeyScheme ?? _options.ResolveKeyScheme();
-            ColorScheme descriptionScheme = item.Disabled ? _options.ResolveDisabledScheme() : item.DescriptionScheme ?? _options.ResolveDescriptionScheme();
+            StyledText keyStyle = item.Disabled ? ResolveDisabledStyle() : ResolveKeyStyle(item);
+            StyledText descriptionStyle = item.Disabled ? ResolveDisabledStyle() : ResolveDescriptionStyle(item);
             bool forceScheme = item.Disabled;
-            IList<FixedMessageSegment> keySegments = BuildKeySegments(key, keyScheme, forceScheme);
-            IList<FixedMessageSegment> descriptionSegments = ParseMarkupSegments(description, descriptionScheme, forceScheme);
+            IList<FixedMessageSegment> keySegments = BuildKeySegments(key, keyStyle, forceScheme);
+            IList<FixedMessageSegment> descriptionSegments = ParseMarkupSegments(description, descriptionStyle, forceScheme);
 
             int descriptionWidth = maxWidth - Measure(keySegments) - gap.Length;
             if (descriptionWidth >= 1)
             {
                 var segments = new List<FixedMessageSegment>();
                 segments.AddRange(keySegments);
-                AddPlainSegment(segments, gap, RenderOptions.DefaultScheme);
+                AddPlainSegment(segments, gap, new StyledText(RenderOptions.DefaultScheme, Decoration.None, null, null));
                 segments.AddRange(MarkupRenderText.TruncateSegments(descriptionSegments, descriptionWidth, _options.Ellipsis));
                 return segments;
             }
 
             var combined = new List<FixedMessageSegment>();
             combined.AddRange(keySegments);
-            AddPlainSegment(combined, gap, item.Disabled ? _options.ResolveDisabledScheme() : RenderOptions.DefaultScheme);
+            AddPlainSegment(combined, gap, item.Disabled ? ResolveDisabledStyle() : new StyledText(RenderOptions.DefaultScheme, Decoration.None, null, null));
             combined.AddRange(descriptionSegments);
             return MarkupRenderText.TruncateSegments(combined, maxWidth, _options.Ellipsis);
         }
@@ -293,49 +343,76 @@ namespace ConsoulLibrary
                 .Trim();
         }
 
-        private IList<FixedMessageSegment> BuildKeySegments(string key, ColorScheme keyScheme, bool forceScheme)
+        private IList<FixedMessageSegment> BuildKeySegments(string key, StyledText keyStyle, bool forceScheme)
         {
             var segments = new List<FixedMessageSegment>();
-            AddPlainSegment(segments, _options.KeyLeftEdge, keyScheme);
-            AddSegments(segments, ParseMarkupSegments(key, keyScheme, forceScheme));
-            AddPlainSegment(segments, _options.KeyRightEdge, keyScheme);
+            AddPlainSegment(segments, _options.KeyLeftEdge, keyStyle);
+            AddSegments(segments, ParseMarkupSegments(key, keyStyle, forceScheme));
+            AddPlainSegment(segments, _options.KeyRightEdge, keyStyle);
             return segments;
         }
 
-        private static IList<FixedMessageSegment> ParseMarkupSegments(string value, ColorScheme scheme, bool forceScheme)
+        private static IList<FixedMessageSegment> ParseMarkupSegments(string value, StyledText style, bool forceScheme)
         {
             var result = new List<FixedMessageSegment>();
-            foreach (FixedMessageSegment segment in MarkupRenderText.ParseSegments(value, scheme))
+            foreach (FixedMessageSegment segment in MarkupRenderText.ParseSegments(
+                value,
+                style.Scheme,
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb))
             {
                 AddSegment(
                     result,
                     segment.Text,
-                    forceScheme ? scheme : segment.Scheme ?? scheme,
-                    segment.Link);
+                    forceScheme ? style.Scheme : segment.Scheme ?? style.Scheme,
+                    forceScheme && style.Decoration != Decoration.None ? style.Decoration : segment.Decoration,
+                    segment.Link,
+                    forceScheme ? style.ForegroundRgb : segment.ForegroundRgb,
+                    forceScheme ? style.BackgroundRgb : segment.BackgroundRgb);
             }
 
             return result;
         }
 
-        private static void AddPlainSegment(IList<FixedMessageSegment> segments, string text, ColorScheme scheme)
+        private static void AddPlainSegment(IList<FixedMessageSegment> segments, string text, StyledText style)
         {
-            AddSegment(segments, text, scheme);
+            AddSegment(segments, text, style);
         }
 
         private static void AddSegments(IList<FixedMessageSegment> segments, IEnumerable<FixedMessageSegment> values)
         {
             foreach (FixedMessageSegment segment in values ?? Enumerable.Empty<FixedMessageSegment>())
             {
-                AddSegment(segments, segment.Text, segment.Scheme ?? RenderOptions.DefaultScheme, segment.Link);
+                AddSegment(
+                    segments,
+                    segment.Text,
+                    segment.Scheme ?? RenderOptions.DefaultScheme,
+                    segment.Decoration,
+                    segment.Link,
+                    segment.ForegroundRgb,
+                    segment.BackgroundRgb);
             }
         }
 
         private static void AddSegment(IList<FixedMessageSegment> segments, string text, ColorScheme scheme)
         {
-            AddSegment(segments, text, scheme, null);
+            AddSegment(segments, text, scheme, Decoration.None, null, null, null);
         }
 
-        private static void AddSegment(IList<FixedMessageSegment> segments, string text, ColorScheme scheme, Link link)
+        private static void AddSegment(IList<FixedMessageSegment> segments, string text, StyledText style)
+        {
+            AddSegment(segments, text, style.Scheme, style.Decoration, null, style.ForegroundRgb, style.BackgroundRgb);
+        }
+
+        private static void AddSegment(
+            IList<FixedMessageSegment> segments,
+            string text,
+            ColorScheme scheme,
+            Decoration decoration,
+            Link link,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             text = text ?? string.Empty;
             if (text.Length == 0)
@@ -345,14 +422,23 @@ namespace ConsoulLibrary
 
             if (segments.Count > 0 &&
                 SameScheme(segments[segments.Count - 1].Scheme, scheme) &&
+                segments[segments.Count - 1].Decoration == decoration &&
+                segments[segments.Count - 1].ForegroundRgb.Equals(foregroundRgb) &&
+                segments[segments.Count - 1].BackgroundRgb.Equals(backgroundRgb) &&
                 TerminalLinkWriter.SameTarget(segments[segments.Count - 1].Link, link))
             {
                 FixedMessageSegment previous = segments[segments.Count - 1];
-                segments[segments.Count - 1] = new FixedMessageSegment(previous.Text + text, scheme, link);
+                segments[segments.Count - 1] = new FixedMessageSegment(
+                    previous.Text + text,
+                    scheme,
+                    decoration,
+                    link,
+                    foregroundRgb,
+                    backgroundRgb);
                 return;
             }
 
-            segments.Add(new FixedMessageSegment(text, scheme, link));
+            segments.Add(new FixedMessageSegment(text, scheme, decoration, link, foregroundRgb, backgroundRgb));
         }
 
         private static bool SameScheme(ColorScheme? left, ColorScheme right)
@@ -360,6 +446,76 @@ namespace ConsoulLibrary
             return left.HasValue &&
                    left.Value.Color == right.Color &&
                    left.Value.BackgroundColor == right.BackgroundColor;
+        }
+
+        private StyledText ResolveKeyStyle(ShortcutItem item)
+        {
+            ColorScheme scheme = item.KeyScheme ?? _options.ResolveKeyScheme();
+            bool hasItemScheme = item.KeyScheme.HasValue;
+            return new StyledText(
+                scheme,
+                item.KeyDecoration ?? (hasItemScheme ? Decoration.None : _options.KeyDecoration),
+                item.KeyForegroundRgb ?? (hasItemScheme ? null : _options.KeyForegroundRgb),
+                item.KeyBackgroundRgb ?? (hasItemScheme ? null : _options.KeyBackgroundRgb));
+        }
+
+        private StyledText ResolveDescriptionStyle(ShortcutItem item)
+        {
+            ColorScheme scheme = item.DescriptionScheme ?? _options.ResolveDescriptionScheme();
+            bool hasItemScheme = item.DescriptionScheme.HasValue;
+            return new StyledText(
+                scheme,
+                item.DescriptionDecoration ?? (hasItemScheme ? Decoration.None : _options.DescriptionDecoration),
+                item.DescriptionForegroundRgb ?? (hasItemScheme ? null : _options.DescriptionForegroundRgb),
+                item.DescriptionBackgroundRgb ?? (hasItemScheme ? null : _options.DescriptionBackgroundRgb));
+        }
+
+        private StyledText ResolveSeparatorStyle()
+        {
+            return new StyledText(
+                _options.ResolveSeparatorScheme(),
+                _options.SeparatorDecoration,
+                _options.SeparatorForegroundRgb,
+                _options.SeparatorBackgroundRgb);
+        }
+
+        private StyledText ResolveDisabledStyle()
+        {
+            return new StyledText(
+                _options.ResolveDisabledScheme(),
+                _options.DisabledDecoration,
+                _options.DisabledForegroundRgb,
+                _options.DisabledBackgroundRgb);
+        }
+
+        private static FixedMessageSegment CreateSegment(string text, StyledText style)
+        {
+            return new FixedMessageSegment(
+                text,
+                style.Scheme,
+                style.Decoration,
+                null,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

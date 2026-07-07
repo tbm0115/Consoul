@@ -47,9 +47,39 @@ namespace ConsoulLibrary
         public ColorScheme? InvalidScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for the invalid summary border and title.
+        /// </summary>
+        public Decoration InvalidDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for the invalid summary border and title on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InvalidForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for the invalid summary border and title on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InvalidBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for invalid summary issue content.
         /// </summary>
         public ColorScheme? IssueScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for invalid summary issue content.
+        /// </summary>
+        public Decoration IssueDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for invalid summary issue content on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? IssueForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for invalid summary issue content on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? IssueBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the color scheme used for the valid summary border and title.
@@ -57,9 +87,39 @@ namespace ConsoulLibrary
         public ColorScheme? ValidScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for the valid summary border and title.
+        /// </summary>
+        public Decoration ValidDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for the valid summary border and title on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValidForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for the valid summary border and title on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValidBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for the valid summary message.
         /// </summary>
         public ColorScheme? ValidMessageScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for the valid summary message.
+        /// </summary>
+        public Decoration ValidMessageDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for the valid summary message on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValidMessageForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for the valid summary message on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValidMessageBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current validation summary options.
@@ -76,9 +136,21 @@ namespace ConsoulLibrary
                 ShowValidMessage = ShowValidMessage,
                 BindingAttr = BindingAttr,
                 InvalidScheme = InvalidScheme,
+                InvalidDecoration = InvalidDecoration,
+                InvalidForegroundRgb = InvalidForegroundRgb,
+                InvalidBackgroundRgb = InvalidBackgroundRgb,
                 IssueScheme = IssueScheme,
+                IssueDecoration = IssueDecoration,
+                IssueForegroundRgb = IssueForegroundRgb,
+                IssueBackgroundRgb = IssueBackgroundRgb,
                 ValidScheme = ValidScheme,
-                ValidMessageScheme = ValidMessageScheme
+                ValidDecoration = ValidDecoration,
+                ValidForegroundRgb = ValidForegroundRgb,
+                ValidBackgroundRgb = ValidBackgroundRgb,
+                ValidMessageScheme = ValidMessageScheme,
+                ValidMessageDecoration = ValidMessageDecoration,
+                ValidMessageForegroundRgb = ValidMessageForegroundRgb,
+                ValidMessageBackgroundRgb = ValidMessageBackgroundRgb
             };
         }
 
@@ -90,7 +162,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions InvalidColor(ConsoleColor color, ConsoleColor? backgroundColor = null)
         {
-            InvalidScheme = Scheme(color, backgroundColor);
+            SetInvalidStyle(Scheme(color, backgroundColor), Decoration.None, null, null);
             return this;
         }
 
@@ -101,7 +173,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions InvalidColor(SpectreColor color)
         {
-            InvalidScheme = Scheme(color);
+            SetInvalidStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
             return this;
         }
 
@@ -112,7 +184,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions InvalidColor(RgbColor color)
         {
-            InvalidScheme = Scheme(color);
+            SetInvalidStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -123,7 +195,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions InvalidColor(Style style)
         {
-            InvalidScheme = Scheme(style);
+            ApplyInvalidStyle(style);
             return this;
         }
 
@@ -134,8 +206,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions InvalidColor(string style)
         {
-            InvalidScheme = Style.ParseScheme(style, RenderOptions.DefaultScheme);
-            return this;
+            return InvalidColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -146,7 +217,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions IssueColor(ConsoleColor color, ConsoleColor? backgroundColor = null)
         {
-            IssueScheme = Scheme(color, backgroundColor);
+            SetIssueStyle(Scheme(color, backgroundColor), Decoration.None, null, null);
             return this;
         }
 
@@ -157,7 +228,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions IssueColor(SpectreColor color)
         {
-            IssueScheme = Scheme(color);
+            SetIssueStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
             return this;
         }
 
@@ -168,7 +239,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions IssueColor(RgbColor color)
         {
-            IssueScheme = Scheme(color);
+            SetIssueStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -179,7 +250,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions IssueColor(Style style)
         {
-            IssueScheme = Scheme(style);
+            ApplyIssueStyle(style);
             return this;
         }
 
@@ -190,8 +261,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions IssueColor(string style)
         {
-            IssueScheme = Style.ParseScheme(style, RenderOptions.DefaultScheme);
-            return this;
+            return IssueColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -202,7 +272,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidColor(ConsoleColor color, ConsoleColor? backgroundColor = null)
         {
-            ValidScheme = Scheme(color, backgroundColor);
+            SetValidStyle(Scheme(color, backgroundColor), Decoration.None, null, null);
             return this;
         }
 
@@ -213,7 +283,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidColor(SpectreColor color)
         {
-            ValidScheme = Scheme(color);
+            SetValidStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
             return this;
         }
 
@@ -224,7 +294,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidColor(RgbColor color)
         {
-            ValidScheme = Scheme(color);
+            SetValidStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -235,7 +305,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidColor(Style style)
         {
-            ValidScheme = Scheme(style);
+            ApplyValidStyle(style);
             return this;
         }
 
@@ -246,8 +316,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidColor(string style)
         {
-            ValidScheme = Style.ParseScheme(style, RenderOptions.DefaultScheme);
-            return this;
+            return ValidColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -258,7 +327,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidMessageColor(ConsoleColor color, ConsoleColor? backgroundColor = null)
         {
-            ValidMessageScheme = Scheme(color, backgroundColor);
+            SetValidMessageStyle(Scheme(color, backgroundColor), Decoration.None, null, null);
             return this;
         }
 
@@ -269,7 +338,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidMessageColor(SpectreColor color)
         {
-            ValidMessageScheme = Scheme(color);
+            SetValidMessageStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
             return this;
         }
 
@@ -280,7 +349,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidMessageColor(RgbColor color)
         {
-            ValidMessageScheme = Scheme(color);
+            SetValidMessageStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -291,7 +360,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidMessageColor(Style style)
         {
-            ValidMessageScheme = Scheme(style);
+            ApplyValidMessageStyle(style);
             return this;
         }
 
@@ -302,8 +371,63 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ValidationSummaryOptions"/> instance.</returns>
         public ValidationSummaryOptions ValidMessageColor(string style)
         {
-            ValidMessageScheme = Style.ParseScheme(style, RenderOptions.DefaultScheme);
-            return this;
+            return ValidMessageColor(Style.Parse(style));
+        }
+
+        private void ApplyInvalidStyle(Style style)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            SetInvalidStyle(resolvedStyle.ToColorScheme(RenderOptions.DefaultScheme), resolvedStyle.Decoration, resolvedStyle.ForegroundRgb, resolvedStyle.BackgroundRgb);
+        }
+
+        private void ApplyIssueStyle(Style style)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            SetIssueStyle(resolvedStyle.ToColorScheme(RenderOptions.DefaultScheme), resolvedStyle.Decoration, resolvedStyle.ForegroundRgb, resolvedStyle.BackgroundRgb);
+        }
+
+        private void ApplyValidStyle(Style style)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            SetValidStyle(resolvedStyle.ToColorScheme(RenderOptions.DefaultScheme), resolvedStyle.Decoration, resolvedStyle.ForegroundRgb, resolvedStyle.BackgroundRgb);
+        }
+
+        private void ApplyValidMessageStyle(Style style)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            SetValidMessageStyle(resolvedStyle.ToColorScheme(RenderOptions.DefaultScheme), resolvedStyle.Decoration, resolvedStyle.ForegroundRgb, resolvedStyle.BackgroundRgb);
+        }
+
+        private void SetInvalidStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            InvalidScheme = scheme;
+            InvalidDecoration = decoration;
+            InvalidForegroundRgb = foregroundRgb;
+            InvalidBackgroundRgb = backgroundRgb;
+        }
+
+        private void SetIssueStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            IssueScheme = scheme;
+            IssueDecoration = decoration;
+            IssueForegroundRgb = foregroundRgb;
+            IssueBackgroundRgb = backgroundRgb;
+        }
+
+        private void SetValidStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            ValidScheme = scheme;
+            ValidDecoration = decoration;
+            ValidForegroundRgb = foregroundRgb;
+            ValidBackgroundRgb = backgroundRgb;
+        }
+
+        private void SetValidMessageStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            ValidMessageScheme = scheme;
+            ValidMessageDecoration = decoration;
+            ValidMessageForegroundRgb = foregroundRgb;
+            ValidMessageBackgroundRgb = backgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color, ConsoleColor? backgroundColor)
@@ -325,9 +449,5 @@ namespace ConsoulLibrary
             return Scheme(color.ToConsoleColor(), null);
         }
 
-        private static ColorScheme Scheme(Style style)
-        {
-            return (style ?? Style.Plain).ToColorScheme(RenderOptions.DefaultScheme);
-        }
     }
 }

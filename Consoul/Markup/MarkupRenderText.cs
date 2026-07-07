@@ -9,12 +9,34 @@ namespace ConsoulLibrary
     {
         public static List<FixedMessageSegment> ParseSegments(string text, ColorScheme defaultScheme)
         {
+            return ParseSegments(text, defaultScheme, Decoration.None);
+        }
+
+        public static List<FixedMessageSegment> ParseSegments(string text, ColorScheme defaultScheme, Decoration defaultDecoration)
+        {
+            return ParseSegments(text, defaultScheme, defaultDecoration, null, null);
+        }
+
+        public static List<FixedMessageSegment> ParseSegments(
+            string text,
+            ColorScheme defaultScheme,
+            Decoration defaultDecoration,
+            RgbColor? defaultForegroundRgb,
+            RgbColor? defaultBackgroundRgb)
+        {
             var segments = new List<FixedMessageSegment>();
-            foreach (MarkupSegment segment in MarkupEntry.Parse(text ?? string.Empty, defaultScheme))
+            var styledScheme = new StyledColorScheme(defaultScheme, defaultForegroundRgb, defaultBackgroundRgb);
+            foreach (MarkupSegment segment in MarkupEntry.Parse(text ?? string.Empty, styledScheme, defaultDecoration))
             {
                 if (segment.Text.Length > 0)
                 {
-                    segments.Add(new FixedMessageSegment(segment.Text, segment.Scheme, segment.Link));
+                    segments.Add(new FixedMessageSegment(
+                        segment.Text,
+                        segment.Scheme,
+                        segment.Decoration,
+                        segment.Link,
+                        segment.ForegroundRgb,
+                        segment.BackgroundRgb));
                 }
             }
 
@@ -27,7 +49,12 @@ namespace ConsoulLibrary
             var segments = new List<FixedMessageSegment>();
             if (!string.IsNullOrEmpty(prefix))
             {
-                if (messageSegments.Count > 0 && HasScheme(messageSegments[0], defaultScheme) && messageSegments[0].Link == null)
+                if (messageSegments.Count > 0 &&
+                    HasScheme(messageSegments[0], defaultScheme) &&
+                    messageSegments[0].Decoration == Decoration.None &&
+                    !messageSegments[0].ForegroundRgb.HasValue &&
+                    !messageSegments[0].BackgroundRgb.HasValue &&
+                    messageSegments[0].Link == null)
                 {
                     segments.Add(new FixedMessageSegment(prefix + messageSegments[0].Text, defaultScheme));
                     segments.AddRange(messageSegments.Skip(1));
@@ -58,8 +85,28 @@ namespace ConsoulLibrary
 
         public static List<List<FixedMessageSegment>> GetLogicalLines(string text, ColorScheme defaultScheme)
         {
+            return GetLogicalLines(text, defaultScheme, Decoration.None);
+        }
+
+        public static List<List<FixedMessageSegment>> GetLogicalLines(string text, ColorScheme defaultScheme, Decoration defaultDecoration)
+        {
+            return GetLogicalLines(text, defaultScheme, defaultDecoration, null, null);
+        }
+
+        public static List<List<FixedMessageSegment>> GetLogicalLines(
+            string text,
+            ColorScheme defaultScheme,
+            Decoration defaultDecoration,
+            RgbColor? defaultForegroundRgb,
+            RgbColor? defaultBackgroundRgb)
+        {
             var lines = new List<List<FixedMessageSegment>> { new List<FixedMessageSegment>() };
-            foreach (FixedMessageSegment segment in ParseSegments(text, defaultScheme))
+            foreach (FixedMessageSegment segment in ParseSegments(
+                text,
+                defaultScheme,
+                defaultDecoration,
+                defaultForegroundRgb,
+                defaultBackgroundRgb))
             {
                 string normalized = (segment.Text ?? string.Empty).Replace("\r\n", "\n").Replace('\r', '\n');
                 string[] parts = normalized.Split('\n');
@@ -67,7 +114,13 @@ namespace ConsoulLibrary
                 {
                     if (parts[index].Length > 0)
                     {
-                        lines[lines.Count - 1].Add(new FixedMessageSegment(parts[index], segment.Scheme, segment.Link));
+                        lines[lines.Count - 1].Add(new FixedMessageSegment(
+                            parts[index],
+                            segment.Scheme,
+                            segment.Decoration,
+                            segment.Link,
+                            segment.ForegroundRgb,
+                            segment.BackgroundRgb));
                     }
 
                     if (index < parts.Length - 1)
@@ -82,9 +135,34 @@ namespace ConsoulLibrary
 
         public static List<List<FixedMessageSegment>> WrapSegments(string text, int width, ColorScheme defaultScheme)
         {
+            return WrapSegments(text, width, defaultScheme, Decoration.None);
+        }
+
+        public static List<List<FixedMessageSegment>> WrapSegments(
+            string text,
+            int width,
+            ColorScheme defaultScheme,
+            Decoration defaultDecoration)
+        {
+            return WrapSegments(text, width, defaultScheme, defaultDecoration, null, null);
+        }
+
+        public static List<List<FixedMessageSegment>> WrapSegments(
+            string text,
+            int width,
+            ColorScheme defaultScheme,
+            Decoration defaultDecoration,
+            RgbColor? defaultForegroundRgb,
+            RgbColor? defaultBackgroundRgb)
+        {
             width = Math.Max(1, width);
             var lines = new List<List<FixedMessageSegment>>();
-            foreach (List<FixedMessageSegment> logicalLine in GetLogicalLines(text, defaultScheme))
+            foreach (List<FixedMessageSegment> logicalLine in GetLogicalLines(
+                text,
+                defaultScheme,
+                defaultDecoration,
+                defaultForegroundRgb,
+                defaultBackgroundRgb))
             {
                 if (logicalLine.Count == 0 || GetLength(logicalLine) == 0)
                 {
@@ -142,7 +220,13 @@ namespace ConsoulLibrary
                     continue;
                 }
 
-                result.Add(new FixedMessageSegment(text.Substring(0, remaining), segment.Scheme, segment.Link));
+                result.Add(new FixedMessageSegment(
+                    text.Substring(0, remaining),
+                    segment.Scheme,
+                    segment.Decoration,
+                    segment.Link,
+                    segment.ForegroundRgb,
+                    segment.BackgroundRgb));
                 remaining = 0;
             }
 
@@ -173,7 +257,13 @@ namespace ConsoulLibrary
                     remaining = 0;
                 }
 
-                result.Add(new FixedMessageSegment(text, segment.Scheme, segment.Link));
+                result.Add(new FixedMessageSegment(
+                    text,
+                    segment.Scheme,
+                    segment.Decoration,
+                    segment.Link,
+                    segment.ForegroundRgb,
+                    segment.BackgroundRgb));
             }
 
             return result;
@@ -227,7 +317,13 @@ namespace ConsoulLibrary
                 ColorScheme? ellipsisScheme = segments[0].Scheme ?? RenderOptions.DefaultScheme;
                 return new List<FixedMessageSegment>
                 {
-                    new FixedMessageSegment(new string('.', width), ellipsisScheme, segments[0].Link)
+                    new FixedMessageSegment(
+                        new string('.', width),
+                        ellipsisScheme,
+                        segments[0].Decoration,
+                        segments[0].Link,
+                        segments[0].ForegroundRgb,
+                        segments[0].BackgroundRgb)
                 };
             }
 
@@ -236,7 +332,20 @@ namespace ConsoulLibrary
                 ? truncated[truncated.Count - 1].Scheme
                 : (segments[0].Scheme ?? RenderOptions.DefaultScheme);
             Link finalLink = truncated.Count > 0 ? truncated[truncated.Count - 1].Link : segments[0].Link;
-            truncated.Add(new FixedMessageSegment(ellipsis, finalScheme, finalLink));
+            Decoration finalDecoration = truncated.Count > 0 ? truncated[truncated.Count - 1].Decoration : segments[0].Decoration;
+            RgbColor? finalForegroundRgb = truncated.Count > 0
+                ? truncated[truncated.Count - 1].ForegroundRgb
+                : segments[0].ForegroundRgb;
+            RgbColor? finalBackgroundRgb = truncated.Count > 0
+                ? truncated[truncated.Count - 1].BackgroundRgb
+                : segments[0].BackgroundRgb;
+            truncated.Add(new FixedMessageSegment(
+                ellipsis,
+                finalScheme,
+                finalDecoration,
+                finalLink,
+                finalForegroundRgb,
+                finalBackgroundRgb));
             return truncated;
         }
 
@@ -292,6 +401,13 @@ namespace ConsoulLibrary
 
         public static void WriteSegments(IEnumerable<FixedMessageSegment> segments, ColorScheme fallbackScheme, bool writeLine)
         {
+            string pendingText = null;
+            ColorScheme pendingScheme = fallbackScheme;
+            Decoration pendingDecoration = Decoration.None;
+            Link pendingLink = null;
+            RgbColor? pendingForegroundRgb = null;
+            RgbColor? pendingBackgroundRgb = null;
+
             foreach (FixedMessageSegment segment in segments ?? Enumerable.Empty<FixedMessageSegment>())
             {
                 string text = segment.Text ?? string.Empty;
@@ -301,12 +417,48 @@ namespace ConsoulLibrary
                 }
 
                 ColorScheme scheme = segment.Scheme ?? fallbackScheme;
-                TerminalLinkWriter.WriteText(text, scheme, segment.Link);
+                if (pendingText != null &&
+                    SameScheme(pendingScheme, scheme) &&
+                    pendingDecoration == segment.Decoration &&
+                    pendingForegroundRgb.Equals(segment.ForegroundRgb) &&
+                    pendingBackgroundRgb.Equals(segment.BackgroundRgb) &&
+                    TerminalLinkWriter.SameTarget(pendingLink, segment.Link))
+                {
+                    pendingText += text;
+                    continue;
+                }
+
+                FlushPending();
+                pendingText = text;
+                pendingScheme = scheme;
+                pendingDecoration = segment.Decoration;
+                pendingLink = segment.Link;
+                pendingForegroundRgb = segment.ForegroundRgb;
+                pendingBackgroundRgb = segment.BackgroundRgb;
             }
+
+            FlushPending();
 
             if (writeLine)
             {
                 Consoul.Write(string.Empty);
+            }
+
+            void FlushPending()
+            {
+                if (pendingText == null)
+                {
+                    return;
+                }
+
+                TerminalLinkWriter.WriteText(
+                    pendingText,
+                    pendingScheme,
+                    pendingLink,
+                    pendingDecoration,
+                    pendingForegroundRgb,
+                    pendingBackgroundRgb);
+                pendingText = null;
             }
         }
 
@@ -342,6 +494,12 @@ namespace ConsoulLibrary
                 segment.Scheme.Value.BackgroundColor == scheme.BackgroundColor;
         }
 
+        private static bool SameScheme(ColorScheme left, ColorScheme right)
+        {
+            return left.Color == right.Color &&
+                left.BackgroundColor == right.BackgroundColor;
+        }
+
         private static List<FixedMessageSegment> TrimStart(IList<FixedMessageSegment> segments)
         {
             var result = new List<FixedMessageSegment>();
@@ -357,7 +515,13 @@ namespace ConsoulLibrary
 
                 if (text.Length > 0)
                 {
-                    result.Add(new FixedMessageSegment(text, segment.Scheme, segment.Link));
+                    result.Add(new FixedMessageSegment(
+                        text,
+                        segment.Scheme,
+                        segment.Decoration,
+                        segment.Link,
+                        segment.ForegroundRgb,
+                        segment.BackgroundRgb));
                 }
             }
 
@@ -378,7 +542,13 @@ namespace ConsoulLibrary
                 string text = (segment.Text ?? string.Empty).TrimEnd();
                 if (text.Length > 0)
                 {
-                    result[index] = new FixedMessageSegment(text, segment.Scheme, segment.Link);
+                    result[index] = new FixedMessageSegment(
+                        text,
+                        segment.Scheme,
+                        segment.Decoration,
+                        segment.Link,
+                        segment.ForegroundRgb,
+                        segment.BackgroundRgb);
                     break;
                 }
 

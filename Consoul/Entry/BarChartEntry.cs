@@ -196,14 +196,19 @@ namespace ConsoulLibrary
                 return;
             }
 
-            ColorScheme labelScheme = _options.ResolveLabelScheme();
+            StyledText labelStyle = ResolveLabelStyle();
             MarkupRenderText.WriteSegments(
                 MarkupRenderText.AlignSegments(
-                    MarkupRenderText.ParseSegments(NormalizeInline(_options.Label), labelScheme),
+                    MarkupRenderText.ParseSegments(
+                        NormalizeInline(_options.Label),
+                        labelStyle.Scheme,
+                        labelStyle.Decoration,
+                        labelStyle.ForegroundRgb,
+                        labelStyle.BackgroundRgb),
                     width,
                     _options.LabelAlignment,
-                    labelScheme),
-                labelScheme,
+                    labelStyle.Scheme),
+                labelStyle.Scheme,
                 true);
         }
 
@@ -211,8 +216,8 @@ namespace ConsoulLibrary
         {
             if (layout.LabelWidth > 0)
             {
-                ColorScheme labelScheme = _options.ResolveLabelScheme();
-                MarkupRenderText.WriteSegments(PadOrTrimSegments(item.Label, layout.LabelWidth, labelScheme), labelScheme, false);
+                StyledText labelStyle = ResolveLabelStyle();
+                MarkupRenderText.WriteSegments(PadOrTrimSegments(item.Label, layout.LabelWidth, labelStyle), labelStyle.Scheme, false);
                 Consoul.Write(" ", RenderOptions.DefaultScheme, false);
             }
 
@@ -225,24 +230,92 @@ namespace ConsoulLibrary
             }
 
             string bar = new string(_options.BarCharacter, filled) + new string(_options.EmptyCharacter, layout.BarWidth - filled);
-            ColorScheme barScheme = item.Scheme ?? _options.ResolveBarScheme();
-            Consoul.Write(bar, barScheme, !layout.ShowValues);
+            StyledText barStyle = ResolveBarStyle(item);
+            TerminalLinkWriter.WriteText(
+                bar,
+                barStyle.Scheme,
+                null,
+                barStyle.Decoration,
+                barStyle.ForegroundRgb,
+                barStyle.BackgroundRgb);
+            if (!layout.ShowValues)
+            {
+                Consoul.Write(string.Empty);
+            }
 
             if (layout.ShowValues)
             {
+                StyledText valueStyle = ResolveValueStyle();
                 Consoul.Write(" ", RenderOptions.DefaultScheme, false);
-                Consoul.Write(PadOrTrim(_options.FormatValue(item.Value), layout.ValueWidth), _options.ResolveValueScheme(), true);
+                TerminalLinkWriter.WriteText(
+                    PadOrTrim(_options.FormatValue(item.Value), layout.ValueWidth),
+                    valueStyle.Scheme,
+                    null,
+                    valueStyle.Decoration,
+                    valueStyle.ForegroundRgb,
+                    valueStyle.BackgroundRgb);
+                Consoul.Write(string.Empty);
             }
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(string text, int width, ColorScheme scheme)
+        private StyledText ResolveLabelStyle()
+        {
+            return new StyledText(
+                _options.ResolveLabelScheme(),
+                _options.LabelDecoration,
+                _options.LabelForegroundRgb,
+                _options.LabelBackgroundRgb);
+        }
+
+        private StyledText ResolveBarStyle(BarChartItem item)
+        {
+            ColorScheme scheme = item.Scheme ?? _options.ResolveBarScheme();
+            bool hasItemScheme = item.Scheme.HasValue;
+            return new StyledText(
+                scheme,
+                item.Decoration ?? (hasItemScheme ? Decoration.None : _options.BarDecoration),
+                item.ForegroundRgb ?? (hasItemScheme ? null : _options.BarForegroundRgb),
+                item.BackgroundRgb ?? (hasItemScheme ? null : _options.BarBackgroundRgb));
+        }
+
+        private StyledText ResolveValueStyle()
+        {
+            return new StyledText(
+                _options.ResolveValueScheme(),
+                _options.ValueDecoration,
+                _options.ValueForegroundRgb,
+                _options.ValueBackgroundRgb);
+        }
+
+        private static List<FixedMessageSegment> PadOrTrimSegments(string text, int width, StyledText style)
         {
             width = Math.Max(0, width);
             List<FixedMessageSegment> result = MarkupRenderText.TruncateSegments(
-                MarkupRenderText.ParseSegments(NormalizeInline(text), scheme),
+                MarkupRenderText.ParseSegments(
+                    NormalizeInline(text),
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb),
                 width);
-            MarkupRenderText.AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), scheme);
+            AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), style);
             return result;
+        }
+
+        private static void AddPadding(IList<FixedMessageSegment> segments, int count, StyledText style)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                style.Scheme,
+                style.Decoration,
+                null,
+                style.ForegroundRgb,
+                style.BackgroundRgb));
         }
 
         private static string PadOrTrim(string text, int width)
@@ -303,6 +376,25 @@ namespace ConsoulLibrary
             public bool ShowValues { get; }
 
             public int ValueWidth { get; }
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

@@ -295,7 +295,22 @@ namespace ConsoulLibrary
         /// <param name="style">Optional style applied to the rendered text.</param>
         public void RenderStyled(string message, Style style = null)
         {
-            Render(message, style?.Foreground, style?.Background);
+            if (style == null)
+            {
+                Render(message);
+                return;
+            }
+
+            RenderSegments(new[]
+            {
+                new FixedMessageSegment(
+                    message,
+                    style.ToColorScheme(RenderOptions.DefaultScheme),
+                    style.Decoration,
+                    null,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb)
+            });
         }
 
         /// <summary>
@@ -429,7 +444,13 @@ namespace ConsoulLibrary
                             Color = resolvedFallback,
                             BackgroundColor = resolvedFallbackBackground
                         };
-                        TerminalLinkWriter.WriteText(segment.Text, scheme, segment.Link);
+                        TerminalLinkWriter.WriteText(
+                            segment.Text,
+                            scheme,
+                            segment.Link,
+                            segment.Decoration,
+                            segment.ForegroundRgb,
+                            segment.BackgroundRgb);
                     }
                 }
             }
@@ -503,7 +524,13 @@ namespace ConsoulLibrary
 
             return segments
                 .Where(segment => segment.Text != null)
-                .Select(segment => new FixedMessageSegment(segment.Text, segment.Scheme, segment.Link))
+                .Select(segment => new FixedMessageSegment(
+                    segment.Text,
+                    segment.Scheme,
+                    segment.Decoration,
+                    segment.Link,
+                    segment.ForegroundRgb,
+                    segment.BackgroundRgb))
                 .ToList();
         }
 
@@ -532,7 +559,13 @@ namespace ConsoulLibrary
                     }
 
                     int take = Math.Min(width - currentWidth, text.Length - index);
-                    currentLine.Add(new FixedMessageSegment(text.Substring(index, take), segment.Scheme, segment.Link));
+                    currentLine.Add(new FixedMessageSegment(
+                        text.Substring(index, take),
+                        segment.Scheme,
+                        segment.Decoration,
+                        segment.Link,
+                        segment.ForegroundRgb,
+                        segment.BackgroundRgb));
                     currentWidth += take;
                     index += take;
                 }
@@ -582,21 +615,46 @@ namespace ConsoulLibrary
     internal readonly struct FixedMessageSegment
     {
         public FixedMessageSegment(string text, ColorScheme? scheme = null)
-            : this(text, scheme, null)
+            : this(text, scheme, Decoration.None, null)
         {
         }
 
         public FixedMessageSegment(string text, ColorScheme? scheme, Link link)
+            : this(text, scheme, Decoration.None, link)
+        {
+        }
+
+        public FixedMessageSegment(string text, ColorScheme? scheme, Decoration decoration, Link link)
+            : this(text, scheme, decoration, link, null, null)
+        {
+        }
+
+        public FixedMessageSegment(
+            string text,
+            ColorScheme? scheme,
+            Decoration decoration,
+            Link link,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             Text = text ?? string.Empty;
             Scheme = scheme;
+            Decoration = decoration;
             Link = link;
+            ForegroundRgb = foregroundRgb;
+            BackgroundRgb = backgroundRgb;
         }
 
         public string Text { get; }
 
         public ColorScheme? Scheme { get; }
 
+        public Decoration Decoration { get; }
+
         public Link Link { get; }
+
+        public RgbColor? ForegroundRgb { get; }
+
+        public RgbColor? BackgroundRgb { get; }
     }
 }

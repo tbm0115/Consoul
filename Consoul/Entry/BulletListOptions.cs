@@ -44,9 +44,39 @@ namespace ConsoulLibrary
         public ColorScheme? MarkerScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for item markers.
+        /// </summary>
+        public Decoration MarkerDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for item markers on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? MarkerForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for item markers on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? MarkerBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for item text.
         /// </summary>
         public ColorScheme? TextScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for item text.
+        /// </summary>
+        public Decoration TextDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for item text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TextForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for item text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TextBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current bullet list options.
@@ -63,7 +93,13 @@ namespace ConsoulLibrary
                 BulletMarkers = BulletMarkers != null ? (string[])BulletMarkers.Clone() : null,
                 NumberFormat = NumberFormat,
                 MarkerScheme = MarkerScheme,
-                TextScheme = TextScheme
+                MarkerDecoration = MarkerDecoration,
+                MarkerForegroundRgb = MarkerForegroundRgb,
+                MarkerBackgroundRgb = MarkerBackgroundRgb,
+                TextScheme = TextScheme,
+                TextDecoration = TextDecoration,
+                TextForegroundRgb = TextForegroundRgb,
+                TextBackgroundRgb = TextBackgroundRgb
             };
         }
 

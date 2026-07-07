@@ -143,7 +143,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout BorderColor(ConsoleColor color)
         {
-            Options.BorderScheme = Scheme(color);
+            ApplyBorderStyle(Scheme(color), Decoration.None, null, null);
             return this;
         }
 
@@ -154,7 +154,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout BorderColor(SpectreColor color)
         {
-            Options.BorderScheme = Scheme(color);
+            ApplyBorderStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
             return this;
         }
 
@@ -165,7 +165,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout BorderColor(RgbColor color)
         {
-            Options.BorderScheme = Scheme(color);
+            ApplyBorderStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -176,7 +176,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout BorderColor(Style style)
         {
-            Options.BorderScheme = Scheme(style, RenderOptions.DefaultScheme);
+            ApplyBorderStyle(style, RenderOptions.DefaultScheme);
             return this;
         }
 
@@ -187,8 +187,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout BorderColor(string style)
         {
-            Options.BorderScheme = Style.ParseScheme(style, RenderOptions.DefaultScheme);
-            return this;
+            return BorderColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -198,7 +197,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout TitleColor(ConsoleColor color)
         {
-            Options.TitleScheme = Scheme(color);
+            ApplyTitleStyle(Scheme(color), Decoration.None, null, null);
             return this;
         }
 
@@ -209,7 +208,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout TitleColor(SpectreColor color)
         {
-            Options.TitleScheme = Scheme(color);
+            ApplyTitleStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
             return this;
         }
 
@@ -220,7 +219,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout TitleColor(RgbColor color)
         {
-            Options.TitleScheme = Scheme(color);
+            ApplyTitleStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -231,7 +230,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout TitleColor(Style style)
         {
-            Options.TitleScheme = Scheme(style, RenderOptions.DefaultScheme);
+            ApplyTitleStyle(style, RenderOptions.DefaultScheme);
             return this;
         }
 
@@ -242,8 +241,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout TitleColor(string style)
         {
-            Options.TitleScheme = Style.ParseScheme(style, RenderOptions.DefaultScheme);
-            return this;
+            return TitleColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -253,7 +251,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout ContentColor(ConsoleColor color)
         {
-            Options.ContentScheme = Scheme(color);
+            ApplyContentStyle(Scheme(color), Decoration.None, null, null);
             return this;
         }
 
@@ -264,7 +262,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout ContentColor(SpectreColor color)
         {
-            Options.ContentScheme = Scheme(color);
+            ApplyContentStyle(Scheme(color), Decoration.None, color.ToRgbColor(), null);
             return this;
         }
 
@@ -275,7 +273,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout ContentColor(RgbColor color)
         {
-            Options.ContentScheme = Scheme(color);
+            ApplyContentStyle(Scheme(color), Decoration.None, color, null);
             return this;
         }
 
@@ -286,7 +284,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout ContentColor(Style style)
         {
-            Options.ContentScheme = Scheme(style, RenderOptions.DefaultScheme);
+            ApplyContentStyle(style, RenderOptions.DefaultScheme);
             return this;
         }
 
@@ -297,8 +295,49 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Callout"/> instance.</returns>
         public Callout ContentColor(string style)
         {
-            Options.ContentScheme = Style.ParseScheme(style, RenderOptions.DefaultScheme);
-            return this;
+            return ContentColor(Style.Parse(style));
+        }
+
+        private void ApplyBorderStyle(Style style, ColorScheme fallback)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            ApplyBorderStyle(resolvedStyle.ToColorScheme(fallback), resolvedStyle.Decoration, resolvedStyle.ForegroundRgb, resolvedStyle.BackgroundRgb);
+        }
+
+        private void ApplyBorderStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            Options.BorderScheme = scheme;
+            Options.BorderDecoration = decoration;
+            Options.BorderForegroundRgb = foregroundRgb;
+            Options.BorderBackgroundRgb = backgroundRgb;
+        }
+
+        private void ApplyTitleStyle(Style style, ColorScheme fallback)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            ApplyTitleStyle(resolvedStyle.ToColorScheme(fallback), resolvedStyle.Decoration, resolvedStyle.ForegroundRgb, resolvedStyle.BackgroundRgb);
+        }
+
+        private void ApplyTitleStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            Options.TitleScheme = scheme;
+            Options.TitleDecoration = decoration;
+            Options.TitleForegroundRgb = foregroundRgb;
+            Options.TitleBackgroundRgb = backgroundRgb;
+        }
+
+        private void ApplyContentStyle(Style style, ColorScheme fallback)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            ApplyContentStyle(resolvedStyle.ToColorScheme(fallback), resolvedStyle.Decoration, resolvedStyle.ForegroundRgb, resolvedStyle.BackgroundRgb);
+        }
+
+        private void ApplyContentStyle(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+        {
+            Options.ContentScheme = scheme;
+            Options.ContentDecoration = decoration;
+            Options.ContentForegroundRgb = foregroundRgb;
+            Options.ContentBackgroundRgb = backgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)
@@ -320,9 +359,5 @@ namespace ConsoulLibrary
             return Scheme(color.ToConsoleColor());
         }
 
-        private static ColorScheme Scheme(Style style, ColorScheme fallback)
-        {
-            return (style ?? Style.Plain).ToColorScheme(fallback);
-        }
     }
 }

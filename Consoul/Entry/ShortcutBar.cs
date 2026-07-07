@@ -56,6 +56,46 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a shortcut item using Spectre-style color facades.
+        /// </summary>
+        /// <param name="key">The key or command token.</param>
+        /// <param name="description">The action description.</param>
+        /// <param name="keyColor">Foreground color used for the key token.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the action description.</param>
+        /// <param name="disabled">A value indicating whether the shortcut should render as disabled.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar AddShortcut(
+            string key,
+            string description,
+            SpectreColor keyColor,
+            SpectreColor? descriptionColor = null,
+            bool disabled = false)
+        {
+            Add(ShortcutItem.Create(key, description, keyColor, descriptionColor, disabled));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a shortcut item using RGB foreground colors.
+        /// </summary>
+        /// <param name="key">The key or command token.</param>
+        /// <param name="description">The action description.</param>
+        /// <param name="keyColor">Foreground color used for the key token.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the action description.</param>
+        /// <param name="disabled">A value indicating whether the shortcut should render as disabled.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar AddShortcut(
+            string key,
+            string description,
+            RgbColor keyColor,
+            RgbColor? descriptionColor = null,
+            bool disabled = false)
+        {
+            Add(ShortcutItem.Create(key, description, keyColor, descriptionColor, disabled));
+            return this;
+        }
+
+        /// <summary>
         /// Adds a shortcut item using reusable style objects.
         /// </summary>
         /// <param name="key">The key or command token.</param>
@@ -284,13 +324,32 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(keyColorSelector));
             }
 
-            return AddShortcuts(
-                items,
-                keySelector,
-                descriptionSelector,
-                disabledSelector,
-                ToConsoleColorSelector(keyColorSelector),
-                ToConsoleColorSelector(descriptionColorSelector));
+            if (keySelector == null)
+            {
+                throw new ArgumentNullException(nameof(keySelector));
+            }
+
+            if (descriptionSelector == null)
+            {
+                throw new ArgumentNullException(nameof(descriptionSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                AddShortcut(ShortcutItem.Create(
+                    keySelector(item),
+                    descriptionSelector(item),
+                    keyColorSelector(item),
+                    descriptionColorSelector != null ? descriptionColorSelector(item) : (SpectreColor?)null,
+                    disabledSelector != null && disabledSelector(item)));
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -343,13 +402,32 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(keyColorSelector));
             }
 
-            return AddShortcuts(
-                items,
-                keySelector,
-                descriptionSelector,
-                disabledSelector,
-                ToConsoleColorSelector(keyColorSelector),
-                ToConsoleColorSelector(descriptionColorSelector));
+            if (keySelector == null)
+            {
+                throw new ArgumentNullException(nameof(keySelector));
+            }
+
+            if (descriptionSelector == null)
+            {
+                throw new ArgumentNullException(nameof(descriptionSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                AddShortcut(ShortcutItem.Create(
+                    keySelector(item),
+                    descriptionSelector(item),
+                    keyColorSelector(item),
+                    descriptionColorSelector != null ? descriptionColorSelector(item) : (RgbColor?)null,
+                    disabledSelector != null && disabledSelector(item)));
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -403,20 +481,6 @@ namespace ConsoulLibrary
             }
 
             return this;
-        }
-
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, SpectreColor> selector)
-        {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
-        }
-
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, RgbColor> selector)
-        {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
         }
 
         /// <summary>
@@ -526,6 +590,37 @@ namespace ConsoulLibrary
         public ShortcutBar KeyColor(ConsoleColor color)
         {
             Options.KeyScheme = Scheme(color);
+            Options.KeyDecoration = Decoration.None;
+            Options.KeyForegroundRgb = null;
+            Options.KeyBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default key token foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The key token foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar KeyColor(SpectreColor color)
+        {
+            Options.KeyScheme = Scheme(color);
+            Options.KeyDecoration = Decoration.None;
+            Options.KeyForegroundRgb = color.ToRgbColor();
+            Options.KeyBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default key token foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The key token foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar KeyColor(RgbColor color)
+        {
+            Options.KeyScheme = Scheme(color);
+            Options.KeyDecoration = Decoration.None;
+            Options.KeyForegroundRgb = color;
+            Options.KeyBackgroundRgb = null;
             return this;
         }
 
@@ -536,7 +631,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
         public ShortcutBar KeyColor(Style style)
         {
-            Options.KeyScheme = Scheme(style, Options.ResolveKeyScheme());
+            ApplyKeyStyle(style);
             return this;
         }
 
@@ -547,7 +642,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
         public ShortcutBar KeyColor(string style)
         {
-            Options.KeyScheme = Style.ParseScheme(style, Options.ResolveKeyScheme());
+            ApplyKeyStyle(Style.Parse(style));
             return this;
         }
 
@@ -559,6 +654,37 @@ namespace ConsoulLibrary
         public ShortcutBar DescriptionColor(ConsoleColor color)
         {
             Options.DescriptionScheme = Scheme(color);
+            Options.DescriptionDecoration = Decoration.None;
+            Options.DescriptionForegroundRgb = null;
+            Options.DescriptionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default description foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The description foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar DescriptionColor(SpectreColor color)
+        {
+            Options.DescriptionScheme = Scheme(color);
+            Options.DescriptionDecoration = Decoration.None;
+            Options.DescriptionForegroundRgb = color.ToRgbColor();
+            Options.DescriptionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default description foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The description foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar DescriptionColor(RgbColor color)
+        {
+            Options.DescriptionScheme = Scheme(color);
+            Options.DescriptionDecoration = Decoration.None;
+            Options.DescriptionForegroundRgb = color;
+            Options.DescriptionBackgroundRgb = null;
             return this;
         }
 
@@ -569,7 +695,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
         public ShortcutBar DescriptionColor(Style style)
         {
-            Options.DescriptionScheme = Scheme(style, Options.ResolveDescriptionScheme());
+            ApplyDescriptionStyle(style);
             return this;
         }
 
@@ -580,7 +706,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
         public ShortcutBar DescriptionColor(string style)
         {
-            Options.DescriptionScheme = Style.ParseScheme(style, Options.ResolveDescriptionScheme());
+            ApplyDescriptionStyle(Style.Parse(style));
             return this;
         }
 
@@ -592,6 +718,37 @@ namespace ConsoulLibrary
         public ShortcutBar SeparatorColor(ConsoleColor color)
         {
             Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorDecoration = Decoration.None;
+            Options.SeparatorForegroundRgb = null;
+            Options.SeparatorBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the item separator foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The separator foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar SeparatorColor(SpectreColor color)
+        {
+            Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorDecoration = Decoration.None;
+            Options.SeparatorForegroundRgb = color.ToRgbColor();
+            Options.SeparatorBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the item separator foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The separator foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar SeparatorColor(RgbColor color)
+        {
+            Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorDecoration = Decoration.None;
+            Options.SeparatorForegroundRgb = color;
+            Options.SeparatorBackgroundRgb = null;
             return this;
         }
 
@@ -602,7 +759,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
         public ShortcutBar SeparatorColor(Style style)
         {
-            Options.SeparatorScheme = Scheme(style, Options.ResolveSeparatorScheme());
+            ApplySeparatorStyle(style);
             return this;
         }
 
@@ -613,7 +770,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
         public ShortcutBar SeparatorColor(string style)
         {
-            Options.SeparatorScheme = Style.ParseScheme(style, Options.ResolveSeparatorScheme());
+            ApplySeparatorStyle(Style.Parse(style));
             return this;
         }
 
@@ -625,6 +782,37 @@ namespace ConsoulLibrary
         public ShortcutBar DisabledColor(ConsoleColor color)
         {
             Options.DisabledScheme = Scheme(color);
+            Options.DisabledDecoration = Decoration.None;
+            Options.DisabledForegroundRgb = null;
+            Options.DisabledBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the disabled shortcut foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The disabled foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar DisabledColor(SpectreColor color)
+        {
+            Options.DisabledScheme = Scheme(color);
+            Options.DisabledDecoration = Decoration.None;
+            Options.DisabledForegroundRgb = color.ToRgbColor();
+            Options.DisabledBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the disabled shortcut foreground color from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="color">The disabled foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar DisabledColor(RgbColor color)
+        {
+            Options.DisabledScheme = Scheme(color);
+            Options.DisabledDecoration = Decoration.None;
+            Options.DisabledForegroundRgb = color;
+            Options.DisabledBackgroundRgb = null;
             return this;
         }
 
@@ -635,7 +823,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
         public ShortcutBar DisabledColor(Style style)
         {
-            Options.DisabledScheme = Scheme(style, Options.ResolveDisabledScheme());
+            ApplyDisabledStyle(style);
             return this;
         }
 
@@ -646,8 +834,40 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
         public ShortcutBar DisabledColor(string style)
         {
-            Options.DisabledScheme = Style.ParseScheme(style, Options.ResolveDisabledScheme());
+            ApplyDisabledStyle(Style.Parse(style));
             return this;
+        }
+
+        private void ApplyKeyStyle(Style style)
+        {
+            Options.KeyScheme = Scheme(style, Options.ResolveKeyScheme());
+            Options.KeyDecoration = style?.Decoration ?? Decoration.None;
+            Options.KeyForegroundRgb = style?.ForegroundRgb;
+            Options.KeyBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyDescriptionStyle(Style style)
+        {
+            Options.DescriptionScheme = Scheme(style, Options.ResolveDescriptionScheme());
+            Options.DescriptionDecoration = style?.Decoration ?? Decoration.None;
+            Options.DescriptionForegroundRgb = style?.ForegroundRgb;
+            Options.DescriptionBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplySeparatorStyle(Style style)
+        {
+            Options.SeparatorScheme = Scheme(style, Options.ResolveSeparatorScheme());
+            Options.SeparatorDecoration = style?.Decoration ?? Decoration.None;
+            Options.SeparatorForegroundRgb = style?.ForegroundRgb;
+            Options.SeparatorBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyDisabledStyle(Style style)
+        {
+            Options.DisabledScheme = Scheme(style, Options.ResolveDisabledScheme());
+            Options.DisabledDecoration = style?.Decoration ?? Decoration.None;
+            Options.DisabledForegroundRgb = style?.ForegroundRgb;
+            Options.DisabledBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)
@@ -657,6 +877,16 @@ namespace ConsoulLibrary
                 Color = color,
                 BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
             };
+        }
+
+        private static ColorScheme Scheme(SpectreColor color)
+        {
+            return Scheme(color.ToConsoleColor());
+        }
+
+        private static ColorScheme Scheme(RgbColor color)
+        {
+            return Scheme(color.ToConsoleColor());
         }
 
         private static ColorScheme Scheme(Style style, ColorScheme fallback)

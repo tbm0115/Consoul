@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -4711,6 +4712,101 @@ namespace ConsoulLibrary.Tests.Views
         }
 
         /// <summary>
+        /// Dynamic MVC-style views preserve style decorations and RGB metadata when rendered on ANSI true-color terminals.
+        /// </summary>
+        [Fact]
+        public void DynamicView_StyleMetadataHelpers_PreserveTrueColorMvcViewSurface()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer))
+            {
+                InitializeRoutine("back");
+
+                try
+                {
+                    DynamicView<object> view = Consoul.View("Release")
+                        .Separator("Build", "italic #778899")
+                        .HelpOptionStyled(style: "bold #22c55e")
+                        .CommandPaletteOptionStyled(style: "italic #abcdef");
+
+                    view._options.Insert(
+                        1,
+                        new DynamicOption<object>(() => "Preview", () => { })
+                            .UseStyle("bold #112233")
+                            .Describe("Ship release"));
+
+                    view.Render();
+                    view.CreateHelp("True Color Dynamic Help").Render();
+
+                    string output = writer.ToString();
+                    Assert.Contains("\u001b[3;38;2;119;136;153m-- Build --", output);
+                    Assert.Contains("\u001b[1;38;2;17;34;51m1) Preview", output);
+                    Assert.Contains("\u001b[1;38;2;34;197;94m2) Help", output);
+                    Assert.Contains("\u001b[3;38;2;171;205;239m3) Command palette", output);
+                    Assert.Contains("True Color Dynamic Help", output);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Dynamic MVC-style view option overloads preserve true-color style metadata without manually constructing options.
+        /// </summary>
+        [Fact]
+        public void DynamicView_PublicStyleOverloads_PreserveTrueColorMvcViewSurface()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer))
+            {
+                InitializeRoutine("back");
+
+                try
+                {
+                    var model = new StyleDrivenModel
+                    {
+                        Accent = RgbColor.FromHex("#445566")
+                    };
+
+                    DynamicView<StyleDrivenModel> view = Consoul.View("Release", model)
+                        .Option("Preview", release => release.Approved = true, "bold #112233", "Ship release")
+                        .Option(
+                            release => "Dynamic style",
+                            release => release.Deployed = true,
+                            release => new Style(release.Accent, Decoration.Italic),
+                            release => "From model state")
+                        .ConfirmOption(
+                            release => "Confirm",
+                            release => "Confirm release?",
+                            release => release.Deployed = true,
+                            release => RgbColor.FromHex("#778899"))
+                        .Navigate<DestinationView>("Details", "italic #abcdef")
+                        .HelpOptionStyled(style: "bold #22c55e");
+
+                    view.Render();
+                    view.CreateHelp("True Color Public Overload Help").Render();
+
+                    string output = writer.ToString();
+                    Assert.True(view.GoBackRequested);
+                    Assert.False(model.Approved);
+                    Assert.False(model.Deployed);
+                    Assert.Contains("\u001b[1;38;2;17;34;51m1) Preview", output);
+                    Assert.Contains("\u001b[3;38;2;68;85;102m2) Dynamic style", output);
+                    Assert.Contains("\u001b[38;2;119;136;153m3) Confirm", output);
+                    Assert.Contains("\u001b[3;38;2;171;205;239m4) Details", output);
+                    Assert.Contains("\u001b[1;38;2;34;197;94m5) Help", output);
+                    Assert.Contains("True Color Public Overload Help", output);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
         /// Dynamic MVC-style views accept reusable style objects for sections, separators, options, help, and command palette entries.
         /// </summary>
         [Fact]
@@ -5026,6 +5122,41 @@ namespace ConsoulLibrary.Tests.Views
                     AssertColoredWrite(scope.Driver, "Command palette", ConsoleColor.Magenta);
                     VisualAssert.WroteText(scope.Driver, "Styled Static Help");
                     VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Static MVC-style views preserve style decorations and RGB metadata when rendered on ANSI true-color terminals.
+        /// </summary>
+        [Fact]
+        public void StaticView_StyleMetadataHelpers_PreserveTrueColorMvcViewSurface()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer))
+            {
+                InitializeRoutine("back");
+                TrueColorStaticView.PreviewCount = 0;
+
+                try
+                {
+                    var view = new TrueColorStaticView();
+
+                    view.Render();
+                    view.CreateHelp("True Color Static Help").Render();
+
+                    string output = writer.ToString();
+                    Assert.True(view.GoBackRequested);
+                    Assert.Equal(0, TrueColorStaticView.PreviewCount);
+                    Assert.Contains("\u001b[3;38;2;119;136;153m-- Build --", output);
+                    Assert.Contains("\u001b[1;38;2;17;34;51m1) Preview", output);
+                    Assert.Contains("\u001b[1;38;2;34;197;94m2) Help", output);
+                    Assert.Contains("\u001b[3;38;2;171;205;239m3) Command palette", output);
+                    Assert.Contains("True Color Static Help", output);
                 }
                 finally
                 {
@@ -5987,6 +6118,20 @@ namespace ConsoulLibrary.Tests.Views
             Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
         }
 
+        private static IDisposable UseTrueColorConsole(StringWriter writer, int width = 90, int height = 48)
+        {
+            var output = new AnsiConsoleOutput(writer, width: width, height: height, isTerminal: true);
+            var settings = new AnsiConsoleSettings
+            {
+                Out = output,
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor,
+                Interactive = InteractionSupport.Yes
+            };
+
+            return Consoul.UseConsoleDriver(new TextWriterConsoleDriver(output, settings));
+        }
+
         private static void AssertColoredWrite(FakeConsoleDriver driver, string expectedText, ConsoleColor expectedColor)
         {
             Assert.Contains(
@@ -6515,6 +6660,15 @@ namespace ConsoulLibrary.Tests.Views
             public bool Deployed { get; set; }
         }
 
+        private sealed class StyleDrivenModel
+        {
+            public bool Approved { get; set; }
+
+            public bool Deployed { get; set; }
+
+            public RgbColor Accent { get; set; }
+        }
+
         private sealed class ApprovalPaletteModel
         {
             public string Name { get; set; } = "Production";
@@ -6641,6 +6795,20 @@ namespace ConsoulLibrary.Tests.Views
                 Options.Add(new ViewOption("Preview", () => PreviewCount++, "aqua", "Runs a dry run before deployment."));
                 AddHelpOptionStyled(style: "green");
                 AddCommandPaletteOptionStyled(style: "magenta");
+            }
+        }
+
+        private sealed class TrueColorStaticView : StaticView
+        {
+            public static int PreviewCount { get; set; }
+
+            public TrueColorStaticView()
+            {
+                Title = "True color static";
+                AddSeparator("Build", "italic #778899");
+                Options.Add(new ViewOption("Preview", () => PreviewCount++, "bold #112233", "Ship release"));
+                AddHelpOptionStyled(style: "bold #22c55e");
+                AddCommandPaletteOptionStyled(style: "italic #abcdef");
             }
         }
 

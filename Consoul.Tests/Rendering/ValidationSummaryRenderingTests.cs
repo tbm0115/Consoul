@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Views.Editing;
@@ -282,6 +284,112 @@ namespace ConsoulLibrary.Tests.Rendering
                     write.Color == ConsoleColor.Yellow);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Invalid validation summary style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void ValidationSummary_InvalidStyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var model = new DeploymentSettings
+            {
+                ServiceName = string.Empty,
+                RetryCount = 9
+            };
+            ValidationSummaryOptions options = new ValidationSummaryOptions
+            {
+                Width = 56,
+                InvalidTitle = "Review"
+            }
+                .InvalidColor("bold #22c55e")
+                .IssueColor("underline #336699");
+
+            console.Write(new ValidationSummaryEntry(model, options));
+
+            string output = writer.ToString();
+            Assert.Contains("Review", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94m+", output);
+            Assert.Contains("\u001b[4;38;2;51;102;153m", output);
+            Assert.Contains("Service is required.", output);
+        }
+
+        /// <summary>
+        /// Valid validation summary style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void ValidationSummary_ValidStyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var model = new DeploymentSettings
+            {
+                ServiceName = "Worker",
+                RetryCount = 2
+            };
+            ValidationSummaryOptions options = new ValidationSummaryOptions
+            {
+                Width = 48,
+                ShowValidMessage = true,
+                ValidTitle = "Ready",
+                ValidMessage = "Settings look good."
+            }
+                .ValidColor("bold #22c55e")
+                .ValidMessageColor("underline #336699");
+
+            console.Write(new ValidationSummaryEntry(model, options));
+
+            string output = writer.ToString();
+            Assert.Contains("Ready", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94m+", output);
+            Assert.Contains("\u001b[4;38;2;51;102;153mSettings look good.", output);
+        }
+
+        /// <summary>
+        /// Validation summary RGB helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void ValidationSummary_RgbHelpersEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+            var model = new DeploymentSettings
+            {
+                ServiceName = string.Empty,
+                RetryCount = 9
+            };
+            ValidationSummaryOptions options = new ValidationSummaryOptions
+            {
+                Width = 56,
+                InvalidTitle = "Review"
+            }
+                .InvalidColor(RgbColor.FromHex("#445566"))
+                .IssueColor(RgbColor.FromHex("#336699"));
+
+            console.Write(new ValidationSummaryEntry(model, options));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239m+", output);
+            Assert.Contains("\u001b[38;5;60m", output);
+            Assert.Contains("Service is required.", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

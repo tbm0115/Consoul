@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 using Options = ConsoulLibrary.RenderOptions;
 
 namespace ConsoulLibrary
@@ -741,6 +743,21 @@ namespace ConsoulLibrary
         public ConsoleColor PromptColor { get; set; } = RenderOptions.PromptColor;
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for the prompt message.
+        /// </summary>
+        public Decoration PromptDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the prompt message on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? PromptForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the prompt message on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? PromptBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the helper text shown above the options when line-based input is used.
         /// </summary>
         public string InstructionsMessage { get; set; } = "Choose the corresponding number from the options below:";
@@ -749,6 +766,21 @@ namespace ConsoulLibrary
         /// Gets or sets the color used for prompt instruction text.
         /// </summary>
         public ConsoleColor InstructionColor { get; set; } = RenderOptions.SubnoteColor;
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for prompt instruction text.
+        /// </summary>
+        public Decoration InstructionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for prompt instruction text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InstructionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for prompt instruction text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InstructionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether slash commands can filter the rendered options.
@@ -801,6 +833,21 @@ namespace ConsoulLibrary
         public ConsoleColor OptionDescriptionColor { get; set; } = RenderOptions.SubnoteColor;
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for option descriptions.
+        /// </summary>
+        public Decoration OptionDescriptionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for option descriptions on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? OptionDescriptionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for option descriptions on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? OptionDescriptionBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether the prompt uses arrow-key navigation when routine input is not queued.
         /// </summary>
         public bool KeyboardNavigationEnabled { get; set; }
@@ -829,6 +876,21 @@ namespace ConsoulLibrary
         /// Gets or sets the color used for the currently highlighted keyboard option.
         /// </summary>
         public ConsoleColor KeyboardSelectionColor { get; set; } = RenderOptions.PromptColor;
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for the currently highlighted keyboard option.
+        /// </summary>
+        public Decoration KeyboardSelectionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the currently highlighted keyboard option on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? KeyboardSelectionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the currently highlighted keyboard option on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? KeyboardSelectionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the style used for disabled options.
@@ -963,6 +1025,33 @@ namespace ConsoulLibrary
         public SelectionPrompt PromptStyle(ConsoleColor color)
         {
             PromptColor = color;
+            PromptDecoration = Decoration.None;
+            PromptForegroundRgb = null;
+            PromptBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt PromptStyle(SpectreColor color)
+        {
+            return PromptStyle(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt PromptStyle(RgbColor color)
+        {
+            PromptColor = color.ToConsoleColor();
+            PromptDecoration = Decoration.None;
+            PromptForegroundRgb = color;
+            PromptBackgroundRgb = null;
             return this;
         }
 
@@ -973,7 +1062,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
         public SelectionPrompt PromptStyle(Style style)
         {
-            PromptColor = PromptRenderHelpers.ResolveStyleColor(style, PromptColor);
+            ApplyPromptStyle(style);
             return this;
         }
 
@@ -984,8 +1073,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
         public SelectionPrompt PromptStyle(string style)
         {
-            PromptColor = ConsoulLibrary.Style.ParseForeground(style, PromptColor);
-            return this;
+            return PromptStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -1037,6 +1125,33 @@ namespace ConsoulLibrary
         public SelectionPrompt InstructionStyle(ConsoleColor color)
         {
             InstructionColor = color;
+            InstructionDecoration = Decoration.None;
+            InstructionForegroundRgb = null;
+            InstructionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for prompt instruction text from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The instruction text color.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt InstructionStyle(SpectreColor color)
+        {
+            return InstructionStyle(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the color used for prompt instruction text from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The instruction text color.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt InstructionStyle(RgbColor color)
+        {
+            InstructionColor = color.ToConsoleColor();
+            InstructionDecoration = Decoration.None;
+            InstructionForegroundRgb = color;
+            InstructionBackgroundRgb = null;
             return this;
         }
 
@@ -1047,7 +1162,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
         public SelectionPrompt InstructionStyle(Style style)
         {
-            InstructionColor = PromptRenderHelpers.ResolveStyleColor(style, InstructionColor);
+            ApplyInstructionStyle(style);
             return this;
         }
 
@@ -1058,8 +1173,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
         public SelectionPrompt InstructionStyle(string style)
         {
-            InstructionColor = ConsoulLibrary.Style.ParseForeground(style, InstructionColor);
-            return this;
+            return InstructionStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -1286,6 +1400,33 @@ namespace ConsoulLibrary
         public SelectionPrompt HighlightColor(ConsoleColor color)
         {
             KeyboardSelectionColor = color;
+            KeyboardSelectionDecoration = Decoration.None;
+            KeyboardSelectionForegroundRgb = null;
+            KeyboardSelectionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for the currently highlighted keyboard choice from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The highlight color.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt HighlightColor(SpectreColor color)
+        {
+            return HighlightColor(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the color used for the currently highlighted keyboard choice from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The highlight color.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt HighlightColor(RgbColor color)
+        {
+            KeyboardSelectionColor = color.ToConsoleColor();
+            KeyboardSelectionDecoration = Decoration.None;
+            KeyboardSelectionForegroundRgb = color;
+            KeyboardSelectionBackgroundRgb = null;
             return this;
         }
 
@@ -1296,7 +1437,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
         public SelectionPrompt HighlightColor(Style style)
         {
-            KeyboardSelectionColor = PromptRenderHelpers.ResolveStyleColor(style, KeyboardSelectionColor);
+            ApplyKeyboardSelectionStyle(style);
             return this;
         }
 
@@ -1307,8 +1448,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
         public SelectionPrompt HighlightColor(string style)
         {
-            KeyboardSelectionColor = ConsoulLibrary.Style.ParseForeground(style, KeyboardSelectionColor);
-            return this;
+            return HighlightColor(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -1738,10 +1878,10 @@ namespace ConsoulLibrary
 
         private void RenderPromptFrame(int? pageSize, int currentPage, string filterText, int matchCount, int? highlightedIndex = null, bool keyboardMode = false)
         {
-            PromptRenderHelpers.WriteMarkupLine(Message, PromptColor);
+            PromptRenderHelpers.WriteMarkupLine(Message, ResolvePromptStyle());
             PromptRenderHelpers.WriteMarkupLine(
                 keyboardMode ? KeyboardNavigationHelpText : InstructionsMessage,
-                InstructionColor);
+                ResolveInstructionStyle());
 
             foreach (SelectOption option in GetVisibleOptions(pageSize, currentPage, filterText))
             {
@@ -1760,7 +1900,11 @@ namespace ConsoulLibrary
                 text = (highlighted ? "> " : "  ") + text;
             }
 
-            PromptRenderHelpers.WriteSearchHighlightedText(text, filterText, SearchHighlightStyle, highlighted ? KeyboardSelectionColor : ResolveOptionColor(option));
+            PromptRenderHelpers.WriteSearchHighlightedText(
+                text,
+                filterText,
+                SearchHighlightStyle,
+                highlighted ? ResolveKeyboardSelectionStyle() : ResolveOptionStyle(option));
             WriteOptionDescription(option, keyboardMode, filterText);
         }
 
@@ -1777,7 +1921,7 @@ namespace ConsoulLibrary
                 prefix = "  " + prefix;
             }
 
-            PromptRenderHelpers.WriteSearchHighlightedText(prefix + option.Description.Trim(), filterText, SearchHighlightStyle, OptionDescriptionColor);
+            PromptRenderHelpers.WriteSearchHighlightedText(prefix + option.Description.Trim(), filterText, SearchHighlightStyle, ResolveOptionDescriptionStyle());
         }
 
         private void AttachChildFactory(SelectOption option)
@@ -2125,12 +2269,99 @@ namespace ConsoulLibrary
             return !CanSelectOption(option) ? PromptRenderHelpers.ResolveStyleColor(DisabledStyle, option.DisabledColor) : option.Color;
         }
 
+        private PromptRenderHelpers.StyledText ResolveOptionStyle(SelectOption option)
+        {
+            if (option.IsSeparator)
+            {
+                return option.ResolveStyle();
+            }
+
+            return !CanSelectOption(option)
+                ? option.ResolveDisabledStyle(DisabledStyle)
+                : option.ResolveStyle();
+        }
+
+        private PromptRenderHelpers.StyledText ResolvePromptStyle()
+        {
+            return PromptRenderHelpers.FromComponents(
+                PromptColor,
+                PromptDecoration,
+                PromptForegroundRgb,
+                PromptBackgroundRgb);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveInstructionStyle()
+        {
+            return PromptRenderHelpers.FromComponents(
+                InstructionColor,
+                InstructionDecoration,
+                InstructionForegroundRgb,
+                InstructionBackgroundRgb);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveOptionDescriptionStyle()
+        {
+            return PromptRenderHelpers.FromComponents(
+                OptionDescriptionColor,
+                OptionDescriptionDecoration,
+                OptionDescriptionForegroundRgb,
+                OptionDescriptionBackgroundRgb);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveKeyboardSelectionStyle()
+        {
+            return PromptRenderHelpers.FromComponents(
+                KeyboardSelectionColor,
+                KeyboardSelectionDecoration,
+                KeyboardSelectionForegroundRgb,
+                KeyboardSelectionBackgroundRgb);
+        }
+
         private bool CanSelectOption(SelectOption option)
         {
             return option != null &&
                 !option.IsSeparator &&
                 !option.IsDisabled &&
                 !(option.IsGroup && Mode == SelectionMode.Leaf);
+        }
+
+        private void ApplyPromptStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            PromptColor = style.ToForegroundColor(PromptColor);
+            PromptDecoration = style.Decoration;
+            PromptForegroundRgb = style.ForegroundRgb;
+            PromptBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyInstructionStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            InstructionColor = style.ToForegroundColor(InstructionColor);
+            InstructionDecoration = style.Decoration;
+            InstructionForegroundRgb = style.ForegroundRgb;
+            InstructionBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyKeyboardSelectionStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            KeyboardSelectionColor = style.ToForegroundColor(KeyboardSelectionColor);
+            KeyboardSelectionDecoration = style.Decoration;
+            KeyboardSelectionForegroundRgb = style.ForegroundRgb;
+            KeyboardSelectionBackgroundRgb = style.BackgroundRgb;
         }
 
         private void WriteUnavailableSelectionMessage(SelectOption option)

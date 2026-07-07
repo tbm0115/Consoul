@@ -117,6 +117,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a highlighted calendar date with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="date">The date to highlight.</param>
+        /// <param name="color">Foreground color used for the date cell.</param>
+        /// <param name="label">Optional label describing the highlighted date.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar AddCalendarEvent(DateTime date, SpectreColor color, string label = null)
+        {
+            Add(CalendarDay.Create(date, color, label));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a highlighted calendar date with an RGB foreground color.
+        /// </summary>
+        /// <param name="date">The date to highlight.</param>
+        /// <param name="color">Foreground color used for the date cell.</param>
+        /// <param name="label">Optional label describing the highlighted date.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar AddCalendarEvent(DateTime date, RgbColor color, string label = null)
+        {
+            Add(CalendarDay.Create(date, color, label));
+            return this;
+        }
+
+        /// <summary>
         /// Adds a highlighted calendar date using Spectre-style style text.
         /// </summary>
         /// <param name="date">The date to highlight.</param>
@@ -189,6 +215,30 @@ namespace ConsoulLibrary
         /// <param name="label">Optional label describing the highlighted date.</param>
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar AddEvent(DateTime date, ConsoleColor? color = null, string label = null)
+        {
+            return AddCalendarEvent(date, color, label);
+        }
+
+        /// <summary>
+        /// Adds a highlighted calendar date with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="date">The date to highlight.</param>
+        /// <param name="color">Foreground color used for the date cell.</param>
+        /// <param name="label">Optional label describing the highlighted date.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar AddEvent(DateTime date, SpectreColor color, string label = null)
+        {
+            return AddCalendarEvent(date, color, label);
+        }
+
+        /// <summary>
+        /// Adds a highlighted calendar date with an RGB foreground color.
+        /// </summary>
+        /// <param name="date">The date to highlight.</param>
+        /// <param name="color">Foreground color used for the date cell.</param>
+        /// <param name="label">Optional label describing the highlighted date.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar AddEvent(DateTime date, RgbColor color, string label = null)
         {
             return AddCalendarEvent(date, color, label);
         }
@@ -301,11 +351,25 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(colorSelector));
             }
 
-            return AddCalendarEvents(
-                items,
-                dateSelector,
-                labelSelector,
-                ToConsoleColorSelector(colorSelector));
+            if (dateSelector == null)
+            {
+                throw new ArgumentNullException(nameof(dateSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                AddCalendarEvent(
+                    dateSelector(item),
+                    colorSelector(item),
+                    labelSelector != null ? labelSelector(item) : null);
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -344,11 +408,25 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(colorSelector));
             }
 
-            return AddCalendarEvents(
-                items,
-                dateSelector,
-                labelSelector,
-                ToConsoleColorSelector(colorSelector));
+            if (dateSelector == null)
+            {
+                throw new ArgumentNullException(nameof(dateSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                AddCalendarEvent(
+                    dateSelector(item),
+                    colorSelector(item),
+                    labelSelector != null ? labelSelector(item) : null);
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -412,20 +490,6 @@ namespace ConsoulLibrary
             }
 
             return this;
-        }
-
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, SpectreColor> selector)
-        {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
-        }
-
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, RgbColor> selector)
-        {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
         }
 
         /// <summary>
@@ -533,7 +597,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar HeaderColor(ConsoleColor color)
         {
-            Options.HeaderScheme = Scheme(color);
+            ApplyColor(CalendarStyleRole.Header, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the month title foreground color.
+        /// </summary>
+        /// <param name="color">The month title foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar HeaderColor(SpectreColor color)
+        {
+            ApplyColor(CalendarStyleRole.Header, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the month title foreground color.
+        /// </summary>
+        /// <param name="color">The month title foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar HeaderColor(RgbColor color)
+        {
+            ApplyColor(CalendarStyleRole.Header, color);
             return this;
         }
 
@@ -554,8 +640,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar HeaderColor(string style)
         {
-            Options.HeaderScheme = Style.ParseScheme(style, Options.ResolveHeaderScheme());
-            return this;
+            return HeaderStyle(Style.Parse(style));
         }
 
         /// <summary>
@@ -565,7 +650,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar HeaderStyle(Style style)
         {
-            Options.HeaderScheme = (style ?? new Style()).ToColorScheme(Options.ResolveHeaderScheme());
+            ApplyStyle(CalendarStyleRole.Header, style);
             return this;
         }
 
@@ -586,7 +671,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar WeekdayColor(ConsoleColor color)
         {
-            Options.WeekdayScheme = Scheme(color);
+            ApplyColor(CalendarStyleRole.Weekday, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the weekday label foreground color.
+        /// </summary>
+        /// <param name="color">The weekday label foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar WeekdayColor(SpectreColor color)
+        {
+            ApplyColor(CalendarStyleRole.Weekday, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the weekday label foreground color.
+        /// </summary>
+        /// <param name="color">The weekday label foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar WeekdayColor(RgbColor color)
+        {
+            ApplyColor(CalendarStyleRole.Weekday, color);
             return this;
         }
 
@@ -597,7 +704,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar WeekdayColor(Style style)
         {
-            Options.WeekdayScheme = ToScheme(style, Options.ResolveWeekdayScheme());
+            ApplyStyle(CalendarStyleRole.Weekday, style);
             return this;
         }
 
@@ -608,8 +715,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar WeekdayColor(string style)
         {
-            Options.WeekdayScheme = Style.ParseScheme(style, Options.ResolveWeekdayScheme());
-            return this;
+            return WeekdayColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -619,7 +725,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar DayColor(ConsoleColor color)
         {
-            Options.DayScheme = Scheme(color);
+            ApplyColor(CalendarStyleRole.Day, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the ordinary day foreground color.
+        /// </summary>
+        /// <param name="color">The ordinary day foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar DayColor(SpectreColor color)
+        {
+            ApplyColor(CalendarStyleRole.Day, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the ordinary day foreground color.
+        /// </summary>
+        /// <param name="color">The ordinary day foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar DayColor(RgbColor color)
+        {
+            ApplyColor(CalendarStyleRole.Day, color);
             return this;
         }
 
@@ -630,7 +758,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar DayColor(Style style)
         {
-            Options.DayScheme = ToScheme(style, Options.ResolveDayScheme());
+            ApplyStyle(CalendarStyleRole.Day, style);
             return this;
         }
 
@@ -641,8 +769,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar DayColor(string style)
         {
-            Options.DayScheme = Style.ParseScheme(style, Options.ResolveDayScheme());
-            return this;
+            return DayColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -652,7 +779,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar AdjacentDayColor(ConsoleColor color)
         {
-            Options.AdjacentDayScheme = Scheme(color);
+            ApplyColor(CalendarStyleRole.AdjacentDay, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the adjacent-month day foreground color.
+        /// </summary>
+        /// <param name="color">The adjacent-month day foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar AdjacentDayColor(SpectreColor color)
+        {
+            ApplyColor(CalendarStyleRole.AdjacentDay, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the adjacent-month day foreground color.
+        /// </summary>
+        /// <param name="color">The adjacent-month day foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar AdjacentDayColor(RgbColor color)
+        {
+            ApplyColor(CalendarStyleRole.AdjacentDay, color);
             return this;
         }
 
@@ -663,7 +812,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar AdjacentDayColor(Style style)
         {
-            Options.AdjacentDayScheme = ToScheme(style, Options.ResolveAdjacentDayScheme());
+            ApplyStyle(CalendarStyleRole.AdjacentDay, style);
             return this;
         }
 
@@ -674,8 +823,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar AdjacentDayColor(string style)
         {
-            Options.AdjacentDayScheme = Style.ParseScheme(style, Options.ResolveAdjacentDayScheme());
-            return this;
+            return AdjacentDayColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -685,7 +833,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar TodayColor(ConsoleColor color)
         {
-            Options.TodayScheme = Scheme(color);
+            ApplyColor(CalendarStyleRole.Today, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets today's date foreground color.
+        /// </summary>
+        /// <param name="color">Today's date foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar TodayColor(SpectreColor color)
+        {
+            ApplyColor(CalendarStyleRole.Today, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets today's date foreground color.
+        /// </summary>
+        /// <param name="color">Today's date foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar TodayColor(RgbColor color)
+        {
+            ApplyColor(CalendarStyleRole.Today, color);
             return this;
         }
 
@@ -696,7 +866,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar TodayColor(Style style)
         {
-            Options.TodayScheme = ToScheme(style, Options.ResolveTodayScheme());
+            ApplyStyle(CalendarStyleRole.Today, style);
             return this;
         }
 
@@ -707,8 +877,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar TodayColor(string style)
         {
-            Options.TodayScheme = Style.ParseScheme(style, Options.ResolveTodayScheme());
-            return this;
+            return TodayColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -718,7 +887,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar MarkedDayColor(ConsoleColor color)
         {
-            Options.MarkedDayScheme = Scheme(color);
+            ApplyColor(CalendarStyleRole.MarkedDay, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default marked-day foreground color.
+        /// </summary>
+        /// <param name="color">The default marked-day foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar MarkedDayColor(SpectreColor color)
+        {
+            ApplyColor(CalendarStyleRole.MarkedDay, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default marked-day foreground color.
+        /// </summary>
+        /// <param name="color">The default marked-day foreground color.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar MarkedDayColor(RgbColor color)
+        {
+            ApplyColor(CalendarStyleRole.MarkedDay, color);
             return this;
         }
 
@@ -739,8 +930,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar MarkedDayColor(string style)
         {
-            Options.MarkedDayScheme = Style.ParseScheme(style, Options.ResolveMarkedDayScheme());
-            return this;
+            return HighlightStyle(Style.Parse(style));
         }
 
         /// <summary>
@@ -750,7 +940,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Calendar"/> instance.</returns>
         public Calendar HighlightStyle(Style style)
         {
-            Options.MarkedDayScheme = (style ?? new Style()).ToColorScheme(Options.ResolveMarkedDayScheme());
+            ApplyStyle(CalendarStyleRole.MarkedDay, style);
             return this;
         }
 
@@ -771,6 +961,103 @@ namespace ConsoulLibrary
             _day = day;
         }
 
+        private void ApplyColor(CalendarStyleRole role, ConsoleColor color)
+        {
+            SetStyle(role, Scheme(color), Decoration.None, null, null);
+        }
+
+        private void ApplyColor(CalendarStyleRole role, SpectreColor color)
+        {
+            ApplyColor(role, color.ToRgbColor());
+        }
+
+        private void ApplyColor(CalendarStyleRole role, RgbColor color)
+        {
+            SetStyle(role, Scheme(color), Decoration.None, color, null);
+        }
+
+        private void ApplyStyle(CalendarStyleRole role, Style style)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            SetStyle(
+                role,
+                resolvedStyle.ToColorScheme(ResolveScheme(role)),
+                resolvedStyle.Decoration,
+                resolvedStyle.ForegroundRgb,
+                resolvedStyle.BackgroundRgb);
+        }
+
+        private ColorScheme ResolveScheme(CalendarStyleRole role)
+        {
+            switch (role)
+            {
+                case CalendarStyleRole.Header:
+                    return Options.ResolveHeaderScheme();
+                case CalendarStyleRole.Weekday:
+                    return Options.ResolveWeekdayScheme();
+                case CalendarStyleRole.Day:
+                    return Options.ResolveDayScheme();
+                case CalendarStyleRole.AdjacentDay:
+                    return Options.ResolveAdjacentDayScheme();
+                case CalendarStyleRole.Today:
+                    return Options.ResolveTodayScheme();
+                case CalendarStyleRole.MarkedDay:
+                    return Options.ResolveMarkedDayScheme();
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(role), role, null);
+            }
+        }
+
+        private void SetStyle(
+            CalendarStyleRole role,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            switch (role)
+            {
+                case CalendarStyleRole.Header:
+                    Options.HeaderScheme = scheme;
+                    Options.HeaderDecoration = decoration;
+                    Options.HeaderForegroundRgb = foregroundRgb;
+                    Options.HeaderBackgroundRgb = backgroundRgb;
+                    break;
+                case CalendarStyleRole.Weekday:
+                    Options.WeekdayScheme = scheme;
+                    Options.WeekdayDecoration = decoration;
+                    Options.WeekdayForegroundRgb = foregroundRgb;
+                    Options.WeekdayBackgroundRgb = backgroundRgb;
+                    break;
+                case CalendarStyleRole.Day:
+                    Options.DayScheme = scheme;
+                    Options.DayDecoration = decoration;
+                    Options.DayForegroundRgb = foregroundRgb;
+                    Options.DayBackgroundRgb = backgroundRgb;
+                    break;
+                case CalendarStyleRole.AdjacentDay:
+                    Options.AdjacentDayScheme = scheme;
+                    Options.AdjacentDayDecoration = decoration;
+                    Options.AdjacentDayForegroundRgb = foregroundRgb;
+                    Options.AdjacentDayBackgroundRgb = backgroundRgb;
+                    break;
+                case CalendarStyleRole.Today:
+                    Options.TodayScheme = scheme;
+                    Options.TodayDecoration = decoration;
+                    Options.TodayForegroundRgb = foregroundRgb;
+                    Options.TodayBackgroundRgb = backgroundRgb;
+                    break;
+                case CalendarStyleRole.MarkedDay:
+                    Options.MarkedDayScheme = scheme;
+                    Options.MarkedDayDecoration = decoration;
+                    Options.MarkedDayForegroundRgb = foregroundRgb;
+                    Options.MarkedDayBackgroundRgb = backgroundRgb;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(role), role, null);
+            }
+        }
+
         private static ColorScheme Scheme(ConsoleColor color)
         {
             return new ColorScheme
@@ -780,9 +1067,28 @@ namespace ConsoulLibrary
             };
         }
 
-        private static ColorScheme ToScheme(Style style, ColorScheme fallback)
+        private static ColorScheme Scheme(SpectreColor color)
         {
-            return (style ?? Style.Plain).ToColorScheme(fallback);
+            return Scheme(color.ToRgbColor());
+        }
+
+        private static ColorScheme Scheme(RgbColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color.ToConsoleColor(),
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
+        }
+
+        private enum CalendarStyleRole
+        {
+            Header,
+            Weekday,
+            Day,
+            AdjacentDay,
+            Today,
+            MarkedDay
         }
     }
 }

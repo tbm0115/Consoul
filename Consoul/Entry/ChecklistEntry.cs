@@ -208,19 +208,50 @@ namespace ConsoulLibrary
             ColorScheme markerScheme = item.MarkerScheme ?? _options.ResolveMarkerScheme(item.State);
             ColorScheme labelScheme = item.LabelScheme ?? _options.ResolveLabelScheme();
             ColorScheme descriptionScheme = item.DescriptionScheme ?? _options.ResolveDescriptionScheme();
+            Decoration labelDecoration = item.LabelDecoration ?? (item.LabelScheme.HasValue ? Decoration.None : _options.LabelDecoration);
+            RgbColor? labelForegroundRgb = item.LabelForegroundRgb ?? (item.LabelScheme.HasValue ? null : _options.LabelForegroundRgb);
+            RgbColor? labelBackgroundRgb = item.LabelBackgroundRgb ?? (item.LabelScheme.HasValue ? null : _options.LabelBackgroundRgb);
+            Decoration markerDecoration = item.MarkerDecoration ?? (item.MarkerScheme.HasValue ? Decoration.None : _options.ResolveMarkerDecoration(item.State));
+            RgbColor? markerForegroundRgb = item.MarkerForegroundRgb ?? (item.MarkerScheme.HasValue ? null : _options.ResolveMarkerForegroundRgb(item.State));
+            RgbColor? markerBackgroundRgb = item.MarkerBackgroundRgb ?? (item.MarkerScheme.HasValue ? null : _options.ResolveMarkerBackgroundRgb(item.State));
+            Decoration descriptionDecoration = item.DescriptionDecoration ?? (item.DescriptionScheme.HasValue ? Decoration.None : _options.DescriptionDecoration);
+            RgbColor? descriptionForegroundRgb = item.DescriptionForegroundRgb ?? (item.DescriptionScheme.HasValue ? null : _options.DescriptionForegroundRgb);
+            RgbColor? descriptionBackgroundRgb = item.DescriptionBackgroundRgb ?? (item.DescriptionScheme.HasValue ? null : _options.DescriptionBackgroundRgb);
             IList<List<FixedMessageSegment>> labelLines = MarkupRenderText.WrapSegments(
                 item.Label,
                 layout.ContentWidth,
-                labelScheme);
-            WriteLines(marker, markerScheme, labelLines, labelScheme, layout);
+                labelScheme,
+                labelDecoration,
+                labelForegroundRgb,
+                labelBackgroundRgb);
+            WriteLines(
+                marker,
+                markerScheme,
+                labelLines,
+                labelScheme,
+                layout,
+                markerDecoration,
+                markerForegroundRgb,
+                markerBackgroundRgb);
 
             if (_options.ShowDescriptions && !string.IsNullOrWhiteSpace(item.Description))
             {
                 IList<List<FixedMessageSegment>> descriptionLines = MarkupRenderText.WrapSegments(
                     item.Description,
                     layout.ContentWidth,
-                    descriptionScheme);
-                WriteLines(PadOrTrim(string.Empty, layout.MarkerWidth), RenderOptions.DefaultScheme, descriptionLines, descriptionScheme, layout);
+                    descriptionScheme,
+                    descriptionDecoration,
+                    descriptionForegroundRgb,
+                    descriptionBackgroundRgb);
+                WriteLines(
+                    PadOrTrim(string.Empty, layout.MarkerWidth),
+                    RenderOptions.DefaultScheme,
+                    descriptionLines,
+                    descriptionScheme,
+                    layout,
+                    Decoration.None,
+                    null,
+                    null);
             }
         }
 
@@ -229,7 +260,10 @@ namespace ConsoulLibrary
             ColorScheme markerScheme,
             IList<List<FixedMessageSegment>> contentLines,
             ColorScheme contentScheme,
-            Layout layout)
+            Layout layout,
+            Decoration markerDecoration,
+            RgbColor? markerForegroundRgb,
+            RgbColor? markerBackgroundRgb)
         {
             for (int index = 0; index < contentLines.Count; index++)
             {
@@ -243,7 +277,13 @@ namespace ConsoulLibrary
                     gap = string.Empty;
                 }
 
-                Consoul.Write(markerText, firstLine ? markerScheme : RenderOptions.DefaultScheme, false);
+                TerminalLinkWriter.WriteText(
+                    markerText,
+                    firstLine ? markerScheme : RenderOptions.DefaultScheme,
+                    null,
+                    firstLine ? markerDecoration : Decoration.None,
+                    firstLine ? markerForegroundRgb : null,
+                    firstLine ? markerBackgroundRgb : null);
                 Consoul.Write(gap, RenderOptions.DefaultScheme, false);
                 int contentWidth = Math.Max(1, layout.Width - markerText.Length - gap.Length);
                 List<FixedMessageSegment> content = MarkupRenderText.TruncateSegments(contentLines[index], contentWidth);

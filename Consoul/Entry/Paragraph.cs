@@ -114,7 +114,14 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(text));
             }
 
-            AppendRun(text, (style ?? new Style()).ToColorScheme(RenderOptions.DefaultScheme), link);
+            Style resolvedStyle = style ?? new Style();
+            AppendRun(
+                text,
+                resolvedStyle.ToColorScheme(RenderOptions.DefaultScheme),
+                resolvedStyle.Decoration,
+                resolvedStyle.ForegroundRgb,
+                resolvedStyle.BackgroundRgb,
+                link);
             return this;
         }
 
@@ -249,7 +256,13 @@ namespace ConsoulLibrary
         {
             foreach (MarkupSegment segment in MarkupEntry.Parse(markup ?? string.Empty, RenderOptions.DefaultScheme))
             {
-                AppendRun(segment.Text, segment.Scheme, segment.Link);
+                AppendRun(
+                    segment.Text,
+                    segment.Scheme,
+                    segment.Decoration,
+                    segment.ForegroundRgb,
+                    segment.BackgroundRgb,
+                    segment.Link);
             }
 
             return this;
@@ -292,9 +305,15 @@ namespace ConsoulLibrary
             return string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style);
         }
 
-        private void AppendRun(string text, ColorScheme scheme, Link link)
+        private void AppendRun(
+            string text,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb,
+            Link link)
         {
-            _runs.Add(new ParagraphRun(text, scheme, link));
+            _runs.Add(new ParagraphRun(text, scheme, decoration, foregroundRgb, backgroundRgb, link));
         }
 
         /// <summary>
@@ -388,7 +407,13 @@ namespace ConsoulLibrary
                     }
                     else
                     {
-                        lines[lines.Count - 1].Add(new StyledCharacter(character, run.Scheme, run.Link));
+                        lines[lines.Count - 1].Add(new StyledCharacter(
+                            character,
+                            run.Scheme,
+                            run.Decoration,
+                            run.ForegroundRgb,
+                            run.BackgroundRgb,
+                            run.Link));
                     }
                 }
             }
@@ -442,21 +467,24 @@ namespace ConsoulLibrary
         {
             var result = new List<StyledCharacter>();
             ColorScheme scheme = logicalLine.Count > 0 ? logicalLine[0].Scheme : RenderOptions.DefaultScheme;
+            Decoration decoration = logicalLine.Count > 0 ? logicalLine[0].Decoration : Decoration.None;
+            RgbColor? foregroundRgb = logicalLine.Count > 0 ? logicalLine[0].ForegroundRgb : null;
+            RgbColor? backgroundRgb = logicalLine.Count > 0 ? logicalLine[0].BackgroundRgb : null;
             Link link = logicalLine.Count > 0 ? logicalLine[0].Link : null;
             if (width <= 3)
             {
                 for (int index = 0; index < width; index++)
                 {
-                    result.Add(new StyledCharacter('.', scheme, link));
+                    result.Add(new StyledCharacter('.', scheme, decoration, foregroundRgb, backgroundRgb, link));
                 }
 
                 return result;
             }
 
             result.AddRange(logicalLine.Take(width - 3));
-            result.Add(new StyledCharacter('.', scheme, link));
-            result.Add(new StyledCharacter('.', scheme, link));
-            result.Add(new StyledCharacter('.', scheme, link));
+            result.Add(new StyledCharacter('.', scheme, decoration, foregroundRgb, backgroundRgb, link));
+            result.Add(new StyledCharacter('.', scheme, decoration, foregroundRgb, backgroundRgb, link));
+            result.Add(new StyledCharacter('.', scheme, decoration, foregroundRgb, backgroundRgb, link));
             return result;
         }
 
@@ -496,17 +524,26 @@ namespace ConsoulLibrary
 
             var builder = new StringBuilder();
             ColorScheme scheme = characters[0].Scheme;
+            Decoration decoration = characters[0].Decoration;
+            RgbColor? foregroundRgb = characters[0].ForegroundRgb;
+            RgbColor? backgroundRgb = characters[0].BackgroundRgb;
             Link link = characters[0].Link;
             for (int index = 0; index < characters.Count; index++)
             {
                 StyledCharacter current = characters[index];
                 if (current.Scheme.Color != scheme.Color ||
                     current.Scheme.BackgroundColor != scheme.BackgroundColor ||
+                    current.Decoration != decoration ||
+                    !current.ForegroundRgb.Equals(foregroundRgb) ||
+                    !current.BackgroundRgb.Equals(backgroundRgb) ||
                     !TerminalLinkWriter.SameTarget(current.Link, link))
                 {
-                    TerminalLinkWriter.WriteText(builder.ToString(), scheme, link);
+                    TerminalLinkWriter.WriteText(builder.ToString(), scheme, link, decoration, foregroundRgb, backgroundRgb);
                     builder.Clear();
                     scheme = current.Scheme;
+                    decoration = current.Decoration;
+                    foregroundRgb = current.ForegroundRgb;
+                    backgroundRgb = current.BackgroundRgb;
                     link = current.Link;
                 }
 
@@ -515,7 +552,7 @@ namespace ConsoulLibrary
 
             if (builder.Length > 0)
             {
-                TerminalLinkWriter.WriteText(builder.ToString(), scheme, link);
+                TerminalLinkWriter.WriteText(builder.ToString(), scheme, link, decoration, foregroundRgb, backgroundRgb);
             }
         }
 
@@ -534,10 +571,19 @@ namespace ConsoulLibrary
 
         private readonly struct ParagraphRun
         {
-            public ParagraphRun(string text, ColorScheme scheme, Link link)
+            public ParagraphRun(
+                string text,
+                ColorScheme scheme,
+                Decoration decoration,
+                RgbColor? foregroundRgb,
+                RgbColor? backgroundRgb,
+                Link link)
             {
                 Text = text ?? string.Empty;
                 Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
                 Link = link;
             }
 
@@ -545,21 +591,42 @@ namespace ConsoulLibrary
 
             public ColorScheme Scheme { get; }
 
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
+
             public Link Link { get; }
         }
 
         private readonly struct StyledCharacter
         {
-            public StyledCharacter(char character, ColorScheme scheme, Link link)
+            public StyledCharacter(
+                char character,
+                ColorScheme scheme,
+                Decoration decoration,
+                RgbColor? foregroundRgb,
+                RgbColor? backgroundRgb,
+                Link link)
             {
                 Character = character;
                 Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
                 Link = link;
             }
 
             public char Character { get; }
 
             public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
 
             public Link Link { get; }
         }

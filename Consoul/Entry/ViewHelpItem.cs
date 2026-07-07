@@ -1,5 +1,7 @@
 using System;
 using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -34,6 +36,35 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ViewHelpItem"/> class.
+        /// </summary>
+        /// <param name="label">Action label or separator text.</param>
+        /// <param name="description">Optional helper text describing the action.</param>
+        /// <param name="shortcut">Optional shortcut that can select the action.</param>
+        /// <param name="disabledReason">Optional reason the action is currently unavailable.</param>
+        /// <param name="isSeparator">Indicates whether the item is a display-only separator.</param>
+        /// <param name="scheme">Optional color scheme used for the item label.</param>
+        /// <param name="decoration">Optional ANSI decoration used for the item label.</param>
+        /// <param name="foregroundRgb">Optional RGB foreground color used on ANSI-capable terminals.</param>
+        /// <param name="backgroundRgb">Optional RGB background color used on ANSI-capable terminals.</param>
+        public ViewHelpItem(
+            string label,
+            string description,
+            string shortcut,
+            string disabledReason,
+            bool isSeparator,
+            ColorScheme? scheme,
+            Decoration? decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+            : this(label, description, shortcut, disabledReason, isSeparator, scheme)
+        {
+            Decoration = decoration;
+            ForegroundRgb = foregroundRgb;
+            BackgroundRgb = backgroundRgb;
+        }
+
+        /// <summary>
         /// Gets or sets the action label or separator text.
         /// </summary>
         public string Label { get; set; }
@@ -64,6 +95,21 @@ namespace ConsoulLibrary
         public ColorScheme? Scheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the optional ANSI decoration used for the item label.
+        /// </summary>
+        public Decoration? Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the item label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the item label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
+
+        /// <summary>
         /// Creates a display-only separator for a view help surface.
         /// </summary>
         /// <param name="label">Optional separator label.</param>
@@ -74,14 +120,41 @@ namespace ConsoulLibrary
             ColorScheme? scheme = null;
             if (color.HasValue)
             {
-                scheme = new ColorScheme
-                {
-                    Color = color.Value,
-                    BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
-                };
+                scheme = CreateScheme(color.Value);
             }
 
             return new ViewHelpItem(label ?? string.Empty, isSeparator: true, scheme: scheme);
+        }
+
+        /// <summary>
+        /// Creates a display-only separator for a view help surface using a Spectre-style color facade.
+        /// </summary>
+        /// <param name="label">Optional separator label.</param>
+        /// <param name="color">Separator foreground color.</param>
+        /// <returns>A configured separator item.</returns>
+        public static ViewHelpItem Separator(string label, SpectreColor color)
+        {
+            return Separator(label, color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Creates a display-only separator for a view help surface using an RGB foreground color.
+        /// </summary>
+        /// <param name="label">Optional separator label.</param>
+        /// <param name="color">Separator foreground color.</param>
+        /// <returns>A configured separator item.</returns>
+        public static ViewHelpItem Separator(string label, RgbColor color)
+        {
+            return new ViewHelpItem(
+                label ?? string.Empty,
+                null,
+                null,
+                null,
+                true,
+                CreateScheme(color.ToConsoleColor()),
+                global::ConsoulLibrary.Decoration.None,
+                color,
+                null);
         }
 
         /// <summary>
@@ -100,11 +173,12 @@ namespace ConsoulLibrary
             string shortcut = null,
             string disabledReason = null)
         {
-            ColorScheme? scheme = string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.Parse(style).ToColorScheme(RenderOptions.DefaultScheme);
-
-            return new ViewHelpItem(label, description, shortcut, disabledReason, false, scheme);
+            return Styled(
+                label,
+                string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style),
+                description,
+                shortcut,
+                disabledReason);
         }
 
         /// <summary>
@@ -129,7 +203,57 @@ namespace ConsoulLibrary
                 shortcut,
                 disabledReason,
                 false,
-                style?.ToColorScheme(RenderOptions.DefaultScheme));
+                style?.ToColorScheme(RenderOptions.DefaultScheme),
+                style?.Decoration,
+                style?.ForegroundRgb,
+                style?.BackgroundRgb);
+        }
+
+        /// <summary>
+        /// Creates an action item using a Spectre-style color facade for the label.
+        /// </summary>
+        /// <param name="label">Action label.</param>
+        /// <param name="color">Foreground color used for the item label.</param>
+        /// <param name="description">Optional helper text describing the action.</param>
+        /// <param name="shortcut">Optional shortcut that can select the action.</param>
+        /// <param name="disabledReason">Optional reason the action is currently unavailable.</param>
+        /// <returns>A configured help item.</returns>
+        public static ViewHelpItem Styled(
+            string label,
+            SpectreColor color,
+            string description = null,
+            string shortcut = null,
+            string disabledReason = null)
+        {
+            return Styled(label, color.ToRgbColor(), description, shortcut, disabledReason);
+        }
+
+        /// <summary>
+        /// Creates an action item using an RGB foreground color for the label.
+        /// </summary>
+        /// <param name="label">Action label.</param>
+        /// <param name="color">Foreground color used for the item label.</param>
+        /// <param name="description">Optional helper text describing the action.</param>
+        /// <param name="shortcut">Optional shortcut that can select the action.</param>
+        /// <param name="disabledReason">Optional reason the action is currently unavailable.</param>
+        /// <returns>A configured help item.</returns>
+        public static ViewHelpItem Styled(
+            string label,
+            RgbColor color,
+            string description = null,
+            string shortcut = null,
+            string disabledReason = null)
+        {
+            return new ViewHelpItem(
+                label,
+                description,
+                shortcut,
+                disabledReason,
+                false,
+                CreateScheme(color.ToConsoleColor()),
+                global::ConsoulLibrary.Decoration.None,
+                color,
+                null);
         }
 
         /// <summary>
@@ -140,11 +264,7 @@ namespace ConsoulLibrary
         /// <returns>A configured separator item.</returns>
         public static ViewHelpItem Separator(string label, string style)
         {
-            ColorScheme? scheme = string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.Parse(style).ToColorScheme(RenderOptions.DefaultScheme);
-
-            return new ViewHelpItem(label ?? string.Empty, isSeparator: true, scheme: scheme);
+            return Separator(label, string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style));
         }
 
         /// <summary>
@@ -155,7 +275,25 @@ namespace ConsoulLibrary
         /// <returns>A configured separator item.</returns>
         public static ViewHelpItem Separator(string label, Style style)
         {
-            return new ViewHelpItem(label ?? string.Empty, isSeparator: true, scheme: style?.ToColorScheme(RenderOptions.DefaultScheme));
+            return new ViewHelpItem(
+                label ?? string.Empty,
+                null,
+                null,
+                null,
+                true,
+                style?.ToColorScheme(RenderOptions.DefaultScheme),
+                style?.Decoration,
+                style?.ForegroundRgb,
+                style?.BackgroundRgb);
+        }
+
+        private static ColorScheme CreateScheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
         }
     }
 }

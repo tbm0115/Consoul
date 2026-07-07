@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
 using Xunit;
@@ -150,6 +152,120 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("-") && write.Color == ConsoleColor.Red);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Panel style helpers preserve RGB metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Panel_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var panel = new Panel("Body")
+                .Width(28)
+                .Padding(0)
+                .AsciiBorder()
+                .Header("Head", Style.Parse("bold #112233"))
+                .Footer("Foot", Style.Parse("#445566"))
+                .BorderColor("#778899")
+                .ContentColor("#22c55e");
+
+            console.Write(panel);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;17;34;51mHead\u001b[22;39m", output);
+            Assert.Contains("\u001b[38;2;68;85;102mFoot\u001b[39m", output);
+            Assert.Contains("\u001b[38;2;119;136;153m+", output);
+            Assert.Contains("\u001b[38;2;34;197;94mBody\u001b[39m", output);
+            Assert.DoesNotContain("[#22c55e", output);
+            Assert.DoesNotContain("[bold", output);
+        }
+
+        /// <summary>
+        /// Rule style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Rule_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var rule = new Rule("Deploy")
+                .Width(28)
+                .Character('=')
+                .RuleStyle("#778899")
+                .TitleStyle("bold #22c55e");
+
+            console.Write(rule);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;119;136;153m=", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94mDeploy\u001b[22;39m", output);
+            Assert.DoesNotContain("[#22c55e", output);
+            Assert.DoesNotContain("[bold", output);
+        }
+
+        /// <summary>
+        /// Panel and rule style helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void PanelAndRule_StyleHelpersEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            console.Write(new Panel("Body").Width(24).Padding(0).AsciiBorder().BorderColor("#778899").ContentColor("#22c55e"));
+            console.Write(new Rule("Deploy").Width(24).RuleStyle("#778899").TitleStyle("#22c55e"));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;102m+", output);
+            Assert.Contains("\u001b[38;5;41m", output);
+            Assert.Contains("Body", output);
+            Assert.Contains("\u001b[38;5;41mDeploy\u001b[39m", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+            Assert.DoesNotContain("[#22c55e", output);
+        }
+
+        /// <summary>
+        /// Non-true-color writer consoles keep panel and rule RGB styles readable without 24-bit SGR.
+        /// </summary>
+        [Fact]
+        public void PanelAndRule_RgbStylesOmitTrueColorSgrWhenTrueColorIsDisabled()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.Standard
+            });
+
+            console.Write(new Panel("Body").Width(24).AsciiBorder().Header("Head").BorderColor("#778899").ContentColor("#22c55e"));
+            console.Write(new Rule("Deploy").Width(24).RuleStyle("#778899").TitleStyle("#22c55e"));
+
+            string output = writer.ToString();
+            Assert.Contains("Body", output);
+            Assert.Contains("Deploy", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+            Assert.DoesNotContain("\u001b[38;5", output);
+            Assert.DoesNotContain("[#22c55e", output);
         }
 
         /// <summary>

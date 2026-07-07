@@ -1,5 +1,7 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -39,9 +41,39 @@ namespace ConsoulLibrary
         public ColorScheme? LabelScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets optional ANSI decoration used for the label.
+        /// </summary>
+        public Decoration? LabelDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the optional color scheme used for the value.
         /// </summary>
         public ColorScheme? ValueScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional ANSI decoration used for the value.
+        /// </summary>
+        public Decoration? ValueDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the value on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the value on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a property list item with optional foreground colors.
@@ -77,6 +109,41 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Creates a property list item with optional Spectre-style foreground colors.
+        /// </summary>
+        /// <param name="label">The label rendered before the value.</param>
+        /// <param name="value">The value rendered for the label.</param>
+        /// <param name="valueColor">Foreground color used for the value.</param>
+        /// <param name="labelColor">Optional foreground color used for the label.</param>
+        /// <returns>A configured <see cref="PropertyListItem"/>.</returns>
+        public static PropertyListItem Create(string label, object value, SpectreColor valueColor, SpectreColor? labelColor = null)
+        {
+            var item = Create(label, value, valueColor.ToRgbColor(), labelColor.HasValue ? labelColor.Value.ToRgbColor() : (RgbColor?)null);
+            return item;
+        }
+
+        /// <summary>
+        /// Creates a property list item with optional RGB foreground colors.
+        /// </summary>
+        /// <param name="label">The label rendered before the value.</param>
+        /// <param name="value">The value rendered for the label.</param>
+        /// <param name="valueColor">RGB foreground color used for the value.</param>
+        /// <param name="labelColor">Optional RGB foreground color used for the label.</param>
+        /// <returns>A configured <see cref="PropertyListItem"/>.</returns>
+        public static PropertyListItem Create(string label, object value, RgbColor valueColor, RgbColor? labelColor = null)
+        {
+            return new PropertyListItem(
+                label,
+                value?.ToString() ?? string.Empty,
+                labelColor.HasValue ? Scheme(labelColor.Value.ToConsoleColor()) : (ColorScheme?)null,
+                Scheme(valueColor.ToConsoleColor()))
+            {
+                LabelForegroundRgb = labelColor,
+                ValueForegroundRgb = valueColor
+            };
+        }
+
+        /// <summary>
         /// Creates a property list item with optional Spectre-style style text.
         /// </summary>
         /// <param name="label">The label rendered before the value.</param>
@@ -86,14 +153,11 @@ namespace ConsoulLibrary
         /// <returns>A configured <see cref="PropertyListItem"/>.</returns>
         public static PropertyListItem Create(string label, object value, string valueStyle, string labelStyle = null)
         {
-            ColorScheme? labelScheme = string.IsNullOrWhiteSpace(labelStyle)
-                ? (ColorScheme?)null
-                : Style.Parse(labelStyle).ToColorScheme(RenderOptions.DefaultScheme);
-            ColorScheme? valueScheme = string.IsNullOrWhiteSpace(valueStyle)
-                ? (ColorScheme?)null
-                : Style.Parse(valueStyle).ToColorScheme(RenderOptions.DefaultScheme);
-
-            return new PropertyListItem(label, value?.ToString() ?? string.Empty, labelScheme, valueScheme);
+            return Create(
+                label,
+                value,
+                string.IsNullOrWhiteSpace(valueStyle) ? null : Style.Parse(valueStyle),
+                string.IsNullOrWhiteSpace(labelStyle) ? null : Style.Parse(labelStyle));
         }
 
         /// <summary>
@@ -106,14 +170,52 @@ namespace ConsoulLibrary
         /// <returns>A configured <see cref="PropertyListItem"/>.</returns>
         public static PropertyListItem Create(string label, object value, Style valueStyle, Style labelStyle = null)
         {
-            ColorScheme? labelScheme = labelStyle == null
-                ? (ColorScheme?)null
-                : labelStyle.ToColorScheme(RenderOptions.DefaultScheme);
-            ColorScheme? valueScheme = valueStyle == null
-                ? (ColorScheme?)null
-                : valueStyle.ToColorScheme(RenderOptions.DefaultScheme);
+            var item = new PropertyListItem(
+                label,
+                value?.ToString() ?? string.Empty,
+                Scheme(labelStyle),
+                Scheme(valueStyle));
+            ApplyLabelStyle(item, labelStyle);
+            ApplyValueStyle(item, valueStyle);
+            return item;
+        }
 
-            return new PropertyListItem(label, value?.ToString() ?? string.Empty, labelScheme, valueScheme);
+        private static void ApplyLabelStyle(PropertyListItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.LabelDecoration = style.Decoration;
+            item.LabelForegroundRgb = style.ForegroundRgb;
+            item.LabelBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static void ApplyValueStyle(PropertyListItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.ValueDecoration = style.Decoration;
+            item.ValueForegroundRgb = style.ForegroundRgb;
+            item.ValueBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static ColorScheme Scheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
+        }
+
+        private static ColorScheme? Scheme(Style style)
+        {
+            return style?.ToColorScheme(RenderOptions.DefaultScheme);
         }
     }
 }

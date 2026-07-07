@@ -69,9 +69,39 @@ namespace ConsoulLibrary
         public ColorScheme? BranchScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for branch prefixes.
+        /// </summary>
+        public Decoration BranchDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for branch prefixes on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BranchForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for branch prefixes on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BranchBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the default color scheme used for node text.
         /// </summary>
         public ColorScheme? TextScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default ANSI decoration used for node text.
+        /// </summary>
+        public Decoration TextDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional default RGB foreground color used for node text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TextForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional default RGB background color used for node text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TextBackgroundRgb { get; set; }
 
         private TreeGuide _guide;
 
@@ -92,7 +122,13 @@ namespace ConsoulLibrary
                 Indent = Indent,
                 LastIndent = LastIndent,
                 BranchScheme = BranchScheme,
-                TextScheme = TextScheme
+                BranchDecoration = BranchDecoration,
+                BranchForegroundRgb = BranchForegroundRgb,
+                BranchBackgroundRgb = BranchBackgroundRgb,
+                TextScheme = TextScheme,
+                TextDecoration = TextDecoration,
+                TextForegroundRgb = TextForegroundRgb,
+                TextBackgroundRgb = TextBackgroundRgb
             };
         }
 

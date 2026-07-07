@@ -39,6 +39,21 @@ namespace ConsoulLibrary
         public ColorScheme? Scheme { get; set; }
 
         /// <summary>
+        /// Gets or sets optional ANSI decoration used for the bar.
+        /// </summary>
+        public Decoration? Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the bar on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the bar on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
+
+        /// <summary>
         /// Creates a bar chart item with an optional foreground color.
         /// </summary>
         /// <param name="label">The label rendered before the bar.</param>
@@ -69,7 +84,7 @@ namespace ConsoulLibrary
         /// <returns>A configured <see cref="BarChartItem"/>.</returns>
         public static BarChartItem Create(string label, double value, SpectreColor color)
         {
-            return Create(label, value, (ConsoleColor?)color.ToConsoleColor());
+            return Create(label, value, color.ToRgbColor());
         }
 
         /// <summary>
@@ -81,7 +96,10 @@ namespace ConsoulLibrary
         /// <returns>A configured <see cref="BarChartItem"/>.</returns>
         public static BarChartItem Create(string label, double value, RgbColor color)
         {
-            return Create(label, value, (ConsoleColor?)color.ToConsoleColor());
+            return new BarChartItem(label, value, CreateScheme(color.ToConsoleColor()))
+            {
+                ForegroundRgb = color
+            };
         }
 
         /// <summary>
@@ -93,11 +111,7 @@ namespace ConsoulLibrary
         /// <returns>A configured <see cref="BarChartItem"/>.</returns>
         public static BarChartItem Create(string label, double value, string style)
         {
-            ColorScheme? scheme = string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.Parse(style).ToColorScheme(RenderOptions.DefaultScheme);
-
-            return new BarChartItem(label, value, scheme);
+            return Create(label, value, string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style));
         }
 
         /// <summary>
@@ -109,7 +123,35 @@ namespace ConsoulLibrary
         /// <returns>A configured <see cref="BarChartItem"/>.</returns>
         public static BarChartItem Create(string label, double value, Style style)
         {
-            return new BarChartItem(label, value, style?.ToColorScheme(RenderOptions.DefaultScheme));
+            return Create(label, value, style, RenderOptions.DefaultScheme);
+        }
+
+        internal static BarChartItem Create(string label, double value, Style style, ColorScheme fallback)
+        {
+            var item = new BarChartItem(label, value, style?.ToColorScheme(fallback));
+            ApplyStyle(item, style);
+            return item;
+        }
+
+        private static void ApplyStyle(BarChartItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.Decoration = style.Decoration;
+            item.ForegroundRgb = style.ForegroundRgb;
+            item.BackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static ColorScheme CreateScheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
         }
     }
 }

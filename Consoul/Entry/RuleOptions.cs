@@ -28,9 +28,39 @@ namespace ConsoulLibrary
         public ColorScheme? RuleScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the text decoration applied to the rule line on ANSI-capable terminals.
+        /// </summary>
+        public Decoration RuleDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit rule foreground color used on true-color terminals.
+        /// </summary>
+        public RgbColor? RuleForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit rule background color used on true-color terminals.
+        /// </summary>
+        public RgbColor? RuleBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for the title.
         /// </summary>
         public ColorScheme? TitleScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the text decoration applied to the title on ANSI-capable terminals.
+        /// </summary>
+        public Decoration TitleDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit title foreground color used on true-color terminals.
+        /// </summary>
+        public RgbColor? TitleForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional 24-bit title background color used on true-color terminals.
+        /// </summary>
+        public RgbColor? TitleBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current rule options.
@@ -44,7 +74,13 @@ namespace ConsoulLibrary
                 Character = Character,
                 Alignment = Alignment,
                 RuleScheme = RuleScheme,
-                TitleScheme = TitleScheme
+                RuleDecoration = RuleDecoration,
+                RuleForegroundRgb = RuleForegroundRgb,
+                RuleBackgroundRgb = RuleBackgroundRgb,
+                TitleScheme = TitleScheme,
+                TitleDecoration = TitleDecoration,
+                TitleForegroundRgb = TitleForegroundRgb,
+                TitleBackgroundRgb = TitleBackgroundRgb
             };
         }
 

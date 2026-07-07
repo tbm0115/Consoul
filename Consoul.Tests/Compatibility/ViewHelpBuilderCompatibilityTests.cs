@@ -1,4 +1,7 @@
 using System;
+using System.Globalization;
+using System.IO;
+using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
 using Xunit;
 
@@ -122,6 +125,98 @@ namespace ConsoulLibrary.Tests.Compatibility
                 VisualAssert.ContainsText(scope.Driver, "Deploy");
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// View help style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void ViewHelpEntry_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            Style titleStyle = Style.Parse("bold #22c55e");
+            Style shortcutStyle = Style.Parse("italic #778899");
+            Style descriptionStyle = Style.Parse("underline #336699");
+            var help = new ViewHelpEntry("Commands", new ViewHelpOptions
+            {
+                Width = 60,
+                LabelWidth = 14,
+                ShortcutWidth = 7,
+                TitleScheme = titleStyle.ToColorScheme(RenderOptions.DefaultScheme),
+                TitleDecoration = titleStyle.Decoration,
+                TitleForegroundRgb = titleStyle.ForegroundRgb,
+                ShortcutScheme = shortcutStyle.ToColorScheme(RenderOptions.DefaultScheme),
+                ShortcutDecoration = shortcutStyle.Decoration,
+                ShortcutForegroundRgb = shortcutStyle.ForegroundRgb,
+                DescriptionScheme = descriptionStyle.ToColorScheme(RenderOptions.DefaultScheme),
+                DescriptionDecoration = descriptionStyle.Decoration,
+                DescriptionForegroundRgb = descriptionStyle.ForegroundRgb
+            });
+
+            help.AddStyled("Deploy", "bold #22c55e", "Publish release", "d");
+            help.Add(ViewHelpItem.Styled("Docs", RgbColor.FromHex("#445566"), "Open runbook", "docs"));
+            help.AddSeparatorStyled("Danger", "italic #abcdef");
+
+            console.Write(help);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mCommands", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94mDeploy", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153m[d]", output);
+            Assert.Contains("\u001b[4;38;2;51;102;153mPublish", output);
+            Assert.Contains("\u001b[38;2;68;85;102mDocs", output);
+            Assert.Contains("\u001b[3;38;2;171;205;239m-- Danger", output);
+        }
+
+        /// <summary>
+        /// View help RGB overloads use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void ViewHelpEntry_RgbHelpersEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var help = new ViewHelpEntry("Commands", new ViewHelpOptions
+            {
+                Width = 60,
+                LabelWidth = 14,
+                ShortcutWidth = 7,
+                DescriptionScheme = Scheme(ConsoleColor.DarkBlue),
+                DescriptionForegroundRgb = RgbColor.FromHex("#336699")
+            });
+
+            help.Add("Deploy", "Publish release", "d", null, RgbColor.FromHex("#445566"));
+            help.AddSeparator("Danger", RgbColor.FromHex("#336699"));
+
+            console.Write(help);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239mDeploy", output);
+            Assert.Contains("\u001b[38;5;60mPublish", output);
+            Assert.Contains("\u001b[38;5;60m-- Danger", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+        }
+
+        private static ColorScheme Scheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
         }
     }
 }

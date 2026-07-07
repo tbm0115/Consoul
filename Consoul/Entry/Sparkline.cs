@@ -213,6 +213,9 @@ namespace ConsoulLibrary
         public Sparkline LabelColor(ConsoleColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = null;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -224,6 +227,9 @@ namespace ConsoulLibrary
         public Sparkline LabelColor(SpectreColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color.ToRgbColor();
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -235,6 +241,9 @@ namespace ConsoulLibrary
         public Sparkline LabelColor(RgbColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -245,7 +254,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Sparkline"/> instance.</returns>
         public Sparkline LabelColor(Style style)
         {
-            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(style);
             return this;
         }
 
@@ -256,7 +265,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Sparkline"/> instance.</returns>
         public Sparkline LabelColor(string style)
         {
-            Options.LabelScheme = Style.ParseScheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(Style.Parse(style));
             return this;
         }
 
@@ -268,6 +277,9 @@ namespace ConsoulLibrary
         public Sparkline LineColor(ConsoleColor color)
         {
             Options.LineScheme = Scheme(color);
+            Options.LineDecoration = Decoration.None;
+            Options.LineForegroundRgb = null;
+            Options.LineBackgroundRgb = null;
             return this;
         }
 
@@ -279,6 +291,9 @@ namespace ConsoulLibrary
         public Sparkline LineColor(SpectreColor color)
         {
             Options.LineScheme = Scheme(color);
+            Options.LineDecoration = Decoration.None;
+            Options.LineForegroundRgb = color.ToRgbColor();
+            Options.LineBackgroundRgb = null;
             return this;
         }
 
@@ -290,6 +305,9 @@ namespace ConsoulLibrary
         public Sparkline LineColor(RgbColor color)
         {
             Options.LineScheme = Scheme(color);
+            Options.LineDecoration = Decoration.None;
+            Options.LineForegroundRgb = color;
+            Options.LineBackgroundRgb = null;
             return this;
         }
 
@@ -300,7 +318,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Sparkline"/> instance.</returns>
         public Sparkline LineColor(Style style)
         {
-            Options.LineScheme = Scheme(style, Options.ResolveLineScheme());
+            ApplyLineStyle(style);
             return this;
         }
 
@@ -311,7 +329,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Sparkline"/> instance.</returns>
         public Sparkline LineColor(string style)
         {
-            Options.LineScheme = Style.ParseScheme(style, Options.ResolveLineScheme());
+            ApplyLineStyle(Style.Parse(style));
             return this;
         }
 
@@ -323,6 +341,9 @@ namespace ConsoulLibrary
         public Sparkline RangeColor(ConsoleColor color)
         {
             Options.RangeScheme = Scheme(color);
+            Options.RangeDecoration = Decoration.None;
+            Options.RangeForegroundRgb = null;
+            Options.RangeBackgroundRgb = null;
             return this;
         }
 
@@ -334,6 +355,9 @@ namespace ConsoulLibrary
         public Sparkline RangeColor(SpectreColor color)
         {
             Options.RangeScheme = Scheme(color);
+            Options.RangeDecoration = Decoration.None;
+            Options.RangeForegroundRgb = color.ToRgbColor();
+            Options.RangeBackgroundRgb = null;
             return this;
         }
 
@@ -345,6 +369,9 @@ namespace ConsoulLibrary
         public Sparkline RangeColor(RgbColor color)
         {
             Options.RangeScheme = Scheme(color);
+            Options.RangeDecoration = Decoration.None;
+            Options.RangeForegroundRgb = color;
+            Options.RangeBackgroundRgb = null;
             return this;
         }
 
@@ -355,7 +382,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Sparkline"/> instance.</returns>
         public Sparkline RangeColor(Style style)
         {
-            Options.RangeScheme = Scheme(style, Options.ResolveRangeScheme());
+            ApplyRangeStyle(style);
             return this;
         }
 
@@ -366,8 +393,32 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Sparkline"/> instance.</returns>
         public Sparkline RangeColor(string style)
         {
-            Options.RangeScheme = Style.ParseScheme(style, Options.ResolveRangeScheme());
+            ApplyRangeStyle(Style.Parse(style));
             return this;
+        }
+
+        private void ApplyLabelStyle(Style style)
+        {
+            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            Options.LabelDecoration = style?.Decoration ?? Decoration.None;
+            Options.LabelForegroundRgb = style?.ForegroundRgb;
+            Options.LabelBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyLineStyle(Style style)
+        {
+            Options.LineScheme = Scheme(style, Options.ResolveLineScheme());
+            Options.LineDecoration = style?.Decoration ?? Decoration.None;
+            Options.LineForegroundRgb = style?.ForegroundRgb;
+            Options.LineBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyRangeStyle(Style style)
+        {
+            Options.RangeScheme = Scheme(style, Options.ResolveRangeScheme());
+            Options.RangeDecoration = style?.Decoration ?? Decoration.None;
+            Options.RangeForegroundRgb = style?.ForegroundRgb;
+            Options.RangeBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

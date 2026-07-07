@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -99,6 +101,33 @@ namespace ConsoulLibrary.Tests.Rendering
                     write.Color == ConsoleColor.DarkGray);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Callout style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Callout_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new Callout("Approval required.", CalloutKind.Warning)
+                .Width(40)
+                .Title("Deploy")
+                .BorderColor("bold #22c55e")
+                .TitleColor("italic #778899")
+                .ContentColor("underline #336699"));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94m+", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153m[!] Deploy", output);
+            Assert.Contains("\u001b[4;38;2;51;102;153mApproval required.", output);
         }
 
         /// <summary>

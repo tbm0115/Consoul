@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -66,6 +68,34 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a highlighted day to the calendar with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="date">The date to highlight.</param>
+        /// <param name="color">Foreground color used for the date cell.</param>
+        /// <param name="label">Optional label describing the highlighted date.</param>
+        /// <returns>The added highlighted day.</returns>
+        public CalendarDay Add(DateTime date, SpectreColor color, string label = null)
+        {
+            var day = CalendarDay.Create(date, color, label);
+            _markedDays.Add(day);
+            return day;
+        }
+
+        /// <summary>
+        /// Adds a highlighted day to the calendar with an RGB foreground color.
+        /// </summary>
+        /// <param name="date">The date to highlight.</param>
+        /// <param name="color">Foreground color used for the date cell.</param>
+        /// <param name="label">Optional label describing the highlighted date.</param>
+        /// <returns>The added highlighted day.</returns>
+        public CalendarDay Add(DateTime date, RgbColor color, string label = null)
+        {
+            var day = CalendarDay.Create(date, color, label);
+            _markedDays.Add(day);
+            return day;
+        }
+
+        /// <summary>
         /// Adds a highlighted day to the calendar using Spectre-style style text.
         /// </summary>
         /// <param name="date">The date to highlight.</param>
@@ -120,7 +150,7 @@ namespace ConsoulLibrary
             if (_options.ShowHeader)
             {
                 string title = Month.ToString("MMMM yyyy", _options.Culture ?? CultureInfo.CurrentCulture);
-                Consoul.Write(Align(title, layout.GridWidth), _options.ResolveHeaderScheme());
+                WriteText(Align(title, layout.GridWidth), ResolveHeaderStyle(), true);
             }
 
             if (_options.ShowWeekdayHeader)
@@ -172,7 +202,7 @@ namespace ConsoulLibrary
             {
                 DateTime date = new DateTime(2024, 1, 7).AddDays(NormalizeDayOffset((int)_options.FirstDayOfWeek + offset));
                 string name = culture.DateTimeFormat.GetAbbreviatedDayName(date.DayOfWeek);
-                WriteCell(name, layout, _options.ResolveWeekdayScheme(), offset == 6);
+                WriteCell(name, layout, ResolveWeekdayStyle(), offset == 6);
             }
         }
 
@@ -204,29 +234,74 @@ namespace ConsoulLibrary
                 DateTime day = week[index];
                 bool inMonth = day.Month == Month.Month && day.Year == Month.Year;
                 string text = inMonth || _options.ShowAdjacentDays ? day.Day.ToString(CultureInfo.InvariantCulture) : string.Empty;
-                WriteCell(text, layout, ResolveDayScheme(day, inMonth), index == week.Length - 1);
+                WriteCell(text, layout, ResolveDayStyle(day, inMonth), index == week.Length - 1);
             }
         }
 
-        private ColorScheme ResolveDayScheme(DateTime day, bool inMonth)
+        private StyledText ResolveDayStyle(DateTime day, bool inMonth)
         {
             CalendarDay markedDay = _markedDays.LastOrDefault(candidate => candidate.Date.Date == day.Date);
             if (markedDay != null)
             {
-                return markedDay.Scheme ?? _options.ResolveMarkedDayScheme();
+                bool hasDayScheme = markedDay.Scheme.HasValue;
+                return new StyledText(
+                    markedDay.Scheme ?? _options.ResolveMarkedDayScheme(),
+                    markedDay.Decoration ?? (hasDayScheme ? Decoration.None : _options.MarkedDayDecoration),
+                    markedDay.ForegroundRgb ?? (hasDayScheme ? null : _options.MarkedDayForegroundRgb),
+                    markedDay.BackgroundRgb ?? (hasDayScheme ? null : _options.MarkedDayBackgroundRgb));
             }
 
             if (_options.HighlightToday && day.Date == DateTime.Today)
             {
-                return _options.ResolveTodayScheme();
+                return new StyledText(
+                    _options.ResolveTodayScheme(),
+                    _options.TodayDecoration,
+                    _options.TodayForegroundRgb,
+                    _options.TodayBackgroundRgb);
             }
 
-            return inMonth ? _options.ResolveDayScheme() : _options.ResolveAdjacentDayScheme();
+            return inMonth ? ResolveDayStyle() : ResolveAdjacentDayStyle();
         }
 
-        private void WriteCell(string text, Layout layout, ColorScheme scheme, bool writeLine)
+        private StyledText ResolveHeaderStyle()
         {
-            Consoul.Write(PadOrTrim(text, layout.CellWidth), scheme, writeLine && layout.GutterWidth == 0);
+            return new StyledText(
+                _options.ResolveHeaderScheme(),
+                _options.HeaderDecoration,
+                _options.HeaderForegroundRgb,
+                _options.HeaderBackgroundRgb);
+        }
+
+        private StyledText ResolveWeekdayStyle()
+        {
+            return new StyledText(
+                _options.ResolveWeekdayScheme(),
+                _options.WeekdayDecoration,
+                _options.WeekdayForegroundRgb,
+                _options.WeekdayBackgroundRgb);
+        }
+
+        private StyledText ResolveDayStyle()
+        {
+            return new StyledText(
+                _options.ResolveDayScheme(),
+                _options.DayDecoration,
+                _options.DayForegroundRgb,
+                _options.DayBackgroundRgb);
+        }
+
+        private StyledText ResolveAdjacentDayStyle()
+        {
+            return new StyledText(
+                _options.ResolveAdjacentDayScheme(),
+                _options.AdjacentDayDecoration,
+                _options.AdjacentDayForegroundRgb,
+                _options.AdjacentDayBackgroundRgb);
+        }
+
+        private void WriteCell(string text, Layout layout, StyledText style, bool writeLine)
+        {
+            WriteText(PadOrTrim(text, layout.CellWidth), style, writeLine && layout.GutterWidth == 0);
             if (layout.GutterWidth > 0)
             {
                 if (!writeLine)
@@ -237,6 +312,21 @@ namespace ConsoulLibrary
                 {
                     Consoul.Write(string.Empty, RenderOptions.DefaultScheme, true);
                 }
+            }
+        }
+
+        private static void WriteText(string text, StyledText style, bool writeLine)
+        {
+            TerminalLinkWriter.WriteText(
+                text,
+                style.Scheme,
+                null,
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
+            if (writeLine)
+            {
+                Consoul.ConsoleDriver.WriteLine(string.Empty);
             }
         }
 
@@ -284,6 +374,25 @@ namespace ConsoulLibrary
             public int GutterWidth { get; }
 
             public int GridWidth { get; }
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

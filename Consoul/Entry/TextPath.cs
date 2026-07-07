@@ -73,6 +73,8 @@ namespace ConsoulLibrary
         public TextPath RootColor(ConsoleColor color)
         {
             Options.RootScheme = Scheme(color);
+            Options.RootForegroundRgb = null;
+            Options.RootBackgroundRgb = null;
             return this;
         }
 
@@ -84,6 +86,8 @@ namespace ConsoulLibrary
         public TextPath RootColor(SpectreColor color)
         {
             Options.RootScheme = Scheme(color);
+            Options.RootForegroundRgb = color.ToRgbColor();
+            Options.RootBackgroundRgb = null;
             return this;
         }
 
@@ -95,6 +99,8 @@ namespace ConsoulLibrary
         public TextPath RootColor(RgbColor color)
         {
             Options.RootScheme = Scheme(color);
+            Options.RootForegroundRgb = color;
+            Options.RootBackgroundRgb = null;
             return this;
         }
 
@@ -115,7 +121,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath RootColor(string style)
         {
-            Options.RootScheme = ParseScheme(style, Options.ResolveRootScheme());
+            ApplyRootStyle(Style.Parse(style));
             return this;
         }
 
@@ -126,7 +132,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath RootStyle(Style style)
         {
-            Options.RootScheme = ToScheme(style, Options.ResolveRootScheme());
+            ApplyRootStyle(style);
             return this;
         }
 
@@ -138,6 +144,8 @@ namespace ConsoulLibrary
         public TextPath DirectoryColor(ConsoleColor color)
         {
             Options.DirectoryScheme = Scheme(color);
+            Options.DirectoryForegroundRgb = null;
+            Options.DirectoryBackgroundRgb = null;
             return this;
         }
 
@@ -149,6 +157,8 @@ namespace ConsoulLibrary
         public TextPath DirectoryColor(SpectreColor color)
         {
             Options.DirectoryScheme = Scheme(color);
+            Options.DirectoryForegroundRgb = color.ToRgbColor();
+            Options.DirectoryBackgroundRgb = null;
             return this;
         }
 
@@ -160,6 +170,8 @@ namespace ConsoulLibrary
         public TextPath DirectoryColor(RgbColor color)
         {
             Options.DirectoryScheme = Scheme(color);
+            Options.DirectoryForegroundRgb = color;
+            Options.DirectoryBackgroundRgb = null;
             return this;
         }
 
@@ -180,7 +192,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath DirectoryColor(string style)
         {
-            Options.DirectoryScheme = ParseScheme(style, Options.ResolveDirectoryScheme());
+            ApplyDirectoryStyle(Style.Parse(style));
             return this;
         }
 
@@ -191,7 +203,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath DirectoryStyle(Style style)
         {
-            Options.DirectoryScheme = ToScheme(style, Options.ResolveDirectoryScheme());
+            ApplyDirectoryStyle(style);
             return this;
         }
 
@@ -203,6 +215,8 @@ namespace ConsoulLibrary
         public TextPath FileNameColor(ConsoleColor color)
         {
             Options.FileNameScheme = Scheme(color);
+            Options.FileNameForegroundRgb = null;
+            Options.FileNameBackgroundRgb = null;
             return this;
         }
 
@@ -214,6 +228,8 @@ namespace ConsoulLibrary
         public TextPath FileNameColor(SpectreColor color)
         {
             Options.FileNameScheme = Scheme(color);
+            Options.FileNameForegroundRgb = color.ToRgbColor();
+            Options.FileNameBackgroundRgb = null;
             return this;
         }
 
@@ -225,6 +241,8 @@ namespace ConsoulLibrary
         public TextPath FileNameColor(RgbColor color)
         {
             Options.FileNameScheme = Scheme(color);
+            Options.FileNameForegroundRgb = color;
+            Options.FileNameBackgroundRgb = null;
             return this;
         }
 
@@ -245,7 +263,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath FileNameColor(string style)
         {
-            Options.FileNameScheme = ParseScheme(style, Options.ResolveFileNameScheme());
+            ApplyFileNameStyle(Style.Parse(style));
             return this;
         }
 
@@ -256,7 +274,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath FileNameStyle(Style style)
         {
-            Options.FileNameScheme = ToScheme(style, Options.ResolveFileNameScheme());
+            ApplyFileNameStyle(style);
             return this;
         }
 
@@ -328,6 +346,8 @@ namespace ConsoulLibrary
         public TextPath ExtensionColor(ConsoleColor color)
         {
             Options.ExtensionScheme = Scheme(color);
+            Options.ExtensionForegroundRgb = null;
+            Options.ExtensionBackgroundRgb = null;
             return this;
         }
 
@@ -339,6 +359,8 @@ namespace ConsoulLibrary
         public TextPath ExtensionColor(SpectreColor color)
         {
             Options.ExtensionScheme = Scheme(color);
+            Options.ExtensionForegroundRgb = color.ToRgbColor();
+            Options.ExtensionBackgroundRgb = null;
             return this;
         }
 
@@ -350,6 +372,8 @@ namespace ConsoulLibrary
         public TextPath ExtensionColor(RgbColor color)
         {
             Options.ExtensionScheme = Scheme(color);
+            Options.ExtensionForegroundRgb = color;
+            Options.ExtensionBackgroundRgb = null;
             return this;
         }
 
@@ -370,7 +394,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath ExtensionColor(string style)
         {
-            Options.ExtensionScheme = ParseScheme(style, Options.ResolveExtensionScheme());
+            ApplyExtensionStyle(Style.Parse(style));
             return this;
         }
 
@@ -381,7 +405,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath ExtensionStyle(Style style)
         {
-            Options.ExtensionScheme = ToScheme(style, Options.ResolveExtensionScheme());
+            ApplyExtensionStyle(style);
             return this;
         }
 
@@ -394,6 +418,10 @@ namespace ConsoulLibrary
         {
             Options.FileNameScheme = Scheme(color);
             Options.ExtensionScheme = Scheme(color);
+            Options.FileNameForegroundRgb = null;
+            Options.FileNameBackgroundRgb = null;
+            Options.ExtensionForegroundRgb = null;
+            Options.ExtensionBackgroundRgb = null;
             return this;
         }
 
@@ -407,6 +435,11 @@ namespace ConsoulLibrary
             ColorScheme scheme = Scheme(color);
             Options.FileNameScheme = scheme;
             Options.ExtensionScheme = scheme;
+            RgbColor rgb = color.ToRgbColor();
+            Options.FileNameForegroundRgb = rgb;
+            Options.FileNameBackgroundRgb = null;
+            Options.ExtensionForegroundRgb = rgb;
+            Options.ExtensionBackgroundRgb = null;
             return this;
         }
 
@@ -420,6 +453,10 @@ namespace ConsoulLibrary
             ColorScheme scheme = Scheme(color);
             Options.FileNameScheme = scheme;
             Options.ExtensionScheme = scheme;
+            Options.FileNameForegroundRgb = color;
+            Options.FileNameBackgroundRgb = null;
+            Options.ExtensionForegroundRgb = color;
+            Options.ExtensionBackgroundRgb = null;
             return this;
         }
 
@@ -440,9 +477,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath LeafColor(string style)
         {
-            ColorScheme scheme = ParseScheme(style, Options.ResolveFileNameScheme());
-            Options.FileNameScheme = scheme;
-            Options.ExtensionScheme = scheme;
+            ApplyLeafStyle(Style.Parse(style));
             return this;
         }
 
@@ -453,9 +488,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath LeafStyle(Style style)
         {
-            ColorScheme scheme = ToScheme(style, Options.ResolveFileNameScheme());
-            Options.FileNameScheme = scheme;
-            Options.ExtensionScheme = scheme;
+            ApplyLeafStyle(style);
             return this;
         }
 
@@ -467,6 +500,8 @@ namespace ConsoulLibrary
         public TextPath SeparatorColor(ConsoleColor color)
         {
             Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorForegroundRgb = null;
+            Options.SeparatorBackgroundRgb = null;
             return this;
         }
 
@@ -478,6 +513,8 @@ namespace ConsoulLibrary
         public TextPath SeparatorColor(SpectreColor color)
         {
             Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorForegroundRgb = color.ToRgbColor();
+            Options.SeparatorBackgroundRgb = null;
             return this;
         }
 
@@ -489,6 +526,8 @@ namespace ConsoulLibrary
         public TextPath SeparatorColor(RgbColor color)
         {
             Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorForegroundRgb = color;
+            Options.SeparatorBackgroundRgb = null;
             return this;
         }
 
@@ -509,7 +548,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath SeparatorColor(string style)
         {
-            Options.SeparatorScheme = ParseScheme(style, Options.ResolveSeparatorScheme());
+            ApplySeparatorStyle(Style.Parse(style));
             return this;
         }
 
@@ -520,8 +559,57 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPath"/> instance.</returns>
         public TextPath SeparatorStyle(Style style)
         {
-            Options.SeparatorScheme = ToScheme(style, Options.ResolveSeparatorScheme());
+            ApplySeparatorStyle(style);
             return this;
+        }
+
+        private void ApplyRootStyle(Style style)
+        {
+            Options.RootScheme = ToScheme(style, Options.ResolveRootScheme());
+            Options.RootDecoration = style.Decoration;
+            Options.RootForegroundRgb = style.ForegroundRgb;
+            Options.RootBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyDirectoryStyle(Style style)
+        {
+            Options.DirectoryScheme = ToScheme(style, Options.ResolveDirectoryScheme());
+            Options.DirectoryDecoration = style.Decoration;
+            Options.DirectoryForegroundRgb = style.ForegroundRgb;
+            Options.DirectoryBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyFileNameStyle(Style style)
+        {
+            Options.FileNameScheme = ToScheme(style, Options.ResolveFileNameScheme());
+            Options.FileNameDecoration = style.Decoration;
+            Options.FileNameForegroundRgb = style.ForegroundRgb;
+            Options.FileNameBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyExtensionStyle(Style style)
+        {
+            Options.ExtensionScheme = ToScheme(style, Options.ResolveExtensionScheme());
+            Options.ExtensionDecoration = style.Decoration;
+            Options.ExtensionForegroundRgb = style.ForegroundRgb;
+            Options.ExtensionBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyLeafStyle(Style style)
+        {
+            ApplyFileNameStyle(style);
+            Options.ExtensionScheme = ToScheme(style, Options.ResolveExtensionScheme());
+            Options.ExtensionDecoration = style.Decoration;
+            Options.ExtensionForegroundRgb = style.ForegroundRgb;
+            Options.ExtensionBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplySeparatorStyle(Style style)
+        {
+            Options.SeparatorScheme = ToScheme(style, Options.ResolveSeparatorScheme());
+            Options.SeparatorDecoration = style.Decoration;
+            Options.SeparatorForegroundRgb = style.ForegroundRgb;
+            Options.SeparatorBackgroundRgb = style.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)
@@ -541,11 +629,6 @@ namespace ConsoulLibrary
         private static ColorScheme Scheme(RgbColor color)
         {
             return Scheme(color.ToConsoleColor());
-        }
-
-        private static ColorScheme ParseScheme(string style, ColorScheme fallback)
-        {
-            return Style.Parse(style).ToColorScheme(fallback);
         }
 
         private static ColorScheme ToScheme(Style style, ColorScheme fallback)

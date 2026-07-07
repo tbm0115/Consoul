@@ -1,6 +1,8 @@
 using System;
 using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Rendering
@@ -88,6 +90,80 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Trim() == "20" && write.Color == ConsoleColor.Green);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Calendar style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Calendar_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var calendar = new Calendar(new DateTime(2026, 6, 1))
+                .Width(40)
+                .Culture(CultureInfo.InvariantCulture)
+                .FirstDayOfWeek(DayOfWeek.Monday)
+                .HighlightToday(false)
+                .HeaderStyle("bold #22c55e")
+                .WeekdayColor("italic #778899")
+                .DayColor("#336699")
+                .MarkedDayColor("underline #112233")
+                .AddCalendarEvent(new DateTime(2026, 6, 15))
+                .AddCalendarEvent("Release", new DateTime(2026, 6, 20), new Style(RgbColor.FromHex("#abcdef"), Decoration.Italic));
+
+            console.Write(calendar);
+
+            string output = writer.ToString();
+            Assert.Contains("June 2026", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94m", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153mMon", output);
+            Assert.Contains("\u001b[38;2;51;102;153m  1", output);
+            Assert.Contains("\u001b[4;38;2;17;34;51m 15", output);
+            Assert.Contains("\u001b[3;38;2;171;205;239m 20", output);
+        }
+
+        /// <summary>
+        /// Calendar RGB selector helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void Calendar_RgbSelectorsEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var events = new[]
+            {
+                new StyledScheduleEvent("Release", new DateTime(2026, 6, 15), RgbColor.FromHex("#445566")),
+                new StyledScheduleEvent("Freeze", new DateTime(2026, 6, 20), RgbColor.FromHex("#336699"))
+            };
+
+            var calendar = new Calendar(new DateTime(2026, 6, 1))
+                .Width(40)
+                .Culture(CultureInfo.InvariantCulture)
+                .FirstDayOfWeek(DayOfWeek.Monday)
+                .HighlightToday(false)
+                .HeaderColor(RgbColor.FromHex("#112233"))
+                .AddCalendarEvents(events, item => item.Date, item => item.Label, item => item.Color);
+
+            console.Write(calendar);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;234m", output);
+            Assert.Contains("\u001b[38;5;239m 15", output);
+            Assert.Contains("\u001b[38;5;60m 20", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>
@@ -203,6 +279,22 @@ namespace ConsoulLibrary.Tests.Rendering
             public DateTime Date { get; }
 
             public ConsoleColor Color { get; }
+        }
+
+        private sealed class StyledScheduleEvent
+        {
+            public StyledScheduleEvent(string label, DateTime date, RgbColor color)
+            {
+                Label = label;
+                Date = date;
+                Color = color;
+            }
+
+            public string Label { get; }
+
+            public DateTime Date { get; }
+
+            public RgbColor Color { get; }
         }
 
         private sealed class TestRoutine : Routine

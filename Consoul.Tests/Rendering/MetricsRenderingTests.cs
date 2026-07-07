@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -100,6 +102,97 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("ERROR-VALUE") && write.Color == ConsoleColor.Red);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Metrics style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Metrics_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var metrics = new Metrics()
+                .Width(60)
+                .ColumnCount(1)
+                .LabelColor("bold #22c55e")
+                .ValueColor("#336699")
+                .NoteColor("underline #112233")
+                .AddMetric("Default", 42, "jobs", "Healthy")
+                .AddMetricStyled(
+                    "Styled",
+                    17,
+                    labelStyle: "italic #778899",
+                    valueStyle: "bold #abcdef",
+                    noteStyle: "underline #fedcba",
+                    unit: "ms",
+                    note: "P95");
+
+            console.Write(metrics);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mDefault", output);
+            Assert.Contains("\u001b[38;2;51;102;153m42 jobs", output);
+            Assert.Contains("\u001b[4;38;2;17;34;51mHealthy", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153mStyled", output);
+            Assert.Contains("\u001b[1;38;2;171;205;239m17 ms", output);
+            Assert.Contains("\u001b[4;38;2;254;220;186mP95", output);
+        }
+
+        /// <summary>
+        /// Metrics RGB selector helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void Metrics_RgbSelectorsEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var rows = new[]
+            {
+                new StyledMetric
+                {
+                    Label = "API",
+                    Value = "Ready",
+                    Unit = "jobs",
+                    Note = "Healthy",
+                    LabelColor = RgbColor.FromHex("#445566"),
+                    ValueColor = RgbColor.FromHex("#336699"),
+                    NoteColor = RgbColor.FromHex("#112233")
+                }
+            };
+
+            var metrics = new Metrics()
+                .Width(60)
+                .ColumnCount(1)
+                .AddMetrics(
+                    rows,
+                    item => item.Label,
+                    item => item.Value,
+                    item => item.LabelColor,
+                    item => item.ValueColor,
+                    item => item.NoteColor,
+                    item => item.Unit,
+                    item => item.Note);
+
+            console.Write(metrics);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239mAPI", output);
+            Assert.Contains("\u001b[38;5;60mReady jobs", output);
+            Assert.Contains("\u001b[38;5;234mHealthy", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>
@@ -254,6 +347,23 @@ namespace ConsoulLibrary.Tests.Rendering
             public int Failures { get; set; }
 
             public int LatencyMs { get; set; }
+        }
+
+        private sealed class StyledMetric
+        {
+            public string Label { get; set; } = string.Empty;
+
+            public string Value { get; set; } = string.Empty;
+
+            public string Unit { get; set; } = string.Empty;
+
+            public string Note { get; set; } = string.Empty;
+
+            public RgbColor LabelColor { get; set; }
+
+            public RgbColor ValueColor { get; set; }
+
+            public RgbColor NoteColor { get; set; }
         }
 
         private sealed class TestRoutine : Routine

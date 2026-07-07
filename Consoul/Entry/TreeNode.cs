@@ -37,8 +37,21 @@ namespace ConsoulLibrary
             if (renderable != null)
             {
                 ColorScheme? capturedScheme;
-                Text = CaptureRenderable(renderable, captureWidth, captureHeight, out capturedScheme);
+                Decoration? capturedDecoration;
+                RgbColor? capturedForegroundRgb;
+                RgbColor? capturedBackgroundRgb;
+                Text = CaptureRenderable(
+                    renderable,
+                    captureWidth,
+                    captureHeight,
+                    out capturedScheme,
+                    out capturedDecoration,
+                    out capturedForegroundRgb,
+                    out capturedBackgroundRgb);
                 Scheme = scheme ?? capturedScheme;
+                Decoration = capturedDecoration;
+                ForegroundRgb = scheme.HasValue ? null : capturedForegroundRgb;
+                BackgroundRgb = scheme.HasValue ? null : capturedBackgroundRgb;
                 return;
             }
 
@@ -61,8 +74,21 @@ namespace ConsoulLibrary
             }
 
             ColorScheme? capturedScheme;
-            Text = CaptureRenderable(renderable, captureWidth, captureHeight, out capturedScheme);
+            Decoration? capturedDecoration;
+            RgbColor? capturedForegroundRgb;
+            RgbColor? capturedBackgroundRgb;
+            Text = CaptureRenderable(
+                renderable,
+                captureWidth,
+                captureHeight,
+                out capturedScheme,
+                out capturedDecoration,
+                out capturedForegroundRgb,
+                out capturedBackgroundRgb);
             Scheme = scheme ?? capturedScheme;
+            Decoration = capturedDecoration;
+            ForegroundRgb = scheme.HasValue ? null : capturedForegroundRgb;
+            BackgroundRgb = scheme.HasValue ? null : capturedBackgroundRgb;
         }
 
         /// <summary>
@@ -74,6 +100,21 @@ namespace ConsoulLibrary
         /// Gets or sets the optional color scheme used for this node text.
         /// </summary>
         public ColorScheme? Scheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional ANSI decoration used for this node text.
+        /// </summary>
+        public Decoration? Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for this node text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for this node text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets the child nodes rendered below this node.
@@ -107,6 +148,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a child node with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="text">The text rendered for the child node.</param>
+        /// <param name="color">The foreground color used for the child node.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode Add(string text, SpectreColor color)
+        {
+            TreeNode node = new TreeNode(text, CreateScheme(color));
+            node.ForegroundRgb = color.ToRgbColor();
+            return Add(node);
+        }
+
+        /// <summary>
+        /// Adds a child node with an RGB foreground color.
+        /// </summary>
+        /// <param name="text">The text rendered for the child node.</param>
+        /// <param name="color">The RGB foreground color used for the child node.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode Add(string text, RgbColor color)
+        {
+            TreeNode node = new TreeNode(text, CreateScheme(color));
+            node.ForegroundRgb = color;
+            return Add(node);
+        }
+
+        /// <summary>
         /// Adds a child node using Spectre-style style text.
         /// </summary>
         /// <param name="text">The child node text.</param>
@@ -114,11 +181,19 @@ namespace ConsoulLibrary
         /// <returns>The added child node.</returns>
         public TreeNode Add(string text, string style)
         {
-            ColorScheme? scheme = string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.Parse(style).ToColorScheme(RenderOptions.DefaultScheme);
+            Style parsed = string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style);
+            return Add(CreateNode(text, parsed));
+        }
 
-            return Add(new TreeNode(text, scheme));
+        /// <summary>
+        /// Adds a child node using a reusable style object.
+        /// </summary>
+        /// <param name="text">The child node text.</param>
+        /// <param name="style">Optional style used for the child node.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode Add(string text, Style style)
+        {
+            return Add(CreateNode(text, style));
         }
 
         /// <summary>
@@ -147,6 +222,56 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a child node with a Spectre-style foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The child node content.</param>
+        /// <param name="color">The foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode Add(object content, SpectreColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            var child = content as TreeNode;
+            if (child != null)
+            {
+                return Add(child);
+            }
+
+            var renderable = content as IConsoulRenderable;
+            if (renderable != null)
+            {
+                return Add(renderable, color, captureWidth, captureHeight);
+            }
+
+            return Add(RenderActionContent.FormatValue(content), color);
+        }
+
+        /// <summary>
+        /// Adds a child node with an RGB foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The child node content.</param>
+        /// <param name="color">The RGB foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode Add(object content, RgbColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            var child = content as TreeNode;
+            if (child != null)
+            {
+                return Add(child);
+            }
+
+            var renderable = content as IConsoulRenderable;
+            if (renderable != null)
+            {
+                return Add(renderable, color, captureWidth, captureHeight);
+            }
+
+            return Add(RenderActionContent.FormatValue(content), color);
+        }
+
+        /// <summary>
         /// Adds a child node using Spectre-style style text, formatting plain object values with the current culture and capturing renderable values.
         /// </summary>
         /// <param name="content">The child node content.</param>
@@ -155,6 +280,31 @@ namespace ConsoulLibrary
         /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
         /// <returns>The added child node.</returns>
         public TreeNode Add(object content, string style, int? captureWidth = null, int captureHeight = 20)
+        {
+            var child = content as TreeNode;
+            if (child != null)
+            {
+                return Add(child);
+            }
+
+            var renderable = content as IConsoulRenderable;
+            if (renderable != null)
+            {
+                return Add(renderable, style, captureWidth, captureHeight);
+            }
+
+            return Add(RenderActionContent.FormatValue(content), style);
+        }
+
+        /// <summary>
+        /// Adds a child node using a reusable style object, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The child node content.</param>
+        /// <param name="style">Optional style used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode Add(object content, Style style, int? captureWidth = null, int captureHeight = 20)
         {
             var child = content as TreeNode;
             if (child != null)
@@ -325,12 +475,22 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(colorSelector));
             }
 
-            return AddNodes(
-                items,
-                contentSelector,
-                ToConsoleColorSelector(colorSelector),
-                captureWidth,
-                captureHeight);
+            if (contentSelector == null)
+            {
+                throw new ArgumentNullException(nameof(contentSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                Add(contentSelector(item), colorSelector(item), captureWidth, captureHeight);
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -355,12 +515,22 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(colorSelector));
             }
 
-            return AddNodes(
-                items,
-                contentSelector,
-                ToConsoleColorSelector(colorSelector),
-                captureWidth,
-                captureHeight);
+            if (contentSelector == null)
+            {
+                throw new ArgumentNullException(nameof(contentSelector));
+            }
+
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (T item in items)
+            {
+                Add(contentSelector(item), colorSelector(item), captureWidth, captureHeight);
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -425,18 +595,34 @@ namespace ConsoulLibrary
             return Add(new TreeNode(renderable, scheme, captureWidth, captureHeight));
         }
 
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, SpectreColor> selector)
+        /// <summary>
+        /// Adds a child node with captured renderable content and a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable content used as the child node label.</param>
+        /// <param name="color">The foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode Add(IConsoulRenderable renderable, SpectreColor color, int? captureWidth = null, int captureHeight = 20)
         {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
+            TreeNode node = new TreeNode(renderable, CreateScheme(color), captureWidth, captureHeight);
+            node.ForegroundRgb = color.ToRgbColor();
+            return Add(node);
         }
 
-        private static Func<T, ConsoleColor?> ToConsoleColorSelector<T>(Func<T, RgbColor> selector)
+        /// <summary>
+        /// Adds a child node with captured renderable content and an RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable content used as the child node label.</param>
+        /// <param name="color">The RGB foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode Add(IConsoulRenderable renderable, RgbColor color, int? captureWidth = null, int captureHeight = 20)
         {
-            return selector == null
-                ? (Func<T, ConsoleColor?>)null
-                : item => selector(item).ToConsoleColor();
+            TreeNode node = new TreeNode(renderable, CreateScheme(color), captureWidth, captureHeight);
+            node.ForegroundRgb = color;
+            return Add(node);
         }
 
         /// <summary>
@@ -449,11 +635,21 @@ namespace ConsoulLibrary
         /// <returns>The added child node.</returns>
         public TreeNode Add(IConsoulRenderable renderable, string style, int? captureWidth = null, int captureHeight = 20)
         {
-            ColorScheme? scheme = string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.Parse(style).ToColorScheme(RenderOptions.DefaultScheme);
+            Style parsed = string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style);
+            return Add(CreateNode(renderable, parsed, captureWidth, captureHeight));
+        }
 
-            return Add(new TreeNode(renderable, scheme, captureWidth, captureHeight));
+        /// <summary>
+        /// Adds a child node with captured renderable content and a reusable style object.
+        /// </summary>
+        /// <param name="renderable">The renderable content used as the child node label.</param>
+        /// <param name="style">Optional style used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode Add(IConsoulRenderable renderable, Style style, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Add(CreateNode(renderable, style, captureWidth, captureHeight));
         }
 
         /// <summary>
@@ -468,12 +664,45 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a child node with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="text">The text rendered for the child node.</param>
+        /// <param name="color">The foreground color used for the child node.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(string text, SpectreColor color)
+        {
+            return Add(text, color);
+        }
+
+        /// <summary>
+        /// Adds a child node with an RGB foreground color.
+        /// </summary>
+        /// <param name="text">The text rendered for the child node.</param>
+        /// <param name="color">The RGB foreground color used for the child node.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(string text, RgbColor color)
+        {
+            return Add(text, color);
+        }
+
+        /// <summary>
         /// Adds a child node using Spectre-style style text.
         /// </summary>
         /// <param name="text">The child node text.</param>
         /// <param name="style">Optional style used for the child node, such as <c>green</c> or <c>white on blue</c>.</param>
         /// <returns>The added child node.</returns>
         public TreeNode AddNode(string text, string style)
+        {
+            return Add(text, style);
+        }
+
+        /// <summary>
+        /// Adds a child node using a reusable style object.
+        /// </summary>
+        /// <param name="text">The child node text.</param>
+        /// <param name="style">Optional style used for the child node.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(string text, Style style)
         {
             return Add(text, style);
         }
@@ -492,6 +721,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a child node with a Spectre-style foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The child node content.</param>
+        /// <param name="color">The foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(object content, SpectreColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Add(content, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a child node with an RGB foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The child node content.</param>
+        /// <param name="color">The RGB foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(object content, RgbColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Add(content, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
         /// Adds a child node using Spectre-style style text, formatting plain object values with the current culture and capturing renderable values.
         /// </summary>
         /// <param name="content">The child node content.</param>
@@ -500,6 +755,19 @@ namespace ConsoulLibrary
         /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
         /// <returns>The added child node.</returns>
         public TreeNode AddNode(object content, string style, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Add(content, style, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a child node using a reusable style object, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The child node content.</param>
+        /// <param name="style">Optional style used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(object content, Style style, int? captureWidth = null, int captureHeight = 20)
         {
             return Add(content, style, captureWidth, captureHeight);
         }
@@ -518,6 +786,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a child node with captured renderable content and a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable content used as the child node label.</param>
+        /// <param name="color">The foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(IConsoulRenderable renderable, SpectreColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Add(renderable, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a child node with captured renderable content and an RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable content used as the child node label.</param>
+        /// <param name="color">The RGB foreground color used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(IConsoulRenderable renderable, RgbColor color, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Add(renderable, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
         /// Adds a child node with captured renderable content and Spectre-style style text.
         /// </summary>
         /// <param name="renderable">The renderable content used as the child node label.</param>
@@ -526,6 +820,19 @@ namespace ConsoulLibrary
         /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
         /// <returns>The added child node.</returns>
         public TreeNode AddNode(IConsoulRenderable renderable, string style, int? captureWidth = null, int captureHeight = 20)
+        {
+            return Add(renderable, style, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a child node with captured renderable content and a reusable style object.
+        /// </summary>
+        /// <param name="renderable">The renderable content used as the child node label.</param>
+        /// <param name="style">Optional style used for the child node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable.</param>
+        /// <returns>The added child node.</returns>
+        public TreeNode AddNode(IConsoulRenderable renderable, Style style, int? captureWidth = null, int captureHeight = 20)
         {
             return Add(renderable, style, captureWidth, captureHeight);
         }
@@ -604,6 +911,54 @@ namespace ConsoulLibrary
             return Add(child);
         }
 
+        private static TreeNode CreateNode(string text, Style style)
+        {
+            TreeNode node = new TreeNode(text, style?.ToColorScheme(RenderOptions.DefaultScheme));
+            ApplyStyle(node, style);
+            return node;
+        }
+
+        private static TreeNode CreateNode(IConsoulRenderable renderable, Style style, int? captureWidth, int captureHeight)
+        {
+            TreeNode node = new TreeNode(
+                renderable,
+                style?.ToColorScheme(RenderOptions.DefaultScheme),
+                captureWidth,
+                captureHeight);
+            ApplyStyle(node, style);
+            return node;
+        }
+
+        private static void ApplyStyle(TreeNode node, Style style)
+        {
+            if (node == null || style == null)
+            {
+                return;
+            }
+
+            node.Decoration = style.Decoration;
+            node.ForegroundRgb = style.ForegroundRgb;
+            node.BackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static ColorScheme CreateScheme(SpectreColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color.ToConsoleColor(),
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
+        }
+
+        private static ColorScheme CreateScheme(RgbColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color.ToConsoleColor(),
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
+        }
+
         /// <summary>
         /// Hides this node's child nodes.
         /// </summary>
@@ -628,20 +983,29 @@ namespace ConsoulLibrary
             IConsoulRenderable renderable,
             int? captureWidth,
             int captureHeight,
-            out ColorScheme? scheme)
+            out ColorScheme? scheme,
+            out Decoration? decoration,
+            out RgbColor? foregroundRgb,
+            out RgbColor? backgroundRgb)
         {
             scheme = null;
+            decoration = null;
+            foregroundRgb = null;
+            backgroundRgb = null;
 
             var markup = renderable as MarkupEntry;
             if (markup != null)
             {
-                return CaptureMarkup(markup, out scheme);
+                return CaptureMarkup(markup, out scheme, out decoration, out foregroundRgb, out backgroundRgb);
             }
 
             var textBlock = renderable as TextBlockEntry;
             if (textBlock != null && textBlock.Options.Scheme.HasValue)
             {
                 scheme = textBlock.Options.Scheme.Value;
+                decoration = textBlock.Options.Decoration;
+                foregroundRgb = textBlock.Options.ForegroundRgb;
+                backgroundRgb = textBlock.Options.BackgroundRgb;
             }
 
             return RenderActionContent.Capture(
@@ -650,9 +1014,17 @@ namespace ConsoulLibrary
                 Math.Max(1, captureHeight)).TrimEnd('\r', '\n');
         }
 
-        private static string CaptureMarkup(MarkupEntry markup, out ColorScheme? scheme)
+        private static string CaptureMarkup(
+            MarkupEntry markup,
+            out ColorScheme? scheme,
+            out Decoration? decoration,
+            out RgbColor? foregroundRgb,
+            out RgbColor? backgroundRgb)
         {
             scheme = null;
+            decoration = null;
+            foregroundRgb = null;
+            backgroundRgb = null;
             var builder = new System.Text.StringBuilder();
             foreach (MarkupSegment segment in MarkupEntry.Parse(markup.Markup, RenderOptions.DefaultScheme))
             {
@@ -664,6 +1036,9 @@ namespace ConsoulLibrary
                 if (!scheme.HasValue)
                 {
                     scheme = segment.Scheme;
+                    decoration = segment.Decoration;
+                    foregroundRgb = segment.ForegroundRgb;
+                    backgroundRgb = segment.BackgroundRgb;
                 }
 
                 builder.Append(segment.Text);

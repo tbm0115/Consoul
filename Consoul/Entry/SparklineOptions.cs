@@ -1,5 +1,6 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -54,14 +55,59 @@ namespace ConsoulLibrary
         public ColorScheme? LabelScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for the label.
+        /// </summary>
+        public Decoration LabelDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for the label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for the label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for the sparkline.
         /// </summary>
         public ColorScheme? LineScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for the sparkline.
+        /// </summary>
+        public Decoration LineDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for the sparkline on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LineForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for the sparkline on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LineBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for range values.
         /// </summary>
         public ColorScheme? RangeScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for range values.
+        /// </summary>
+        public Decoration RangeDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for range values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? RangeForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for range values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? RangeBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current sparkline options.
@@ -80,8 +126,17 @@ namespace ConsoulLibrary
                 Characters = Characters,
                 ValueFormatter = ValueFormatter,
                 LabelScheme = LabelScheme,
+                LabelDecoration = LabelDecoration,
+                LabelForegroundRgb = LabelForegroundRgb,
+                LabelBackgroundRgb = LabelBackgroundRgb,
                 LineScheme = LineScheme,
-                RangeScheme = RangeScheme
+                LineDecoration = LineDecoration,
+                LineForegroundRgb = LineForegroundRgb,
+                LineBackgroundRgb = LineBackgroundRgb,
+                RangeScheme = RangeScheme,
+                RangeDecoration = RangeDecoration,
+                RangeForegroundRgb = RangeForegroundRgb,
+                RangeBackgroundRgb = RangeBackgroundRgb
             };
         }
 

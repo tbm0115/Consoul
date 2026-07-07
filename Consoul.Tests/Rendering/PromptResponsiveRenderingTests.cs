@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
 using Xunit;
 
@@ -261,6 +264,81 @@ namespace ConsoulLibrary.Tests.Rendering
                     Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
                 }
             }
+        }
+
+        /// <summary>
+        /// Selection prompt style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("1\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            SelectOption deploy = new SelectOption("Deploy").UseStyle("bold #112233").Describe("Ship release");
+            SelectOption separator = SelectOption.SeparatorStyled("Danger", "italic #778899");
+            SelectOption archive = new SelectOption("Archive").UseDisabledStyle("italic #abcdef").Disable("locked");
+            var prompt = new SelectionPrompt("Pick action", false, deploy, separator, archive)
+                .PromptStyle("bold #22c55e")
+                .InstructionStyle("italic #778899");
+            prompt.OptionDescriptionDecoration = Decoration.Underline;
+            prompt.OptionDescriptionForegroundRgb = RgbColor.FromHex("#336699");
+
+            PromptResult result = console.Prompt(prompt);
+
+            Assert.True(result.HasSelection);
+            Assert.Equal(0, result.Index);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mPick action", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153mChoose", output);
+            Assert.Contains("\u001b[1;38;2;17;34;51m1) Deploy", output);
+            Assert.Contains("\u001b[4;38;2;51;102;153m    Ship release", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153m-- Danger --", output);
+            Assert.Contains("\u001b[3;38;2;171;205;239m2) Archive", output);
+        }
+
+        /// <summary>
+        /// Selection prompt RGB helpers emit 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_RgbHelpersEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("1\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            SelectOption deploy = new SelectOption("Deploy")
+                .UseColor(RgbColor.FromHex("#445566"))
+                .Describe("Ship release");
+            SelectOption separator = SelectOption.Separator("Danger", RgbColor.FromHex("#336699"));
+            SelectOption archive = new SelectOption("Archive").UseColor(RgbColor.FromHex("#778899"));
+            var prompt = new SelectionPrompt("Pick action", false, deploy, separator, archive)
+            {
+                OptionDescriptionForegroundRgb = RgbColor.FromHex("#336699")
+            };
+
+            PromptResult result = console.Prompt(prompt);
+
+            Assert.True(result.HasSelection);
+            Assert.Equal(0, result.Index);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239m1) Deploy", output);
+            Assert.Contains("\u001b[38;5;60m    Ship release", output);
+            Assert.Contains("\u001b[38;5;60m-- Danger --", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

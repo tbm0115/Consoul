@@ -50,7 +50,13 @@ namespace ConsoulLibrary
             int titleWidth = string.IsNullOrEmpty(visibleTitle) ? 0 : visibleTitle.Length + 2;
             if (string.IsNullOrEmpty(title) || titleWidth >= width)
             {
-                Consoul.Write(new string(_options.Character, width), ruleScheme);
+                WriteStyled(
+                    new string(_options.Character, width),
+                    ruleScheme,
+                    _options.RuleDecoration,
+                    _options.RuleForegroundRgb,
+                    _options.RuleBackgroundRgb,
+                    true);
                 return;
             }
 
@@ -73,11 +79,43 @@ namespace ConsoulLibrary
                     break;
             }
 
-            Consoul.Write(new string(_options.Character, leftWidth), ruleScheme, false);
-            Consoul.Write(" ", titleScheme, false);
-            MarkupRenderText.WriteSegments(MarkupRenderText.ParseSegments(title, titleScheme), titleScheme, false);
-            Consoul.Write(" ", titleScheme, false);
-            Consoul.Write(new string(_options.Character, rightWidth), ruleScheme);
+            WriteStyled(
+                new string(_options.Character, leftWidth),
+                ruleScheme,
+                _options.RuleDecoration,
+                _options.RuleForegroundRgb,
+                _options.RuleBackgroundRgb,
+                false);
+            WriteStyled(
+                " ",
+                titleScheme,
+                _options.TitleDecoration,
+                _options.TitleForegroundRgb,
+                _options.TitleBackgroundRgb,
+                false);
+            MarkupRenderText.WriteSegments(
+                MarkupRenderText.ParseSegments(
+                    title,
+                    titleScheme,
+                    _options.TitleDecoration,
+                    _options.TitleForegroundRgb,
+                    _options.TitleBackgroundRgb),
+                titleScheme,
+                false);
+            WriteStyled(
+                " ",
+                titleScheme,
+                _options.TitleDecoration,
+                _options.TitleForegroundRgb,
+                _options.TitleBackgroundRgb,
+                false);
+            WriteStyled(
+                new string(_options.Character, rightWidth),
+                ruleScheme,
+                _options.RuleDecoration,
+                _options.RuleForegroundRgb,
+                _options.RuleBackgroundRgb,
+                true);
         }
 
         /// <summary>
@@ -105,6 +143,21 @@ namespace ConsoulLibrary
             }
 
             new RuleEntry(title, options).Render();
+        }
+
+        private static void WriteStyled(
+            string text,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb,
+            bool writeLine)
+        {
+            TerminalLinkWriter.WriteText(text, scheme, null, decoration, foregroundRgb, backgroundRgb);
+            if (writeLine)
+            {
+                Consoul.Write(string.Empty);
+            }
         }
     }
 }

@@ -167,7 +167,13 @@ namespace ConsoulLibrary
             }
 
             return segments
-                .Select(segment => new FixedMessageSegment((segment.Text ?? string.Empty).ToUpper(CultureInfo.CurrentCulture), segment.Scheme, segment.Link))
+                .Select(segment => new FixedMessageSegment(
+                    (segment.Text ?? string.Empty).ToUpper(CultureInfo.CurrentCulture),
+                    segment.Scheme,
+                    segment.Decoration,
+                    segment.Link,
+                    segment.ForegroundRgb,
+                    segment.BackgroundRgb))
                 .ToList();
         }
 
@@ -198,7 +204,14 @@ namespace ConsoulLibrary
         {
             foreach (FixedMessageSegment segment in values ?? Enumerable.Empty<FixedMessageSegment>())
             {
-                AddSegment(segments, segment.Text, segment.Scheme ?? RenderOptions.DefaultScheme, segment.Link);
+                AddSegment(
+                    segments,
+                    segment.Text,
+                    segment.Scheme ?? RenderOptions.DefaultScheme,
+                    segment.Decoration,
+                    segment.Link,
+                    segment.ForegroundRgb,
+                    segment.BackgroundRgb);
             }
         }
 
@@ -209,10 +222,17 @@ namespace ConsoulLibrary
 
         private static void AddSegment(IList<FixedMessageSegment> segments, string text, ColorScheme scheme)
         {
-            AddSegment(segments, text, scheme, null);
+            AddSegment(segments, text, scheme, Decoration.None, null, null, null);
         }
 
-        private static void AddSegment(IList<FixedMessageSegment> segments, string text, ColorScheme scheme, Link link)
+        private static void AddSegment(
+            IList<FixedMessageSegment> segments,
+            string text,
+            ColorScheme scheme,
+            Decoration decoration,
+            Link link,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             text = text ?? string.Empty;
             if (text.Length == 0)
@@ -222,14 +242,23 @@ namespace ConsoulLibrary
 
             if (segments.Count > 0 &&
                 SameScheme(segments[segments.Count - 1].Scheme, scheme) &&
+                segments[segments.Count - 1].Decoration == decoration &&
+                segments[segments.Count - 1].ForegroundRgb.Equals(foregroundRgb) &&
+                segments[segments.Count - 1].BackgroundRgb.Equals(backgroundRgb) &&
                 TerminalLinkWriter.SameTarget(segments[segments.Count - 1].Link, link))
             {
                 FixedMessageSegment previous = segments[segments.Count - 1];
-                segments[segments.Count - 1] = new FixedMessageSegment(previous.Text + text, scheme, link);
+                segments[segments.Count - 1] = new FixedMessageSegment(
+                    previous.Text + text,
+                    scheme,
+                    decoration,
+                    link,
+                    foregroundRgb,
+                    backgroundRgb);
                 return;
             }
 
-            segments.Add(new FixedMessageSegment(text, scheme, link));
+            segments.Add(new FixedMessageSegment(text, scheme, decoration, link, foregroundRgb, backgroundRgb));
         }
 
         private static bool SameScheme(ColorScheme? left, ColorScheme right)

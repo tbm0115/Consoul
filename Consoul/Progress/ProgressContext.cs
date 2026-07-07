@@ -1305,7 +1305,13 @@ namespace ConsoulLibrary
 
                     if (text.Length > 0)
                     {
-                        result.Add(new FixedMessageSegment(text, segment.Scheme, segment.Link));
+                        result.Add(new FixedMessageSegment(
+                            text,
+                            segment.Scheme,
+                            segment.Decoration,
+                            segment.Link,
+                            segment.ForegroundRgb,
+                            segment.BackgroundRgb));
                     }
 
                     remaining -= text.Length;

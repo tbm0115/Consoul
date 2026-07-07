@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
@@ -148,6 +150,80 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= width, "Raw markup bar chart line exceeded configured width: " + line));
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Bar chart style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void BarChart_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var chart = new BarChart()
+                .Width(60)
+                .Label("Queue")
+                .LabelColor("bold #22c55e")
+                .BarColor("#778899")
+                .ValueColor("underline #112233")
+                .MaximumValue(8)
+                .AddItem("Default", 4)
+                .AddItem("Build", 8, "#336699");
+
+            console.Write(chart);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mQueue", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94mDefault", output);
+            Assert.Contains("\u001b[38;2;119;136;153m", output);
+            Assert.Contains("\u001b[38;2;51;102;153m", output);
+            Assert.Contains("\u001b[4;38;2;17;34;51m4", output);
+        }
+
+        /// <summary>
+        /// Bar chart RGB selectors use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void BarChart_RgbSelectorsEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var items = new[]
+            {
+                new
+                {
+                    Label = "API",
+                    Count = 8d,
+                    Color = RgbColor.FromHex("#336699")
+                }
+            };
+
+            var chart = new BarChart()
+                .Width(60)
+                .LabelColor(RgbColor.FromHex("#445566"))
+                .ValueColor(RgbColor.FromHex("#112233"))
+                .MaximumValue(8)
+                .AddItems(items, item => item.Label, item => item.Count, item => item.Color);
+
+            console.Write(chart);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239mAPI", output);
+            Assert.Contains("\u001b[38;5;60m", output);
+            Assert.Contains("\u001b[38;5;234m8", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 
 using System.Collections.Generic;
 using System.Linq;
+using ConsoulLibrary.Color;
 using RgbColor = ConsoulLibrary.Color.RgbColor;
 using SpectreColor = ConsoulLibrary.Color.Color;
 
@@ -22,6 +23,7 @@ namespace ConsoulLibrary
         private Func<string> _description = () => null;
         private Func<string> _shortcut = () => null;
         private Func<IEnumerable<string>> _dynamicSearchTerms = () => Enumerable.Empty<string>();
+        private Func<PromptRenderHelpers.StyledText> _style;
 
         /// <summary>
         /// Gets or sets the dynamic entry associated with this option.
@@ -227,7 +229,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicOption{T}"/> instance.</returns>
         public DynamicOption<T> UseStyle(string style)
         {
-            Entry.SetColor = () => ResolveStyle(style, RenderOptions.OptionColor);
+            Style parsed = ParseStyle(style);
+            ApplyStyle(parsed, RenderOptions.OptionColor);
             return this;
         }
 
@@ -238,7 +241,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicOption{T}"/> instance.</returns>
         public DynamicOption<T> UseStyle(Style style)
         {
-            Entry.SetColor = () => ResolveStyle(style, RenderOptions.OptionColor);
+            ApplyStyle(style, RenderOptions.OptionColor);
             return this;
         }
 
@@ -249,8 +252,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicOption{T}"/> instance.</returns>
         public DynamicOption<T> UseColor(SpectreColor color)
         {
-            Entry.SetColor = () => color.ToConsoleColor();
-            return this;
+            return UseColor(color.ToRgbColor());
         }
 
         /// <summary>
@@ -260,7 +262,39 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicOption{T}"/> instance.</returns>
         public DynamicOption<T> UseColor(RgbColor color)
         {
-            Entry.SetColor = () => color.ToConsoleColor();
+            ApplyColor(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Configures the option color using a Spectre-style color facade evaluated each render pass.
+        /// </summary>
+        /// <param name="color">Function that creates the option color for the current render pass.</param>
+        /// <returns>The current <see cref="DynamicOption{T}"/> instance.</returns>
+        public DynamicOption<T> UseColor(Func<SpectreColor> color)
+        {
+            if (color == null)
+            {
+                throw new ArgumentNullException(nameof(color));
+            }
+
+            return UseColor(() => color().ToRgbColor());
+        }
+
+        /// <summary>
+        /// Configures the option color using an RGB color evaluated each render pass.
+        /// </summary>
+        /// <param name="color">Function that creates the option color for the current render pass.</param>
+        /// <returns>The current <see cref="DynamicOption{T}"/> instance.</returns>
+        public DynamicOption<T> UseColor(Func<RgbColor> color)
+        {
+            if (color == null)
+            {
+                throw new ArgumentNullException(nameof(color));
+            }
+
+            Entry.SetColor = () => color().ToConsoleColor();
+            _style = () => ResolveStyledText(new Style(color()), RenderOptions.OptionColor);
             return this;
         }
 
@@ -276,7 +310,8 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(style));
             }
 
-            Entry.SetColor = () => ResolveStyle(style(), RenderOptions.OptionColor);
+            Entry.SetColor = () => ResolveStyleColor(ParseStyle(style()), RenderOptions.OptionColor);
+            _style = () => ResolveStyledText(ParseStyle(style()), RenderOptions.OptionColor);
             return this;
         }
 
@@ -292,7 +327,8 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(style));
             }
 
-            Entry.SetColor = () => ResolveStyle(style(), RenderOptions.OptionColor);
+            Entry.SetColor = () => ResolveStyleColor(style(), RenderOptions.OptionColor);
+            _style = () => ResolveStyledText(style(), RenderOptions.OptionColor);
             return this;
         }
 
@@ -321,7 +357,7 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static DynamicOption<T> Separator(string label, string style)
         {
-            return Separator(label, ResolveStyle(style, RenderOptions.SubnoteColor));
+            return Separator(label, ParseStyle(style));
         }
 
         /// <summary>
@@ -332,7 +368,9 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static DynamicOption<T> Separator(string label, Style style)
         {
-            return Separator(label, ResolveStyle(style, RenderOptions.SubnoteColor));
+            DynamicOption<T> option = Separator(label, ResolveStyleColor(style, RenderOptions.SubnoteColor));
+            option.ApplyStyle(style, RenderOptions.SubnoteColor);
+            return option;
         }
 
         /// <summary>
@@ -343,7 +381,7 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static DynamicOption<T> Separator(string label, SpectreColor color)
         {
-            return Separator(label, (ConsoleColor?)color.ToConsoleColor());
+            return Separator(label, color.ToRgbColor());
         }
 
         /// <summary>
@@ -354,7 +392,9 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static DynamicOption<T> Separator(string label, RgbColor color)
         {
-            return Separator(label, (ConsoleColor?)color.ToConsoleColor());
+            DynamicOption<T> option = Separator(label, (ConsoleColor?)color.ToConsoleColor());
+            option.ApplyColor(color);
+            return option;
         }
 
         /// <summary>
@@ -365,7 +405,7 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static DynamicOption<T> SeparatorStyled(string label = null, string style = null)
         {
-            return Separator(label, ResolveStyle(style, RenderOptions.SubnoteColor));
+            return Separator(label, ParseStyle(style));
         }
 
         /// <summary>
@@ -378,16 +418,77 @@ namespace ConsoulLibrary
             return AsyncAction != null ? AsyncAction(cancellationToken) : Task.CompletedTask;
         }
 
-        private static ConsoleColor ResolveStyle(string style, ConsoleColor fallback)
+        internal ViewHelpItem ToHelpItem(string label, string disabledReason = null)
         {
-            return string.IsNullOrWhiteSpace(style)
-                ? fallback
-                : Style.ParseForeground(style, fallback);
+            PromptRenderHelpers.StyledText style = ResolveStyle();
+            return new ViewHelpItem(
+                label,
+                Description,
+                Shortcut,
+                disabledReason,
+                IsSeparator,
+                style.Scheme,
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
         }
 
-        private static ConsoleColor ResolveStyle(Style style, ConsoleColor fallback)
+        internal void ApplyStyleTo(SelectOption option, bool disabled = false)
+        {
+            if (option == null)
+            {
+                return;
+            }
+
+            PromptRenderHelpers.StyledText style = ResolveStyle();
+            option.Color = style.Scheme.Color;
+            option.Decoration = style.Decoration;
+            option.ForegroundRgb = style.ForegroundRgb;
+            option.BackgroundRgb = style.BackgroundRgb;
+
+            if (disabled || option.IsDisabled)
+            {
+                option.DisabledColor = style.Scheme.Color;
+                option.DisabledDecoration = style.Decoration;
+                option.DisabledForegroundRgb = style.ForegroundRgb;
+                option.DisabledBackgroundRgb = style.BackgroundRgb;
+            }
+        }
+
+        internal PromptRenderHelpers.StyledText ResolveStyle()
+        {
+            return _style == null ? PromptRenderHelpers.FromColor(Entry.SetColor()) : _style();
+        }
+
+        private void ApplyColor(RgbColor color)
+        {
+            Entry.SetColor = () => color.ToConsoleColor();
+            _style = () => PromptRenderHelpers.FromComponents(
+                color.ToConsoleColor(),
+                global::ConsoulLibrary.Decoration.None,
+                color,
+                null);
+        }
+
+        private void ApplyStyle(Style style, ConsoleColor fallback)
+        {
+            Entry.SetColor = () => ResolveStyleColor(style, fallback);
+            _style = () => ResolveStyledText(style, fallback);
+        }
+
+        private static Style ParseStyle(string style)
+        {
+            return string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style);
+        }
+
+        private static ConsoleColor ResolveStyleColor(Style style, ConsoleColor fallback)
         {
             return style == null ? fallback : style.ToForegroundColor(fallback);
+        }
+
+        private static PromptRenderHelpers.StyledText ResolveStyledText(Style style, ConsoleColor fallback)
+        {
+            return PromptRenderHelpers.ResolveStyle(style, fallback);
         }
     }
 }

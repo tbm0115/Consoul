@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 
 using System.Collections.Generic;
+using ConsoulLibrary.Color;
 using RgbColor = ConsoulLibrary.Color.RgbColor;
 using SpectreColor = ConsoulLibrary.Color.Color;
 
@@ -28,6 +29,21 @@ namespace ConsoulLibrary
         /// Gets or sets the color of the option text.
         /// </summary>
         public ConsoleColor Color { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional ANSI text decoration used for the option label.
+        /// </summary>
+        public Decoration? Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets an optional RGB foreground color used for the option label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets an optional RGB background color used for the option label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets optional helper text rendered under this option in view prompts.
@@ -74,7 +90,7 @@ namespace ConsoulLibrary
         /// <param name="action">The callback action to invoke when this option is selected.</param>
         /// <param name="color">Color facade mapped to the nearest console color for the message text.</param>
         public ViewOption(string message, ViewOptionCallback action, SpectreColor color)
-            : this(message, action, (ConsoleColor?)color.ToConsoleColor())
+            : this(message, action, color.ToRgbColor())
         {
         }
 
@@ -87,6 +103,7 @@ namespace ConsoulLibrary
         public ViewOption(string message, ViewOptionCallback action, RgbColor color)
             : this(message, action, (ConsoleColor?)color.ToConsoleColor())
         {
+            ApplyColor(color);
         }
 
         /// <summary>
@@ -96,8 +113,9 @@ namespace ConsoulLibrary
         /// <param name="action">The callback action to invoke when this option is selected.</param>
         /// <param name="style">A style string such as <c>green</c>, <c>grey</c>, <c>aqua</c>, or <c>#22c55e</c>.</param>
         public ViewOption(string message, ViewOptionCallback action, string style)
-            : this(message, action, ResolveStyle(style, RenderOptions.DefaultScheme.Color))
+            : this(message, action, RenderOptions.DefaultScheme.Color)
         {
+            ApplyStyle(ParseStyle(style), RenderOptions.DefaultScheme.Color);
         }
 
         /// <summary>
@@ -107,8 +125,9 @@ namespace ConsoulLibrary
         /// <param name="action">The callback action to invoke when this option is selected.</param>
         /// <param name="style">Optional foreground style for the message text.</param>
         public ViewOption(string message, ViewOptionCallback action, Style style)
-            : this(message, action, ResolveStyle(style, RenderOptions.DefaultScheme.Color))
+            : this(message, action, RenderOptions.DefaultScheme.Color)
         {
+            ApplyStyle(style, RenderOptions.DefaultScheme.Color);
         }
 
         /// <summary>
@@ -240,6 +259,9 @@ namespace ConsoulLibrary
         {
             Entry.Color = color;
             Color = color;
+            Decoration = null;
+            ForegroundRgb = null;
+            BackgroundRgb = null;
             return this;
         }
 
@@ -250,7 +272,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ViewOption"/> instance.</returns>
         public ViewOption UseColor(SpectreColor color)
         {
-            return UseColor(color.ToConsoleColor());
+            return UseColor(color.ToRgbColor());
         }
 
         /// <summary>
@@ -260,7 +282,29 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ViewOption"/> instance.</returns>
         public ViewOption UseColor(RgbColor color)
         {
-            return UseColor(color.ToConsoleColor());
+            ApplyColor(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the option text style from a reusable style object.
+        /// </summary>
+        /// <param name="style">The style to apply to the option label.</param>
+        /// <returns>The current <see cref="ViewOption"/> instance.</returns>
+        public ViewOption UseStyle(Style style)
+        {
+            ApplyStyle(style, Color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the option text style from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>bold #22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="ViewOption"/> instance.</returns>
+        public ViewOption UseStyle(string style)
+        {
+            return UseStyle(ParseStyle(style));
         }
 
         /// <summary>
@@ -285,7 +329,7 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static ViewOption Separator(string label, SpectreColor color)
         {
-            return Separator(label, (ConsoleColor?)color.ToConsoleColor());
+            return Separator(label, color.ToRgbColor());
         }
 
         /// <summary>
@@ -296,7 +340,9 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static ViewOption Separator(string label, RgbColor color)
         {
-            return Separator(label, (ConsoleColor?)color.ToConsoleColor());
+            ViewOption option = Separator(label, (ConsoleColor?)color.ToConsoleColor());
+            option.ApplyColor(color);
+            return option;
         }
 
         /// <summary>
@@ -307,7 +353,7 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static ViewOption Separator(string label, string style)
         {
-            return Separator(label, ResolveStyle(style, RenderOptions.SubnoteColor));
+            return Separator(label, ParseStyle(style));
         }
 
         /// <summary>
@@ -318,7 +364,9 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static ViewOption Separator(string label, Style style)
         {
-            return Separator(label, ResolveStyle(style, RenderOptions.SubnoteColor));
+            ViewOption option = Separator(label, PromptRenderHelpers.ResolveStyleColor(style, RenderOptions.SubnoteColor));
+            option.ApplyStyle(style, RenderOptions.SubnoteColor);
+            return option;
         }
 
         /// <summary>
@@ -329,7 +377,7 @@ namespace ConsoulLibrary
         /// <returns>A configured separator option.</returns>
         public static ViewOption SeparatorStyled(string label = null, string style = null)
         {
-            return Separator(label, ResolveStyle(style, RenderOptions.SubnoteColor));
+            return Separator(label, ParseStyle(style));
         }
 
         /// <summary>
@@ -349,16 +397,70 @@ namespace ConsoulLibrary
             return Entry.Message;
         }
 
-        private static ConsoleColor ResolveStyle(string style, ConsoleColor fallback)
+        internal ViewHelpItem ToHelpItem(string label, string disabledReason = null)
         {
-            return string.IsNullOrWhiteSpace(style)
-                ? fallback
-                : Style.ParseForeground(style, fallback);
+            return new ViewHelpItem(
+                label,
+                Description,
+                Shortcut,
+                disabledReason,
+                IsSeparator,
+                CreateScheme(Color),
+                Decoration,
+                ForegroundRgb,
+                BackgroundRgb);
         }
 
-        private static ConsoleColor ResolveStyle(Style style, ConsoleColor fallback)
+        internal void ApplyStyleTo(SelectOption option)
         {
-            return style == null ? fallback : style.ToForegroundColor(fallback);
+            if (option == null)
+            {
+                return;
+            }
+
+            option.Color = Color;
+            option.Decoration = Decoration;
+            option.ForegroundRgb = ForegroundRgb;
+            option.BackgroundRgb = BackgroundRgb;
+        }
+
+        private void ApplyColor(RgbColor color)
+        {
+            Entry.Color = color.ToConsoleColor();
+            Color = Entry.Color;
+            Decoration = global::ConsoulLibrary.Decoration.None;
+            ForegroundRgb = color;
+            BackgroundRgb = null;
+        }
+
+        private void ApplyStyle(Style style, ConsoleColor fallback)
+        {
+            if (style == null)
+            {
+                UseColor(fallback);
+                return;
+            }
+
+            ColorScheme scheme = style.ToColorScheme(CreateScheme(fallback));
+            Entry.Color = scheme.Color;
+            Color = Entry.Color;
+            Decoration = style.Decoration;
+            ForegroundRgb = style.ForegroundRgb;
+            BackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static Style ParseStyle(string style)
+        {
+            return string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style);
+        }
+
+        private static ColorScheme CreateScheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
         }
     }
 }

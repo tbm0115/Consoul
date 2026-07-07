@@ -1,5 +1,7 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -54,14 +56,59 @@ namespace ConsoulLibrary
         public ColorScheme? LabelScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the optional ANSI decoration used for the item label.
+        /// </summary>
+        public Decoration? LabelDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the item label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the item label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets an optional color scheme used for the item marker.
         /// </summary>
         public ColorScheme? MarkerScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the optional ANSI decoration used for the item marker.
+        /// </summary>
+        public Decoration? MarkerDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the item marker on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? MarkerForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the item marker on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? MarkerBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets an optional color scheme used for the item description.
         /// </summary>
         public ColorScheme? DescriptionScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional ANSI decoration used for the item description.
+        /// </summary>
+        public Decoration? DescriptionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the item description on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the item description on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a checklist item with optional foreground colors.
@@ -108,13 +155,81 @@ namespace ConsoulLibrary
             ChecklistItemState state = ChecklistItemState.Pending,
             string description = null)
         {
-            return new ChecklistItem(
+            var item = new ChecklistItem(
                 label,
                 state,
                 description,
                 CreateScheme(labelStyle),
                 CreateScheme(markerStyle),
                 CreateScheme(descriptionStyle));
+            ApplyLabelStyle(item, labelStyle);
+            ApplyMarkerStyle(item, markerStyle);
+            ApplyDescriptionStyle(item, descriptionStyle);
+            return item;
+        }
+
+        /// <summary>
+        /// Creates a checklist item using Spectre-style foreground colors.
+        /// </summary>
+        /// <param name="label">The item label.</param>
+        /// <param name="state">The state rendered for the item.</param>
+        /// <param name="description">Optional descriptive text rendered under the item label.</param>
+        /// <param name="labelColor">Optional foreground color used for the item label.</param>
+        /// <param name="markerColor">Optional foreground color used for the item marker.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the item description.</param>
+        /// <returns>A configured <see cref="ChecklistItem"/>.</returns>
+        public static ChecklistItem Create(
+            string label,
+            ChecklistItemState state,
+            string description,
+            SpectreColor labelColor,
+            SpectreColor? markerColor = null,
+            SpectreColor? descriptionColor = null)
+        {
+            return new ChecklistItem(
+                label,
+                state,
+                description,
+                CreateScheme(labelColor.ToConsoleColor()),
+                markerColor.HasValue ? CreateScheme(markerColor.Value.ToConsoleColor()) : (ColorScheme?)null,
+                descriptionColor.HasValue ? CreateScheme(descriptionColor.Value.ToConsoleColor()) : (ColorScheme?)null)
+            {
+                LabelForegroundRgb = labelColor.ToRgbColor(),
+                MarkerForegroundRgb = markerColor.HasValue ? markerColor.Value.ToRgbColor() : (RgbColor?)null,
+                DescriptionForegroundRgb = descriptionColor.HasValue ? descriptionColor.Value.ToRgbColor() : (RgbColor?)null
+            };
+        }
+
+        /// <summary>
+        /// Creates a checklist item using RGB foreground colors.
+        /// </summary>
+        /// <param name="label">The item label.</param>
+        /// <param name="state">The state rendered for the item.</param>
+        /// <param name="description">Optional descriptive text rendered under the item label.</param>
+        /// <param name="labelColor">Optional RGB foreground color used for the item label.</param>
+        /// <param name="markerColor">Optional RGB foreground color used for the item marker.</param>
+        /// <param name="descriptionColor">Optional RGB foreground color used for the item description.</param>
+        /// <returns>A configured <see cref="ChecklistItem"/>.</returns>
+        public static ChecklistItem Create(
+            string label,
+            ChecklistItemState state,
+            string description,
+            RgbColor labelColor,
+            RgbColor? markerColor = null,
+            RgbColor? descriptionColor = null)
+        {
+            return new ChecklistItem(
+                label,
+                state,
+                description,
+                CreateScheme(labelColor.ToConsoleColor()),
+                markerColor.HasValue ? CreateScheme(markerColor.Value.ToConsoleColor()) : (ColorScheme?)null,
+                descriptionColor.HasValue ? CreateScheme(descriptionColor.Value.ToConsoleColor()) : (ColorScheme?)null)
+            {
+                LabelForegroundRgb = labelColor,
+                MarkerForegroundRgb = markerColor,
+                DescriptionForegroundRgb = descriptionColor
+            };
         }
 
         /// <summary>
@@ -135,13 +250,13 @@ namespace ConsoulLibrary
             string markerStyle = null,
             string descriptionStyle = null)
         {
-            return new ChecklistItem(
+            return Create(
                 label,
+                string.IsNullOrWhiteSpace(labelStyle) ? null : Style.Parse(labelStyle),
+                string.IsNullOrWhiteSpace(markerStyle) ? null : Style.Parse(markerStyle),
+                string.IsNullOrWhiteSpace(descriptionStyle) ? null : Style.Parse(descriptionStyle),
                 state,
-                description,
-                CreateScheme(labelStyle),
-                CreateScheme(markerStyle),
-                CreateScheme(descriptionStyle));
+                description);
         }
 
         private static ColorScheme? CreateScheme(ConsoleColor? color)
@@ -168,6 +283,42 @@ namespace ConsoulLibrary
         private static ColorScheme? CreateScheme(Style style)
         {
             return style?.ToColorScheme(RenderOptions.DefaultScheme);
+        }
+
+        private static void ApplyLabelStyle(ChecklistItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.LabelDecoration = style.Decoration;
+            item.LabelForegroundRgb = style.ForegroundRgb;
+            item.LabelBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static void ApplyMarkerStyle(ChecklistItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.MarkerDecoration = style.Decoration;
+            item.MarkerForegroundRgb = style.ForegroundRgb;
+            item.MarkerBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static void ApplyDescriptionStyle(ChecklistItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.DescriptionDecoration = style.Decoration;
+            item.DescriptionForegroundRgb = style.ForegroundRgb;
+            item.DescriptionBackgroundRgb = style.BackgroundRgb;
         }
     }
 }

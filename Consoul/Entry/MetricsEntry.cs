@@ -2,6 +2,7 @@ using ConsoulLibrary.Color;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -206,26 +207,103 @@ namespace ConsoulLibrary
         private IList<MetricLine> BuildCell(MetricItem item, int width)
         {
             var lines = new List<MetricLine>();
-            AddWrapped(lines, item.Label, width, item.LabelScheme ?? _options.ResolveLabelScheme());
+            AddWrapped(lines, item.Label, width, ResolveLabelStyle(item));
 
             string value = (item.Value ?? string.Empty).ToString().Trim();
             string unit = (item.Unit ?? string.Empty).Trim();
             string valueText = unit.Length == 0 ? value : value + " " + unit;
-            AddWrapped(lines, valueText, width, item.ValueScheme ?? _options.ResolveValueScheme(item.Kind));
+            AddWrapped(lines, valueText, width, ResolveValueStyle(item));
 
             if (_options.ShowNotes && !string.IsNullOrWhiteSpace(item.Note))
             {
-                AddWrapped(lines, item.Note, width, item.NoteScheme ?? _options.ResolveNoteScheme());
+                AddWrapped(lines, item.Note, width, ResolveNoteStyle(item));
             }
 
             return lines;
         }
 
-        private static void AddWrapped(IList<MetricLine> lines, string text, int width, ColorScheme scheme)
+        private StyledText ResolveLabelStyle(MetricItem item)
         {
-            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(NormalizeInline(text), Math.Max(1, width), scheme))
+            ColorScheme scheme = item.LabelScheme ?? _options.ResolveLabelScheme();
+            bool hasItemScheme = item.LabelScheme.HasValue;
+            return new StyledText(
+                scheme,
+                item.LabelDecoration ?? (hasItemScheme ? Decoration.None : _options.LabelDecoration),
+                item.LabelForegroundRgb ?? (hasItemScheme ? null : _options.LabelForegroundRgb),
+                item.LabelBackgroundRgb ?? (hasItemScheme ? null : _options.LabelBackgroundRgb));
+        }
+
+        private StyledText ResolveValueStyle(MetricItem item)
+        {
+            ColorScheme scheme = item.ValueScheme ?? _options.ResolveValueScheme(item.Kind);
+            bool hasItemScheme = item.ValueScheme.HasValue;
+            StyledText optionStyle = ResolveOptionValueStyle(item.Kind);
+            return new StyledText(
+                scheme,
+                item.ValueDecoration ?? (hasItemScheme ? Decoration.None : optionStyle.Decoration),
+                item.ValueForegroundRgb ?? (hasItemScheme ? null : optionStyle.ForegroundRgb),
+                item.ValueBackgroundRgb ?? (hasItemScheme ? null : optionStyle.BackgroundRgb));
+        }
+
+        private StyledText ResolveNoteStyle(MetricItem item)
+        {
+            ColorScheme scheme = item.NoteScheme ?? _options.ResolveNoteScheme();
+            bool hasItemScheme = item.NoteScheme.HasValue;
+            return new StyledText(
+                scheme,
+                item.NoteDecoration ?? (hasItemScheme ? Decoration.None : _options.NoteDecoration),
+                item.NoteForegroundRgb ?? (hasItemScheme ? null : _options.NoteForegroundRgb),
+                item.NoteBackgroundRgb ?? (hasItemScheme ? null : _options.NoteBackgroundRgb));
+        }
+
+        private StyledText ResolveOptionValueStyle(MetricKind kind)
+        {
+            switch (kind)
             {
-                lines.Add(new MetricLine(line, scheme));
+                case MetricKind.Info:
+                    return new StyledText(
+                        _options.ResolveValueScheme(kind),
+                        _options.InfoDecoration,
+                        _options.InfoForegroundRgb,
+                        _options.InfoBackgroundRgb);
+                case MetricKind.Success:
+                    return new StyledText(
+                        _options.ResolveValueScheme(kind),
+                        _options.SuccessDecoration,
+                        _options.SuccessForegroundRgb,
+                        _options.SuccessBackgroundRgb);
+                case MetricKind.Warning:
+                    return new StyledText(
+                        _options.ResolveValueScheme(kind),
+                        _options.WarningDecoration,
+                        _options.WarningForegroundRgb,
+                        _options.WarningBackgroundRgb);
+                case MetricKind.Error:
+                    return new StyledText(
+                        _options.ResolveValueScheme(kind),
+                        _options.ErrorDecoration,
+                        _options.ErrorForegroundRgb,
+                        _options.ErrorBackgroundRgb);
+                default:
+                    return new StyledText(
+                        _options.ResolveValueScheme(kind),
+                        _options.ValueDecoration,
+                        _options.ValueForegroundRgb,
+                        _options.ValueBackgroundRgb);
+            }
+        }
+
+        private static void AddWrapped(IList<MetricLine> lines, string text, int width, StyledText style)
+        {
+            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                NormalizeInline(text),
+                Math.Max(1, width),
+                style.Scheme,
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb))
+            {
+                lines.Add(new MetricLine(line, style));
             }
         }
 
@@ -241,7 +319,7 @@ namespace ConsoulLibrary
                         ? cells[column][row]
                         : MetricLine.Empty;
 
-                    MarkupRenderText.WriteSegments(PadOrTrimSegments(line.Segments, columnWidth, line.Scheme), line.Scheme, false);
+                    MarkupRenderText.WriteSegments(PadOrTrimSegments(line.Segments, columnWidth, line.Style), line.Style.Scheme, false);
                     if (column < cells.Count - 1 && gapText.Length > 0)
                     {
                         Consoul.Write(gapText, RenderOptions.DefaultScheme, false);
@@ -252,12 +330,28 @@ namespace ConsoulLibrary
             }
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, StyledText style)
         {
             width = Math.Max(0, width);
             List<FixedMessageSegment> result = MarkupRenderText.TruncateSegments(segments, width);
-            MarkupRenderText.AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), scheme);
+            AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), style);
             return result;
+        }
+
+        private static void AddPadding(IList<FixedMessageSegment> segments, int count, StyledText style)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                style.Scheme,
+                style.Decoration,
+                null,
+                style.ForegroundRgb,
+                style.BackgroundRgb));
         }
 
         private static string NormalizeInline(string text)
@@ -269,17 +363,36 @@ namespace ConsoulLibrary
 
         private readonly struct MetricLine
         {
-            public static readonly MetricLine Empty = new MetricLine(new List<FixedMessageSegment>(), RenderOptions.DefaultScheme);
+            public static readonly MetricLine Empty = new MetricLine(new List<FixedMessageSegment>(), new StyledText(RenderOptions.DefaultScheme, Decoration.None, null, null));
 
-            public MetricLine(IList<FixedMessageSegment> segments, ColorScheme scheme)
+            public MetricLine(IList<FixedMessageSegment> segments, StyledText style)
             {
                 Segments = segments ?? new List<FixedMessageSegment>();
-                Scheme = scheme;
+                Style = style;
             }
 
             public IList<FixedMessageSegment> Segments { get; }
 
+            public StyledText Style { get; }
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
             public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

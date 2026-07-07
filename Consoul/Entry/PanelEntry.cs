@@ -59,14 +59,30 @@ namespace ConsoulLibrary
             ColorScheme titleScheme = _options.ResolveTitleScheme();
             ColorScheme footerScheme = _options.ResolveFooterScheme();
 
-            WriteBorder(BuildTopBorder(width), _options.Title, borderScheme, titleScheme);
+            WriteBorder(
+                BuildTopBorder(width),
+                _options.Title,
+                borderScheme,
+                _options.BorderDecoration,
+                _options.BorderForegroundRgb,
+                _options.BorderBackgroundRgb,
+                titleScheme,
+                _options.TitleDecoration,
+                _options.TitleForegroundRgb,
+                _options.TitleBackgroundRgb);
 
             for (int index = 0; index < Math.Max(0, padding.Top); index++)
             {
                 WriteContentLine(string.Empty, innerWidth, leftPadding, rightPadding, borderScheme, contentScheme);
             }
 
-            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(Content, innerWidth, contentScheme))
+            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                Content,
+                innerWidth,
+                contentScheme,
+                _options.ContentDecoration,
+                _options.ContentForegroundRgb,
+                _options.ContentBackgroundRgb))
             {
                 WriteContentLine(line, innerWidth, leftPadding, rightPadding, borderScheme, contentScheme);
             }
@@ -76,7 +92,17 @@ namespace ConsoulLibrary
                 WriteContentLine(string.Empty, innerWidth, leftPadding, rightPadding, borderScheme, contentScheme);
             }
 
-            WriteBorder(BuildBottomBorder(width), _options.Footer, borderScheme, footerScheme);
+            WriteBorder(
+                BuildBottomBorder(width),
+                _options.Footer,
+                borderScheme,
+                _options.BorderDecoration,
+                _options.BorderForegroundRgb,
+                _options.BorderBackgroundRgb,
+                footerScheme,
+                _options.FooterDecoration,
+                _options.FooterForegroundRgb,
+                _options.FooterBackgroundRgb);
         }
 
         /// <summary>
@@ -298,7 +324,13 @@ namespace ConsoulLibrary
         private void RenderFallback(int width)
         {
             ColorScheme contentScheme = _options.ResolveContentScheme();
-            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(Content, Math.Max(1, width), contentScheme))
+            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                Content,
+                Math.Max(1, width),
+                contentScheme,
+                _options.ContentDecoration,
+                _options.ContentForegroundRgb,
+                _options.ContentBackgroundRgb))
             {
                 MarkupRenderText.WriteSegments(MarkupRenderText.TruncateSegments(line, Math.Max(1, width)), contentScheme, true);
             }
@@ -315,14 +347,27 @@ namespace ConsoulLibrary
             ColorScheme titleScheme = _options.ResolveTitleScheme();
             ColorScheme footerScheme = _options.ResolveFooterScheme();
 
-            WriteBorderlessText(_options.Title, width, titleScheme, _options.TitleAlignment);
+            WriteBorderlessText(
+                _options.Title,
+                width,
+                titleScheme,
+                _options.TitleDecoration,
+                _options.TitleForegroundRgb,
+                _options.TitleBackgroundRgb,
+                _options.TitleAlignment);
 
             for (int index = 0; index < Math.Max(0, padding.Top); index++)
             {
                 WriteBorderlessContentLine(string.Empty, innerWidth, leftPadding, rightPadding, contentScheme);
             }
 
-            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(Content, innerWidth, contentScheme))
+            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                Content,
+                innerWidth,
+                contentScheme,
+                _options.ContentDecoration,
+                _options.ContentForegroundRgb,
+                _options.ContentBackgroundRgb))
             {
                 WriteBorderlessContentLine(line, innerWidth, leftPadding, rightPadding, contentScheme);
             }
@@ -332,13 +377,23 @@ namespace ConsoulLibrary
                 WriteBorderlessContentLine(string.Empty, innerWidth, leftPadding, rightPadding, contentScheme);
             }
 
-            WriteBorderlessText(_options.Footer, width, footerScheme, _options.FooterAlignment);
+            WriteBorderlessText(
+                _options.Footer,
+                width,
+                footerScheme,
+                _options.FooterDecoration,
+                _options.FooterForegroundRgb,
+                _options.FooterBackgroundRgb,
+                _options.FooterAlignment);
         }
 
         private static void WriteBorderlessText(
             string text,
             int width,
             ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb,
             TextBlockAlignment alignment)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -346,7 +401,13 @@ namespace ConsoulLibrary
                 return;
             }
 
-            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(text.Trim(), width, scheme))
+            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                text.Trim(),
+                width,
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb))
             {
                 MarkupRenderText.WriteSegments(MarkupRenderText.AlignSegments(line, width, alignment, scheme), scheme, true);
             }
@@ -429,11 +490,11 @@ namespace ConsoulLibrary
             string paddedContent = (content ?? string.Empty).PadRight(innerWidth);
             PanelBorderCharacters border = _options.GetBorderCharacters();
 
-            Write(border.Vertical.ToString(), borderScheme, false);
-            Write(leftPadding, contentScheme, false);
-            Write(paddedContent, contentScheme, false);
-            Write(rightPadding, contentScheme, false);
-            Write(border.Vertical.ToString(), borderScheme, true);
+            WriteBorderSegment(border.Vertical.ToString(), borderScheme, false);
+            WriteContentSegment(leftPadding, contentScheme, false);
+            WriteContentSegment(paddedContent, contentScheme, false);
+            WriteContentSegment(rightPadding, contentScheme, false);
+            WriteBorderSegment(border.Vertical.ToString(), borderScheme, true);
         }
 
         private void WriteContentLine(
@@ -448,12 +509,12 @@ namespace ConsoulLibrary
             MarkupRenderText.AddPadding(value, Math.Max(0, innerWidth - MarkupRenderText.GetLength(value)), contentScheme);
             PanelBorderCharacters border = _options.GetBorderCharacters();
 
-            Write(border.Vertical.ToString(), borderScheme, false);
+            WriteBorderSegment(border.Vertical.ToString(), borderScheme, false);
             MarkupRenderText.WriteSegments(
                 MarkupRenderText.PadSegments(value, leftPaddingWidth, rightPaddingWidth, contentScheme),
                 contentScheme,
                 false);
-            Write(border.Vertical.ToString(), borderScheme, true);
+            WriteBorderSegment(border.Vertical.ToString(), borderScheme, true);
         }
 
         private static string BuildBorder(
@@ -509,11 +570,21 @@ namespace ConsoulLibrary
             return value.Substring(0, maximumWidth);
         }
 
-        private void WriteBorder(string border, string text, ColorScheme borderScheme, ColorScheme textScheme)
+        private void WriteBorder(
+            string border,
+            string text,
+            ColorScheme borderScheme,
+            Decoration borderDecoration,
+            RgbColor? borderForegroundRgb,
+            RgbColor? borderBackgroundRgb,
+            ColorScheme textScheme,
+            Decoration textDecoration,
+            RgbColor? textForegroundRgb,
+            RgbColor? textBackgroundRgb)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
-                WriteLine(border, borderScheme);
+                WriteLine(border, borderScheme, borderDecoration, borderForegroundRgb, borderBackgroundRgb);
                 return;
             }
 
@@ -521,7 +592,7 @@ namespace ConsoulLibrary
             int textStart = border.IndexOf(visibleText, StringComparison.Ordinal);
             if (textStart < 0)
             {
-                WriteLine(border, borderScheme);
+                WriteLine(border, borderScheme, borderDecoration, borderForegroundRgb, borderBackgroundRgb);
                 return;
             }
 
@@ -529,29 +600,65 @@ namespace ConsoulLibrary
             string trimmedText = visibleText.Trim();
             if (trimmedText.Length == 0)
             {
-                WriteLine(border, borderScheme);
+                WriteLine(border, borderScheme, borderDecoration, borderForegroundRgb, borderBackgroundRgb);
                 return;
             }
 
             int trimmedStart = textStart + trimmedOffset;
-            Write(border.Substring(0, trimmedStart), borderScheme, false);
+            Write(border.Substring(0, trimmedStart), borderScheme, false, borderDecoration, borderForegroundRgb, borderBackgroundRgb);
             MarkupRenderText.WriteSegments(
                 MarkupRenderText.TruncateSegments(
-                    MarkupRenderText.TrimSegments(MarkupRenderText.ParseSegments(text.Trim(), textScheme)),
+                    MarkupRenderText.TrimSegments(MarkupRenderText.ParseSegments(
+                        text.Trim(),
+                        textScheme,
+                        textDecoration,
+                        textForegroundRgb,
+                        textBackgroundRgb)),
                     trimmedText.Length),
                 textScheme,
                 false);
-            Write(border.Substring(trimmedStart + trimmedText.Length), borderScheme, true);
+            Write(
+                border.Substring(trimmedStart + trimmedText.Length),
+                borderScheme,
+                true,
+                borderDecoration,
+                borderForegroundRgb,
+                borderBackgroundRgb);
         }
 
-        private static void WriteLine(string value, ColorScheme scheme)
+        private void WriteBorderSegment(string value, ColorScheme scheme, bool writeLine)
         {
-            Write(value, scheme, true);
+            Write(value, scheme, writeLine, _options.BorderDecoration, _options.BorderForegroundRgb, _options.BorderBackgroundRgb);
         }
 
-        private static void Write(string value, ColorScheme scheme, bool writeLine)
+        private void WriteContentSegment(string value, ColorScheme scheme, bool writeLine)
         {
-            Consoul.Write(value, scheme, writeLine);
+            Write(value, scheme, writeLine, _options.ContentDecoration, _options.ContentForegroundRgb, _options.ContentBackgroundRgb);
+        }
+
+        private static void WriteLine(
+            string value,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            Write(value, scheme, true, decoration, foregroundRgb, backgroundRgb);
+        }
+
+        private static void Write(
+            string value,
+            ColorScheme scheme,
+            bool writeLine,
+            Decoration decoration = Decoration.None,
+            RgbColor? foregroundRgb = null,
+            RgbColor? backgroundRgb = null)
+        {
+            TerminalLinkWriter.WriteText(value, scheme, null, decoration, foregroundRgb, backgroundRgb);
+            if (writeLine)
+            {
+                Consoul.Write(string.Empty);
+            }
         }
     }
 }

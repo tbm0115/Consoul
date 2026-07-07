@@ -524,7 +524,13 @@ namespace ConsoulLibrary
             {
                 if (segment.Text.Length > 0)
                 {
-                    segments.Add(new FixedMessageSegment(segment.Text, segment.Scheme, segment.Link));
+                    segments.Add(new FixedMessageSegment(
+                        segment.Text,
+                        segment.Scheme,
+                        segment.Decoration,
+                        segment.Link,
+                        segment.ForegroundRgb,
+                        segment.BackgroundRgb));
                 }
             }
 
@@ -553,7 +559,10 @@ namespace ConsoulLibrary
                     ? truncated[truncated.Count - 1].Scheme
                     : (segments[0].Scheme ?? RenderOptions.DefaultScheme);
                 Link link = truncated.Count > 0 ? truncated[truncated.Count - 1].Link : segments[0].Link;
-                truncated.Add(new FixedMessageSegment("…", scheme, link));
+                Decoration decoration = truncated.Count > 0 ? truncated[truncated.Count - 1].Decoration : segments[0].Decoration;
+                RgbColor? foregroundRgb = truncated.Count > 0 ? truncated[truncated.Count - 1].ForegroundRgb : segments[0].ForegroundRgb;
+                RgbColor? backgroundRgb = truncated.Count > 0 ? truncated[truncated.Count - 1].BackgroundRgb : segments[0].BackgroundRgb;
+                truncated.Add(new FixedMessageSegment("…", scheme, decoration, link, foregroundRgb, backgroundRgb));
             }
 
             return truncated;
@@ -583,7 +592,13 @@ namespace ConsoulLibrary
                     continue;
                 }
 
-                result.Add(new FixedMessageSegment(text.Substring(0, remaining), segment.Scheme, segment.Link));
+                result.Add(new FixedMessageSegment(
+                    text.Substring(0, remaining),
+                    segment.Scheme,
+                    segment.Decoration,
+                    segment.Link,
+                    segment.ForegroundRgb,
+                    segment.BackgroundRgb));
                 remaining = 0;
             }
 
@@ -1574,6 +1589,9 @@ namespace ConsoulLibrary
             ColorScheme titleScheme = !string.IsNullOrWhiteSpace(message) && color.HasValue
                 ? new ColorScheme { Color = color.Value, BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor }
                 : TableRenderOptions.TitleScheme;
+            Decoration titleDecoration = !string.IsNullOrWhiteSpace(message)
+                ? Decoration.None
+                : TableRenderOptions.TitleDecoration;
 
             bool hasConfiguredHeader = _header != null && _header.CellCount > 0;
             bool hasConfiguredFooter = TableRenderOptions.ShowFooters && HasConfiguredFooter();
@@ -1588,7 +1606,14 @@ namespace ConsoulLibrary
             bool usePresetBorder = TableRenderOptions.Lines.UsesPresetBorder();
             bool hasHorizontalLines = TableRenderOptions.Lines.HasHorizontalLines();
 
-            RenderTableText(title, tableWidth, titleScheme, TableRenderOptions.TitleAlignment);
+            RenderTableText(
+                title,
+                tableWidth,
+                titleScheme,
+                titleDecoration,
+                !string.IsNullOrWhiteSpace(message) ? null : TableRenderOptions.TitleForegroundRgb,
+                !string.IsNullOrWhiteSpace(message) ? null : TableRenderOptions.TitleBackgroundRgb,
+                TableRenderOptions.TitleAlignment);
 
             if (hasTableContent && hasHorizontalLines)
             {
@@ -1679,7 +1704,14 @@ namespace ConsoulLibrary
                 Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
             }
 
-            RenderTableText(TableRenderOptions.Caption, tableWidth, TableRenderOptions.CaptionScheme, TableRenderOptions.CaptionAlignment);
+            RenderTableText(
+                TableRenderOptions.Caption,
+                tableWidth,
+                TableRenderOptions.CaptionScheme,
+                TableRenderOptions.CaptionDecoration,
+                TableRenderOptions.CaptionForegroundRgb,
+                TableRenderOptions.CaptionBackgroundRgb,
+                TableRenderOptions.CaptionAlignment);
             RenderSummary(tableWidth);
 
             if (TableRenderOptions.ShowFooterHelp)
@@ -1760,15 +1792,22 @@ namespace ConsoulLibrary
             bool showVertical = TableRenderOptions.Lines.ContentVertical;
             int innerWidth = Math.Max(1, tableWidth - (showVertical ? 2 : 0));
 
-            foreach (string wrappedLine in PanelEntry.WrapLines(TableRenderOptions.EmptyMessage, innerWidth))
+            foreach (List<FixedMessageSegment> wrappedLine in MarkupRenderText.WrapSegments(
+                TableRenderOptions.EmptyMessage,
+                innerWidth,
+                emptyScheme,
+                TableRenderOptions.EmptyMessageDecoration,
+                TableRenderOptions.EmptyMessageForegroundRgb,
+                TableRenderOptions.EmptyMessageBackgroundRgb))
             {
-                string line = PadOrTrim(wrappedLine, innerWidth);
+                List<FixedMessageSegment> line = MarkupRenderText.TruncateSegments(wrappedLine, innerWidth);
+                line = MarkupRenderText.PadSegments(line, 0, Math.Max(0, innerWidth - MarkupRenderText.GetLength(line)), emptyScheme);
                 if (showVertical)
                 {
                     Consoul.Write(vertical, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
                 }
 
-                Consoul.Write(line, emptyScheme.Color, emptyScheme.BackgroundColor, writeLine: false);
+                MarkupRenderText.WriteSegments(line, emptyScheme, false);
 
                 if (showVertical)
                 {
@@ -1779,7 +1818,14 @@ namespace ConsoulLibrary
             }
         }
 
-        private static void RenderTableText(string text, int tableWidth, ColorScheme scheme, TextBlockAlignment alignment)
+        private static void RenderTableText(
+            string text,
+            int tableWidth,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb,
+            TextBlockAlignment alignment)
         {
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -1787,9 +1833,18 @@ namespace ConsoulLibrary
             }
 
             int width = Math.Max(1, tableWidth);
-            foreach (string line in PanelEntry.WrapLines(text, width))
+            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                text,
+                width,
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb))
             {
-                Consoul.Write(AlignText(line, width, alignment), scheme, true);
+                MarkupRenderText.WriteSegments(
+                    MarkupRenderText.AlignSegments(line, width, alignment, scheme),
+                    scheme,
+                    true);
             }
         }
 
@@ -1802,9 +1857,18 @@ namespace ConsoulLibrary
 
             ColorScheme summaryScheme = TableRenderOptions.SummaryScheme;
             int width = Math.Max(1, tableWidth);
-            foreach (string line in PanelEntry.WrapLines(TableRenderOptions.SummaryText, width))
+            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                TableRenderOptions.SummaryText,
+                width,
+                summaryScheme,
+                TableRenderOptions.SummaryDecoration,
+                TableRenderOptions.SummaryForegroundRgb,
+                TableRenderOptions.SummaryBackgroundRgb))
             {
-                Consoul.Write(AlignText(line, width, TextBlockAlignment.Left), summaryScheme.Color, summaryScheme.BackgroundColor);
+                MarkupRenderText.WriteSegments(
+                    MarkupRenderText.AlignSegments(line, width, TextBlockAlignment.Left, summaryScheme),
+                    summaryScheme,
+                    true);
             }
         }
 

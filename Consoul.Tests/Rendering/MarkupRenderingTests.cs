@@ -71,6 +71,45 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// ANSI-capable terminals receive SGR control sequences for supported markup decorations.
+        /// </summary>
+        [Fact]
+        public void MarkupLine_EmitsAnsiSgrForDecorations()
+        {
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                Consoul.MarkupLine("[bold italic underline blink reverse conceal strike]Styled[/]");
+
+                VisualAssert.ContainsText(scope.Driver, "Styled");
+                Assert.Contains(scope.Driver.ControlWrites, write => write == "\u001b[1;3;4;5;7;8;9m");
+                Assert.Contains(scope.Driver.ControlWrites, write => write == "\u001b[22;23;24;25;27;28;29m");
+                Assert.DoesNotContain("[bold", scope.Driver.Text);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Non-ANSI writer consoles keep decorated markup readable without emitting raw SGR control sequences.
+        /// </summary>
+        [Fact]
+        public void MarkupLine_OmitsAnsiSgrWhenAnsiIsDisabled()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.No
+            });
+
+            console.MarkupLine("[bold underline]Ready[/]");
+
+            string output = writer.ToString();
+            Assert.Contains("Ready", output);
+            Assert.DoesNotContain("\u001b[", output);
+            Assert.DoesNotContain("[bold", output);
+        }
+
+        /// <summary>
         /// Markup accepts hex colors by mapping them to the nearest console color.
         /// </summary>
         [Fact]
@@ -87,6 +126,75 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.DoesNotContain("[#ff0000]", scope.Driver.Text);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// True-color writer consoles receive 24-bit SGR sequences for hex markup.
+        /// </summary>
+        [Fact]
+        public void MarkupLine_EmitsTrueColorSgrForHexColors()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.MarkupLine("[#22c55e on #001122]Ready[/]");
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;34;197;94;48;2;0;17;34mReady\u001b[39;49m", output);
+            Assert.DoesNotContain("[#22c55e", output);
+        }
+
+        /// <summary>
+        /// Eight-bit-color writer consoles receive 256-color SGR sequences for hex markup.
+        /// </summary>
+        [Fact]
+        public void MarkupLine_EmitsEightBitSgrForHexColors()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            console.MarkupLine("[#22c55e on #001122]Ready[/]");
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;41;48;5;233mReady\u001b[39;49m", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+            Assert.DoesNotContain("\u001b[48;2", output);
+            Assert.DoesNotContain("[#22c55e", output);
+        }
+
+        /// <summary>
+        /// Non-true-color writer consoles keep hex markup readable while using nearest console colors only.
+        /// </summary>
+        [Fact]
+        public void MarkupLine_OmitsTrueColorSgrWhenTrueColorIsDisabled()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.Standard
+            });
+
+            console.MarkupLine("[#22c55e on #001122]Ready[/]");
+
+            string output = writer.ToString();
+            Assert.Contains("Ready", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+            Assert.DoesNotContain("\u001b[48;2", output);
+            Assert.DoesNotContain("\u001b[38;5", output);
+            Assert.DoesNotContain("\u001b[48;5", output);
+            Assert.DoesNotContain("[#22c55e", output);
         }
 
         /// <summary>
@@ -117,6 +225,8 @@ namespace ConsoulLibrary.Tests.Rendering
 
             Assert.Equal(ConsoleColor.DarkCyan, parsed.Foreground);
             Assert.Equal(ConsoleColor.DarkBlue, parsed.Background);
+            Assert.Equal(RgbColor.FromHex("#22c55e"), parsed.ForegroundRgb);
+            Assert.Null(parsed.BackgroundRgb);
             Assert.True(parsed.Decoration.HasFlag(Decoration.Bold));
 
             Assert.True(Style.TryParseColor("grey", out ConsoleColor grey));
@@ -138,7 +248,7 @@ namespace ConsoulLibrary.Tests.Rendering
         [Fact]
         public void Style_Parse_PreservesDecorationFlags()
         {
-            Style parsed = Style.Parse("bold faint italic underline strike white on blue");
+            Style parsed = Style.Parse("bold faint italic underline strike blink reverse conceal white on blue");
 
             Assert.Equal(ConsoleColor.White, parsed.Foreground);
             Assert.Equal(ConsoleColor.Blue, parsed.Background);
@@ -147,6 +257,9 @@ namespace ConsoulLibrary.Tests.Rendering
             Assert.True(parsed.Decoration.HasFlag(Decoration.Italic));
             Assert.True(parsed.Decoration.HasFlag(Decoration.Underline));
             Assert.True(parsed.Decoration.HasFlag(Decoration.Strikethrough));
+            Assert.True(parsed.Decoration.HasFlag(Decoration.Blink));
+            Assert.True(parsed.Decoration.HasFlag(Decoration.Reverse));
+            Assert.True(parsed.Decoration.HasFlag(Decoration.Conceal));
         }
 
         /// <summary>
@@ -271,6 +384,158 @@ namespace ConsoulLibrary.Tests.Rendering
             string output = writer.ToString();
             Assert.Contains("\u001b]8;;https://example.com/docs\u001b\\Docs\u001b]8;;\u001b\\", output);
             Assert.DoesNotContain("[link", output);
+        }
+
+        /// <summary>
+        /// Table cell markup preserves decoration metadata through the shared segment rendering path.
+        /// </summary>
+        [Fact]
+        public void TableCell_DecorationMarkupEmitsSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes
+            });
+            var table = new Table(new TableRenderOptions { ShowFooterHelp = false })
+                .AddColumn("State")
+                .AddRow("[bold underline]Ready[/]");
+
+            console.Write(table);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;4mReady\u001b[22;24m", output);
+            Assert.DoesNotContain("[bold", output);
+        }
+
+        /// <summary>
+        /// Table cell markup preserves hex RGB metadata through the shared segment rendering path.
+        /// </summary>
+        [Fact]
+        public void TableCell_HexMarkupEmitsTrueColorSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var table = new Table(new TableRenderOptions { ShowFooterHelp = false })
+                .AddColumn("State")
+                .AddRow("[#336699]Ready[/]");
+
+            console.Write(table);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;51;102;153mReady\u001b[39m", output);
+            Assert.DoesNotContain("[#336699]", output);
+        }
+
+        /// <summary>
+        /// Table title styles preserve reusable decoration flags through responsive table text rendering.
+        /// </summary>
+        [Fact]
+        public void TableTitle_StyleDecorationEmitsSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes
+            });
+            var table = new Table(new TableRenderOptions { ShowFooterHelp = false })
+                .Title("Jobs", Style.Bold)
+                .AddColumn("Name")
+                .AddRow("Build");
+
+            console.Write(table);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1mJobs\u001b[22m", output);
+        }
+
+        /// <summary>
+        /// Table title styles preserve RGB metadata through responsive table text rendering.
+        /// </summary>
+        [Fact]
+        public void TableTitle_StyleRgbEmitsTrueColorSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var table = new Table(new TableRenderOptions { ShowFooterHelp = false })
+                .Title("Jobs", Style.Parse("#22c55e"))
+                .AddColumn("Name")
+                .AddRow("Build");
+
+            console.Write(table);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;34;197;94mJobs\u001b[39m", output);
+        }
+
+        /// <summary>
+        /// Paragraph reusable styles preserve decoration flags through paragraph wrapping.
+        /// </summary>
+        [Fact]
+        public void Paragraph_StyleDecorationEmitsSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes
+            });
+
+            console.Write(new Paragraph("Important", Style.Bold.AddDecoration(Decoration.Underline)));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;4mImportant\u001b[22;24m", output);
+        }
+
+        /// <summary>
+        /// Text reusable styles preserve decoration flags through text block rendering.
+        /// </summary>
+        [Fact]
+        public void Text_StyleDecorationEmitsSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes
+            });
+
+            console.Write(new Text("Important", Style.Italic));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[3mImportant\u001b[23m", output);
+        }
+
+        /// <summary>
+        /// Text reusable styles preserve RGB metadata through text block rendering.
+        /// </summary>
+        [Fact]
+        public void Text_StyleRgbEmitsTrueColorSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new Text("Accent", RgbColor.FromHex("#336699")));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;51;102;153mAccent\u001b[39m", output);
         }
 
         /// <summary>

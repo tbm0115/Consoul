@@ -1,5 +1,6 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -79,9 +80,39 @@ namespace ConsoulLibrary
         public ColorScheme? InfoScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for informational callout chrome.
+        /// </summary>
+        public Decoration InfoDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for informational callout chrome on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InfoForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for informational callout chrome on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InfoBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for success callouts.
         /// </summary>
         public ColorScheme? SuccessScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for success callout chrome.
+        /// </summary>
+        public Decoration SuccessDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for success callout chrome on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SuccessForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for success callout chrome on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SuccessBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the color scheme used for warning callouts.
@@ -89,9 +120,39 @@ namespace ConsoulLibrary
         public ColorScheme? WarningScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for warning callout chrome.
+        /// </summary>
+        public Decoration WarningDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for warning callout chrome on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? WarningForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for warning callout chrome on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? WarningBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for error callouts.
         /// </summary>
         public ColorScheme? ErrorScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for error callout chrome.
+        /// </summary>
+        public Decoration ErrorDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for error callout chrome on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ErrorForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for error callout chrome on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ErrorBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets an override for the callout border color scheme.
@@ -99,14 +160,59 @@ namespace ConsoulLibrary
         public ColorScheme? BorderScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for the callout border.
+        /// </summary>
+        public Decoration BorderDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for the callout border on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BorderForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for the callout border on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BorderBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets an override for the callout title color scheme.
         /// </summary>
         public ColorScheme? TitleScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for the callout title.
+        /// </summary>
+        public Decoration TitleDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for the callout title on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TitleForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for the callout title on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? TitleBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets an override for the callout content color scheme.
         /// </summary>
         public ColorScheme? ContentScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for untagged callout content.
+        /// </summary>
+        public Decoration ContentDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for untagged callout content on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ContentForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for untagged callout content on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ContentBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current callout options.
@@ -130,26 +236,58 @@ namespace ConsoulLibrary
                 WarningMarker = WarningMarker,
                 ErrorMarker = ErrorMarker,
                 InfoScheme = InfoScheme,
+                InfoDecoration = InfoDecoration,
+                InfoForegroundRgb = InfoForegroundRgb,
+                InfoBackgroundRgb = InfoBackgroundRgb,
                 SuccessScheme = SuccessScheme,
+                SuccessDecoration = SuccessDecoration,
+                SuccessForegroundRgb = SuccessForegroundRgb,
+                SuccessBackgroundRgb = SuccessBackgroundRgb,
                 WarningScheme = WarningScheme,
+                WarningDecoration = WarningDecoration,
+                WarningForegroundRgb = WarningForegroundRgb,
+                WarningBackgroundRgb = WarningBackgroundRgb,
                 ErrorScheme = ErrorScheme,
+                ErrorDecoration = ErrorDecoration,
+                ErrorForegroundRgb = ErrorForegroundRgb,
+                ErrorBackgroundRgb = ErrorBackgroundRgb,
                 BorderScheme = BorderScheme,
+                BorderDecoration = BorderDecoration,
+                BorderForegroundRgb = BorderForegroundRgb,
+                BorderBackgroundRgb = BorderBackgroundRgb,
                 TitleScheme = TitleScheme,
-                ContentScheme = ContentScheme
+                TitleDecoration = TitleDecoration,
+                TitleForegroundRgb = TitleForegroundRgb,
+                TitleBackgroundRgb = TitleBackgroundRgb,
+                ContentScheme = ContentScheme,
+                ContentDecoration = ContentDecoration,
+                ContentForegroundRgb = ContentForegroundRgb,
+                ContentBackgroundRgb = ContentBackgroundRgb
             };
         }
 
         internal PanelOptions CreatePanelOptions(CalloutKind kind)
         {
-            ColorScheme kindScheme = ResolveKindScheme(kind);
+            StyledText kindStyle = ResolveKindStyle(kind);
+            bool hasBorderOverride = BorderScheme.HasValue;
+            bool hasTitleOverride = TitleScheme.HasValue;
             return new PanelOptions
             {
                 Title = ResolvePanelTitle(kind),
                 Width = Width,
                 Padding = Padding,
-                BorderScheme = BorderScheme ?? kindScheme,
-                TitleScheme = TitleScheme ?? kindScheme,
-                ContentScheme = ContentScheme ?? RenderOptions.DefaultScheme
+                BorderScheme = BorderScheme ?? kindStyle.Scheme,
+                BorderDecoration = hasBorderOverride ? BorderDecoration : kindStyle.Decoration,
+                BorderForegroundRgb = hasBorderOverride ? BorderForegroundRgb : kindStyle.ForegroundRgb,
+                BorderBackgroundRgb = hasBorderOverride ? BorderBackgroundRgb : kindStyle.BackgroundRgb,
+                TitleScheme = TitleScheme ?? kindStyle.Scheme,
+                TitleDecoration = hasTitleOverride ? TitleDecoration : kindStyle.Decoration,
+                TitleForegroundRgb = hasTitleOverride ? TitleForegroundRgb : kindStyle.ForegroundRgb,
+                TitleBackgroundRgb = hasTitleOverride ? TitleBackgroundRgb : kindStyle.BackgroundRgb,
+                ContentScheme = ContentScheme ?? RenderOptions.DefaultScheme,
+                ContentDecoration = ContentDecoration,
+                ContentForegroundRgb = ContentForegroundRgb,
+                ContentBackgroundRgb = ContentBackgroundRgb
             };
         }
 
@@ -165,6 +303,21 @@ namespace ConsoulLibrary
                     return ErrorScheme ?? RenderOptions.InvalidScheme;
                 default:
                     return InfoScheme ?? RenderOptions.PromptScheme;
+            }
+        }
+
+        internal StyledText ResolveKindStyle(CalloutKind kind)
+        {
+            switch (kind)
+            {
+                case CalloutKind.Success:
+                    return new StyledText(SuccessScheme ?? Scheme(ConsoleColor.Green), SuccessDecoration, SuccessForegroundRgb, SuccessBackgroundRgb);
+                case CalloutKind.Warning:
+                    return new StyledText(WarningScheme ?? Scheme(ConsoleColor.Yellow), WarningDecoration, WarningForegroundRgb, WarningBackgroundRgb);
+                case CalloutKind.Error:
+                    return new StyledText(ErrorScheme ?? RenderOptions.InvalidScheme, ErrorDecoration, ErrorForegroundRgb, ErrorBackgroundRgb);
+                default:
+                    return new StyledText(InfoScheme ?? RenderOptions.PromptScheme, InfoDecoration, InfoForegroundRgb, InfoBackgroundRgb);
             }
         }
 
@@ -233,6 +386,25 @@ namespace ConsoulLibrary
                 Color = color,
                 BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
             };
+        }
+
+        internal readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

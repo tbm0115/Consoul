@@ -1168,11 +1168,11 @@ namespace ConsoulLibrary
             {
                 if (option.IsSeparator)
                 {
-                    help.AddSeparator(option.Render(), option.Color);
+                    help.Add(option.ToHelpItem(option.Render()));
                     continue;
                 }
 
-                help.Add(option.Render(), option.Description, option.Shortcut, null, option.Color);
+                help.Add(option.ToHelpItem(option.Render()));
             }
 
             if (includeGoBack)
@@ -1231,7 +1231,7 @@ namespace ConsoulLibrary
             ViewHelpOptions options = null,
             bool waitForInput = true)
         {
-            return AddHelpOption(label, title, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, options, waitForInput);
+            return AddHelpOption(label, title, ParseStyle(style), shortcut, options, waitForInput);
         }
 
         /// <summary>
@@ -1252,7 +1252,8 @@ namespace ConsoulLibrary
             ViewHelpOptions options = null,
             bool waitForInput = true)
         {
-            return AddHelpOption(label, title, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, options, waitForInput);
+            return AddHelpOption(label, title, PromptRenderHelpers.ResolveStyleColor(style, RenderOptions.SubnoteColor), shortcut, options, waitForInput)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -1273,7 +1274,8 @@ namespace ConsoulLibrary
             ViewHelpOptions options = null,
             bool waitForInput = true)
         {
-            return AddHelpOption(label, title, (ConsoleColor?)color.ToConsoleColor(), shortcut, options, waitForInput);
+            return AddHelpOption(label, title, (ConsoleColor?)color.ToConsoleColor(), shortcut, options, waitForInput)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -1294,7 +1296,8 @@ namespace ConsoulLibrary
             ViewHelpOptions options = null,
             bool waitForInput = true)
         {
-            return AddHelpOption(label, title, (ConsoleColor?)color.ToConsoleColor(), shortcut, options, waitForInput);
+            return AddHelpOption(label, title, (ConsoleColor?)color.ToConsoleColor(), shortcut, options, waitForInput)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -1354,7 +1357,7 @@ namespace ConsoulLibrary
             string shortcut = "cmd",
             bool clear = true)
         {
-            return AddCommandPaletteOption(label, message, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, clear);
+            return AddCommandPaletteOption(label, message, ParseStyle(style), shortcut, clear);
         }
 
         /// <summary>
@@ -1373,7 +1376,8 @@ namespace ConsoulLibrary
             string shortcut = "cmd",
             bool clear = true)
         {
-            return AddCommandPaletteOption(label, message, ResolveStyle(style, RenderOptions.SubnoteColor), shortcut, clear);
+            return AddCommandPaletteOption(label, message, PromptRenderHelpers.ResolveStyleColor(style, RenderOptions.SubnoteColor), shortcut, clear)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -1392,7 +1396,8 @@ namespace ConsoulLibrary
             string shortcut = "cmd",
             bool clear = true)
         {
-            return AddCommandPaletteOption(label, message, (ConsoleColor?)color.ToConsoleColor(), shortcut, clear);
+            return AddCommandPaletteOption(label, message, (ConsoleColor?)color.ToConsoleColor(), shortcut, clear)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -1411,7 +1416,8 @@ namespace ConsoulLibrary
             string shortcut = "cmd",
             bool clear = true)
         {
-            return AddCommandPaletteOption(label, message, (ConsoleColor?)color.ToConsoleColor(), shortcut, clear);
+            return AddCommandPaletteOption(label, message, (ConsoleColor?)color.ToConsoleColor(), shortcut, clear)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -1493,12 +1499,13 @@ namespace ConsoulLibrary
                 {
                     if (option.IsSeparator)
                     {
-                        prompt.AddSeparator(option.Render(), option.Color);
+                        SelectOption separator = prompt.AddSeparator(option.Render(), option.Color);
+                        option.ApplyStyleTo(separator);
                         continue;
                     }
 
                     selectableOptions.Add(option);
-                    AddPromptOption(prompt, option.Render(), option.Description, option.Shortcut, option.Color, option.SearchTerms);
+                    AddPromptOption(prompt, option);
                 }
 
                 // Add the "go back" option to the prompt.
@@ -1726,12 +1733,13 @@ namespace ConsoulLibrary
 
                 if (option.IsSeparator)
                 {
-                    prompt.AddSeparator(option.Render(), option.Color);
+                    SelectOption separator = prompt.AddSeparator(option.Render(), option.Color);
+                    option.ApplyStyleTo(separator);
                     continue;
                 }
 
                 selectableOptions.Add(option);
-                AddPromptOption(prompt, option.Render(), option.Description, option.Shortcut, option.Color, option.SearchTerms);
+                AddPromptOption(prompt, option);
             }
 
             PromptResult result = prompt.Render(cancellationToken);
@@ -1748,34 +1756,44 @@ namespace ConsoulLibrary
             return result;
         }
 
-        private static void AddPromptOption(SelectionPrompt prompt, string label, string description, string shortcut, ConsoleColor color, IEnumerable<string> searchTerms)
+        private static void AddPromptOption(SelectionPrompt prompt, ViewOption option)
         {
+            string label = option.Render();
+            string description = option.Description;
+            string shortcut = option.Shortcut;
             int index;
             if (string.IsNullOrWhiteSpace(description))
             {
                 if (string.IsNullOrWhiteSpace(shortcut))
                 {
-                    index = prompt.Add(label, color);
+                    index = prompt.Add(label, option.Color);
                 }
                 else
                 {
-                    index = prompt.AddShortcut(label, shortcut, color);
+                    index = prompt.AddShortcut(label, shortcut, option.Color);
                 }
 
-                prompt.AddSearchTerms(index, searchTerms);
+                option.ApplyStyleTo(FindPromptOption(prompt, index));
+                prompt.AddSearchTerms(index, option.SearchTerms);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(shortcut))
             {
-                index = prompt.AddDescribed(label, description, color);
+                index = prompt.AddDescribed(label, description, option.Color);
             }
             else
             {
-                index = prompt.AddDescribedShortcut(label, description, shortcut, color);
+                index = prompt.AddDescribedShortcut(label, description, shortcut, option.Color);
             }
 
-            prompt.AddSearchTerms(index, searchTerms);
+            option.ApplyStyleTo(FindPromptOption(prompt, index));
+            prompt.AddSearchTerms(index, option.SearchTerms);
+        }
+
+        private static SelectOption FindPromptOption(SelectionPrompt prompt, int index)
+        {
+            return prompt.Options.First(item => !item.IsSeparator && item.Index == index);
         }
 
         private static ConsoleColor ResolveStyle(string style, ConsoleColor fallback)
@@ -1788,6 +1806,11 @@ namespace ConsoulLibrary
         private static ConsoleColor ResolveStyle(Style style, ConsoleColor fallback)
         {
             return style == null ? fallback : style.ToForegroundColor(fallback);
+        }
+
+        private static Style ParseStyle(string style)
+        {
+            return string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style);
         }
 
         private RenderOptions.ViewErrorModes EffectiveViewErrorMode => ViewErrorMode ?? RenderOptions.ViewErrorMode;

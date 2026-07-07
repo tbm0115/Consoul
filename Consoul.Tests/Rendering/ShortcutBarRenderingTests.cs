@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using ConsoulLibrary.Color;
 using Xunit;
@@ -63,6 +65,86 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[F5]") && write.Color == ConsoleColor.DarkGray);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Shortcut bar style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void ShortcutBar_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 8, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var shortcuts = new ShortcutBar()
+                .Width(70)
+                .ItemSeparator(" | ")
+                .KeyColor("bold #22c55e")
+                .DescriptionColor("#336699")
+                .SeparatorColor("italic #778899")
+                .AddShortcut("Enter", "Select")
+                .AddShortcutStyled(
+                    "Esc",
+                    "Back",
+                    keyStyle: "underline #112233",
+                    descriptionStyle: "italic #abcdef");
+
+            console.Write(shortcuts);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94m[Enter]", output);
+            Assert.Contains("\u001b[38;2;51;102;153mSelect", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153m | ", output);
+            Assert.Contains("\u001b[4;38;2;17;34;51m[Esc]", output);
+            Assert.Contains("\u001b[3;38;2;171;205;239mBack", output);
+        }
+
+        /// <summary>
+        /// Shortcut bar RGB selector helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void ShortcutBar_RgbSelectorsEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 8, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var actions = new[]
+            {
+                new StyledShortcut
+                {
+                    Key = "F5",
+                    Description = "Refresh",
+                    KeyColor = RgbColor.FromHex("#445566"),
+                    DescriptionColor = RgbColor.FromHex("#336699")
+                }
+            };
+
+            var shortcuts = new ShortcutBar()
+                .Width(70)
+                .AddShortcuts(
+                    actions,
+                    item => item.Key,
+                    item => item.Description,
+                    item => item.Disabled,
+                    item => item.KeyColor,
+                    item => item.DescriptionColor);
+
+            console.Write(shortcuts);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239m[F5]", output);
+            Assert.Contains("\u001b[38;5;60mRefresh", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>
@@ -224,6 +306,19 @@ namespace ConsoulLibrary.Tests.Rendering
         private sealed class ShortcutModel
         {
             public bool CanRefresh { get; set; }
+        }
+
+        private sealed class StyledShortcut
+        {
+            public string Key { get; set; } = string.Empty;
+
+            public string Description { get; set; } = string.Empty;
+
+            public bool Disabled { get; set; }
+
+            public RgbColor KeyColor { get; set; }
+
+            public RgbColor DescriptionColor { get; set; }
         }
 
         private sealed class TestRoutine : Routine

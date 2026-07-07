@@ -6,8 +6,8 @@ namespace ConsoulLibrary
     /// Defines text decoration flags accepted by Spectre-style style snippets.
     /// </summary>
     /// <remarks>
-    /// Consoul's current terminal renderer preserves these flags for compatibility while foreground and background colors
-    /// provide the visible styling in the built-in 16-color output path.
+    /// ANSI-capable terminals render these flags with SGR control sequences. Other terminals keep the visible text and
+    /// color output readable without emitting control characters.
     /// </remarks>
     [Flags]
     public enum Decoration
@@ -40,6 +40,21 @@ namespace ConsoulLibrary
         /// <summary>
         /// Strikethrough text decoration.
         /// </summary>
-        Strikethrough = 16
+        Strikethrough = 16,
+
+        /// <summary>
+        /// Blinking text decoration.
+        /// </summary>
+        Blink = 32,
+
+        /// <summary>
+        /// Reverse-video text decoration.
+        /// </summary>
+        Reverse = 64,
+
+        /// <summary>
+        /// Concealed text decoration.
+        /// </summary>
+        Conceal = 128
     }
 }

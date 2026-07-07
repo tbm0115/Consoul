@@ -10,40 +10,94 @@ namespace ConsoulLibrary
             return style == null ? fallback : style.ToForegroundColor(fallback);
         }
 
+        internal static StyledText ResolveStyle(Style style, ConsoleColor fallback)
+        {
+            if (style == null)
+            {
+                return FromColor(fallback);
+            }
+
+            return new StyledText(
+                style.ToColorScheme(CreateScheme(fallback)),
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
+        }
+
+        internal static StyledText FromColor(ConsoleColor color)
+        {
+            return new StyledText(CreateScheme(color), Decoration.None, null, null);
+        }
+
+        internal static StyledText FromComponents(
+            ConsoleColor color,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            return new StyledText(CreateScheme(color), decoration, foregroundRgb, backgroundRgb);
+        }
+
         internal static void WriteMarkupLine(string text, ConsoleColor baseColor)
         {
             WriteMarkup(text, baseColor, writeLine: true);
         }
 
+        internal static void WriteMarkupLine(string text, StyledText baseStyle)
+        {
+            WriteMarkup(text, baseStyle, writeLine: true);
+        }
+
         internal static void WriteMarkup(string text, ConsoleColor baseColor, bool writeLine)
         {
-            ColorScheme scheme = CreateScheme(baseColor);
-            MarkupRenderText.WriteSegments(MarkupRenderText.ParseSegments(text, scheme), scheme, writeLine);
+            WriteMarkup(text, FromColor(baseColor), writeLine);
+        }
+
+        internal static void WriteMarkup(string text, StyledText baseStyle, bool writeLine)
+        {
+            MarkupRenderText.WriteSegments(
+                MarkupRenderText.ParseSegments(
+                    text,
+                    baseStyle.Scheme,
+                    baseStyle.Decoration,
+                    baseStyle.ForegroundRgb,
+                    baseStyle.BackgroundRgb),
+                baseStyle.Scheme,
+                writeLine);
         }
 
         internal static void WriteMarkupOrPlainLine(string text, ConsoleColor baseColor)
         {
-            if (!ContainsMarkup(text))
-            {
-                Consoul.WriteCore(text, baseColor);
-                return;
-            }
+            WriteMarkupOrPlainLine(text, FromColor(baseColor));
+        }
 
-            WriteMarkupLine(text, baseColor);
+        internal static void WriteMarkupOrPlainLine(string text, StyledText baseStyle)
+        {
+            WriteMarkupOrPlainLine(text, baseStyle, ContainsMarkup(text));
         }
 
         internal static void WriteMarkupOrPlainLine(string text, ConsoleColor baseColor, bool parseMarkup)
         {
+            WriteMarkupOrPlainLine(text, FromColor(baseColor), parseMarkup);
+        }
+
+        internal static void WriteMarkupOrPlainLine(string text, StyledText baseStyle, bool parseMarkup)
+        {
             if (!parseMarkup)
             {
-                Consoul.WriteCore(text, baseColor);
+                WriteText(text, baseStyle, writeLine: true);
                 return;
             }
 
-            WriteMarkupLine(text, baseColor);
+            WriteMarkupLine(text, baseStyle);
         }
 
         internal static void WriteFormattedMarkupOrPlainLine(string format, ConsoleColor baseColor, params object[] args)
+        {
+            WriteFormattedMarkupOrPlainLine(format, FromColor(baseColor), args);
+        }
+
+        internal static void WriteFormattedMarkupOrPlainLine(string format, StyledText baseStyle, params object[] args)
         {
             if (string.IsNullOrWhiteSpace(format))
             {
@@ -53,7 +107,7 @@ namespace ConsoulLibrary
             string message;
             bool parseMarkup;
             TryFormatMarkupOrPlain(format, out message, out parseMarkup, args);
-            WriteMarkupOrPlainLine(message, baseColor, parseMarkup);
+            WriteMarkupOrPlainLine(message, baseStyle, parseMarkup);
         }
 
         internal static bool TryFormatMarkupOrPlain(string format, out string message, out bool parseMarkup, params object[] args)
@@ -75,37 +129,42 @@ namespace ConsoulLibrary
 
         internal static void WriteSearchHighlightedText(string text, string filterText, Style highlightStyle, ConsoleColor baseColor)
         {
+            WriteSearchHighlightedText(text, filterText, highlightStyle, FromColor(baseColor));
+        }
+
+        internal static void WriteSearchHighlightedText(string text, string filterText, Style highlightStyle, StyledText baseStyle)
+        {
             string visibleText = MarkupRenderText.GetPlainText(text);
             if (highlightStyle == null || string.IsNullOrEmpty(text) || string.IsNullOrWhiteSpace(filterText))
             {
-                WriteMarkupLine(text, baseColor);
+                WriteMarkupLine(text, baseStyle);
                 return;
             }
 
             int matchIndex = visibleText.IndexOf(filterText, StringComparison.OrdinalIgnoreCase);
             if (matchIndex < 0)
             {
-                WriteMarkupLine(text, baseColor);
+                WriteMarkupLine(text, baseStyle);
                 return;
             }
 
-            ConsoleColor highlightColor = ResolveStyleColor(highlightStyle, baseColor);
+            StyledText highlight = ResolveStyle(highlightStyle, baseStyle.Scheme.Color);
             int currentIndex = 0;
             while (matchIndex >= 0)
             {
                 if (matchIndex > currentIndex)
                 {
-                    Consoul.WriteCore(visibleText.Substring(currentIndex, matchIndex - currentIndex), baseColor, writeLine: false);
+                    WriteText(visibleText.Substring(currentIndex, matchIndex - currentIndex), baseStyle, writeLine: false);
                 }
 
-                Consoul.WriteCore(visibleText.Substring(matchIndex, filterText.Length), highlightColor, writeLine: false);
+                WriteText(visibleText.Substring(matchIndex, filterText.Length), highlight, writeLine: false);
                 currentIndex = matchIndex + filterText.Length;
                 matchIndex = visibleText.IndexOf(filterText, currentIndex, StringComparison.OrdinalIgnoreCase);
             }
 
             if (currentIndex < visibleText.Length)
             {
-                Consoul.WriteCore(visibleText.Substring(currentIndex), baseColor, writeLine: false);
+                WriteText(visibleText.Substring(currentIndex), baseStyle, writeLine: false);
             }
 
             Consoul.ConsoleDriver.WriteLine(string.Empty);
@@ -128,6 +187,41 @@ namespace ConsoulLibrary
                 Color = color,
                 BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
             };
+        }
+
+        private static void WriteText(string text, StyledText style, bool writeLine)
+        {
+            TerminalLinkWriter.WriteText(
+                text,
+                style.Scheme,
+                null,
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
+
+            if (writeLine)
+            {
+                Consoul.ConsoleDriver.WriteLine(string.Empty);
+            }
+        }
+
+        internal readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

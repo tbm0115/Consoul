@@ -1,5 +1,7 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -63,14 +65,59 @@ namespace ConsoulLibrary
         public ColorScheme? LabelScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets optional ANSI decoration used for the label.
+        /// </summary>
+        public Decoration? LabelDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the label on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets an optional color scheme for the value.
         /// </summary>
         public ColorScheme? ValueScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets optional ANSI decoration used for the value.
+        /// </summary>
+        public Decoration? ValueDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the value on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the value on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets an optional color scheme for the note.
         /// </summary>
         public ColorScheme? NoteScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional ANSI decoration used for the note.
+        /// </summary>
+        public Decoration? NoteDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the note on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? NoteForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the note on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? NoteBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a metric item.
@@ -103,6 +150,72 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Creates a metric item using Spectre-style color facades.
+        /// </summary>
+        /// <param name="label">The metric label.</param>
+        /// <param name="value">The primary metric value.</param>
+        /// <param name="labelColor">Foreground color used for the label.</param>
+        /// <param name="valueColor">Optional foreground color used for the value.</param>
+        /// <param name="noteColor">Optional foreground color used for the note.</param>
+        /// <param name="unit">Optional unit text rendered next to the value.</param>
+        /// <param name="note">Optional supporting note rendered below the value.</param>
+        /// <param name="kind">The visual intent of the metric value.</param>
+        /// <returns>A configured <see cref="MetricItem"/> instance.</returns>
+        public static MetricItem Create(
+            string label,
+            object value,
+            SpectreColor labelColor,
+            SpectreColor? valueColor = null,
+            SpectreColor? noteColor = null,
+            string unit = null,
+            string note = null,
+            MetricKind kind = MetricKind.Default)
+        {
+            return Create(
+                label,
+                value,
+                labelColor.ToRgbColor(),
+                valueColor.HasValue ? valueColor.Value.ToRgbColor() : (RgbColor?)null,
+                noteColor.HasValue ? noteColor.Value.ToRgbColor() : (RgbColor?)null,
+                unit,
+                note,
+                kind);
+        }
+
+        /// <summary>
+        /// Creates a metric item using RGB foreground colors.
+        /// </summary>
+        /// <param name="label">The metric label.</param>
+        /// <param name="value">The primary metric value.</param>
+        /// <param name="labelColor">Foreground color used for the label.</param>
+        /// <param name="valueColor">Optional foreground color used for the value.</param>
+        /// <param name="noteColor">Optional foreground color used for the note.</param>
+        /// <param name="unit">Optional unit text rendered next to the value.</param>
+        /// <param name="note">Optional supporting note rendered below the value.</param>
+        /// <param name="kind">The visual intent of the metric value.</param>
+        /// <returns>A configured <see cref="MetricItem"/> instance.</returns>
+        public static MetricItem Create(
+            string label,
+            object value,
+            RgbColor labelColor,
+            RgbColor? valueColor = null,
+            RgbColor? noteColor = null,
+            string unit = null,
+            string note = null,
+            MetricKind kind = MetricKind.Default)
+        {
+            return new MetricItem(label, value, unit, note, kind)
+            {
+                LabelScheme = Scheme(labelColor.ToConsoleColor()),
+                ValueScheme = valueColor.HasValue ? Scheme(valueColor.Value.ToConsoleColor()) : (ColorScheme?)null,
+                NoteScheme = noteColor.HasValue ? Scheme(noteColor.Value.ToConsoleColor()) : (ColorScheme?)null,
+                LabelForegroundRgb = labelColor,
+                ValueForegroundRgb = valueColor,
+                NoteForegroundRgb = noteColor
+            };
+        }
+
+        /// <summary>
         /// Creates a metric item using reusable style objects.
         /// </summary>
         /// <param name="label">The metric label.</param>
@@ -124,12 +237,16 @@ namespace ConsoulLibrary
             string note = null,
             MetricKind kind = MetricKind.Default)
         {
-            return new MetricItem(label, value, unit, note, kind)
+            var item = new MetricItem(label, value, unit, note, kind)
             {
                 LabelScheme = Scheme(labelStyle),
                 ValueScheme = Scheme(valueStyle),
                 NoteScheme = Scheme(noteStyle)
             };
+            ApplyLabelStyle(item, labelStyle);
+            ApplyValueStyle(item, valueStyle);
+            ApplyNoteStyle(item, noteStyle);
+            return item;
         }
 
         /// <summary>
@@ -154,12 +271,51 @@ namespace ConsoulLibrary
             string note = null,
             MetricKind kind = MetricKind.Default)
         {
-            return new MetricItem(label, value, unit, note, kind)
+            return Create(
+                label,
+                value,
+                string.IsNullOrWhiteSpace(labelStyle) ? null : Style.Parse(labelStyle),
+                string.IsNullOrWhiteSpace(valueStyle) ? null : Style.Parse(valueStyle),
+                string.IsNullOrWhiteSpace(noteStyle) ? null : Style.Parse(noteStyle),
+                unit,
+                note,
+                kind);
+        }
+
+        private static void ApplyLabelStyle(MetricItem item, Style style)
+        {
+            if (item == null || style == null)
             {
-                LabelScheme = string.IsNullOrWhiteSpace(labelStyle) ? (ColorScheme?)null : Style.Parse(labelStyle).ToColorScheme(RenderOptions.DefaultScheme),
-                ValueScheme = string.IsNullOrWhiteSpace(valueStyle) ? (ColorScheme?)null : Style.Parse(valueStyle).ToColorScheme(RenderOptions.DefaultScheme),
-                NoteScheme = string.IsNullOrWhiteSpace(noteStyle) ? (ColorScheme?)null : Style.Parse(noteStyle).ToColorScheme(RenderOptions.DefaultScheme)
-            };
+                return;
+            }
+
+            item.LabelDecoration = style.Decoration;
+            item.LabelForegroundRgb = style.ForegroundRgb;
+            item.LabelBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static void ApplyValueStyle(MetricItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.ValueDecoration = style.Decoration;
+            item.ValueForegroundRgb = style.ForegroundRgb;
+            item.ValueBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private static void ApplyNoteStyle(MetricItem item, Style style)
+        {
+            if (item == null || style == null)
+            {
+                return;
+            }
+
+            item.NoteDecoration = style.Decoration;
+            item.NoteForegroundRgb = style.ForegroundRgb;
+            item.NoteBackgroundRgb = style.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

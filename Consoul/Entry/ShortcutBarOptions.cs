@@ -1,4 +1,5 @@
 using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -48,9 +49,39 @@ namespace ConsoulLibrary
         public ColorScheme? KeyScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the default ANSI decoration used for key tokens.
+        /// </summary>
+        public Decoration KeyDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB foreground color used for key tokens on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? KeyForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB background color used for key tokens on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? KeyBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the default color scheme used for descriptions.
         /// </summary>
         public ColorScheme? DescriptionScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default ANSI decoration used for descriptions.
+        /// </summary>
+        public Decoration DescriptionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB foreground color used for descriptions on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default RGB background color used for descriptions on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the color scheme used for item separators.
@@ -58,9 +89,39 @@ namespace ConsoulLibrary
         public ColorScheme? SeparatorScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for item separators.
+        /// </summary>
+        public Decoration SeparatorDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for item separators on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SeparatorForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for item separators on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SeparatorBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for disabled shortcut items.
         /// </summary>
         public ColorScheme? DisabledScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for disabled shortcut items.
+        /// </summary>
+        public Decoration DisabledDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for disabled shortcut items on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DisabledForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for disabled shortcut items on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DisabledBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current shortcut bar options.
@@ -78,9 +139,21 @@ namespace ConsoulLibrary
                 Ellipsis = Ellipsis,
                 ShowDisabled = ShowDisabled,
                 KeyScheme = KeyScheme,
+                KeyDecoration = KeyDecoration,
+                KeyForegroundRgb = KeyForegroundRgb,
+                KeyBackgroundRgb = KeyBackgroundRgb,
                 DescriptionScheme = DescriptionScheme,
+                DescriptionDecoration = DescriptionDecoration,
+                DescriptionForegroundRgb = DescriptionForegroundRgb,
+                DescriptionBackgroundRgb = DescriptionBackgroundRgb,
                 SeparatorScheme = SeparatorScheme,
-                DisabledScheme = DisabledScheme
+                SeparatorDecoration = SeparatorDecoration,
+                SeparatorForegroundRgb = SeparatorForegroundRgb,
+                SeparatorBackgroundRgb = SeparatorBackgroundRgb,
+                DisabledScheme = DisabledScheme,
+                DisabledDecoration = DisabledDecoration,
+                DisabledForegroundRgb = DisabledForegroundRgb,
+                DisabledBackgroundRgb = DisabledBackgroundRgb
             };
         }
 

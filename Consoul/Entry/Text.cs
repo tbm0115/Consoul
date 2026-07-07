@@ -52,10 +52,9 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="content">The text content to render.</param>
         /// <param name="color">The foreground color used when rendering the text.</param>
-        public Text(string content, SpectreColor color) : base(content, new TextBlockOptions
-        {
-            Scheme = Scheme(color)
-        })
+        public Text(string content, SpectreColor color) : base(
+            content,
+            OptionsFromStyle(new TextStyle(color), RenderOptions.DefaultScheme))
         {
         }
 
@@ -64,10 +63,9 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="content">The text content to render.</param>
         /// <param name="color">The foreground color used when rendering the text.</param>
-        public Text(string content, RgbColor color) : base(content, new TextBlockOptions
-        {
-            Scheme = Scheme(color)
-        })
+        public Text(string content, RgbColor color) : base(
+            content,
+            OptionsFromStyle(new TextStyle(color), RenderOptions.DefaultScheme))
         {
         }
 
@@ -89,10 +87,7 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="content">The text content to render.</param>
         /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
-        public Text(string content, string style) : base(content, new TextBlockOptions
-        {
-            Scheme = TextStyle.ParseScheme(style, RenderOptions.DefaultScheme)
-        })
+        public Text(string content, string style) : base(content, OptionsFromStyle(TextStyle.Parse(style), RenderOptions.DefaultScheme))
         {
         }
 
@@ -101,10 +96,7 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="content">The text content to render.</param>
         /// <param name="style">The foreground/background style used when rendering the text.</param>
-        public Text(string content, TextStyle style) : base(content, new TextBlockOptions
-        {
-            Scheme = style?.ToColorScheme(RenderOptions.DefaultScheme)
-        })
+        public Text(string content, TextStyle style) : base(content, OptionsFromStyle(style, RenderOptions.DefaultScheme))
         {
         }
 
@@ -121,13 +113,27 @@ namespace ConsoulLibrary
                 }
 
                 ColorScheme scheme = Options.Scheme.Value;
-                return new TextStyle(scheme.Color, scheme.BackgroundColor);
+                TextStyle style = new TextStyle(Options.Decoration, scheme.Color, scheme.BackgroundColor);
+                if (Options.ForegroundRgb.HasValue)
+                {
+                    style = style.WithForeground(Options.ForegroundRgb.Value);
+                }
+
+                if (Options.BackgroundRgb.HasValue)
+                {
+                    style = style.WithBackground(Options.BackgroundRgb.Value);
+                }
+
+                return style;
             }
             set
             {
                 Options.Scheme = value != null
                     ? Scheme(value, Options.ResolveScheme())
                     : (ColorScheme?)null;
+                Options.Decoration = value?.Decoration ?? Decoration.None;
+                Options.ForegroundRgb = value?.ForegroundRgb;
+                Options.BackgroundRgb = value?.BackgroundRgb;
             }
         }
 
@@ -252,6 +258,8 @@ namespace ConsoulLibrary
         public Text Color(ConsoleColor color)
         {
             Options.Scheme = Scheme(color);
+            Options.ForegroundRgb = null;
+            Options.BackgroundRgb = null;
             return this;
         }
 
@@ -263,6 +271,8 @@ namespace ConsoulLibrary
         public Text Color(SpectreColor color)
         {
             Options.Scheme = Scheme(color);
+            Options.ForegroundRgb = color.ToRgbColor();
+            Options.BackgroundRgb = null;
             return this;
         }
 
@@ -274,6 +284,8 @@ namespace ConsoulLibrary
         public Text Color(RgbColor color)
         {
             Options.Scheme = Scheme(color);
+            Options.ForegroundRgb = color;
+            Options.BackgroundRgb = null;
             return this;
         }
 
@@ -284,7 +296,11 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Text"/> instance.</returns>
         public Text Color(string style)
         {
-            Options.Scheme = TextStyle.ParseScheme(style, Options.ResolveScheme());
+            TextStyle parsed = TextStyle.Parse(style);
+            Options.Scheme = parsed.ToColorScheme(Options.ResolveScheme());
+            Options.Decoration = parsed.Decoration;
+            Options.ForegroundRgb = parsed.ForegroundRgb;
+            Options.BackgroundRgb = parsed.BackgroundRgb;
             return this;
         }
 
@@ -296,7 +312,21 @@ namespace ConsoulLibrary
         public Text Color(TextStyle style)
         {
             Options.Scheme = Scheme(style, Options.ResolveScheme());
+            Options.Decoration = style?.Decoration ?? Decoration.None;
+            Options.ForegroundRgb = style?.ForegroundRgb;
+            Options.BackgroundRgb = style?.BackgroundRgb;
             return this;
+        }
+
+        private static TextBlockOptions OptionsFromStyle(TextStyle style, ColorScheme fallback)
+        {
+            return new TextBlockOptions
+            {
+                Scheme = style?.ToColorScheme(fallback),
+                Decoration = style?.Decoration ?? Decoration.None,
+                ForegroundRgb = style?.ForegroundRgb,
+                BackgroundRgb = style?.BackgroundRgb
+            };
         }
 
         private static ColorScheme Scheme(TextStyle style, ColorScheme fallback)

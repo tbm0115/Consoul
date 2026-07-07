@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -72,14 +74,49 @@ namespace ConsoulLibrary
             ColorScheme? scheme = null;
             if (color.HasValue)
             {
-                scheme = new ColorScheme
-                {
-                    Color = color.Value,
-                    BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
-                };
+                scheme = Scheme(color.Value);
             }
 
             var item = new ViewHelpItem(label, description, shortcut, disabledReason, false, scheme);
+            _items.Add(item);
+            return item;
+        }
+
+        /// <summary>
+        /// Adds an action item to the help surface using a Spectre-style color facade.
+        /// </summary>
+        /// <param name="label">Action label.</param>
+        /// <param name="description">Optional helper text describing the action.</param>
+        /// <param name="shortcut">Optional shortcut that can select the action.</param>
+        /// <param name="disabledReason">Optional reason the action is currently unavailable.</param>
+        /// <param name="color">Foreground color used for the item label.</param>
+        /// <returns>The added help item.</returns>
+        public ViewHelpItem Add(string label, string description, string shortcut, string disabledReason, SpectreColor color)
+        {
+            return Add(label, description, shortcut, disabledReason, color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Adds an action item to the help surface using an RGB foreground color.
+        /// </summary>
+        /// <param name="label">Action label.</param>
+        /// <param name="description">Optional helper text describing the action.</param>
+        /// <param name="shortcut">Optional shortcut that can select the action.</param>
+        /// <param name="disabledReason">Optional reason the action is currently unavailable.</param>
+        /// <param name="color">Foreground color used for the item label.</param>
+        /// <returns>The added help item.</returns>
+        public ViewHelpItem Add(string label, string description, string shortcut, string disabledReason, RgbColor color)
+        {
+            var item = new ViewHelpItem(
+                label,
+                description,
+                shortcut,
+                disabledReason,
+                false,
+                Scheme(color.ToConsoleColor()),
+                Decoration.None,
+                color,
+                null);
             _items.Add(item);
             return item;
         }
@@ -133,6 +170,32 @@ namespace ConsoulLibrary
         /// <param name="color">Optional foreground color used for the separator.</param>
         /// <returns>The added help item.</returns>
         public ViewHelpItem AddSeparator(string label = null, ConsoleColor? color = null)
+        {
+            ViewHelpItem item = ViewHelpItem.Separator(label, color);
+            _items.Add(item);
+            return item;
+        }
+
+        /// <summary>
+        /// Adds a display-only separator to the help surface using a Spectre-style color facade.
+        /// </summary>
+        /// <param name="label">Optional separator label.</param>
+        /// <param name="color">Foreground color used for the separator.</param>
+        /// <returns>The added help item.</returns>
+        public ViewHelpItem AddSeparator(string label, SpectreColor color)
+        {
+            ViewHelpItem item = ViewHelpItem.Separator(label, color);
+            _items.Add(item);
+            return item;
+        }
+
+        /// <summary>
+        /// Adds a display-only separator to the help surface using an RGB foreground color.
+        /// </summary>
+        /// <param name="label">Optional separator label.</param>
+        /// <param name="color">Foreground color used for the separator.</param>
+        /// <returns>The added help item.</returns>
+        public ViewHelpItem AddSeparator(string label, RgbColor color)
         {
             ViewHelpItem item = ViewHelpItem.Separator(label, color);
             _items.Add(item);
@@ -194,18 +257,25 @@ namespace ConsoulLibrary
 
             if (!string.IsNullOrWhiteSpace(Title))
             {
+                ViewHelpOptions.StyledText titleStyle = _options.ResolveTitleStyle();
                 new RuleEntry(Title, new RuleOptions
                 {
                     Width = width,
                     Alignment = RuleTitleAlignment.Left,
-                    RuleScheme = _options.ResolveTitleScheme(),
-                    TitleScheme = _options.ResolveTitleScheme()
+                    RuleScheme = titleStyle.Scheme,
+                    RuleDecoration = titleStyle.Decoration,
+                    RuleForegroundRgb = titleStyle.ForegroundRgb,
+                    RuleBackgroundRgb = titleStyle.BackgroundRgb,
+                    TitleScheme = titleStyle.Scheme,
+                    TitleDecoration = titleStyle.Decoration,
+                    TitleForegroundRgb = titleStyle.ForegroundRgb,
+                    TitleBackgroundRgb = titleStyle.BackgroundRgb
                 }).Render();
             }
 
             if (_items.Count == 0)
             {
-                WritePlainPadded("No actions available.", width, _options.ResolveDescriptionScheme(), true);
+                WritePlainPadded("No actions available.", width, _options.ResolveDescriptionStyle(), true);
                 return;
             }
 
@@ -269,25 +339,31 @@ namespace ConsoulLibrary
         private void RenderColumns(ViewHelpItem item, Layout layout)
         {
             string description = BuildDescription(item);
-            ColorScheme labelScheme = item.Scheme ?? _options.ResolveLabelScheme();
-            ColorScheme shortcutScheme = _options.ResolveShortcutScheme();
-            ColorScheme descriptionScheme = ResolveDescriptionScheme(item);
-            IList<List<FixedMessageSegment>> descriptionLines = MarkupRenderText.WrapSegments(description, layout.DescriptionWidth, descriptionScheme);
+            ViewHelpOptions.StyledText labelStyle = ResolveLabelStyle(item);
+            ViewHelpOptions.StyledText shortcutStyle = _options.ResolveShortcutStyle();
+            ViewHelpOptions.StyledText descriptionStyle = ResolveDescriptionStyle(item);
+            IList<List<FixedMessageSegment>> descriptionLines = MarkupRenderText.WrapSegments(
+                description,
+                layout.DescriptionWidth,
+                descriptionStyle.Scheme,
+                descriptionStyle.Decoration,
+                descriptionStyle.ForegroundRgb,
+                descriptionStyle.BackgroundRgb);
             if (descriptionLines.Count == 0)
             {
                 descriptionLines.Add(new List<FixedMessageSegment>());
             }
 
-            List<FixedMessageSegment> label = PadOrTrimSegments(item.Label, layout.LabelWidth, labelScheme);
+            List<FixedMessageSegment> label = PadOrTrimSegments(item.Label, layout.LabelWidth, labelStyle);
             string shortcut = layout.ShortcutWidth > 0 ? PadOrTrim(FormatShortcut(item.Shortcut), layout.ShortcutWidth) : string.Empty;
             for (int index = 0; index < descriptionLines.Count; index++)
             {
                 if (index == 0)
                 {
-                    MarkupRenderText.WriteSegments(label, labelScheme, false);
+                    MarkupRenderText.WriteSegments(label, labelStyle.Scheme, false);
                     if (layout.ShortcutWidth > 0)
                     {
-                        Consoul.Write(shortcut, shortcutScheme, false);
+                        WriteStyled(shortcut, shortcutStyle, false);
                     }
                 }
                 else
@@ -295,36 +371,49 @@ namespace ConsoulLibrary
                     Consoul.Write(new string(' ', layout.LabelWidth + layout.ShortcutWidth), RenderOptions.DefaultScheme, false);
                 }
 
-                WritePadded(descriptionLines[index], layout.DescriptionWidth, descriptionScheme, true);
+                WritePadded(descriptionLines[index], layout.DescriptionWidth, descriptionStyle, true);
             }
         }
 
         private void RenderStacked(ViewHelpItem item, int width)
         {
-            ColorScheme labelScheme = item.Scheme ?? _options.ResolveLabelScheme();
-            foreach (List<FixedMessageSegment> labelLine in MarkupRenderText.WrapSegments(item.Label, width, labelScheme))
+            ViewHelpOptions.StyledText labelStyle = ResolveLabelStyle(item);
+            foreach (List<FixedMessageSegment> labelLine in MarkupRenderText.WrapSegments(
+                item.Label,
+                width,
+                labelStyle.Scheme,
+                labelStyle.Decoration,
+                labelStyle.ForegroundRgb,
+                labelStyle.BackgroundRgb))
             {
-                WritePadded(labelLine, width, labelScheme, true);
+                WritePadded(labelLine, width, labelStyle, true);
             }
 
             if (_options.ShowShortcuts && !string.IsNullOrWhiteSpace(item.Shortcut))
             {
-                WriteIndented(FormatShortcut(item.Shortcut).TrimEnd(), width, _options.ResolveShortcutScheme());
+                WriteIndented(FormatShortcut(item.Shortcut).TrimEnd(), width, _options.ResolveShortcutStyle());
             }
 
             string description = BuildDescription(item);
             if (!string.IsNullOrWhiteSpace(description))
             {
-                ColorScheme descriptionScheme = ResolveDescriptionScheme(item);
-                foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(description, Math.Max(1, width - 2), descriptionScheme))
+                ViewHelpOptions.StyledText descriptionStyle = ResolveDescriptionStyle(item);
+                foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                    description,
+                    Math.Max(1, width - 2),
+                    descriptionStyle.Scheme,
+                    descriptionStyle.Decoration,
+                    descriptionStyle.ForegroundRgb,
+                    descriptionStyle.BackgroundRgb))
                 {
-                    WriteIndented(line, width, descriptionScheme);
+                    WriteIndented(line, width, descriptionStyle);
                 }
             }
         }
 
         private void RenderSeparator(ViewHelpItem item, int width)
         {
+            ViewHelpOptions.StyledText separatorStyle = ResolveSeparatorStyle(item);
             string label = item.Label ?? string.Empty;
             string text = string.IsNullOrWhiteSpace(label)
                 ? new string('-', width)
@@ -336,9 +425,14 @@ namespace ConsoulLibrary
             }
 
             WritePadded(
-                MarkupRenderText.ParseSegments(text, item.Scheme ?? _options.ResolveSeparatorScheme()),
+                MarkupRenderText.ParseSegments(
+                    text,
+                    separatorStyle.Scheme,
+                    separatorStyle.Decoration,
+                    separatorStyle.ForegroundRgb,
+                    separatorStyle.BackgroundRgb),
                 width,
-                item.Scheme ?? _options.ResolveSeparatorScheme(),
+                separatorStyle,
                 true);
         }
 
@@ -363,14 +457,36 @@ namespace ConsoulLibrary
             return description.Trim() + " " + disabled;
         }
 
-        private ColorScheme ResolveDescriptionScheme(ViewHelpItem item)
+        private ViewHelpOptions.StyledText ResolveLabelStyle(ViewHelpItem item)
+        {
+            ViewHelpOptions.StyledText fallback = _options.ResolveLabelStyle();
+            bool hasItemScheme = item.Scheme.HasValue;
+            return new ViewHelpOptions.StyledText(
+                item.Scheme ?? fallback.Scheme,
+                item.Decoration ?? (hasItemScheme ? Decoration.None : fallback.Decoration),
+                item.ForegroundRgb ?? (hasItemScheme ? null : fallback.ForegroundRgb),
+                item.BackgroundRgb ?? (hasItemScheme ? null : fallback.BackgroundRgb));
+        }
+
+        private ViewHelpOptions.StyledText ResolveSeparatorStyle(ViewHelpItem item)
+        {
+            ViewHelpOptions.StyledText fallback = _options.ResolveSeparatorStyle();
+            bool hasItemScheme = item.Scheme.HasValue;
+            return new ViewHelpOptions.StyledText(
+                item.Scheme ?? fallback.Scheme,
+                item.Decoration ?? (hasItemScheme ? Decoration.None : fallback.Decoration),
+                item.ForegroundRgb ?? (hasItemScheme ? null : fallback.ForegroundRgb),
+                item.BackgroundRgb ?? (hasItemScheme ? null : fallback.BackgroundRgb));
+        }
+
+        private ViewHelpOptions.StyledText ResolveDescriptionStyle(ViewHelpItem item)
         {
             if (string.IsNullOrWhiteSpace(item.Description) && !string.IsNullOrWhiteSpace(item.DisabledReason))
             {
-                return _options.ResolveDisabledScheme();
+                return _options.ResolveDisabledStyle();
             }
 
-            return _options.ResolveDescriptionScheme();
+            return _options.ResolveDescriptionStyle();
         }
 
         private string FormatShortcut(string shortcut)
@@ -383,41 +499,81 @@ namespace ConsoulLibrary
             return (_options.ShortcutPrefix ?? string.Empty) + shortcut.Trim() + (_options.ShortcutSuffix ?? string.Empty) + " ";
         }
 
-        private static void WriteIndented(string text, int width, ColorScheme scheme)
+        private static void WriteIndented(string text, int width, ViewHelpOptions.StyledText style)
         {
             int innerWidth = Math.Max(1, width - 2);
             string value = "  " + PadOrTrim(text, innerWidth);
-            WritePlainPadded(value, width, scheme, true);
+            WritePlainPadded(value, width, style, true);
         }
 
-        private static void WriteIndented(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        private static void WriteIndented(IList<FixedMessageSegment> segments, int width, ViewHelpOptions.StyledText style)
         {
             int innerWidth = Math.Max(1, width - 2);
-            List<FixedMessageSegment> inner = PadOrTrimSegments(segments, innerWidth, scheme);
-            List<FixedMessageSegment> value = MarkupRenderText.PadSegments(inner, 2, 0, scheme);
-            WritePadded(value, width, scheme, true);
+            List<FixedMessageSegment> inner = PadOrTrimSegments(segments, innerWidth, style);
+            List<FixedMessageSegment> value = MarkupRenderText.PadSegments(inner, 2, 0, style.Scheme);
+            WritePadded(value, width, style, true);
         }
 
-        private static void WritePlainPadded(string text, int width, ColorScheme scheme, bool writeLine)
+        private static void WritePlainPadded(string text, int width, ViewHelpOptions.StyledText style, bool writeLine)
         {
-            Consoul.Write(PadOrTrim(text, width), scheme, writeLine);
+            WriteStyled(PadOrTrim(text, width), style, writeLine);
         }
 
-        private static void WritePadded(IList<FixedMessageSegment> segments, int width, ColorScheme scheme, bool writeLine)
+        private static void WritePadded(IList<FixedMessageSegment> segments, int width, ViewHelpOptions.StyledText style, bool writeLine)
         {
-            MarkupRenderText.WriteSegments(PadOrTrimSegments(segments, width, scheme), scheme, writeLine);
+            MarkupRenderText.WriteSegments(PadOrTrimSegments(segments, width, style), style.Scheme, writeLine);
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(string text, int width, ColorScheme scheme)
+        private static List<FixedMessageSegment> PadOrTrimSegments(string text, int width, ViewHelpOptions.StyledText style)
         {
-            return PadOrTrimSegments(MarkupRenderText.ParseSegments(text, scheme), width, scheme);
+            return PadOrTrimSegments(
+                MarkupRenderText.ParseSegments(
+                    text,
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb),
+                width,
+                style);
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, ViewHelpOptions.StyledText style)
         {
             List<FixedMessageSegment> result = MarkupRenderText.TruncateSegments(segments, Math.Max(0, width));
-            MarkupRenderText.AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), scheme);
+            AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), style);
             return result;
+        }
+
+        private static void AddPadding(IList<FixedMessageSegment> segments, int count, ViewHelpOptions.StyledText style)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                style.Scheme,
+                style.Decoration,
+                null,
+                style.ForegroundRgb,
+                style.BackgroundRgb));
+        }
+
+        private static void WriteStyled(string text, ViewHelpOptions.StyledText style, bool writeLine)
+        {
+            TerminalLinkWriter.WriteText(
+                text,
+                style.Scheme,
+                null,
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
+
+            if (writeLine)
+            {
+                Consoul.Write(string.Empty);
+            }
         }
 
         private static string PadOrTrim(string text, int width)
@@ -430,6 +586,15 @@ namespace ConsoulLibrary
             }
 
             return text.PadRight(width);
+        }
+
+        private static ColorScheme Scheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
         }
 
         private readonly struct Layout

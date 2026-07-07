@@ -14,17 +14,30 @@ namespace ConsoulLibrary
         /// <param name="foreground">Optional foreground color.</param>
         /// <param name="background">Optional background color.</param>
         public Style(ConsoleColor? foreground = null, ConsoleColor? background = null)
+            : this(Decoration.None, foreground, background, null, null)
+        {
+        }
+
+        private Style(
+            Decoration decoration,
+            ConsoleColor? foreground,
+            ConsoleColor? background,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             Foreground = foreground;
             Background = background;
-            Decoration = Decoration.None;
+            Decoration = decoration;
+            ForegroundRgb = foregroundRgb;
+            BackgroundRgb = backgroundRgb;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Style"/> class.
         /// </summary>
         /// <param name="foreground">Foreground color mapped to the nearest console color.</param>
-        public Style(RgbColor foreground) : this((ConsoleColor?)foreground.ToConsoleColor())
+        public Style(RgbColor foreground)
+            : this(Decoration.None, foreground.ToConsoleColor(), null, foreground, null)
         {
         }
 
@@ -32,7 +45,8 @@ namespace ConsoulLibrary
         /// Initializes a new instance of the <see cref="Style"/> class.
         /// </summary>
         /// <param name="foreground">Foreground color mapped to the nearest console color.</param>
-        public Style(ConsoulLibrary.Color.Color foreground) : this((ConsoleColor?)foreground.ToConsoleColor())
+        public Style(ConsoulLibrary.Color.Color foreground)
+            : this(foreground.ToRgbColor())
         {
         }
 
@@ -42,7 +56,7 @@ namespace ConsoulLibrary
         /// <param name="foreground">Foreground color mapped to the nearest console color.</param>
         /// <param name="background">Background color mapped to the nearest console color.</param>
         public Style(RgbColor foreground, RgbColor background)
-            : this((ConsoleColor?)foreground.ToConsoleColor(), background.ToConsoleColor())
+            : this(Decoration.None, foreground.ToConsoleColor(), background.ToConsoleColor(), foreground, background)
         {
         }
 
@@ -52,7 +66,7 @@ namespace ConsoulLibrary
         /// <param name="foreground">Foreground color mapped to the nearest console color.</param>
         /// <param name="background">Background color mapped to the nearest console color.</param>
         public Style(ConsoulLibrary.Color.Color foreground, ConsoulLibrary.Color.Color background)
-            : this((ConsoleColor?)foreground.ToConsoleColor(), background.ToConsoleColor())
+            : this(foreground.ToRgbColor(), background.ToRgbColor())
         {
         }
 
@@ -63,10 +77,18 @@ namespace ConsoulLibrary
         /// <param name="foreground">Optional foreground color.</param>
         /// <param name="background">Optional background color.</param>
         public Style(Decoration decoration, ConsoleColor? foreground = null, ConsoleColor? background = null)
+            : this(decoration, foreground, background, null, null)
         {
-            Foreground = foreground;
-            Background = background;
-            Decoration = decoration;
+        }
+
+        private Style(Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            : this(
+                decoration,
+                foregroundRgb.HasValue ? (ConsoleColor?)foregroundRgb.Value.ToConsoleColor() : null,
+                backgroundRgb.HasValue ? (ConsoleColor?)backgroundRgb.Value.ToConsoleColor() : null,
+                foregroundRgb,
+                backgroundRgb)
+        {
         }
 
         /// <summary>
@@ -75,7 +97,7 @@ namespace ConsoulLibrary
         /// <param name="foreground">Foreground color mapped to the nearest console color.</param>
         /// <param name="decoration">Text decoration flags accepted for Spectre-style compatibility.</param>
         public Style(RgbColor foreground, Decoration decoration)
-            : this(decoration, foreground.ToConsoleColor())
+            : this(decoration, (RgbColor?)foreground, null)
         {
         }
 
@@ -85,7 +107,7 @@ namespace ConsoulLibrary
         /// <param name="foreground">Foreground color mapped to the nearest console color.</param>
         /// <param name="decoration">Text decoration flags accepted for Spectre-style compatibility.</param>
         public Style(ConsoulLibrary.Color.Color foreground, Decoration decoration)
-            : this(decoration, foreground.ToConsoleColor())
+            : this(foreground.ToRgbColor(), decoration)
         {
         }
 
@@ -96,7 +118,7 @@ namespace ConsoulLibrary
         /// <param name="background">Background color mapped to the nearest console color.</param>
         /// <param name="decoration">Text decoration flags accepted for Spectre-style compatibility.</param>
         public Style(RgbColor foreground, RgbColor background, Decoration decoration)
-            : this(decoration, foreground.ToConsoleColor(), background.ToConsoleColor())
+            : this(decoration, (RgbColor?)foreground, background)
         {
         }
 
@@ -107,7 +129,7 @@ namespace ConsoulLibrary
         /// <param name="background">Background color mapped to the nearest console color.</param>
         /// <param name="decoration">Text decoration flags accepted for Spectre-style compatibility.</param>
         public Style(ConsoulLibrary.Color.Color foreground, ConsoulLibrary.Color.Color background, Decoration decoration)
-            : this(decoration, foreground.ToConsoleColor(), background.ToConsoleColor())
+            : this(foreground.ToRgbColor(), background.ToRgbColor(), decoration)
         {
         }
 
@@ -125,6 +147,16 @@ namespace ConsoulLibrary
         /// Gets text decoration flags accepted for Spectre-style compatibility.
         /// </summary>
         public Decoration Decoration { get; }
+
+        /// <summary>
+        /// Gets the original RGB foreground color when the style was created from RGB or hex input.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; }
+
+        /// <summary>
+        /// Gets the original RGB background color when the style was created from RGB or hex input.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; }
 
         /// <summary>
         /// Gets a style with no explicit foreground, background, or decoration.
@@ -188,7 +220,7 @@ namespace ConsoulLibrary
         /// <returns>A new style with the requested foreground color.</returns>
         public Style WithForeground(ConsoleColor? foreground)
         {
-            return new Style(Decoration, foreground, Background);
+            return new Style(Decoration, foreground, Background, null, BackgroundRgb);
         }
 
         /// <summary>
@@ -198,7 +230,7 @@ namespace ConsoulLibrary
         /// <returns>A new style with the requested foreground color.</returns>
         public Style WithForeground(RgbColor foreground)
         {
-            return WithForeground((ConsoleColor?)foreground.ToConsoleColor());
+            return new Style(Decoration, foreground.ToConsoleColor(), Background, foreground, BackgroundRgb);
         }
 
         /// <summary>
@@ -208,7 +240,7 @@ namespace ConsoulLibrary
         /// <returns>A new style with the requested foreground color.</returns>
         public Style WithForeground(ConsoulLibrary.Color.Color foreground)
         {
-            return WithForeground((ConsoleColor?)foreground.ToConsoleColor());
+            return WithForeground(foreground.ToRgbColor());
         }
 
         /// <summary>
@@ -218,7 +250,7 @@ namespace ConsoulLibrary
         /// <returns>A new style with the requested background color.</returns>
         public Style WithBackground(ConsoleColor? background)
         {
-            return new Style(Decoration, Foreground, background);
+            return new Style(Decoration, Foreground, background, ForegroundRgb, null);
         }
 
         /// <summary>
@@ -228,7 +260,7 @@ namespace ConsoulLibrary
         /// <returns>A new style with the requested background color.</returns>
         public Style WithBackground(RgbColor background)
         {
-            return WithBackground((ConsoleColor?)background.ToConsoleColor());
+            return new Style(Decoration, Foreground, background.ToConsoleColor(), ForegroundRgb, background);
         }
 
         /// <summary>
@@ -238,7 +270,7 @@ namespace ConsoulLibrary
         /// <returns>A new style with the requested background color.</returns>
         public Style WithBackground(ConsoulLibrary.Color.Color background)
         {
-            return WithBackground((ConsoleColor?)background.ToConsoleColor());
+            return WithBackground(background.ToRgbColor());
         }
 
         /// <summary>
@@ -248,7 +280,7 @@ namespace ConsoulLibrary
         /// <returns>A new style with the requested decoration metadata.</returns>
         public Style WithDecoration(Decoration decoration)
         {
-            return new Style(decoration, Foreground, Background);
+            return new Style(decoration, Foreground, Background, ForegroundRgb, BackgroundRgb);
         }
 
         /// <summary>
@@ -312,7 +344,16 @@ namespace ConsoulLibrary
                 return false;
             }
 
-            parsed = new Style(ParseDecoration(style), scheme.Color, scheme.BackgroundColor);
+            RgbColor? foregroundRgb;
+            RgbColor? backgroundRgb;
+            TryParseRgbMetadata(style, out foregroundRgb, out backgroundRgb);
+
+            parsed = new Style(
+                ParseDecoration(style),
+                scheme.Color,
+                scheme.BackgroundColor,
+                foregroundRgb,
+                backgroundRgb);
             return true;
         }
 
@@ -367,6 +408,11 @@ namespace ConsoulLibrary
 
         private static Decoration ParseDecoration(string style)
         {
+            return ParseDecorationTokens(style);
+        }
+
+        internal static Decoration ParseDecorationTokens(string style)
+        {
             if (string.IsNullOrWhiteSpace(style))
             {
                 return Decoration.None;
@@ -382,7 +428,7 @@ namespace ConsoulLibrary
             return decoration;
         }
 
-        private static Decoration ParseDecorationToken(string token)
+        internal static Decoration ParseDecorationToken(string token)
         {
             switch (NormalizeDecorationToken(token))
             {
@@ -401,6 +447,16 @@ namespace ConsoulLibrary
                 case "strikethrough":
                 case "strike":
                     return Decoration.Strikethrough;
+                case "slowblink":
+                case "rapidblink":
+                case "blink":
+                    return Decoration.Blink;
+                case "reverse":
+                case "invert":
+                    return Decoration.Reverse;
+                case "conceal":
+                case "hidden":
+                    return Decoration.Conceal;
                 default:
                     return Decoration.None;
             }
@@ -413,6 +469,73 @@ namespace ConsoulLibrary
                 .Replace("-", string.Empty)
                 .Replace("_", string.Empty)
                 .ToLowerInvariant();
+        }
+
+        private static void TryParseRgbMetadata(string style, out RgbColor? foregroundRgb, out RgbColor? backgroundRgb)
+        {
+            foregroundRgb = null;
+            backgroundRgb = null;
+
+            style = RemoveDecorationTokens(style);
+            if (string.IsNullOrWhiteSpace(style))
+            {
+                return;
+            }
+
+            string foregroundToken = style;
+            string backgroundToken = null;
+            int onIndex = style.IndexOf(" on ", StringComparison.OrdinalIgnoreCase);
+            if (onIndex >= 0)
+            {
+                foregroundToken = style.Substring(0, onIndex);
+                backgroundToken = style.Substring(onIndex + 4);
+            }
+            else
+            {
+                int colonIndex = style.IndexOf(':');
+                if (colonIndex >= 0)
+                {
+                    foregroundToken = style.Substring(0, colonIndex);
+                    backgroundToken = style.Substring(colonIndex + 1);
+                }
+            }
+
+            if (RgbColor.TryFromHex(foregroundToken, out RgbColor foreground))
+            {
+                foregroundRgb = foreground;
+            }
+
+            if (RgbColor.TryFromHex(backgroundToken, out RgbColor background))
+            {
+                backgroundRgb = background;
+            }
+        }
+
+        private static string RemoveDecorationTokens(string style)
+        {
+            if (string.IsNullOrWhiteSpace(style))
+            {
+                return string.Empty;
+            }
+
+            string[] tokens = style.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var builder = new System.Text.StringBuilder(style.Length);
+            foreach (string token in tokens)
+            {
+                if (ParseDecorationToken(token) != Decoration.None)
+                {
+                    continue;
+                }
+
+                if (builder.Length > 0)
+                {
+                    builder.Append(' ');
+                }
+
+                builder.Append(token);
+            }
+
+            return builder.ToString();
         }
     }
 }

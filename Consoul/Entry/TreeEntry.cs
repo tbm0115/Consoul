@@ -107,7 +107,15 @@ namespace ConsoulLibrary
         {
             string text = node.Text ?? string.Empty;
             ColorScheme textScheme = node.Scheme ?? _options.ResolveTextScheme();
-            List<List<FixedMessageSegment>> sourceLines = MarkupRenderText.GetLogicalLines(text, textScheme);
+            Decoration textDecoration = node.Decoration ?? _options.TextDecoration;
+            RgbColor? textForegroundRgb = node.ForegroundRgb ?? (node.Scheme.HasValue ? null : _options.TextForegroundRgb);
+            RgbColor? textBackgroundRgb = node.BackgroundRgb ?? (node.Scheme.HasValue ? null : _options.TextBackgroundRgb);
+            List<List<FixedMessageSegment>> sourceLines = MarkupRenderText.GetLogicalLines(
+                text,
+                textScheme,
+                textDecoration,
+                textForegroundRgb,
+                textBackgroundRgb);
             if (sourceLines.Count == 0)
             {
                 WritePrefixedLine(firstPrefix, new List<FixedMessageSegment>(), textScheme, width);
@@ -156,7 +164,13 @@ namespace ConsoulLibrary
             ColorScheme branchScheme = _options.ResolveBranchScheme();
             if (visiblePrefix.Length > 0)
             {
-                Consoul.Write(visiblePrefix, branchScheme, false);
+                TerminalLinkWriter.WriteText(
+                    visiblePrefix,
+                    branchScheme,
+                    null,
+                    _options.BranchDecoration,
+                    _options.BranchForegroundRgb,
+                    _options.BranchBackgroundRgb);
             }
 
             MarkupRenderText.WriteSegments(visibleText, textScheme, true);

@@ -261,13 +261,13 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                Add(
+                AddItem(ChecklistItem.Create(
                     labelSelector(item),
                     ChecklistItemState.Pending,
                     null,
-                    ResolveColor(item, labelColorSelector),
+                    labelColorSelector(item),
                     ResolveColor(item, markerColorSelector),
-                    ResolveColor(item, descriptionColorSelector));
+                    ResolveColor(item, descriptionColorSelector)));
             }
 
             return this;
@@ -307,13 +307,13 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                Add(
+                AddItem(ChecklistItem.Create(
                     labelSelector(item),
                     ChecklistItemState.Pending,
                     null,
-                    ResolveColor(item, labelColorSelector),
+                    labelColorSelector(item),
                     ResolveColor(item, markerColorSelector),
-                    ResolveColor(item, descriptionColorSelector));
+                    ResolveColor(item, descriptionColorSelector)));
             }
 
             return this;
@@ -427,13 +427,13 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                Add(
+                AddItem(ChecklistItem.Create(
                     labelSelector(item),
                     stateSelector(item),
                     descriptionSelector(item),
-                    ResolveColor(item, labelColorSelector),
+                    labelColorSelector(item),
                     ResolveColor(item, markerColorSelector),
-                    ResolveColor(item, descriptionColorSelector));
+                    ResolveColor(item, descriptionColorSelector)));
             }
 
             return this;
@@ -487,13 +487,13 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                Add(
+                AddItem(ChecklistItem.Create(
                     labelSelector(item),
                     stateSelector(item),
                     descriptionSelector(item),
-                    ResolveColor(item, labelColorSelector),
+                    labelColorSelector(item),
                     ResolveColor(item, markerColorSelector),
-                    ResolveColor(item, descriptionColorSelector));
+                    ResolveColor(item, descriptionColorSelector)));
             }
 
             return this;
@@ -686,6 +686,9 @@ namespace ConsoulLibrary
         public Checklist LabelColor(ConsoleColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = null;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -697,6 +700,9 @@ namespace ConsoulLibrary
         public Checklist LabelColor(SpectreColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color.ToRgbColor();
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -708,6 +714,9 @@ namespace ConsoulLibrary
         public Checklist LabelColor(RgbColor color)
         {
             Options.LabelScheme = Scheme(color);
+            Options.LabelDecoration = Decoration.None;
+            Options.LabelForegroundRgb = color;
+            Options.LabelBackgroundRgb = null;
             return this;
         }
 
@@ -718,7 +727,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Checklist"/> instance.</returns>
         public Checklist LabelColor(Style style)
         {
-            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(style);
             return this;
         }
 
@@ -729,7 +738,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Checklist"/> instance.</returns>
         public Checklist LabelColor(string style)
         {
-            Options.LabelScheme = Style.ParseScheme(style, Options.ResolveLabelScheme());
+            ApplyLabelStyle(Style.Parse(style));
             return this;
         }
 
@@ -741,6 +750,9 @@ namespace ConsoulLibrary
         public Checklist DescriptionColor(ConsoleColor color)
         {
             Options.DescriptionScheme = Scheme(color);
+            Options.DescriptionDecoration = Decoration.None;
+            Options.DescriptionForegroundRgb = null;
+            Options.DescriptionBackgroundRgb = null;
             return this;
         }
 
@@ -752,6 +764,9 @@ namespace ConsoulLibrary
         public Checklist DescriptionColor(SpectreColor color)
         {
             Options.DescriptionScheme = Scheme(color);
+            Options.DescriptionDecoration = Decoration.None;
+            Options.DescriptionForegroundRgb = color.ToRgbColor();
+            Options.DescriptionBackgroundRgb = null;
             return this;
         }
 
@@ -763,6 +778,9 @@ namespace ConsoulLibrary
         public Checklist DescriptionColor(RgbColor color)
         {
             Options.DescriptionScheme = Scheme(color);
+            Options.DescriptionDecoration = Decoration.None;
+            Options.DescriptionForegroundRgb = color;
+            Options.DescriptionBackgroundRgb = null;
             return this;
         }
 
@@ -773,7 +791,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Checklist"/> instance.</returns>
         public Checklist DescriptionColor(Style style)
         {
-            Options.DescriptionScheme = Scheme(style, Options.ResolveDescriptionScheme());
+            ApplyDescriptionStyle(style);
             return this;
         }
 
@@ -784,22 +802,38 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Checklist"/> instance.</returns>
         public Checklist DescriptionColor(string style)
         {
-            Options.DescriptionScheme = Style.ParseScheme(style, Options.ResolveDescriptionScheme());
+            ApplyDescriptionStyle(Style.Parse(style));
             return this;
         }
 
-        private static ConsoleColor? ResolveColor<T>(T item, Func<T, SpectreColor> selector)
+        private void ApplyLabelStyle(Style style)
         {
-            return selector == null
-                ? (ConsoleColor?)null
-                : selector(item).ToConsoleColor();
+            Options.LabelScheme = Scheme(style, Options.ResolveLabelScheme());
+            Options.LabelDecoration = style?.Decoration ?? Decoration.None;
+            Options.LabelForegroundRgb = style?.ForegroundRgb;
+            Options.LabelBackgroundRgb = style?.BackgroundRgb;
         }
 
-        private static ConsoleColor? ResolveColor<T>(T item, Func<T, RgbColor> selector)
+        private void ApplyDescriptionStyle(Style style)
+        {
+            Options.DescriptionScheme = Scheme(style, Options.ResolveDescriptionScheme());
+            Options.DescriptionDecoration = style?.Decoration ?? Decoration.None;
+            Options.DescriptionForegroundRgb = style?.ForegroundRgb;
+            Options.DescriptionBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private static SpectreColor? ResolveColor<T>(T item, Func<T, SpectreColor> selector)
         {
             return selector == null
-                ? (ConsoleColor?)null
-                : selector(item).ToConsoleColor();
+                ? (SpectreColor?)null
+                : selector(item);
+        }
+
+        private static RgbColor? ResolveColor<T>(T item, Func<T, RgbColor> selector)
+        {
+            return selector == null
+                ? (RgbColor?)null
+                : selector(item);
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

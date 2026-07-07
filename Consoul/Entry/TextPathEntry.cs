@@ -343,21 +343,21 @@ namespace ConsoulLibrary
             bool hasContent = false;
             if (!string.IsNullOrEmpty(model.Root))
             {
-                Consoul.Write(model.Root, _options.ResolveRootScheme(), false);
+                WriteRoot(model.Root);
                 hasContent = true;
             }
 
             if (model.OmittedDirectories)
             {
                 WriteSeparatorIfNeeded(hasContent, model.RootEndsWithSeparator);
-                Consoul.Write(ellipsis, _options.ResolveSeparatorScheme(), false);
+                WriteSeparator(ellipsis);
                 hasContent = true;
             }
 
             for (int index = 0; index < model.Directories.Count; index++)
             {
                 WriteSeparatorIfNeeded(hasContent, model.RootEndsWithSeparator && index == 0 && !model.OmittedDirectories);
-                Consoul.Write(model.Directories[index], _options.ResolveDirectoryScheme(), false);
+                WriteDirectory(model.Directories[index]);
                 hasContent = true;
             }
 
@@ -372,7 +372,7 @@ namespace ConsoulLibrary
         {
             if (hasContent && !previousAlreadyEndedWithSeparator)
             {
-                Consoul.Write(ResolveSeparator(Path, _options.Separator), _options.ResolveSeparatorScheme(), false);
+                WriteSeparator(ResolveSeparator(Path, _options.Separator));
             }
         }
 
@@ -381,12 +381,72 @@ namespace ConsoulLibrary
             int extensionIndex = leaf.LastIndexOf('.');
             if (extensionIndex > 0 && extensionIndex < leaf.Length - 1)
             {
-                Consoul.Write(leaf.Substring(0, extensionIndex), _options.ResolveFileNameScheme(), false);
-                Consoul.Write(leaf.Substring(extensionIndex), _options.ResolveExtensionScheme(), false);
+                WriteFileName(leaf.Substring(0, extensionIndex));
+                WriteExtension(leaf.Substring(extensionIndex));
                 return;
             }
 
-            Consoul.Write(leaf, _options.ResolveFileNameScheme(), false);
+            WriteFileName(leaf);
+        }
+
+        private void WriteRoot(string value)
+        {
+            WriteStyled(
+                value,
+                _options.ResolveRootScheme(),
+                _options.RootDecoration,
+                _options.RootForegroundRgb,
+                _options.RootBackgroundRgb);
+        }
+
+        private void WriteDirectory(string value)
+        {
+            WriteStyled(
+                value,
+                _options.ResolveDirectoryScheme(),
+                _options.DirectoryDecoration,
+                _options.DirectoryForegroundRgb,
+                _options.DirectoryBackgroundRgb);
+        }
+
+        private void WriteFileName(string value)
+        {
+            WriteStyled(
+                value,
+                _options.ResolveFileNameScheme(),
+                _options.FileNameDecoration,
+                _options.FileNameForegroundRgb,
+                _options.FileNameBackgroundRgb);
+        }
+
+        private void WriteExtension(string value)
+        {
+            WriteStyled(
+                value,
+                _options.ResolveExtensionScheme(),
+                _options.ExtensionDecoration,
+                _options.ExtensionForegroundRgb,
+                _options.ExtensionBackgroundRgb);
+        }
+
+        private void WriteSeparator(string value)
+        {
+            WriteStyled(
+                value,
+                _options.ResolveSeparatorScheme(),
+                _options.SeparatorDecoration,
+                _options.SeparatorForegroundRgb,
+                _options.SeparatorBackgroundRgb);
+        }
+
+        private static void WriteStyled(
+            string value,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            TerminalLinkWriter.WriteText(value, scheme, null, decoration, foregroundRgb, backgroundRgb);
         }
 
         private readonly struct PathModel

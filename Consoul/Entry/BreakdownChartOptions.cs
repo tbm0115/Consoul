@@ -1,5 +1,6 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 
 namespace ConsoulLibrary
 {
@@ -69,14 +70,59 @@ namespace ConsoulLibrary
         public ColorScheme? SegmentScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for chart segments.
+        /// </summary>
+        public Decoration SegmentDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for chart segments on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SegmentForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for chart segments on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? SegmentBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for legend labels.
         /// </summary>
         public ColorScheme? LabelScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for chart and legend labels.
+        /// </summary>
+        public Decoration LabelDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for chart and legend labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for chart and legend labels on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? LabelBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for legend values.
         /// </summary>
         public ColorScheme? ValueScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for legend values.
+        /// </summary>
+        public Decoration ValueDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB foreground color used for legend values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the RGB background color used for legend values on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ValueBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current breakdown chart options.
@@ -98,8 +144,17 @@ namespace ConsoulLibrary
                 ValueFormatter = ValueFormatter,
                 PercentageFormatter = PercentageFormatter,
                 SegmentScheme = SegmentScheme,
+                SegmentDecoration = SegmentDecoration,
+                SegmentForegroundRgb = SegmentForegroundRgb,
+                SegmentBackgroundRgb = SegmentBackgroundRgb,
                 LabelScheme = LabelScheme,
-                ValueScheme = ValueScheme
+                LabelDecoration = LabelDecoration,
+                LabelForegroundRgb = LabelForegroundRgb,
+                LabelBackgroundRgb = LabelBackgroundRgb,
+                ValueScheme = ValueScheme,
+                ValueDecoration = ValueDecoration,
+                ValueForegroundRgb = ValueForegroundRgb,
+                ValueBackgroundRgb = ValueBackgroundRgb
             };
         }
 

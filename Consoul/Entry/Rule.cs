@@ -62,8 +62,14 @@ namespace ConsoulLibrary
         /// <param name="titleColor">Title foreground color.</param>
         /// <param name="justification">Optional title justification.</param>
         public Rule(string title, SpectreColor titleColor, Justify? justification = null)
-            : this(title, titleColor.ToConsoleColor(), justification)
+            : this(title)
         {
+            ApplyTitleStyle(new Style(titleColor));
+
+            if (justification.HasValue)
+            {
+                Options.Alignment = JustifyMap.ToRuleTitleAlignment(justification.Value);
+            }
         }
 
         /// <summary>
@@ -73,8 +79,14 @@ namespace ConsoulLibrary
         /// <param name="titleColor">Title foreground color mapped to Consoul's console palette.</param>
         /// <param name="justification">Optional title justification.</param>
         public Rule(string title, RgbColor titleColor, Justify? justification = null)
-            : this(title, titleColor.ToConsoleColor(), justification)
+            : this(title)
         {
+            ApplyTitleStyle(new Style(titleColor));
+
+            if (justification.HasValue)
+            {
+                Options.Alignment = JustifyMap.ToRuleTitleAlignment(justification.Value);
+            }
         }
 
         /// <summary>
@@ -114,13 +126,31 @@ namespace ConsoulLibrary
                 }
 
                 ColorScheme scheme = Options.RuleScheme.Value;
-                return new Style(scheme.Color, scheme.BackgroundColor);
+                Style style = new Style(Options.RuleDecoration, scheme.Color, scheme.BackgroundColor);
+                if (Options.RuleForegroundRgb.HasValue)
+                {
+                    style = style.WithForeground(Options.RuleForegroundRgb.Value);
+                }
+
+                if (Options.RuleBackgroundRgb.HasValue)
+                {
+                    style = style.WithBackground(Options.RuleBackgroundRgb.Value);
+                }
+
+                return style;
             }
             set
             {
-                Options.RuleScheme = value != null
-                    ? Scheme(value, Options.RuleScheme ?? RenderOptions.DefaultScheme)
-                    : (ColorScheme?)null;
+                if (value == null)
+                {
+                    Options.RuleScheme = null;
+                    Options.RuleDecoration = Decoration.None;
+                    Options.RuleForegroundRgb = null;
+                    Options.RuleBackgroundRgb = null;
+                    return;
+                }
+
+                ApplyRuleStyle(value);
             }
         }
 
@@ -226,6 +256,8 @@ namespace ConsoulLibrary
         public Rule RuleColor(ConsoleColor color)
         {
             Options.RuleScheme = Scheme(color);
+            Options.RuleForegroundRgb = null;
+            Options.RuleBackgroundRgb = null;
             return this;
         }
 
@@ -237,6 +269,8 @@ namespace ConsoulLibrary
         public Rule RuleColor(SpectreColor color)
         {
             Options.RuleScheme = Scheme(color);
+            Options.RuleForegroundRgb = color.ToRgbColor();
+            Options.RuleBackgroundRgb = null;
             return this;
         }
 
@@ -248,6 +282,8 @@ namespace ConsoulLibrary
         public Rule RuleColor(RgbColor color)
         {
             Options.RuleScheme = Scheme(color);
+            Options.RuleForegroundRgb = color;
+            Options.RuleBackgroundRgb = null;
             return this;
         }
 
@@ -259,6 +295,8 @@ namespace ConsoulLibrary
         public Rule TitleColor(ConsoleColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleForegroundRgb = null;
+            Options.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -270,6 +308,8 @@ namespace ConsoulLibrary
         public Rule TitleColor(SpectreColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleForegroundRgb = color.ToRgbColor();
+            Options.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -281,6 +321,8 @@ namespace ConsoulLibrary
         public Rule TitleColor(RgbColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleForegroundRgb = color;
+            Options.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -291,7 +333,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Rule"/> instance.</returns>
         public Rule RuleStyle(string style)
         {
-            Options.RuleScheme = Scheme(style);
+            ApplyRuleStyle(Style.Parse(style));
             return this;
         }
 
@@ -302,7 +344,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Rule"/> instance.</returns>
         public Rule RuleStyle(Style style)
         {
-            Options.RuleScheme = Scheme(style, Options.RuleScheme ?? RenderOptions.DefaultScheme);
+            ApplyRuleStyle(style);
             return this;
         }
 
@@ -313,7 +355,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Rule"/> instance.</returns>
         public Rule TitleStyle(string style)
         {
-            Options.TitleScheme = Scheme(style);
+            ApplyTitleStyle(Style.Parse(style));
             return this;
         }
 
@@ -324,8 +366,24 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Rule"/> instance.</returns>
         public Rule TitleStyle(Style style)
         {
-            Options.TitleScheme = Scheme(style, Options.TitleScheme ?? Options.ResolveRuleScheme());
+            ApplyTitleStyle(style);
             return this;
+        }
+
+        private void ApplyRuleStyle(Style style)
+        {
+            Options.RuleScheme = Scheme(style, Options.RuleScheme ?? RenderOptions.DefaultScheme);
+            Options.RuleDecoration = style?.Decoration ?? Decoration.None;
+            Options.RuleForegroundRgb = style?.ForegroundRgb;
+            Options.RuleBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyTitleStyle(Style style)
+        {
+            Options.TitleScheme = Scheme(style, Options.TitleScheme ?? Options.ResolveRuleScheme());
+            Options.TitleDecoration = style?.Decoration ?? Decoration.None;
+            Options.TitleForegroundRgb = style?.ForegroundRgb;
+            Options.TitleBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)
@@ -345,20 +403,6 @@ namespace ConsoulLibrary
         private static ColorScheme Scheme(RgbColor color)
         {
             return Scheme(color.ToConsoleColor());
-        }
-
-        private static ColorScheme Scheme(string style)
-        {
-            ColorScheme fallback = RenderOptions.DefaultScheme;
-            foreach (MarkupSegment segment in MarkupEntry.Parse("[" + (style ?? string.Empty) + "]x[/]", fallback))
-            {
-                if (segment.Text == "x")
-                {
-                    return segment.Scheme;
-                }
-            }
-
-            return fallback;
         }
 
         private static ColorScheme Scheme(Style style, ColorScheme fallback)
