@@ -1,8 +1,11 @@
 using System;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
 using Xunit;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary.Tests.Rendering
 {
@@ -185,6 +188,73 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Model-projected rows preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Rows_ProjectionStyleSelectorsEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var statuses = new[]
+            {
+                new StyledDashboardStatus("API", "Ready", RgbColor.FromHex("#112233"), SpectreColor.FromHex("#445566"))
+            };
+
+            var rows = new Rows()
+                .Width(32)
+                .Spacing(0)
+                .AddRows(statuses, status => "RGB row " + status.Name, status => status.RgbColor)
+                .AddRows(statuses, status => "Color row " + status.Name, status => status.SpectreColor)
+                .AddRows(statuses, status => "Style row " + status.Name, status => "bold #778899");
+
+            console.Write(rows);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;17;34;51mRGB row API", output);
+            Assert.Contains("\u001b[38;2;68;85;102mColor row API", output);
+            Assert.Contains("\u001b[1;38;2;119;136;153mStyle row API", output);
+            Assert.DoesNotContain("[#778899", output);
+            Assert.DoesNotContain("[bold", output);
+        }
+
+        /// <summary>
+        /// Default row style helpers preserve RGB and decoration metadata while row overrides stay exact.
+        /// </summary>
+        [Fact]
+        public void Rows_DefaultStyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var rows = new Rows()
+                .Width(32)
+                .Spacing(0)
+                .ContentColor("italic #445566")
+                .AddRow("Inherited row")
+                .AddRow("Explicit row", "bold #778899");
+
+            console.Write(rows);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[3;38;2;68;85;102mInherited row", output);
+            Assert.Contains("\u001b[1;38;2;119;136;153mExplicit row", output);
+            Assert.DoesNotContain("[#445566", output);
+            Assert.DoesNotContain("[italic", output);
+            Assert.DoesNotContain("[#778899", output);
+            Assert.DoesNotContain("[bold", output);
+        }
+
+        /// <summary>
         /// Model-backed dynamic views can stack render helpers as compact dashboards.
         /// </summary>
         [Fact]
@@ -262,6 +332,25 @@ namespace ConsoulLibrary.Tests.Rendering
             public string State { get; private set; }
 
             public bool Warning { get; private set; }
+        }
+
+        private sealed class StyledDashboardStatus
+        {
+            public StyledDashboardStatus(string name, string state, RgbColor rgbColor, SpectreColor spectreColor)
+            {
+                Name = name;
+                State = state;
+                RgbColor = rgbColor;
+                SpectreColor = spectreColor;
+            }
+
+            public string Name { get; private set; }
+
+            public string State { get; private set; }
+
+            public RgbColor RgbColor { get; private set; }
+
+            public SpectreColor SpectreColor { get; private set; }
         }
 
         private sealed class TestRoutine : Routine

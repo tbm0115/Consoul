@@ -1030,9 +1030,19 @@ namespace ConsoulLibrary
         /// <returns>The configured prompt.</returns>
         public static TextPrompt<T> MaskStyle<T>(this TextPrompt<T> prompt, ConsoleColor color)
         {
-            TextPrompt<T> configured = Require(prompt);
-            configured.MaskColor = color;
-            return configured;
+            return Require(prompt).MaskStyle(color);
+        }
+
+        /// <summary>
+        /// Sets the style used when secret text prompt mask characters are rendered from a reusable style object.
+        /// </summary>
+        /// <typeparam name="T">The prompt value type.</typeparam>
+        /// <param name="prompt">The prompt to configure.</param>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The configured prompt.</returns>
+        public static TextPrompt<T> MaskStyle<T>(this TextPrompt<T> prompt, Style style)
+        {
+            return Require(prompt).MaskStyle(style);
         }
 
         /// <summary>
@@ -1044,9 +1054,7 @@ namespace ConsoulLibrary
         /// <returns>The configured prompt.</returns>
         public static TextPrompt<T> MaskStyle<T>(this TextPrompt<T> prompt, string style)
         {
-            TextPrompt<T> configured = Require(prompt);
-            configured.MaskColor = Style.ParseForeground(style, configured.MaskColor);
-            return configured;
+            return Require(prompt).MaskStyle(style);
         }
 
         /// <summary>

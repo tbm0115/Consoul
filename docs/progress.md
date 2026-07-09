@@ -11,7 +11,7 @@ Choose the progress APIs when you need to show active work such as downloads, mi
 * `ProgressContext` – Maintains multiple in-place task rows for a workflow.
 * `ProgressTask` – Represents one task row in a `ProgressContext`.
 * `ProgressTaskState` – Describes whether a progress task is pending, active, completed, or failed.
-* `ProgressTaskSettings` – Configures max value, auto-start behavior, and indeterminate mode when adding a task.
+* `ProgressTaskSettings` – Configures description, max value, auto-start behavior, indeterminate mode, tags, and hide-on-complete behavior when adding task rows.
 * `LiveDisplayContext` – Repeatedly refreshes a dashboard or model-backed view.
 * `LiveDisplayOptions` – Configures live display titles, clearing behavior, and completion colors.
 * `ProgressBar` – Tracks total units and renders textual progress bars.
@@ -160,6 +160,8 @@ using var bar = new ProgressBar("[green]Starting[/] [[prod]]");
 bar.Update(0.5, "[cyan]Halfway[/] [[prod]]");
 ```
 
+`StatusScope.Update(...)`, `StatusScope.Status(...)`, `StatusContext.Status(...)`, `ProgressBar.Update(...)`, and `SpinnerStyle(...)` accept `ConsoleColor`, `Color`, and `RgbColor` values for quick MVC-style palette wiring. `Color`/`RgbColor` values and reusable `Style` objects preserve RGB/hex metadata and ANSI-capable decorations while keeping nearest-`ConsoleColor` fallbacks for simpler terminals.
+
 `ProgressContext.AddTask(...)` keeps Consoul's existing `AddTask("Build", 4)` shape and also accepts Spectre-style `autoStart` and `maxValue` parameters for pasted snippets:
 
 ```csharp
@@ -187,6 +189,33 @@ download.Value = 1024;
 download.Complete("Package ready");
 ```
 
+For MVC-style workflow views, `AddTasks(...)` accepts quick description params, generated `IEnumerable<string>` descriptions, or prepared `ProgressTaskSettings` objects. Settings can carry `Description`, `Tag`, and per-task `HideWhenCompleted` metadata alongside `AutoStart`, `MaxValue`, and `IsIndeterminate`, so a controller can project model state directly into progress rows:
+
+```csharp
+IReadOnlyList<ProgressTask> setup = progress.AddTasks("Restore", "Build");
+
+var deploySteps = new[]
+{
+    new ProgressTaskSettings
+    {
+        Description = "Publish",
+        MaxValue = 2,
+        Tag = "release",
+        HideWhenCompleted = true
+    },
+    new ProgressTaskSettings
+    {
+        Description = "Smoke tests",
+        AutoStart = false,
+        MaxValue = 4,
+        IsIndeterminate = true,
+        Tag = "qa"
+    }
+};
+
+IReadOnlyList<ProgressTask> deploy = progress.AddTasks(deploySteps);
+```
+
 Task descriptions can contain raw Spectre-style markup in both the default progress row and `TaskDescriptionColumn` rows. Consoul trims and pads by visible text, renders parsed colors plus RGB/hex metadata and ANSI-capable text decorations, and keeps escaped brackets such as `[[prod]]` literal:
 
 ```csharp
@@ -212,7 +241,7 @@ progress.RemoveTask(build);
 progress.Refresh();
 ```
 
-Column configuration drives Consoul's responsive row renderer: include only the columns you want to see, in the order you want them rendered.
+Column configuration drives Consoul's responsive row renderer: include only the columns you want to see, in the order you want them rendered. `ProgressContext.Columns(...)` accepts either pasted params columns or generated `IEnumerable<ProgressColumn>` collections, so MVC-style workflow code can choose columns from model or environment state without adapter arrays.
 
 ```csharp
 int processed = AnsiConsole.Progress()
@@ -308,10 +337,10 @@ int refreshes = AnsiConsole.Live(status)
 ```
 
 ## Advanced tips
-* **Responsive single bars** - Set `BarWidth` to your preferred maximum; `ProgressBar` clamps the rendered width to the current terminal on every update. Enable `ShowTrack` and `ShowPercentage` when you want a complete bounded row for quick POC dashboards. `Update(...)` accepts `ConsoleColor`, `Color`, and `RgbColor` values for quick warning/success states, while `UpdateStyled(...)`, `StatusScope.UpdateStyled(...)`, and `FixedMessage.RenderStyled(...)` accept reusable `Style` objects when a controller owns foreground/background styling.
+* **Responsive single bars** - Set `BarWidth` to your preferred maximum; `ProgressBar` clamps the rendered width to the current terminal on every update. Enable `ShowTrack` and `ShowPercentage` when you want a complete bounded row for quick POC dashboards. `Update(...)` accepts `ConsoleColor`, `Color`, and `RgbColor` values for quick warning/success states; `Color`, `RgbColor`, and `UpdateStyled(...)` keep RGB/hex metadata and ANSI decorations on capable terminals while falling back to the nearest console colors elsewhere. `StatusScope.UpdateStyled(...)` and `FixedMessage.RenderStyled(...)` accept reusable `Style` objects when a controller owns foreground/background styling.
 * **Spinners** – Use `Consoul.Spinner` when work is active but you do not have a reliable percentage. Call `Tick()` as phases complete, or let the action overload mark success/failure automatically after the delegate exits.
-* **Status scopes** – Use `Consoul.Status` for short operations where a full progress bar would be noise. The action overload automatically marks success, marks failure before rethrowing exceptions, and still lets you call `Succeed` or `Fail` yourself for custom final text. Use `AnsiConsole.Status().StartContext(...)` or `StartContextAsync(...)` when a migrated snippet prefers property-style `Status`, `Spinner`, and `SpinnerStyle` updates; `StatusContext` also exposes `Succeed(...)` and `Fail(...)` directly. `StatusScope.Update(...)`, `StatusScope.Status(...)`, and `StatusContext.Status(...)` accept `ConsoleColor`, `Color`, and `RgbColor` values for direct message color changes. `RefreshRate(...)` helpers on status builders/scopes and spinner builders/scopes accept milliseconds or `TimeSpan` values for throttled manual-refresh POCs. `SpinnerStyle(...)` helpers on status builders, status scopes, status contexts, spinner builders, and spinner scopes accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values. `StatusAsync`, `SpinnerAsync`, `ProgressAsync`, and `LiveAsync` accept both `async context => ...` and `(context, cancellationToken) => ...` delegate shapes, including result-returning `Task<T>` delegates for MVC-style controller actions that compute a value while rendering scoped feedback.
-* **Progress contexts** – Use `Consoul.Progress` when a workflow has several task rows. Each `ProgressTask` supports `Update`, `Increment`, `Complete`, `Fail`, `Start`, `StartTask`, `StopTask`, `IsStarted`, task metadata such as `Id`, `Tag`, `Percentage`, `Speed`, `ElapsedTime`, and `RemainingTime`, and creation through `AddTask(..., autoStart, maxValue)` or `ProgressTaskSettings`. Set `HideWhenCompleted` on one task to override the context-wide `HideCompleted(...)` setting. Use `RefreshRate(...)`, `AddTaskAt`, `AddTaskBefore`, `AddTaskAfter`, and `RemoveTask` when a controller discovers work dynamically but the view should remain grouped and redraws should be throttled. The context exposes `CompletedTaskCount`, `FailedTaskCount`, `HasFailures`, and `IsFinished` for view-model decisions, and disposes its fixed rows automatically when the action exits.
+* **Status scopes** – Use `Consoul.Status` for short operations where a full progress bar would be noise. The action overload automatically marks success, marks failure before rethrowing exceptions, and still lets you call `Succeed` or `Fail` yourself for custom final text. Use `AnsiConsole.Status().StartContext(...)` or `StartContextAsync(...)` when a migrated snippet prefers property-style `Status`, `Spinner`, and `SpinnerStyle` updates; `StatusContext` also exposes `Succeed(...)` and `Fail(...)` directly. `StatusScope.Update(...)`, `StatusScope.Status(...)`, and `StatusContext.Status(...)` accept `ConsoleColor`, `Color`, and `RgbColor` values for direct message color changes, and `Color`/`RgbColor` values preserve rich ANSI metadata when supported. `RefreshRate(...)` helpers on status builders/scopes and spinner builders/scopes accept milliseconds or `TimeSpan` values for throttled manual-refresh POCs. `Frames(...)` helpers on status builders/scopes and spinner builders/scopes plus reusable `Spinner` constructors accept pasted params frames or generated `IEnumerable<string>` frame collections from MVC-style view model state. `SpinnerStyle(...)` helpers on status builders, status scopes, status contexts, spinner builders, and spinner scopes accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values. `StatusAsync`, `SpinnerAsync`, `ProgressAsync`, and `LiveAsync` accept both `async context => ...` and `(context, cancellationToken) => ...` delegate shapes, including result-returning `Task<T>` delegates for MVC-style controller actions that compute a value while rendering scoped feedback.
+* **Progress contexts** – Use `Consoul.Progress` when a workflow has several task rows. Each `ProgressTask` supports `Update`, `Increment`, `Complete`, `Fail`, `Start`, `StartTask`, `StopTask`, `IsStarted`, task metadata such as `Id`, `Tag`, `Percentage`, `Speed`, `ElapsedTime`, and `RemainingTime`, and creation through `AddTask(..., autoStart, maxValue)`, `AddTasks(...)`, or `ProgressTaskSettings`. Set `HideWhenCompleted` on one task or in task settings to override the context-wide `HideCompleted(...)` setting. Use `RefreshRate(...)`, `AddTaskAt`, `AddTaskBefore`, `AddTaskAfter`, and `RemoveTask` when a controller discovers work dynamically but the view should remain grouped and redraws should be throttled. The context exposes `CompletedTaskCount`, `FailedTaskCount`, `HasFailures`, and `IsFinished` for view-model decisions, and disposes its fixed rows automatically when the action exits.
 * **Live displays** – Use `Consoul.Live` when a POC dashboard should redraw a model snapshot instead of updating one fixed row. Keep the render action side-effect free where possible, mutate the model between refreshes, and compose normal helpers such as `PropertyList`, `Table`, `Grid`, or charts inside `live.Refresh(...)`.
 * **Fractional updates** – The `Update(double progress, …)` overload expects a 0–1 value and clamps out-of-range, NaN, and infinity values before rendering. Pair the fraction with a message to surface ETA or processed counts, and round your display text to avoid jitter from floating-point noise.
 * **Minimal width & resizing** – Set `BarWidth` to a preferred maximum and let the bar clamp itself against the current terminal on each update. The rendered row stays bounded even when the terminal is narrower than the preferred width.

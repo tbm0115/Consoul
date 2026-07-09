@@ -195,6 +195,78 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Aggregate exceptions flatten child failures and can bound the number of rendered children.
+        /// </summary>
+        [Fact]
+        public void WriteException_AggregateException_FlattensAndLimitsChildren()
+        {
+            using (var scope = new ConsoleDriverScope(72))
+            {
+                var exception = new AggregateException(
+                    "Parallel deployment failed",
+                    new InvalidOperationException("API failed"),
+                    new ArgumentException("Worker failed"),
+                    new AggregateException(
+                        "Nested queue failures",
+                        new TimeoutException("Queue timed out")));
+
+                Consoul.WriteException(
+                    exception,
+                    new ExceptionRenderOptions
+                    {
+                        Width = 64,
+                        IncludeStackTrace = false,
+                        Format = ExceptionFormats.ShortenTypes,
+                        MaxAggregateExceptions = 2
+                    });
+
+                string output = string.Join("\n", scope.Driver.Lines);
+
+                Assert.Contains("Type: AggregateException", output);
+                Assert.Contains("Message: Parallel deployment failed", output);
+                Assert.Contains("Inner 1: InvalidOperationException", output);
+                Assert.Contains("API failed", output);
+                Assert.Contains("Inner 2: ArgumentException", output);
+                Assert.Contains("Worker failed", output);
+                Assert.Contains("Inner exceptions truncated: 1 not rendered", output);
+                Assert.DoesNotContain("Queue timed out", output);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 64, "Aggregate exception line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Spectre-style exception settings can opt out of aggregate flattening.
+        /// </summary>
+        [Fact]
+        public void WriteException_ExceptionSettings_CanDisableAggregateFlattening()
+        {
+            using (var scope = new ConsoleDriverScope(72))
+            {
+                var exception = new AggregateException(
+                    "Parallel deployment failed",
+                    new InvalidOperationException("API failed"),
+                    new ArgumentException("Worker failed"));
+
+                AnsiConsole.WriteException(exception, new ExceptionSettings
+                {
+                    Format = ExceptionFormats.NoStackTrace | ExceptionFormats.ShortenTypes,
+                    FlattenAggregateExceptions = false
+                });
+
+                string output = string.Join("\n", scope.Driver.Lines);
+
+                Assert.Contains("Type: AggregateException", output);
+                Assert.Contains("Message: Parallel deployment failed", output);
+                Assert.Contains("Inner 1: InvalidOperationException", output);
+                Assert.Contains("API failed", output);
+                Assert.DoesNotContain("ArgumentException", output);
+                Assert.DoesNotContain("Inner 2:", output);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Model-backed dynamic views can render structured exceptions as diagnostic sections.
         /// </summary>
         [Fact]

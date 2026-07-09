@@ -39,9 +39,39 @@ namespace ConsoulLibrary
         public ColorScheme? HeaderScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the text decoration used for headers on ANSI-capable terminals.
+        /// </summary>
+        public Decoration HeaderDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for headers on true-color terminals.
+        /// </summary>
+        public RgbColor? HeaderForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for headers on true-color terminals.
+        /// </summary>
+        public RgbColor? HeaderBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the default color scheme used for cell content.
         /// </summary>
         public ColorScheme? ContentScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the text decoration used for default cell content on ANSI-capable terminals.
+        /// </summary>
+        public Decoration ContentDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for default cell content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for default cell content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current grid options.
@@ -57,7 +87,13 @@ namespace ConsoulLibrary
                 MinimumColumnWidth = MinimumColumnWidth,
                 Gutter = Gutter,
                 HeaderScheme = HeaderScheme,
-                ContentScheme = ContentScheme
+                HeaderDecoration = HeaderDecoration,
+                HeaderForegroundRgb = HeaderForegroundRgb,
+                HeaderBackgroundRgb = HeaderBackgroundRgb,
+                ContentScheme = ContentScheme,
+                ContentDecoration = ContentDecoration,
+                ContentForegroundRgb = ContentForegroundRgb,
+                ContentBackgroundRgb = ContentBackgroundRgb
             };
         }
 

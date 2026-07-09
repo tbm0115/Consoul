@@ -44,29 +44,30 @@ namespace ConsoulLibrary
         /// <param name="isHeader">Indicates whether the row is a header row.</param>
         public void RenderRow(IEnumerable<string> row, int rowNumber, bool isHighlighted = false, bool isSelected = false, bool isHeader = false)
         {
+            TableRenderStyle lineStyle = RenderOptions.Lines.ResolveStyle();
             Consoul.Write(RenderOptions.LeftPad, writeLine: false);
             foreach (string cell in row)
             {
                 if (isHeader)
                 {
-                    Consoul.Write(RenderOptions.Lines.VerticalCharacter.ToString(), RenderOptions.Lines.Color, writeLine: false);
-                    Consoul.Center(cell, RenderOptions.ColumnSize.GetValueOrDefault(), RenderOptions.HeaderScheme, writeLine: false);
+                    TableRenderStyleWriter.Write(RenderOptions.Lines.VerticalCharacter.ToString(), lineStyle, writeLine: false);
+                    WriteCentered(cell, RenderOptions.ColumnSize.GetValueOrDefault(), RenderOptions.ResolveHeaderStyle(), writeLine: false);
                 }
                 else
                 {
-                    Consoul.Write(RenderOptions.Lines.VerticalCharacter.ToString(), RenderOptions.Lines.Color, writeLine: false);
-                    ColorScheme rowScheme = isSelected
-                        ? RenderOptions.SelectionScheme
+                    TableRenderStyleWriter.Write(RenderOptions.Lines.VerticalCharacter.ToString(), lineStyle, writeLine: false);
+                    TableRenderStyle rowStyle = isSelected
+                        ? TableRenderStyle.From(RenderOptions.SelectionScheme)
                         : isHighlighted
-                            ? RenderOptions.HighlightedScheme
+                            ? TableRenderStyle.From(RenderOptions.HighlightedScheme)
                             : (rowNumber % 2 == 0
-                                ? RenderOptions.ContentScheme1
-                                : RenderOptions.ContentScheme2);
+                                ? RenderOptions.ResolveContentStyle1()
+                                : RenderOptions.ResolveContentStyle2());
 
-                    Consoul.Center(cell, RenderOptions.ColumnSize.GetValueOrDefault(), rowScheme, writeLine: false);
+                    WriteCentered(cell, RenderOptions.ColumnSize.GetValueOrDefault(), rowStyle, writeLine: false);
                 }
             }
-            Consoul.Write(RenderOptions.Lines.VerticalCharacter.ToString(), RenderOptions.Lines.Color);
+            TableRenderStyleWriter.Write(RenderOptions.Lines.VerticalCharacter.ToString(), lineStyle);
             RenderHorizontalSeparator();
         }
 
@@ -78,8 +79,28 @@ namespace ConsoulLibrary
             if (RenderOptions.Lines.ContentHorizontal || RenderOptions.Lines.HeaderHorizontal)
             {
                 string horizontalLine = new string(RenderOptions.Lines.HorizontalCharacter, RenderOptions.GetMaximumTableWidth());
-                Consoul.Write(RenderOptions.LeftPad + horizontalLine, RenderOptions.Lines.Color);
+                TableRenderStyleWriter.Write(RenderOptions.LeftPad + horizontalLine, RenderOptions.Lines.ResolveStyle());
             }
+        }
+
+        private static void WriteCentered(string message, int maxWidth, TableRenderStyle style, bool writeLine)
+        {
+            message = message ?? string.Empty;
+            if (maxWidth == 0)
+            {
+                maxWidth = Consoul.ConsoleBufferWidth;
+            }
+
+            string text = message.Length > maxWidth
+                ? message.Substring(0, Math.Max(0, maxWidth - 1)) + "…"
+                : message;
+
+            int remainder = maxWidth - text.Length - 1;
+            int right = remainder / 2;
+            int left = remainder % 2 != 0 ? (remainder + 1) / 2 : right;
+            text = new string(' ', Math.Max(0, left)) + text + new string(' ', Math.Max(0, right));
+
+            TableRenderStyleWriter.Write(text, style, writeLine);
         }
     }
 }

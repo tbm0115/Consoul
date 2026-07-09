@@ -78,6 +78,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds values to the sparkline.
+        /// </summary>
+        /// <param name="values">The values to add.</param>
+        /// <returns>The current <see cref="SparklineEntry"/> instance.</returns>
+        public SparklineEntry AddRange(params double[] values)
+        {
+            return AddRange((IEnumerable<double>)values);
+        }
+
+        /// <summary>
         /// Renders the sparkline to the active console driver.
         /// </summary>
         public void Render()

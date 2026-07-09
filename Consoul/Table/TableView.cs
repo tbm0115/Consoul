@@ -95,6 +95,15 @@ namespace ConsoulLibrary
         /// <param name="isHeader">Indicates whether the row is a header row.</param>
         public void Render(ColorScheme? contentScheme = null, ColorScheme? lineScheme = null, bool isHeader = false)
         {
+            TableRenderStyle contentStyle = TableRenderStyle.From(contentScheme ?? RenderOptions.DefaultScheme);
+            TableRenderStyle? lineStyle = lineScheme.HasValue
+                ? TableRenderStyle.From(lineScheme.Value)
+                : (TableRenderStyle?)null;
+            Render(contentStyle, lineStyle, isHeader);
+        }
+
+        internal void Render(TableRenderStyle contentStyle, TableRenderStyle? lineStyle, bool isHeader = false)
+        {
             string line = _renderOptions.Lines.GetBorderCharacters().Vertical.ToString();
             bool showVertical = isHeader
                 ? _renderOptions?.Lines?.HeaderVertical ?? true
@@ -104,7 +113,7 @@ namespace ConsoulLibrary
             int bottomPadding = ResolveVerticalPadding(top: false);
             for (int i = 0; i < topPadding; i++)
             {
-                RenderPaddingRow(showVertical, line, contentScheme, lineScheme);
+                RenderPaddingRow(showVertical, line, contentStyle, lineStyle);
             }
 
             int rowTop = Consoul.ConsoleDriver.CursorTop;
@@ -112,7 +121,7 @@ namespace ConsoulLibrary
 
             if (showVertical)
             {
-                Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                TableRenderStyleWriter.Write(line, lineStyle, writeLine: false);
             }
 
             int currentLeft = Consoul.ConsoleDriver.CursorLeft;
@@ -124,7 +133,7 @@ namespace ConsoulLibrary
                 int renderWidth = Math.Min(Math.Max(0, cell.CellWidth), availableWidth);
 
                 Consoul.ConsoleDriver.SetCursorPosition(startLeft, rowTop);
-                cell.Render(renderWidth, contentScheme, ResolveCellAlignment(i, isHeader), ResolveCellPadding(i));
+                cell.Render(renderWidth, contentStyle, ResolveCellAlignment(i, isHeader), ResolveCellPadding(i));
 
                 currentLeft = startLeft + renderWidth;
                 if (currentLeft >= Consoul.ConsoleBufferWidth)
@@ -135,7 +144,7 @@ namespace ConsoulLibrary
                 if (showVertical)
                 {
                     Consoul.ConsoleDriver.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Consoul.ConsoleBufferWidth - 1)), rowTop);
-                    Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                    TableRenderStyleWriter.Write(line, lineStyle, writeLine: false);
                     currentLeft = Consoul.ConsoleDriver.CursorLeft;
                 }
                 else
@@ -148,14 +157,14 @@ namespace ConsoulLibrary
             {
                 int closingLeft = Math.Min(rowLeft + GetTableWidth() - 1, Consoul.ConsoleBufferWidth - 1);
                 Consoul.ConsoleDriver.SetCursorPosition(Math.Max(0, closingLeft), rowTop);
-                Consoul.Write(line, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                TableRenderStyleWriter.Write(line, lineStyle, writeLine: false);
             }
 
             Consoul.Write(string.Empty);
 
             for (int i = 0; i < bottomPadding; i++)
             {
-                RenderPaddingRow(showVertical, line, contentScheme, lineScheme);
+                RenderPaddingRow(showVertical, line, contentStyle, lineStyle);
             }
         }
 
@@ -312,14 +321,14 @@ namespace ConsoulLibrary
             return padding;
         }
 
-        private void RenderPaddingRow(bool showVertical, string verticalLine, ColorScheme? contentScheme, ColorScheme? lineScheme)
+        private void RenderPaddingRow(bool showVertical, string verticalLine, TableRenderStyle contentStyle, TableRenderStyle? lineStyle)
         {
             int rowTop = Consoul.ConsoleDriver.CursorTop;
             int rowLeft = Consoul.ConsoleDriver.CursorLeft;
 
             if (showVertical)
             {
-                Consoul.Write(verticalLine, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                TableRenderStyleWriter.Write(verticalLine, lineStyle, writeLine: false);
             }
 
             int currentLeft = Consoul.ConsoleDriver.CursorLeft;
@@ -333,7 +342,7 @@ namespace ConsoulLibrary
                 Consoul.ConsoleDriver.SetCursorPosition(startLeft, rowTop);
                 if (renderWidth > 0)
                 {
-                    Consoul.Write(new string(' ', renderWidth), contentScheme?.Color, contentScheme?.BackgroundColor, writeLine: false);
+                    TableRenderStyleWriter.Write(new string(' ', renderWidth), contentStyle, writeLine: false);
                 }
 
                 currentLeft = startLeft + renderWidth;
@@ -345,7 +354,7 @@ namespace ConsoulLibrary
                 Consoul.ConsoleDriver.SetCursorPosition(Math.Max(0, Math.Min(currentLeft, Consoul.ConsoleBufferWidth - 1)), rowTop);
                 if (showVertical)
                 {
-                    Consoul.Write(verticalLine, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                    TableRenderStyleWriter.Write(verticalLine, lineStyle, writeLine: false);
                     currentLeft = Consoul.ConsoleDriver.CursorLeft;
                 }
             }
@@ -354,7 +363,7 @@ namespace ConsoulLibrary
             {
                 int closingLeft = Math.Min(rowLeft + GetTableWidth() - 1, Consoul.ConsoleBufferWidth - 1);
                 Consoul.ConsoleDriver.SetCursorPosition(Math.Max(0, closingLeft), rowTop);
-                Consoul.Write(verticalLine, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                TableRenderStyleWriter.Write(verticalLine, lineStyle, writeLine: false);
             }
 
             Consoul.Write(string.Empty);
@@ -441,6 +450,11 @@ namespace ConsoulLibrary
         /// <param name="padding">Optional padding applied inside the cell.</param>
         public void Render(int? overrideWidth = null, ColorScheme? contentScheme = null, TableCellAlignment alignment = TableCellAlignment.Default, Padding padding = null)
         {
+            Render(overrideWidth, TableRenderStyle.From(contentScheme ?? RenderOptions.DefaultScheme), alignment, padding);
+        }
+
+        internal void Render(int? overrideWidth, TableRenderStyle contentStyle, TableCellAlignment alignment = TableCellAlignment.Default, Padding padding = null)
+        {
             int width = overrideWidth.HasValue ? Math.Max(0, overrideWidth.Value) : _cellWidth;
             _cellWidth = width;
             _message.MaxWidth = width;
@@ -465,27 +479,26 @@ namespace ConsoulLibrary
                 ? alignment
                 : Alignment;
 
-            ColorScheme defaultScheme = contentScheme ?? RenderOptions.DefaultScheme;
             List<FixedMessageSegment> contentSegments = innerWidth == 0
                 ? new List<FixedMessageSegment>()
-                : TruncateSegments(ParseMarkupSegments(_contents, defaultScheme), innerWidth);
+                : TruncateSegments(ParseMarkupSegments(_contents, contentStyle), innerWidth);
             int contentLength = GetSegmentLength(contentSegments);
             int alignmentPadding = Math.Max(0, innerWidth - contentLength);
             int leftAlignmentPadding = ResolveLeftAlignmentPadding(alignmentPadding, effectiveAlignment);
             int rightAlignmentPadding = alignmentPadding - leftAlignmentPadding;
 
             var contents = new List<FixedMessageSegment>();
-            AddPaddingSegment(contents, leftPadding + leftAlignmentPadding, defaultScheme);
+            AddPaddingSegment(contents, leftPadding + leftAlignmentPadding, contentStyle);
             contents.AddRange(contentSegments);
-            AddPaddingSegment(contents, rightAlignmentPadding + rightPadding, defaultScheme);
-            PadSegmentsOrTrim(contents, width, defaultScheme);
+            AddPaddingSegment(contents, rightAlignmentPadding + rightPadding, contentStyle);
+            PadSegmentsOrTrim(contents, width, contentStyle);
 
             if (_hasRendered)
             {
                 _message.Reset();
             }
 
-            _message.RenderSegments(contents, contentScheme?.Color, contentScheme?.BackgroundColor);
+            _message.RenderSegments(contents, contentStyle.Scheme.Color, contentStyle.Scheme.BackgroundColor);
             _hasRendered = true;
         }
 
@@ -517,10 +530,14 @@ namespace ConsoulLibrary
             }
         }
 
-        private static List<FixedMessageSegment> ParseMarkupSegments(string text, ColorScheme defaultScheme)
+        private static List<FixedMessageSegment> ParseMarkupSegments(string text, TableRenderStyle defaultStyle)
         {
             var segments = new List<FixedMessageSegment>();
-            foreach (MarkupSegment segment in MarkupEntry.Parse(text ?? string.Empty, defaultScheme))
+            var styledScheme = new StyledColorScheme(
+                defaultStyle.Scheme,
+                defaultStyle.ForegroundRgb,
+                defaultStyle.BackgroundRgb);
+            foreach (MarkupSegment segment in MarkupEntry.Parse(text ?? string.Empty, styledScheme, defaultStyle.Decoration))
             {
                 if (segment.Text.Length > 0)
                 {
@@ -624,23 +641,29 @@ namespace ConsoulLibrary
             }
         }
 
-        private static void AddPaddingSegment(IList<FixedMessageSegment> segments, int count, ColorScheme scheme)
+        private static void AddPaddingSegment(IList<FixedMessageSegment> segments, int count, TableRenderStyle style)
         {
             if (count <= 0)
             {
                 return;
             }
 
-            segments.Add(new FixedMessageSegment(new string(' ', count), scheme));
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                style.Scheme,
+                style.Decoration,
+                null,
+                style.ForegroundRgb,
+                style.BackgroundRgb));
         }
 
-        private static void PadSegmentsOrTrim(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        private static void PadSegmentsOrTrim(IList<FixedMessageSegment> segments, int width, TableRenderStyle style)
         {
             width = Math.Max(0, width);
             int length = GetSegmentLength(segments);
             if (length < width)
             {
-                AddPaddingSegment(segments, width - length, scheme);
+                AddPaddingSegment(segments, width - length, style);
                 return;
             }
 
@@ -1557,24 +1580,24 @@ namespace ConsoulLibrary
             return widths;
         }
 
-        private ColorScheme GetRowContentScheme(int rowIndex)
+        private TableRenderStyle GetRowContentStyle(int rowIndex)
         {
             if (_tableNavigator != null)
             {
                 if (_tableNavigator.SelectedRows.Contains(rowIndex))
                 {
-                    return TableRenderOptions.SelectionScheme;
+                    return TableRenderStyle.From(TableRenderOptions.SelectionScheme);
                 }
 
                 if (_tableNavigator.HoveredRow == rowIndex)
                 {
-                    return TableRenderOptions.HighlightedScheme;
+                    return TableRenderStyle.From(TableRenderOptions.HighlightedScheme);
                 }
             }
 
             return rowIndex % 2 == 0
-                ? TableRenderOptions.ContentScheme1
-                : TableRenderOptions.ContentScheme2;
+                ? TableRenderOptions.ResolveContentStyle1()
+                : TableRenderOptions.ResolveContentStyle2();
         }
 
         private void RenderCore(string message, ConsoleColor? color)
@@ -1584,7 +1607,7 @@ namespace ConsoulLibrary
             string topLine = BuildHorizontalBorder(TableBorderLinePosition.Top, tableWidth);
             string middleLine = BuildHorizontalBorder(TableBorderLinePosition.Middle, tableWidth);
             string bottomLine = BuildHorizontalBorder(TableBorderLinePosition.Bottom, tableWidth);
-            ColorScheme? lineScheme = TableRenderOptions.Lines.Color;
+            TableRenderStyle lineStyle = TableRenderOptions.Lines.ResolveStyle();
             string title = !string.IsNullOrWhiteSpace(message) ? message : TableRenderOptions.Title;
             ColorScheme titleScheme = !string.IsNullOrWhiteSpace(message) && color.HasValue
                 ? new ColorScheme { Color = color.Value, BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor }
@@ -1617,7 +1640,7 @@ namespace ConsoulLibrary
 
             if (hasTableContent && hasHorizontalLines)
             {
-                Consoul.Write(topLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                TableRenderStyleWriter.Write(topLine, lineStyle);
             }
 
             if (hasHeader)
@@ -1626,17 +1649,17 @@ namespace ConsoulLibrary
                 {
                     using (var header = CreateNumberedHeaderRow())
                     {
-                        header.Render(TableRenderOptions.HeaderScheme, lineScheme.GetValueOrDefault(), isHeader: true);
+                        header.Render(TableRenderOptions.ResolveHeaderStyle(), lineStyle, isHeader: true);
                     }
                 }
                 else
                 {
-                    _header.Render(TableRenderOptions.HeaderScheme, lineScheme.GetValueOrDefault(), isHeader: true);
+                    _header.Render(TableRenderOptions.ResolveHeaderStyle(), lineStyle, isHeader: true);
                 }
 
                 if (TableRenderOptions.Lines.HeaderHorizontal)
                 {
-                    Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                    TableRenderStyleWriter.Write(middleLine, lineStyle);
                 }
             }
 
@@ -1644,64 +1667,64 @@ namespace ConsoulLibrary
             {
                 if (!usePresetBorder && TableRenderOptions.Lines.ContentHorizontal)
                 {
-                    Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                    TableRenderStyleWriter.Write(middleLine, lineStyle);
                 }
 
-                var contentScheme = GetRowContentScheme(i);
+                var contentStyle = GetRowContentStyle(i);
                 if (showRowNumbers)
                 {
                     using (var row = CreateNumberedContentRow(i))
                     {
-                        row.Render(contentScheme, lineScheme);
+                        row.Render(contentStyle, lineStyle);
                     }
                 }
                 else
                 {
-                    _rows[i].Render(contentScheme, lineScheme);
+                    _rows[i].Render(contentStyle, lineStyle);
                 }
 
                 if (usePresetBorder && TableRenderOptions.Lines.ContentHorizontal && i < _rows.Count - 1)
                 {
-                    Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                    TableRenderStyleWriter.Write(middleLine, lineStyle);
                 }
             }
 
             if (hasEmptyMessage)
             {
-                RenderEmptyMessage(tableWidth, lineScheme);
+                RenderEmptyMessage(tableWidth, lineStyle);
             }
 
             if (hasConfiguredFooter)
             {
                 if (TableRenderOptions.Lines.ContentHorizontal && (hasRows || hasHeader || hasEmptyMessage))
                 {
-                    Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                    TableRenderStyleWriter.Write(middleLine, lineStyle);
                 }
 
                 if (showRowNumbers)
                 {
                     using (var footer = CreateNumberedFooterRow())
                     {
-                        footer.Render(TableRenderOptions.FooterScheme, lineScheme.GetValueOrDefault());
+                        footer.Render(TableRenderOptions.ResolveFooterStyle(), lineStyle);
                     }
                 }
                 else
                 {
-                    _footer.Render(TableRenderOptions.FooterScheme, lineScheme.GetValueOrDefault());
+                    _footer.Render(TableRenderOptions.ResolveFooterStyle(), lineStyle);
                 }
             }
 
             if ((hasRows || hasConfiguredFooter) && TableRenderOptions.Lines.ContentHorizontal)
             {
-                Consoul.Write(usePresetBorder ? bottomLine : middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                TableRenderStyleWriter.Write(usePresetBorder ? bottomLine : middleLine, lineStyle);
             }
             else if (usePresetBorder && (hasHeader || hasEmptyMessage || hasConfiguredFooter) && !hasRows)
             {
-                Consoul.Write(bottomLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                TableRenderStyleWriter.Write(bottomLine, lineStyle);
             }
             else if (!usePresetBorder && hasEmptyMessage && TableRenderOptions.Lines.ContentHorizontal)
             {
-                Consoul.Write(middleLine, lineScheme?.Color, lineScheme?.BackgroundColor);
+                TableRenderStyleWriter.Write(middleLine, lineStyle);
             }
 
             RenderTableText(
@@ -1784,7 +1807,7 @@ namespace ConsoulLibrary
             return FitBorderLine(builder.ToString(), width);
         }
 
-        private void RenderEmptyMessage(int tableWidth, ColorScheme? lineScheme)
+        private void RenderEmptyMessage(int tableWidth, TableRenderStyle lineStyle)
         {
             ColorScheme emptyScheme = TableRenderOptions.EmptyMessageScheme;
             TableRenderOptions.TableBorderCharacters border = TableRenderOptions.Lines.GetBorderCharacters();
@@ -1804,14 +1827,14 @@ namespace ConsoulLibrary
                 line = MarkupRenderText.PadSegments(line, 0, Math.Max(0, innerWidth - MarkupRenderText.GetLength(line)), emptyScheme);
                 if (showVertical)
                 {
-                    Consoul.Write(vertical, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                    TableRenderStyleWriter.Write(vertical, lineStyle, writeLine: false);
                 }
 
                 MarkupRenderText.WriteSegments(line, emptyScheme, false);
 
                 if (showVertical)
                 {
-                    Consoul.Write(vertical, lineScheme?.Color, lineScheme?.BackgroundColor, writeLine: false);
+                    TableRenderStyleWriter.Write(vertical, lineStyle, writeLine: false);
                 }
 
                 Consoul.Write(string.Empty);

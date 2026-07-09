@@ -170,6 +170,26 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Parsed decoration-only style strings leave foreground and background unspecified for composition.
+        /// </summary>
+        [Fact]
+        public void Style_ParseDecorationOnly_DoesNotForceDefaultColors()
+        {
+            Style italic = Style.Parse("italic");
+            Style colored = Style.Parse("italic #336699 on #112233");
+
+            Assert.Null(italic.Foreground);
+            Assert.Null(italic.Background);
+            Assert.Equal(Decoration.Italic, italic.Decoration);
+            Assert.Null(italic.ForegroundRgb);
+            Assert.Null(italic.BackgroundRgb);
+            Assert.Equal(RgbColor.FromHex("#336699").ToConsoleColor(), colored.Foreground);
+            Assert.Equal(RgbColor.FromHex("#112233").ToConsoleColor(), colored.Background);
+            Assert.Equal(RgbColor.FromHex("#336699"), colored.ForegroundRgb);
+            Assert.Equal(RgbColor.FromHex("#112233"), colored.BackgroundRgb);
+        }
+
+        /// <summary>
         /// Fluent renderable builders that accept ConsoleColor also accept RgbColor through implicit conversion.
         /// </summary>
         [Fact]

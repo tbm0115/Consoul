@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -77,6 +79,51 @@ namespace ConsoulLibrary.Tests.Rendering
                     write.Color == ConsoleColor.Yellow);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Badge style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Badge_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new Badge("styled").Info().Color("bold #112233 on #445566"));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;17;34;51;48;2;68;85;102m[ STYLED ]", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[#445566", output);
+            Assert.DoesNotContain("[bold", output);
+        }
+
+        /// <summary>
+        /// Plain badge color helpers clear previously configured RGB and decoration metadata.
+        /// </summary>
+        [Fact]
+        public void Badge_ConsoleColorHelperClearsPriorRichStyleMetadata()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new Badge("plain").Info().Color("bold #112233").Color(ConsoleColor.Green));
+
+            string output = writer.ToString();
+            Assert.Contains("[ PLAIN ]", output);
+            Assert.DoesNotContain("\u001b[1;38;2;17;34;51m", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
         }
 
         /// <summary>

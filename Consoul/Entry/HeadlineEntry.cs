@@ -71,7 +71,10 @@ namespace ConsoulLibrary
             {
                 Width = _options.Width,
                 Alignment = _options.Alignment,
-                Scheme = _options.ResolveScheme()
+                Scheme = _options.ResolveScheme(),
+                Decoration = _options.Decoration,
+                ForegroundRgb = _options.ForegroundRgb,
+                BackgroundRgb = _options.BackgroundRgb
             });
         }
 
@@ -82,7 +85,13 @@ namespace ConsoulLibrary
                 Width = _options.Width,
                 ContentScheme = _options.ResolveScheme(),
                 BorderScheme = _options.ResolveBorderScheme(),
-                TitleScheme = _options.ResolveScheme()
+                TitleScheme = _options.ResolveScheme(),
+                ContentDecoration = _options.Decoration,
+                ContentForegroundRgb = _options.ForegroundRgb,
+                ContentBackgroundRgb = _options.BackgroundRgb,
+                TitleDecoration = _options.Decoration,
+                TitleForegroundRgb = _options.ForegroundRgb,
+                TitleBackgroundRgb = _options.BackgroundRgb
             };
 
             new PanelEntry(Text, options).Render();
@@ -96,6 +105,9 @@ namespace ConsoulLibrary
                 Alignment = ToRuleAlignment(_options.Alignment),
                 RuleScheme = _options.ResolveBorderScheme(),
                 TitleScheme = _options.ResolveScheme(),
+                TitleDecoration = _options.Decoration,
+                TitleForegroundRgb = _options.ForegroundRgb,
+                TitleBackgroundRgb = _options.BackgroundRgb,
                 Character = _options.RuleCharacter
             }).Render();
         }
@@ -108,7 +120,19 @@ namespace ConsoulLibrary
             {
                 for (int row = 0; row < GlyphHeight; row++)
                 {
-                    Consoul.Write(Align(block[row], width, _options.Alignment, _options.Pad), scheme);
+                    MarkupRenderText.WriteSegments(
+                        new[]
+                        {
+                            new FixedMessageSegment(
+                                Align(block[row], width, _options.Alignment, _options.Pad),
+                                scheme,
+                                _options.Decoration,
+                                null,
+                                _options.ForegroundRgb,
+                                _options.BackgroundRgb)
+                        },
+                        scheme,
+                        true);
                 }
             }
         }

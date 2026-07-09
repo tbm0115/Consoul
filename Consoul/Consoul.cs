@@ -1032,6 +1032,12 @@ namespace ConsoulLibrary {
         /// <returns>Entered password.</returns>
         public static string ReadPassword(ConsoleColor? color, char maskCharacter, CancellationToken cancellationToken = default)
         {
+            ConsoleColor resolvedColor = RenderOptions.GetColorOrDefault(color);
+            return ReadPassword(PromptRenderHelpers.FromColor(resolvedColor), maskCharacter, cancellationToken);
+        }
+
+        internal static string ReadPassword(PromptRenderHelpers.StyledText maskStyle, char maskCharacter, CancellationToken cancellationToken = default)
+        {
             RoutineInput input = new RoutineInput();
             if (Routines.HasBuffer())
             {
@@ -1047,7 +1053,7 @@ namespace ConsoulLibrary {
                 System.Threading.Thread.Sleep(delay);
                 if (maskCharacter != '\0' && !string.IsNullOrEmpty(input.Value))
                 {
-                    Write(new string(maskCharacter, input.Value.Length), color: color, writeLine: false);
+                    PromptRenderHelpers.WriteText(new string(maskCharacter, input.Value.Length), maskStyle, writeLine: false);
                     ConsoleDriver.WriteLine(string.Empty);
                 }
                 System.Threading.Thread.Sleep(delay);
@@ -1074,7 +1080,7 @@ namespace ConsoulLibrary {
                         password += key.KeyChar;
                         if (maskCharacter != '\0')
                         {
-                            Consoul.Write(maskCharacter.ToString(), color: color, writeLine: false);
+                            PromptRenderHelpers.WriteText(maskCharacter.ToString(), maskStyle, writeLine: false);
                         }
                     }
                     else if (key.Key == ConsoleKey.Backspace && password.Length > 0)

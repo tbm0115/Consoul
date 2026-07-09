@@ -86,19 +86,23 @@ namespace ConsoulLibrary
                 yield return new ExceptionLine(string.Empty, _options.ResolveContextScheme());
             }
 
-            Exception current = Error;
-            int depth = 0;
-            while (current != null)
+            foreach (ExceptionRenderItem item in EnumerateExceptions())
             {
-                if (depth > 0)
+                if (!item.IsFirst)
                 {
                     yield return new ExceptionLine(string.Empty, _options.ResolveContextScheme());
                 }
 
-                string label = depth == 0 ? "Type" : "Inner " + depth;
-                yield return new ExceptionLine(label + ": " + FormatTypeName(current.GetType()), _options.ResolveTypeScheme());
+                if (item.IsLimitMessage)
+                {
+                    yield return new ExceptionLine(item.Label, _options.ResolveContextScheme());
+                    continue;
+                }
+
+                Exception current = item.RenderedException;
+                yield return new ExceptionLine(item.Label + ": " + FormatTypeName(current.GetType()), _options.ResolveTypeScheme());
                 ColorScheme messageScheme = _options.ResolveMessageScheme();
-                yield return ExceptionLine.MarkupWithPrefix("Message: ", current.Message ?? string.Empty, messageScheme);
+                yield return ExceptionLine.MarkupWithPrefix("Message: ", FormatExceptionMessage(current), messageScheme);
 
                 if (_options.IncludeStackTrace && !_options.Format.HasFlag(ExceptionFormats.NoStackTrace))
                 {
@@ -107,12 +111,48 @@ namespace ConsoulLibrary
                         yield return stackLine;
                     }
                 }
+            }
+        }
 
-                if (!_options.IncludeInnerExceptions)
+        private IEnumerable<ExceptionRenderItem> EnumerateExceptions()
+        {
+            yield return ExceptionRenderItem.FromException("Type", Error, isFirst: true);
+            if (!_options.IncludeInnerExceptions)
+            {
+                yield break;
+            }
+
+            var aggregate = Error as AggregateException;
+            if (aggregate != null && _options.FlattenAggregateExceptions)
+            {
+                IReadOnlyList<Exception> flattened = aggregate
+                    .Flatten()
+                    .InnerExceptions
+                    .Where(exception => exception != null)
+                    .ToList();
+                int limit = _options.MaxAggregateExceptions.HasValue
+                    ? Math.Max(0, _options.MaxAggregateExceptions.Value)
+                    : int.MaxValue;
+                int rendered = Math.Min(flattened.Count, limit);
+                for (int i = 0; i < rendered; i++)
                 {
-                    break;
+                    yield return ExceptionRenderItem.FromException("Inner " + (i + 1), flattened[i], isFirst: false);
                 }
 
+                int omitted = flattened.Count - rendered;
+                if (omitted > 0)
+                {
+                    yield return ExceptionRenderItem.Message("Inner exceptions truncated: " + omitted + " not rendered");
+                }
+
+                yield break;
+            }
+
+            Exception current = Error.InnerException;
+            int depth = 1;
+            while (current != null)
+            {
+                yield return ExceptionRenderItem.FromException("Inner " + depth, current, isFirst: false);
                 current = current.InnerException;
                 depth++;
             }
@@ -143,6 +183,24 @@ namespace ConsoulLibrary
             {
                 yield return new ExceptionLine("  " + FormatStackFrame(frame), _options.ResolveStackTraceScheme());
             }
+        }
+
+        private string FormatExceptionMessage(Exception exception)
+        {
+            if (exception == null)
+            {
+                return string.Empty;
+            }
+
+            var aggregate = exception as AggregateException;
+            if (aggregate == null || !_options.FlattenAggregateExceptions)
+            {
+                return exception.Message ?? string.Empty;
+            }
+
+            string message = aggregate.Message ?? string.Empty;
+            int detailIndex = message.IndexOf(" (", StringComparison.Ordinal);
+            return detailIndex > 0 ? message.Substring(0, detailIndex).TrimEnd() : message;
         }
 
         private string FormatTypeName(Type type)
@@ -354,6 +412,35 @@ namespace ConsoulLibrary
             public static ExceptionLine MarkupWithPrefix(string prefix, string text, ColorScheme scheme)
             {
                 return new ExceptionLine(MarkupRenderText.ParseSegmentsWithPrefix(prefix, text, scheme), scheme);
+            }
+        }
+
+        private readonly struct ExceptionRenderItem
+        {
+            private ExceptionRenderItem(string label, Exception exception, bool isFirst, bool isLimitMessage)
+            {
+                Label = label ?? string.Empty;
+                RenderedException = exception;
+                IsFirst = isFirst;
+                IsLimitMessage = isLimitMessage;
+            }
+
+            public string Label { get; }
+
+            public Exception RenderedException { get; }
+
+            public bool IsFirst { get; }
+
+            public bool IsLimitMessage { get; }
+
+            public static ExceptionRenderItem FromException(string label, Exception exception, bool isFirst)
+            {
+                return new ExceptionRenderItem(label, exception, isFirst, false);
+            }
+
+            public static ExceptionRenderItem Message(string message)
+            {
+                return new ExceptionRenderItem(message, null, false, true);
             }
         }
     }

@@ -44,9 +44,39 @@ namespace ConsoulLibrary
         public ColorScheme? TitleScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the text decoration used for pane titles on ANSI-capable terminals.
+        /// </summary>
+        public Decoration TitleDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for pane titles on true-color terminals.
+        /// </summary>
+        public RgbColor? TitleForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for pane titles on true-color terminals.
+        /// </summary>
+        public RgbColor? TitleBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the default color scheme used for pane content.
         /// </summary>
         public ColorScheme? ContentScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the text decoration used for default pane content on ANSI-capable terminals.
+        /// </summary>
+        public Decoration ContentDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for default pane content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for default pane content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current layout options.
@@ -63,7 +93,13 @@ namespace ConsoulLibrary
                 Gutter = Gutter,
                 RowSpacing = RowSpacing,
                 TitleScheme = TitleScheme,
-                ContentScheme = ContentScheme
+                TitleDecoration = TitleDecoration,
+                TitleForegroundRgb = TitleForegroundRgb,
+                TitleBackgroundRgb = TitleBackgroundRgb,
+                ContentScheme = ContentScheme,
+                ContentDecoration = ContentDecoration,
+                ContentForegroundRgb = ContentForegroundRgb,
+                ContentBackgroundRgb = ContentBackgroundRgb
             };
         }
 

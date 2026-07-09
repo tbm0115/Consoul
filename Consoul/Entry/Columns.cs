@@ -407,7 +407,7 @@ namespace ConsoulLibrary
                 AddColumn(
                     contentSelector(item),
                     headerSelector != null ? headerSelector(item) : null,
-                    colorSelector(item).ToConsoleColor());
+                    new Style(colorSelector(item)));
             }
 
             return this;
@@ -448,7 +448,7 @@ namespace ConsoulLibrary
                 AddColumn(
                     contentSelector(item),
                     headerSelector != null ? headerSelector(item) : null,
-                    colorSelector(item).ToConsoleColor());
+                    new Style(colorSelector(item)));
             }
 
             return this;
@@ -568,7 +568,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Columns"/> instance.</returns>
         public Columns HeaderColor(ConsoleColor color)
         {
-            Options.HeaderScheme = Scheme(color);
+            ApplyHeaderStyle(new Style(color));
             return this;
         }
 
@@ -579,7 +579,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Columns"/> instance.</returns>
         public Columns HeaderColor(Style style)
         {
-            Options.HeaderScheme = Scheme(style, Options.HeaderScheme ?? RenderOptions.SubnoteScheme);
+            ApplyHeaderStyle(style);
             return this;
         }
 
@@ -590,7 +590,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Columns"/> instance.</returns>
         public Columns HeaderColor(string style)
         {
-            Options.HeaderScheme = Style.ParseScheme(style, Options.HeaderScheme ?? RenderOptions.SubnoteScheme);
+            ApplyHeaderStyle(Style.Parse(style));
             return this;
         }
 
@@ -601,7 +601,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Columns"/> instance.</returns>
         public Columns ContentColor(ConsoleColor color)
         {
-            Options.ContentScheme = Scheme(color);
+            ApplyContentStyle(new Style(color));
             return this;
         }
 
@@ -612,7 +612,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Columns"/> instance.</returns>
         public Columns ContentColor(Style style)
         {
-            Options.ContentScheme = Scheme(style, Options.ContentScheme ?? RenderOptions.DefaultScheme);
+            ApplyContentStyle(style);
             return this;
         }
 
@@ -623,8 +623,24 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Columns"/> instance.</returns>
         public Columns ContentColor(string style)
         {
-            Options.ContentScheme = Style.ParseScheme(style, Options.ContentScheme ?? RenderOptions.DefaultScheme);
+            ApplyContentStyle(Style.Parse(style));
             return this;
+        }
+
+        private void ApplyHeaderStyle(Style style)
+        {
+            Options.HeaderScheme = Scheme(style, Options.HeaderScheme ?? RenderOptions.SubnoteScheme);
+            Options.HeaderDecoration = style?.Decoration ?? Decoration.None;
+            Options.HeaderForegroundRgb = style?.ForegroundRgb;
+            Options.HeaderBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyContentStyle(Style style)
+        {
+            Options.ContentScheme = Scheme(style, Options.ContentScheme ?? RenderOptions.DefaultScheme);
+            Options.ContentDecoration = style?.Decoration ?? Decoration.None;
+            Options.ContentForegroundRgb = style?.ForegroundRgb;
+            Options.ContentBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

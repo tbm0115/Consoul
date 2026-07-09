@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using ConsoulLibrary.Tests.Rendering;
@@ -144,6 +147,76 @@ namespace ConsoulLibrary.Tests.Rendering
                     write.Color == ConsoleColor.Cyan);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// RGB, parsed status styles, and spinner styles preserve true-color and decoration metadata on ANSI-capable terminals.
+        /// </summary>
+        [Fact]
+        public void StatusScope_RgbAndSpinnerStylesEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            var output = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true);
+            var settings = new AnsiConsoleSettings
+            {
+                Out = output,
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            };
+
+            using (Consoul.UseConsoleDriver(new TextWriterConsoleDriver(output, settings)))
+            using (StatusScope status = Consoul.Status("Initial", new StatusOptions
+            {
+                MaxWidth = 80,
+                RefreshRate = 0
+            }))
+            {
+                status.Update("RGB update", RgbColor.FromHex("#336699"));
+                status.StatusStyled("Styled update", Style.Parse("italic #778899"));
+                status.Spinner(Spinner.Known.Line)
+                    .SpinnerStyle("bold #22c55e")
+                    .Status("Spinner styled")
+                    .Refresh();
+            }
+
+            string rendered = writer.ToString();
+            Assert.Contains("\u001b[38;2;51;102;153m... RGB update", rendered);
+            Assert.Contains("\u001b[3;38;2;119;136;153m... Styled update", rendered);
+            Assert.Contains("\u001b[1;38;2;34;197;94m", rendered);
+            Assert.Contains("Spinner styled", rendered);
+        }
+
+        /// <summary>
+        /// Status builders keep parsed spinner-style metadata until the started scope renders it.
+        /// </summary>
+        [Fact]
+        public void StatusBuilder_SpinnerStylePreservesTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            var output = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true);
+            var settings = new AnsiConsoleSettings
+            {
+                Out = output,
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            };
+
+            using (Consoul.UseConsoleDriver(new TextWriterConsoleDriver(output, settings)))
+            {
+                AnsiConsole.Status()
+                    .Spinner(Spinner.Known.Line)
+                    .SpinnerStyle("bold #22c55e")
+                    .RefreshRate(0)
+                    .Start("Builder initial", status =>
+                    {
+                        status.Status("Builder styled");
+                        status.Refresh();
+                    });
+            }
+
+            string rendered = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94m", rendered);
+            Assert.Contains("Builder styled", rendered);
         }
 
         /// <summary>
@@ -306,6 +379,58 @@ namespace ConsoulLibrary.Tests.Rendering
                     write.Text.Contains("Spinner builder rgb") && write.Color == ConsoleColor.Yellow);
                 Assert.Contains(scope.Driver.Writes, write =>
                     write.Text.Contains("Spinner scope color") && write.Color == ConsoleColor.Red);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Status and spinner frame helpers accept generated frame collections.
+        /// </summary>
+        [Fact]
+        public void StatusAndSpinner_FrameHelpers_AcceptEnumerableFrames()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                IEnumerable<string> statusFrames = new List<string> { "S1", "S2" };
+                IEnumerable<string> spinnerFrames = new List<string> { "P1", "P2" };
+
+                AnsiConsole.Status()
+                    .Frames(statusFrames)
+                    .Start("Status builder", status =>
+                    {
+                        status.Status("Status builder generated");
+                        status.Refresh();
+                    });
+
+                using (StatusScope status = Consoul.Status("Status scope", new StatusOptions { AutoRefresh = false }))
+                {
+                    status.Frames(statusFrames)
+                        .Status("Status scope generated")
+                        .Refresh();
+                    status.Succeed("Status scope done");
+                }
+
+                AnsiConsole.Spinner()
+                    .Frames(spinnerFrames)
+                    .Start("Spinner builder", spinner =>
+                    {
+                        spinner.Tick("Spinner builder generated");
+                    });
+
+                using (SpinnerScope spinner = Consoul.Spinner("Spinner scope", new SpinnerOptions { AutoRefresh = false }))
+                {
+                    spinner.Frames(spinnerFrames);
+                    spinner.Tick("Spinner scope generated");
+                    spinner.Refresh();
+                    spinner.Succeed("Spinner scope done");
+                }
+
+                VisualAssert.WroteText(scope.Driver, "S1 Status builder");
+                VisualAssert.WroteText(scope.Driver, "S2 Status builder generated");
+                VisualAssert.WroteText(scope.Driver, "S1 Status scope generated");
+                VisualAssert.WroteText(scope.Driver, "P1 Spinner builder");
+                VisualAssert.WroteText(scope.Driver, "P2 Spinner builder generated");
+                VisualAssert.WroteText(scope.Driver, "P2 Spinner scope generated");
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }

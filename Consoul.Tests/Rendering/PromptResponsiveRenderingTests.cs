@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
 using Xunit;
@@ -302,6 +303,344 @@ namespace ConsoulLibrary.Tests.Rendering
             Assert.Contains("\u001b[4;38;2;51;102;153m    Ship release", output);
             Assert.Contains("\u001b[3;38;2;119;136;153m-- Danger --", output);
             Assert.Contains("\u001b[3;38;2;171;205;239m2) Archive", output);
+        }
+
+        /// <summary>
+        /// Individual selection option descriptions can override or compose with prompt-level description styles.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_OptionDescriptionStyleOverridesPromptDefault()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("1\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            SelectOption deploy = new SelectOption("Deploy")
+                .Describe("Ship release")
+                .UseDescriptionStyle("italic");
+            SelectOption rollback = new SelectOption("Rollback")
+                .Describe("Use previous version")
+                .UseDescriptionStyle("#445566");
+            SelectOption audit = new SelectOption("Audit")
+                .Describe("Review only");
+            var prompt = new SelectionPrompt("Pick action", false, deploy, rollback, audit)
+                .OptionDescriptionStyle("underline #336699");
+            Assert.Equal(RgbColor.FromHex("#336699"), prompt.OptionDescriptionForegroundRgb);
+
+            PromptResult result = console.Prompt(prompt);
+
+            Assert.True(result.HasSelection);
+            Assert.Equal(0, result.Index);
+
+            string output = writer.ToString();
+            string deployStyle = AnsiPrefixBefore(output, "Ship release");
+            string rollbackStyle = AnsiPrefixBefore(output, "Use previous version");
+            string auditStyle = AnsiPrefixBefore(output, "Review only");
+            AssertAnsiCode(deployStyle, "3");
+            AssertAnsiRgb(deployStyle, 51, 102, 153);
+            AssertAnsiRgb(rollbackStyle, 68, 85, 102);
+            Assert.DoesNotContain("4", GetAnsiCodes(rollbackStyle));
+            AssertAnsiCode(auditStyle, "4");
+            AssertAnsiRgb(auditStyle, 51, 102, 153);
+        }
+
+        /// <summary>
+        /// Plain selection prompt description color helpers clear previously configured RGB and decoration metadata.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_OptionDescriptionColorHelperClearsPriorRichStyleMetadata()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("1\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            SelectOption deploy = new SelectOption("Deploy")
+                .Describe("Ship release")
+                .UseDescriptionStyle("bold #112233")
+                .UseDescriptionColor(ConsoleColor.Green);
+            var prompt = new SelectionPrompt("Pick action", false, deploy)
+                .OptionDescriptionStyle("underline #336699")
+                .OptionDescriptionStyle(ConsoleColor.Yellow);
+
+            PromptResult result = console.Prompt(prompt);
+
+            Assert.True(result.HasSelection);
+            Assert.Equal(0, result.Index);
+
+            string output = writer.ToString();
+            Assert.Contains("Ship release", output);
+            Assert.DoesNotContain("\u001b[1;", output);
+            Assert.DoesNotContain("\u001b[4;", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[#336699", output);
+        }
+
+        /// <summary>
+        /// Selection prompt palette extensions preserve RGB metadata instead of reducing colors to the nearest console color.
+        /// </summary>
+        [Fact]
+        public void SelectionPrompt_PaletteExtensionsEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("1\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var prompt = new SelectionPrompt("Pick action", false);
+            PromptPaletteExtensions.AddDescribed(prompt, "Deploy", "Ship release", RgbColor.FromHex("#112233"));
+            PromptPaletteExtensions.AddSeparator(prompt, "Danger", RgbColor.FromHex("#778899"));
+            PromptPaletteExtensions.AddDisabledDescribed(prompt, "Archive", "Needs approval", "locked", RgbColor.FromHex("#abcdef"));
+            PromptPaletteExtensions.Style(prompt, RgbColor.FromHex("#22c55e"));
+            PromptPaletteExtensions.InstructionStyle(prompt, RgbColor.FromHex("#778899"));
+            prompt.OptionDescriptionForegroundRgb = RgbColor.FromHex("#336699");
+
+            PromptResult result = console.Prompt(prompt);
+
+            Assert.True(result.HasSelection);
+            Assert.Equal(0, result.Index);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;34;197;94mPick action", output);
+            Assert.Contains("\u001b[38;2;119;136;153mChoose", output);
+            Assert.Contains("\u001b[38;2;17;34;51m1) Deploy", output);
+            Assert.Contains("\u001b[38;2;51;102;153m    Ship release", output);
+            Assert.Contains("\u001b[38;2;119;136;153m-- Danger --", output);
+            Assert.Contains("\u001b[38;2;171;205;239m2) Archive", output);
+        }
+
+        /// <summary>
+        /// Multi-selection prompt style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void MultiSelectionPrompt_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("1\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var prompt = new MultiSelectionPrompt("Pick checks", false, false)
+                .PromptStyle("bold #22c55e")
+                .InstructionStyle("italic #778899");
+            int buildIndex = PromptPaletteExtensions.AddDescribed(prompt, "Build", "Compile release", RgbColor.FromHex("#112233"));
+            prompt.Options.First(option => !option.IsSeparator && option.Index == buildIndex).AddSearchTerms("compile");
+            PromptPaletteExtensions.AddSeparator(prompt, "Stage", RgbColor.FromHex("#778899")).UseStyle("italic #778899");
+            PromptPaletteExtensions.AddDisabledDescribed(prompt, "Deploy", "Needs approval", "locked", RgbColor.FromHex("#abcdef"));
+            prompt.OptionDescriptionDecoration = Decoration.Underline;
+            prompt.OptionDescriptionForegroundRgb = RgbColor.FromHex("#336699");
+
+            MultiSelectionResult result = console.Prompt(prompt);
+
+            Assert.True(result.HasSelection);
+            Assert.Equal(new[] { 0 }, result.Indexes);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mPick checks", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153mChoose", output);
+            Assert.Contains("\u001b[38;2;17;34;51m[ ] - 1) Build", output);
+            Assert.Contains("\u001b[4;38;2;51;102;153m    Compile release", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153m-- Stage --", output);
+            Assert.Contains("\u001b[38;2;171;205;239m[ ] - 2) Deploy", output);
+        }
+
+        /// <summary>
+        /// Individual multi-selection option descriptions can override or compose with prompt-level description styles.
+        /// </summary>
+        [Fact]
+        public void MultiSelectionPrompt_OptionDescriptionStyleOverridesPromptDefault()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("1\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var prompt = new MultiSelectionPrompt("Pick checks", false, false)
+                .OptionDescriptionStyle("underline #336699");
+            Assert.Equal(RgbColor.FromHex("#336699"), prompt.OptionDescriptionForegroundRgb);
+            int buildIndex = prompt.AddDescribed("Build", "Compile release");
+            int testIndex = prompt.AddDescribed("Test", "Run verification");
+            prompt.AddDescribed("Audit", "Review only");
+            prompt.Options.First(option => option.Index == buildIndex).UseDescriptionStyle("italic");
+            prompt.Options.First(option => option.Index == testIndex).UseDescriptionColor(RgbColor.FromHex("#445566"));
+
+            MultiSelectionResult result = console.Prompt(prompt);
+
+            Assert.True(result.HasSelection);
+            Assert.Equal(new[] { 0 }, result.Indexes);
+
+            string output = writer.ToString();
+            string buildStyle = AnsiPrefixBefore(output, "Compile release");
+            string testStyle = AnsiPrefixBefore(output, "Run verification");
+            string auditStyle = AnsiPrefixBefore(output, "Review only");
+            AssertAnsiCode(buildStyle, "3");
+            AssertAnsiRgb(buildStyle, 51, 102, 153);
+            AssertAnsiRgb(testStyle, 68, 85, 102);
+            Assert.DoesNotContain("4", GetAnsiCodes(testStyle));
+            AssertAnsiCode(auditStyle, "4");
+            AssertAnsiRgb(auditStyle, 51, 102, 153);
+        }
+
+        /// <summary>
+        /// Text prompt title, accepted value, default value, and invalid styles preserve RGB and decorations.
+        /// </summary>
+        [Fact]
+        public void TextPrompt_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("qa\n\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            TextPromptResult<string> result = console.Prompt(
+                new TextPrompt<string>("Deploy environment")
+                    .PromptStyle("bold #112233")
+                    .InvalidStyle("italic #445566")
+                    .DefaultValue("dev")
+                    .AddChoices("dev", "prod")
+                    .ChoicesStyle("underline #778899")
+                    .DefaultValueStyle("bold #abcdef"));
+
+            Assert.True(result.HasValue);
+            Assert.Equal("dev", result.Value);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;17;34;51mDeploy environment", output);
+            Assert.Contains("\u001b[4;38;2;119;136;153mdev/prod", output);
+            Assert.Contains("\u001b[1;38;2;171;205;239mdefault: dev", output);
+            Assert.Contains("\u001b[3;38;2;68;85;102mValue must be one of", output);
+        }
+
+        /// <summary>
+        /// Secret text prompt mask styling preserves RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void TextPrompt_MaskStyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader(string.Empty),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            Routines.InitializeRoutine(new TestRoutine(new[] { "token-value" }));
+
+            try
+            {
+                TextPromptResult<string> result = console.Prompt(
+                    new TextPrompt<string>("API token")
+                        .Secret()
+                        .Mask('*')
+                        .MaskStyle("bold #112233"));
+
+                Assert.True(result.HasValue);
+                Assert.Equal("token-value", result.Value);
+
+                string output = writer.ToString();
+                Assert.Contains("\u001b[1;38;2;17;34;51m***********", output);
+                Assert.DoesNotContain("token-value", output);
+            }
+            finally
+            {
+                Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+            }
+        }
+
+        /// <summary>
+        /// Secret prompt palette mask styling preserves RGB metadata instead of reducing colors to the nearest console color.
+        /// </summary>
+        [Fact]
+        public void SecretPrompt_PaletteMaskStyleEmitsTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader(string.Empty),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            Routines.InitializeRoutine(new TestRoutine(new[] { "secret-value" }));
+
+            try
+            {
+                SecretPrompt prompt = PromptPaletteExtensions.MaskStyle(
+                    new SecretPrompt("Secret value").Mask('#'),
+                    RgbColor.FromHex("#445566"));
+
+                SecretResult result = console.Prompt(prompt);
+
+                Assert.True(result.HasValue);
+                Assert.Equal("secret-value", result.Value);
+
+                string output = writer.ToString();
+                Assert.Contains("\u001b[38;2;68;85;102m############", output);
+                Assert.DoesNotContain("secret-value", output);
+            }
+            finally
+            {
+                Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+            }
+        }
+
+        /// <summary>
+        /// Confirmation prompt title, choices, default value, and invalid styles preserve RGB and decorations.
+        /// </summary>
+        [Fact]
+        public void ConfirmationPrompt_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("maybe\n\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            ConfirmResult result = console.Prompt(
+                new ConfirmationPrompt("Continue?")
+                    .PromptStyle("bold #223344")
+                    .ChoicesStyle("italic #445566")
+                    .DefaultValueStyle("underline #778899")
+                    .InvalidStyle("bold #abcdef"));
+
+            Assert.True(result.HasValue);
+            Assert.True(result.Value);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;51;68mContinue?", output);
+            Assert.Contains("\u001b[4;38;2;119;136;153mY", output);
+            Assert.Contains("\u001b[3;38;2;68;85;102mn", output);
+            Assert.Contains("\u001b[1;38;2;171;205;239mPlease select one of the available options.", output);
         }
 
         /// <summary>
@@ -760,6 +1099,51 @@ namespace ConsoulLibrary.Tests.Rendering
         private static ConsoleKeyInfo Enter()
         {
             return new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false);
+        }
+
+        private static string AnsiPrefixBefore(string output, string text)
+        {
+            int textIndex = output.IndexOf(text, StringComparison.Ordinal);
+            Assert.True(textIndex >= 0, "Expected rendered output to contain \"" + text + "\".");
+
+            int lineStart = Math.Max(output.LastIndexOf('\n', textIndex), output.LastIndexOf('\r', textIndex));
+            string prefix = output.Substring(lineStart + 1, textIndex - lineStart - 1);
+            Assert.Contains("\u001b[", prefix);
+
+            return prefix;
+        }
+
+        private static void AssertAnsiCode(string sequence, string code)
+        {
+            Assert.Contains(code, GetAnsiCodes(sequence));
+        }
+
+        private static void AssertAnsiRgb(string sequence, byte red, byte green, byte blue)
+        {
+            Assert.Contains("38;2;" + red + ";" + green + ";" + blue, sequence);
+        }
+
+        private static IEnumerable<string> GetAnsiCodes(string sequence)
+        {
+            int searchIndex = 0;
+            while (searchIndex < sequence.Length)
+            {
+                int escapeIndex = sequence.IndexOf("\u001b[", searchIndex, StringComparison.Ordinal);
+                if (escapeIndex < 0)
+                {
+                    yield break;
+                }
+
+                int endIndex = sequence.IndexOf('m', escapeIndex);
+                Assert.True(endIndex >= 0, "Expected an ANSI SGR sequence to end with 'm'.");
+                string[] codes = sequence.Substring(escapeIndex + 2, endIndex - escapeIndex - 2).Split(';');
+                foreach (string code in codes)
+                {
+                    yield return code;
+                }
+
+                searchIndex = endIndex + 1;
+            }
         }
 
         private sealed class TestRoutine : Routine

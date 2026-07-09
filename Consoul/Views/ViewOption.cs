@@ -424,6 +424,19 @@ namespace ConsoulLibrary
             option.BackgroundRgb = BackgroundRgb;
         }
 
+        internal void ApplyStyleTo(ShortcutItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            item.DescriptionScheme = CreateScheme(Color);
+            item.DescriptionDecoration = Decoration;
+            item.DescriptionForegroundRgb = ForegroundRgb;
+            item.DescriptionBackgroundRgb = BackgroundRgb;
+        }
+
         private void ApplyColor(RgbColor color)
         {
             Entry.Color = color.ToConsoleColor();

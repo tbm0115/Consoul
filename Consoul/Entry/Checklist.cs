@@ -153,6 +153,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds multiple existing checklist items.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="Checklist"/> instance.</returns>
+        public Checklist AddItems(ChecklistItem firstItem, params ChecklistItem[] additionalItems)
+        {
+            AddItem(firstItem);
+
+            if (additionalItems != null)
+            {
+                foreach (ChecklistItem item in additionalItems)
+                {
+                    AddItem(item);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds multiple pending checklist item labels.
         /// </summary>
         /// <param name="labels">The item labels to add.</param>

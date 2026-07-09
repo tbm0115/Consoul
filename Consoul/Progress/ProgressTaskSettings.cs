@@ -6,6 +6,11 @@ namespace ConsoulLibrary
     public sealed class ProgressTaskSettings
     {
         /// <summary>
+        /// Gets or sets the task description used by settings-first batch helpers.
+        /// </summary>
+        public string Description { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether the task should start active immediately.
         /// </summary>
         public bool AutoStart { get; set; } = true;
@@ -19,5 +24,15 @@ namespace ConsoulLibrary
         /// Gets or sets a value indicating whether the task should start in indeterminate mode.
         /// </summary>
         public bool IsIndeterminate { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional user data associated with the task at creation time.
+        /// </summary>
+        public object Tag { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether the task should be hidden after it completes, overriding the context default.
+        /// </summary>
+        public bool? HideWhenCompleted { get; set; }
     }
 }

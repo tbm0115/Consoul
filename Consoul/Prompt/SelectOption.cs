@@ -80,6 +80,26 @@ namespace ConsoulLibrary
         public RgbColor? BackgroundRgb { get; set; }
 
         /// <summary>
+        /// Gets or sets an optional foreground color used for this option's helper description.
+        /// </summary>
+        public ConsoleColor? DescriptionColor { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional ANSI decoration used for this option's helper description.
+        /// </summary>
+        public Decoration? DescriptionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for this option's helper description on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for this option's helper description on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? DescriptionBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the zero-based index reference for this option.
         /// </summary>
         public int Index { get; set; }
@@ -270,6 +290,65 @@ namespace ConsoulLibrary
         public SelectOption UseStyle(string style)
         {
             return UseStyle(ConsoulLibrary.Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the color used for helper text rendered under this option.
+        /// </summary>
+        /// <param name="color">The description foreground color.</param>
+        /// <returns>The current <see cref="SelectOption"/> instance.</returns>
+        public SelectOption UseDescriptionColor(ConsoleColor color)
+        {
+            DescriptionColor = color;
+            DescriptionDecoration = ConsoulLibrary.Decoration.None;
+            DescriptionForegroundRgb = null;
+            DescriptionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for helper text rendered under this option from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The description foreground color.</param>
+        /// <returns>The current <see cref="SelectOption"/> instance.</returns>
+        public SelectOption UseDescriptionColor(SpectreColor color)
+        {
+            return UseDescriptionColor(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the color used for helper text rendered under this option from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The description foreground color.</param>
+        /// <returns>The current <see cref="SelectOption"/> instance.</returns>
+        public SelectOption UseDescriptionColor(RgbColor color)
+        {
+            DescriptionColor = color.ToConsoleColor();
+            DescriptionDecoration = ConsoulLibrary.Decoration.None;
+            DescriptionForegroundRgb = color;
+            DescriptionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for helper text rendered under this option.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current <see cref="SelectOption"/> instance.</returns>
+        public SelectOption UseDescriptionStyle(Style style)
+        {
+            ApplyDescriptionStyle(style);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for helper text rendered under this option from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>grey</c>, <c>italic</c>, <c>#94a3b8</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="SelectOption"/> instance.</returns>
+        public SelectOption UseDescriptionStyle(string style)
+        {
+            return UseDescriptionStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -484,6 +563,33 @@ namespace ConsoulLibrary
                 : PromptRenderHelpers.ResolveStyle(fallbackStyle, style.Scheme.Color);
         }
 
+        internal PromptRenderHelpers.StyledText ResolveDescriptionStyle(PromptRenderHelpers.StyledText fallback)
+        {
+            bool hasDescriptionColor = DescriptionColor.HasValue;
+            if (!hasDescriptionColor &&
+                !DescriptionDecoration.HasValue &&
+                !DescriptionForegroundRgb.HasValue &&
+                !DescriptionBackgroundRgb.HasValue)
+            {
+                return fallback;
+            }
+
+            Decoration decoration = DescriptionDecoration ?? (hasDescriptionColor ? ConsoulLibrary.Decoration.None : fallback.Decoration);
+            RgbColor? foregroundRgb = DescriptionForegroundRgb;
+            RgbColor? backgroundRgb = DescriptionBackgroundRgb;
+            if (!hasDescriptionColor)
+            {
+                foregroundRgb = foregroundRgb ?? fallback.ForegroundRgb;
+                backgroundRgb = backgroundRgb ?? fallback.BackgroundRgb;
+            }
+
+            return PromptRenderHelpers.FromComponents(
+                DescriptionColor ?? fallback.Scheme.Color,
+                decoration,
+                foregroundRgb,
+                backgroundRgb);
+        }
+
         internal void AddChildOption(SelectOption child)
         {
             if (child == null)
@@ -508,6 +614,23 @@ namespace ConsoulLibrary
             Decoration = style.Decoration;
             ForegroundRgb = style.ForegroundRgb;
             BackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyDescriptionStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            if (style.Foreground.HasValue || style.ForegroundRgb.HasValue || DescriptionColor.HasValue)
+            {
+                DescriptionColor = style.ToForegroundColor(DescriptionColor ?? RenderOptions.SubnoteColor);
+            }
+
+            DescriptionDecoration = style.Decoration;
+            DescriptionForegroundRgb = style.ForegroundRgb;
+            DescriptionBackgroundRgb = style.BackgroundRgb;
         }
 
         private void ApplyDisabledStyle(Style style)

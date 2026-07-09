@@ -49,6 +49,21 @@ namespace ConsoulLibrary
         public ColorScheme? Scheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for headline text.
+        /// </summary>
+        public Decoration Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for headline text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for headline text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the color scheme used for borders in boxed and rule styles.
         /// </summary>
         public ColorScheme? BorderScheme { get; set; }
@@ -69,6 +84,9 @@ namespace ConsoulLibrary
                 Pad = Pad,
                 RuleCharacter = RuleCharacter,
                 Scheme = Scheme,
+                Decoration = Decoration,
+                ForegroundRgb = ForegroundRgb,
+                BackgroundRgb = BackgroundRgb,
                 BorderScheme = BorderScheme
             };
         }

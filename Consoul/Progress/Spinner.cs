@@ -16,6 +16,15 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="frames">The frames rendered by successive refreshes.</param>
         public Spinner(params string[] frames)
+            : this(null, (IEnumerable<string>)frames)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Spinner"/> class.
+        /// </summary>
+        /// <param name="frames">The frames rendered by successive refreshes.</param>
+        public Spinner(IEnumerable<string> frames)
             : this(null, frames)
         {
         }
@@ -26,11 +35,19 @@ namespace ConsoulLibrary
         /// <param name="name">Optional friendly name for diagnostics and documentation.</param>
         /// <param name="frames">The frames rendered by successive refreshes.</param>
         public Spinner(string name, params string[] frames)
+            : this(name, (IEnumerable<string>)frames)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Spinner"/> class.
+        /// </summary>
+        /// <param name="name">Optional friendly name for diagnostics and documentation.</param>
+        /// <param name="frames">The frames rendered by successive refreshes.</param>
+        public Spinner(string name, IEnumerable<string> frames)
         {
             Name = name ?? string.Empty;
-            _frames = frames == null || frames.Length == 0
-                ? new[] { "|", "/", "-", "\\" }
-                : frames.Select(frame => frame ?? string.Empty).ToArray();
+            _frames = NormalizeFrames(frames);
         }
 
         /// <summary>
@@ -46,6 +63,19 @@ namespace ConsoulLibrary
         internal string[] ToFrameArray()
         {
             return _frames.ToArray();
+        }
+
+        private static string[] NormalizeFrames(IEnumerable<string> frames)
+        {
+            if (frames == null)
+            {
+                return new[] { "|", "/", "-", "\\" };
+            }
+
+            string[] normalized = frames.Select(frame => frame ?? string.Empty).ToArray();
+            return normalized.Length == 0
+                ? new[] { "|", "/", "-", "\\" }
+                : normalized;
         }
 
         /// <summary>

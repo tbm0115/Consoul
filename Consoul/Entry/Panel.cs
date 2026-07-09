@@ -568,6 +568,7 @@ namespace ConsoulLibrary
         public Panel ContentColor(ConsoleColor color)
         {
             Options.ContentScheme = Scheme(color);
+            Options.ContentDecoration = Decoration.None;
             Options.ContentForegroundRgb = null;
             Options.ContentBackgroundRgb = null;
             return this;
@@ -581,6 +582,7 @@ namespace ConsoulLibrary
         public Panel ContentColor(SpectreColor color)
         {
             Options.ContentScheme = Scheme(color);
+            Options.ContentDecoration = Decoration.None;
             Options.ContentForegroundRgb = color.ToRgbColor();
             Options.ContentBackgroundRgb = null;
             return this;
@@ -594,6 +596,7 @@ namespace ConsoulLibrary
         public Panel ContentColor(RgbColor color)
         {
             Options.ContentScheme = Scheme(color);
+            Options.ContentDecoration = Decoration.None;
             Options.ContentForegroundRgb = color;
             Options.ContentBackgroundRgb = null;
             return this;
@@ -629,6 +632,7 @@ namespace ConsoulLibrary
         public Panel BorderColor(ConsoleColor color)
         {
             Options.BorderScheme = Scheme(color);
+            Options.BorderDecoration = Decoration.None;
             Options.BorderForegroundRgb = null;
             Options.BorderBackgroundRgb = null;
             return this;
@@ -642,6 +646,7 @@ namespace ConsoulLibrary
         public Panel BorderColor(SpectreColor color)
         {
             Options.BorderScheme = Scheme(color);
+            Options.BorderDecoration = Decoration.None;
             Options.BorderForegroundRgb = color.ToRgbColor();
             Options.BorderBackgroundRgb = null;
             return this;
@@ -655,6 +660,7 @@ namespace ConsoulLibrary
         public Panel BorderColor(RgbColor color)
         {
             Options.BorderScheme = Scheme(color);
+            Options.BorderDecoration = Decoration.None;
             Options.BorderForegroundRgb = color;
             Options.BorderBackgroundRgb = null;
             return this;
@@ -690,6 +696,7 @@ namespace ConsoulLibrary
         public Panel HeaderColor(ConsoleColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
             Options.TitleForegroundRgb = null;
             Options.TitleBackgroundRgb = null;
             return this;
@@ -703,6 +710,7 @@ namespace ConsoulLibrary
         public Panel HeaderColor(SpectreColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
             Options.TitleForegroundRgb = color.ToRgbColor();
             Options.TitleBackgroundRgb = null;
             return this;
@@ -716,6 +724,7 @@ namespace ConsoulLibrary
         public Panel HeaderColor(RgbColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
             Options.TitleForegroundRgb = color;
             Options.TitleBackgroundRgb = null;
             return this;
@@ -751,6 +760,7 @@ namespace ConsoulLibrary
         public Panel FooterColor(ConsoleColor color)
         {
             Options.FooterScheme = Scheme(color);
+            Options.FooterDecoration = Decoration.None;
             Options.FooterForegroundRgb = null;
             Options.FooterBackgroundRgb = null;
             return this;
@@ -764,6 +774,7 @@ namespace ConsoulLibrary
         public Panel FooterColor(SpectreColor color)
         {
             Options.FooterScheme = Scheme(color);
+            Options.FooterDecoration = Decoration.None;
             Options.FooterForegroundRgb = color.ToRgbColor();
             Options.FooterBackgroundRgb = null;
             return this;
@@ -777,6 +788,7 @@ namespace ConsoulLibrary
         public Panel FooterColor(RgbColor color)
         {
             Options.FooterScheme = Scheme(color);
+            Options.FooterDecoration = Decoration.None;
             Options.FooterForegroundRgb = color;
             Options.FooterBackgroundRgb = null;
             return this;

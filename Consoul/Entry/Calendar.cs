@@ -280,6 +280,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds existing highlighted calendar days.
+        /// </summary>
+        /// <param name="firstDay">The first highlighted day to add.</param>
+        /// <param name="additionalDays">Additional highlighted days to add.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar AddCalendarEvents(CalendarDay firstDay, params CalendarDay[] additionalDays)
+        {
+            AddCalendarEvent(firstDay);
+
+            if (additionalDays != null)
+            {
+                foreach (CalendarDay day in additionalDays)
+                {
+                    AddCalendarEvent(day);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds highlighted calendar dates projected from a model collection.
         /// </summary>
         /// <typeparam name="T">The model item type.</typeparam>

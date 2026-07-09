@@ -267,9 +267,25 @@ namespace ConsoulLibrary
             {
                 RowsItem row = _rows[rowIndex];
                 ColorScheme scheme = row.Scheme ?? _options.ResolveContentScheme();
-                foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(row.Content, width, scheme))
+                bool hasRowStyle = row.Scheme.HasValue ||
+                    row.Decoration != Decoration.None ||
+                    row.ForegroundRgb.HasValue ||
+                    row.BackgroundRgb.HasValue;
+                Decoration decoration = hasRowStyle ? row.Decoration : _options.ContentDecoration;
+                RgbColor? foregroundRgb = hasRowStyle ? row.ForegroundRgb : _options.ContentForegroundRgb;
+                RgbColor? backgroundRgb = hasRowStyle ? row.BackgroundRgb : _options.ContentBackgroundRgb;
+                foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                    row.Content,
+                    width,
+                    scheme,
+                    decoration,
+                    foregroundRgb,
+                    backgroundRgb))
                 {
-                    MarkupRenderText.WriteSegments(PadOrTrimSegments(line, width, scheme), scheme, true);
+                    MarkupRenderText.WriteSegments(
+                        PadOrTrimSegments(line, width, scheme, decoration, foregroundRgb, backgroundRgb),
+                        scheme,
+                        true);
                 }
 
                 if (rowIndex < _rows.Count - 1)
@@ -347,12 +363,46 @@ namespace ConsoulLibrary
             }
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        private static List<FixedMessageSegment> PadOrTrimSegments(
+            IList<FixedMessageSegment> segments,
+            int width,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             width = Math.Max(1, width);
             List<FixedMessageSegment> result = MarkupRenderText.TruncateSegments(segments, width);
-            MarkupRenderText.AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), scheme);
+            AddPadding(
+                result,
+                Math.Max(0, width - MarkupRenderText.GetLength(result)),
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb);
             return result;
+        }
+
+        private static void AddPadding(
+            IList<FixedMessageSegment> segments,
+            int count,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                scheme,
+                decoration,
+                null,
+                foregroundRgb,
+                backgroundRgb));
         }
     }
 }

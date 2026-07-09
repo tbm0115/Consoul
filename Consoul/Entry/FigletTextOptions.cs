@@ -38,6 +38,21 @@ namespace ConsoulLibrary
         public ColorScheme? Scheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for rendered glyphs.
+        /// </summary>
+        public Decoration Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for rendered glyphs on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for rendered glyphs on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
+
+        /// <summary>
         /// Creates a copy of the current figlet text options.
         /// </summary>
         /// <returns>A new <see cref="FigletTextOptions"/> instance with the same values.</returns>
@@ -50,7 +65,10 @@ namespace ConsoulLibrary
                 Character = Character,
                 Pad = Pad,
                 LayoutMode = LayoutMode,
-                Scheme = Scheme
+                Scheme = Scheme,
+                Decoration = Decoration,
+                ForegroundRgb = ForegroundRgb,
+                BackgroundRgb = BackgroundRgb
             };
         }
 
@@ -69,7 +87,10 @@ namespace ConsoulLibrary
                 BlockCharacter = Character,
                 Pad = Pad,
                 BlockGap = LayoutMode == FigletLayoutMode.FullSize ? 1 : 0,
-                Scheme = ResolveScheme()
+                Scheme = ResolveScheme(),
+                Decoration = Decoration,
+                ForegroundRgb = ForegroundRgb,
+                BackgroundRgb = BackgroundRgb
             };
         }
     }

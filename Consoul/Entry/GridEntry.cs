@@ -340,9 +340,20 @@ namespace ConsoulLibrary
                     {
                         GridRenderedLine line = lineIndex < renderedCells[cellIndex].Count
                             ? renderedCells[cellIndex][lineIndex]
-                            : new GridRenderedLine(Array.Empty<FixedMessageSegment>(), _options.ResolveContentScheme());
+                            : new GridRenderedLine(
+                                Array.Empty<FixedMessageSegment>(),
+                                _options.ResolveContentScheme(),
+                                _options.ContentDecoration,
+                                _options.ContentForegroundRgb,
+                                _options.ContentBackgroundRgb);
 
-                        List<FixedMessageSegment> padded = PadOrTrimSegments(line.Segments, columnWidths[cellIndex], line.Scheme);
+                        List<FixedMessageSegment> padded = PadOrTrimSegments(
+                            line.Segments,
+                            columnWidths[cellIndex],
+                            line.Scheme,
+                            line.Decoration,
+                            line.ForegroundRgb,
+                            line.BackgroundRgb);
                         bool isLastCell = cellIndex == rowCellCount - 1;
                         MarkupRenderText.WriteSegments(padded, line.Scheme, isLastCell);
 
@@ -587,21 +598,86 @@ namespace ConsoulLibrary
             if (!string.IsNullOrEmpty(cell.Header))
             {
                 ColorScheme headerScheme = _options.ResolveHeaderScheme();
-                foreach (List<FixedMessageSegment> line in BuildTextLines(cell.Header, innerWidth, noWrap, headerScheme))
+                foreach (List<FixedMessageSegment> line in BuildTextLines(
+                    cell.Header,
+                    innerWidth,
+                    noWrap,
+                    headerScheme,
+                    _options.HeaderDecoration,
+                    _options.HeaderForegroundRgb,
+                    _options.HeaderBackgroundRgb))
                 {
-                    lines.Add(new GridRenderedLine(FormatCellLine(line, columnWidth, innerWidth, leftPadding, rightPadding, alignment, headerScheme), headerScheme));
+                    lines.Add(new GridRenderedLine(FormatCellLine(
+                        line,
+                        columnWidth,
+                        innerWidth,
+                        leftPadding,
+                        rightPadding,
+                        alignment,
+                        headerScheme,
+                        _options.HeaderDecoration,
+                        _options.HeaderForegroundRgb,
+                        _options.HeaderBackgroundRgb),
+                        headerScheme,
+                        _options.HeaderDecoration,
+                        _options.HeaderForegroundRgb,
+                        _options.HeaderBackgroundRgb));
                 }
             }
 
             ColorScheme contentScheme = cell.Scheme ?? _options.ResolveContentScheme();
-            foreach (List<FixedMessageSegment> line in BuildTextLines(cell.Content, innerWidth, noWrap, contentScheme))
+            bool hasCellStyle = cell.Scheme.HasValue ||
+                cell.Decoration != Decoration.None ||
+                cell.ForegroundRgb.HasValue ||
+                cell.BackgroundRgb.HasValue;
+            Decoration contentDecoration = hasCellStyle ? cell.Decoration : _options.ContentDecoration;
+            RgbColor? contentForegroundRgb = hasCellStyle ? cell.ForegroundRgb : _options.ContentForegroundRgb;
+            RgbColor? contentBackgroundRgb = hasCellStyle ? cell.BackgroundRgb : _options.ContentBackgroundRgb;
+            foreach (List<FixedMessageSegment> line in BuildTextLines(
+                cell.Content,
+                innerWidth,
+                noWrap,
+                contentScheme,
+                contentDecoration,
+                contentForegroundRgb,
+                contentBackgroundRgb))
             {
-                lines.Add(new GridRenderedLine(FormatCellLine(line, columnWidth, innerWidth, leftPadding, rightPadding, alignment, contentScheme), contentScheme));
+                lines.Add(new GridRenderedLine(
+                    FormatCellLine(
+                        line,
+                        columnWidth,
+                        innerWidth,
+                        leftPadding,
+                        rightPadding,
+                        alignment,
+                        contentScheme,
+                        contentDecoration,
+                        contentForegroundRgb,
+                        contentBackgroundRgb),
+                    contentScheme,
+                    contentDecoration,
+                    contentForegroundRgb,
+                    contentBackgroundRgb));
             }
 
             if (lines.Count == 0)
             {
-                lines.Add(new GridRenderedLine(FormatCellLine(new List<FixedMessageSegment>(), columnWidth, innerWidth, leftPadding, rightPadding, alignment, contentScheme), contentScheme));
+                lines.Add(new GridRenderedLine(
+                    FormatCellLine(
+                        new List<FixedMessageSegment>(),
+                        columnWidth,
+                        innerWidth,
+                        leftPadding,
+                        rightPadding,
+                        alignment,
+                        contentScheme,
+                        contentDecoration,
+                        contentForegroundRgb,
+                        contentBackgroundRgb),
+                    contentScheme,
+                    contentDecoration,
+                    contentForegroundRgb,
+                    contentBackgroundRgb));
             }
 
             return lines;
@@ -620,14 +696,21 @@ namespace ConsoulLibrary
             return configuredColumnCount <= 0 ? 0 : cellIndex % configuredColumnCount;
         }
 
-        private static IEnumerable<List<FixedMessageSegment>> BuildTextLines(string text, int width, bool noWrap, ColorScheme scheme)
+        private static IEnumerable<List<FixedMessageSegment>> BuildTextLines(
+            string text,
+            int width,
+            bool noWrap,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             if (!noWrap)
             {
-                return MarkupRenderText.WrapSegments(text, width, scheme);
+                return MarkupRenderText.WrapSegments(text, width, scheme, decoration, foregroundRgb, backgroundRgb);
             }
 
-            return MarkupRenderText.GetLogicalLines(text, scheme);
+            return MarkupRenderText.GetLogicalLines(text, scheme, decoration, foregroundRgb, backgroundRgb);
         }
 
         private static List<FixedMessageSegment> FormatCellLine(
@@ -637,33 +720,153 @@ namespace ConsoulLibrary
             int leftPadding,
             int rightPadding,
             TextBlockAlignment alignment,
-            ColorScheme scheme)
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
-            List<FixedMessageSegment> aligned = MarkupRenderText.AlignSegments(text, innerWidth, alignment, scheme);
-            List<FixedMessageSegment> value = MarkupRenderText.PadSegments(aligned, leftPadding, rightPadding, scheme);
-            return PadOrTrimSegments(value, columnWidth, scheme);
+            List<FixedMessageSegment> aligned = AlignSegments(
+                text,
+                innerWidth,
+                alignment,
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb);
+            List<FixedMessageSegment> value = PadSegments(
+                aligned,
+                leftPadding,
+                rightPadding,
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb);
+            return PadOrTrimSegments(value, columnWidth, scheme, decoration, foregroundRgb, backgroundRgb);
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        private static List<FixedMessageSegment> AlignSegments(
+            IList<FixedMessageSegment> segments,
+            int width,
+            TextBlockAlignment alignment,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            width = Math.Max(0, width);
+            var content = MarkupRenderText.TruncateSegments(segments, width);
+            int remaining = Math.Max(0, width - MarkupRenderText.GetLength(content));
+
+            int leftPadding;
+            switch (alignment)
+            {
+                case TextBlockAlignment.Center:
+                    leftPadding = remaining / 2;
+                    break;
+                case TextBlockAlignment.Right:
+                    leftPadding = remaining;
+                    break;
+                default:
+                    leftPadding = 0;
+                    break;
+            }
+
+            int rightPadding = remaining - leftPadding;
+            var aligned = new List<FixedMessageSegment>();
+            AddPadding(aligned, leftPadding, scheme, decoration, foregroundRgb, backgroundRgb);
+            aligned.AddRange(content);
+            AddPadding(aligned, rightPadding, scheme, decoration, foregroundRgb, backgroundRgb);
+            return aligned;
+        }
+
+        private static List<FixedMessageSegment> PadSegments(
+            IList<FixedMessageSegment> segments,
+            int leftPadding,
+            int rightPadding,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            var result = new List<FixedMessageSegment>();
+            AddPadding(result, leftPadding, scheme, decoration, foregroundRgb, backgroundRgb);
+            if (segments != null)
+            {
+                result.AddRange(segments);
+            }
+
+            AddPadding(result, rightPadding, scheme, decoration, foregroundRgb, backgroundRgb);
+            return result;
+        }
+
+        private static List<FixedMessageSegment> PadOrTrimSegments(
+            IList<FixedMessageSegment> segments,
+            int width,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             List<FixedMessageSegment> result = MarkupRenderText.TruncateSegments(segments, Math.Max(0, width));
-            MarkupRenderText.AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), scheme);
+            AddPadding(
+                result,
+                Math.Max(0, width - MarkupRenderText.GetLength(result)),
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb);
             return result;
+        }
+
+        private static void AddPadding(
+            IList<FixedMessageSegment> segments,
+            int count,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                scheme,
+                decoration,
+                null,
+                foregroundRgb,
+                backgroundRgb));
         }
 
         private readonly struct GridRenderedLine
         {
-            public GridRenderedLine(IEnumerable<FixedMessageSegment> segments, ColorScheme scheme)
+            public GridRenderedLine(
+                IEnumerable<FixedMessageSegment> segments,
+                ColorScheme scheme,
+                Decoration decoration = Decoration.None,
+                RgbColor? foregroundRgb = null,
+                RgbColor? backgroundRgb = null)
             {
                 Segments = segments == null
                     ? new List<FixedMessageSegment>()
                     : new List<FixedMessageSegment>(segments);
                 Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
             }
 
             public IList<FixedMessageSegment> Segments { get; }
 
             public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

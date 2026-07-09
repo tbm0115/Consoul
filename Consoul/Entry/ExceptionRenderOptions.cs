@@ -33,6 +33,16 @@ namespace ConsoulLibrary
         public bool IncludeInnerExceptions { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets a value indicating whether aggregate exceptions should render flattened child exceptions.
+        /// </summary>
+        public bool FlattenAggregateExceptions { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the maximum number of flattened aggregate child exceptions rendered. A null value renders every child exception.
+        /// </summary>
+        public int? MaxAggregateExceptions { get; set; }
+
+        /// <summary>
         /// Gets or sets the maximum number of stack frames rendered per exception. A null value renders every frame.
         /// </summary>
         public int? MaxStackFrames { get; set; }
@@ -80,6 +90,8 @@ namespace ConsoulLibrary
                 Title = Title,
                 IncludeStackTrace = IncludeStackTrace,
                 IncludeInnerExceptions = IncludeInnerExceptions,
+                FlattenAggregateExceptions = FlattenAggregateExceptions,
+                MaxAggregateExceptions = MaxAggregateExceptions,
                 MaxStackFrames = MaxStackFrames,
                 BorderScheme = BorderScheme,
                 TitleScheme = TitleScheme,

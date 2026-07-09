@@ -146,7 +146,7 @@ namespace ConsoulLibrary
         public Badge Color(ConsoleColor color, ConsoleColor? backgroundColor = null)
         {
             ColorScheme scheme = Scheme(color, backgroundColor);
-            SetSchemeForKind(scheme);
+            SetStyleForKind(scheme, Decoration.None, null, null);
             return this;
         }
 
@@ -157,7 +157,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Badge"/> instance.</returns>
         public Badge Color(SpectreColor color)
         {
-            SetSchemeForKind(Scheme(color));
+            ApplyStyleForKind(new Style(color));
             return this;
         }
 
@@ -168,7 +168,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Badge"/> instance.</returns>
         public Badge Color(RgbColor color)
         {
-            SetSchemeForKind(Scheme(color));
+            ApplyStyleForKind(new Style(color));
             return this;
         }
 
@@ -179,7 +179,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Badge"/> instance.</returns>
         public Badge Color(Style style)
         {
-            SetSchemeForKind((style ?? Style.Plain).ToColorScheme(RenderOptions.DefaultScheme));
+            ApplyStyleForKind(style);
             return this;
         }
 
@@ -190,28 +190,57 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Badge"/> instance.</returns>
         public Badge Color(string style)
         {
-            SetSchemeForKind(Style.ParseScheme(style, RenderOptions.DefaultScheme));
+            ApplyStyleForKind(Style.Parse(style));
             return this;
         }
 
-        private void SetSchemeForKind(ColorScheme scheme)
+        private void ApplyStyleForKind(Style style)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            SetStyleForKind(
+                resolvedStyle.ToColorScheme(RenderOptions.DefaultScheme),
+                resolvedStyle.Decoration,
+                resolvedStyle.ForegroundRgb,
+                resolvedStyle.BackgroundRgb);
+        }
+
+        private void SetStyleForKind(
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             switch (Kind)
             {
                 case BadgeKind.Info:
                     Options.InfoScheme = scheme;
+                    Options.InfoDecoration = decoration;
+                    Options.InfoForegroundRgb = foregroundRgb;
+                    Options.InfoBackgroundRgb = backgroundRgb;
                     break;
                 case BadgeKind.Success:
                     Options.SuccessScheme = scheme;
+                    Options.SuccessDecoration = decoration;
+                    Options.SuccessForegroundRgb = foregroundRgb;
+                    Options.SuccessBackgroundRgb = backgroundRgb;
                     break;
                 case BadgeKind.Warning:
                     Options.WarningScheme = scheme;
+                    Options.WarningDecoration = decoration;
+                    Options.WarningForegroundRgb = foregroundRgb;
+                    Options.WarningBackgroundRgb = backgroundRgb;
                     break;
                 case BadgeKind.Error:
                     Options.ErrorScheme = scheme;
+                    Options.ErrorDecoration = decoration;
+                    Options.ErrorForegroundRgb = foregroundRgb;
+                    Options.ErrorBackgroundRgb = backgroundRgb;
                     break;
                 default:
                     Options.DefaultScheme = scheme;
+                    Options.DefaultDecoration = decoration;
+                    Options.DefaultForegroundRgb = foregroundRgb;
+                    Options.DefaultBackgroundRgb = backgroundRgb;
                     break;
             }
         }

@@ -44,24 +44,32 @@ namespace ConsoulLibrary
         public void Render()
         {
             int width = PanelEntry.ResolveWidth(_options.Width);
-            ColorScheme scheme = _options.ResolveScheme();
-            List<List<FixedMessageSegment>> lines = GetLines(scheme);
+            AlignOptions.StyledText style = _options.ResolveStyle();
+            ColorScheme scheme = style.Scheme;
+            List<List<FixedMessageSegment>> lines = GetLines(style);
             int height = ResolveHeight(lines.Count);
             int visibleCount = Math.Min(lines.Count, height);
             int blankCount = Math.Max(0, height - visibleCount);
             int topPadding = ResolveTopPadding(blankCount, _options.VerticalAlignment);
 
-            WriteBlankLines(topPadding, width, scheme);
+            WriteBlankLines(topPadding, width, style);
 
             for (int index = 0; index < visibleCount; index++)
             {
                 MarkupRenderText.WriteSegments(
-                    MarkupRenderText.AlignSegments(lines[index], width, _options.Alignment, scheme),
+                    MarkupRenderText.AlignSegments(
+                        lines[index],
+                        width,
+                        _options.Alignment,
+                        scheme,
+                        style.Decoration,
+                        style.ForegroundRgb,
+                        style.BackgroundRgb),
                     scheme,
                     true);
             }
 
-            WriteBlankLines(blankCount - topPadding, width, scheme);
+            WriteBlankLines(blankCount - topPadding, width, style);
         }
 
         /// <summary>
@@ -102,11 +110,16 @@ namespace ConsoulLibrary
             new AlignEntry(content, resolvedOptions, false).Render();
         }
 
-        private List<List<FixedMessageSegment>> GetLines(ColorScheme scheme)
+        private List<List<FixedMessageSegment>> GetLines(AlignOptions.StyledText style)
         {
             if (_parseMarkup)
             {
-                return MarkupRenderText.GetLogicalLines(Content, scheme);
+                return MarkupRenderText.GetLogicalLines(
+                    Content,
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb);
             }
 
             var rendered = new List<List<FixedMessageSegment>>();
@@ -121,7 +134,16 @@ namespace ConsoulLibrary
 
             foreach (string line in lines)
             {
-                rendered.Add(new List<FixedMessageSegment> { new FixedMessageSegment(line, scheme) });
+                rendered.Add(new List<FixedMessageSegment>
+                {
+                    new FixedMessageSegment(
+                        line,
+                        style.Scheme,
+                        style.Decoration,
+                        null,
+                        style.ForegroundRgb,
+                        style.BackgroundRgb)
+                });
             }
 
             return rendered;
@@ -151,11 +173,23 @@ namespace ConsoulLibrary
             }
         }
 
-        private static void WriteBlankLines(int count, int width, ColorScheme scheme)
+        private static void WriteBlankLines(int count, int width, AlignOptions.StyledText style)
         {
             for (int index = 0; index < count; index++)
             {
-                Consoul.Write(new string(' ', width), scheme, true);
+                MarkupRenderText.WriteSegments(
+                    new[]
+                    {
+                        new FixedMessageSegment(
+                            new string(' ', width),
+                            style.Scheme,
+                            style.Decoration,
+                            null,
+                            style.ForegroundRgb,
+                            style.BackgroundRgb)
+                    },
+                    style.Scheme,
+                    true);
             }
         }
 

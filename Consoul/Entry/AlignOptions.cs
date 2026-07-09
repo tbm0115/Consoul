@@ -33,6 +33,21 @@ namespace ConsoulLibrary
         public ColorScheme? Scheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the ANSI decoration used for aligned content.
+        /// </summary>
+        public Decoration Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for aligned content on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for aligned content on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
+
+        /// <summary>
         /// Creates a copy of the current alignment options.
         /// </summary>
         /// <returns>A new <see cref="AlignOptions"/> instance with the same values.</returns>
@@ -44,13 +59,40 @@ namespace ConsoulLibrary
                 Height = Height,
                 Alignment = Alignment,
                 VerticalAlignment = VerticalAlignment,
-                Scheme = Scheme
+                Scheme = Scheme,
+                Decoration = Decoration,
+                ForegroundRgb = ForegroundRgb,
+                BackgroundRgb = BackgroundRgb
             };
         }
 
         internal ColorScheme ResolveScheme()
         {
             return Scheme ?? RenderOptions.DefaultScheme;
+        }
+
+        internal StyledText ResolveStyle()
+        {
+            return new StyledText(ResolveScheme(), Decoration, ForegroundRgb, BackgroundRgb);
+        }
+
+        internal readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

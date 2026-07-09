@@ -437,6 +437,49 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Grid columns can be configured inline or supplied from generated column metadata.
+        /// </summary>
+        [Fact]
+        public void Grid_FluentBuilder_AcceptsConfiguredAndEnumerableColumns()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                IEnumerable<GridColumn> metricColumns = new[]
+                {
+                    new GridColumn().Width(8).Centered(),
+                    new GridColumn().Width(10).RightAligned()
+                };
+                var grid = new Grid()
+                    .Width(36)
+                    .MinimumColumnWidth(4)
+                    .Gutter(1)
+                    .AddColumn(column => column.Width(12).Padding(1, 1).LeftAligned())
+                    .AddColumns(metricColumns)
+                    .AddRow("Service", "Load", "7")
+                    .AddRow("Worker", "Queue", "12");
+
+                AnsiConsole.Write(grid);
+
+                Assert.Equal(3, grid.Columns.Count);
+                Assert.Equal(3, grid.Options.Columns);
+                Assert.Equal(12, grid.Columns[0].Width);
+                Assert.Equal(Justify.Left, grid.Columns[0].Alignment);
+                Assert.Equal(Justify.Center, grid.Columns[1].Alignment);
+                Assert.Equal(Justify.Right, grid.Columns[2].Alignment);
+                VisualAssert.ContainsText(scope.Driver, "Service");
+                VisualAssert.ContainsText(scope.Driver, "Worker");
+                VisualAssert.ContainsText(scope.Driver, "12");
+                Assert.Contains(scope.Driver.Lines, line =>
+                    line.Contains("Worker") &&
+                    line.Contains("Queue") &&
+                    line.Contains("12") &&
+                    line.IndexOf("12", StringComparison.Ordinal) > line.IndexOf("Queue", StringComparison.Ordinal));
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 36, "Generated grid column line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Grid columns expose table-like alignment helpers for quick dashboard snippets.
         /// </summary>
         [Fact]
@@ -503,6 +546,42 @@ namespace ConsoulLibrary.Tests.Compatibility
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Retries") && write.Color == ConsoleColor.Yellow);
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("3") && write.Color == ConsoleColor.Cyan);
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 44, "Mixed grid line exceeded width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Grid aliases can add several inline rows without collection wrappers.
+        /// </summary>
+        [Fact]
+        public void Grid_FluentBuilder_AddRowsAcceptsInlineRowParams()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                var grid = new Grid()
+                    .Width(48)
+                    .AddColumns(2)
+                    .MinimumColumnWidth(8)
+                    .Gutter(1)
+                    .ContentColor("white")
+                    .AddRows(
+                        new[] { "API", "Ready" },
+                        new[] { "Worker", "Queued" })
+                    .AddRows(
+                        new object[] { new Markup("[cyan]Scheduler[/]"), new Text("Running", ConsoleColor.Green) },
+                        new object[] { "Retries", 2 });
+
+                AnsiConsole.Write(grid);
+
+                Assert.Equal(8, grid.Cells.Count);
+                VisualAssert.ContainsText(scope.Driver, "API");
+                VisualAssert.ContainsText(scope.Driver, "Worker");
+                VisualAssert.ContainsText(scope.Driver, "Scheduler");
+                VisualAssert.ContainsText(scope.Driver, "Running");
+                VisualAssert.ContainsText(scope.Driver, "Retries");
+                VisualAssert.ContainsText(scope.Driver, "2");
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                Assert.DoesNotContain("ConsoulLibrary.", scope.Driver.Text);
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }
@@ -980,6 +1059,59 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Layout aliases accept prepared pane collections for MVC-style dashboard sections.
+        /// </summary>
+        [Fact]
+        public void Layout_FluentBuilder_AcceptsPreparedPaneCollections()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                LayoutPane[] constructorPanes =
+                {
+                    LayoutPane.Create("Constructor ready", "Constructed", "aqua")
+                };
+                IEnumerable<LayoutPane> panes = new[]
+                {
+                    LayoutPane.Create("Ready", "Service", "green").Size(10),
+                    LayoutPane.Create("Waiting", "Worker", ConsoleColor.Cyan).Ratio(2),
+                    LayoutPane.Create("Secret", "Hidden").Invisible()
+                };
+                var constructed = new Layout(constructorPanes)
+                    .Width(30)
+                    .ColumnCount(1);
+                var layout = new Layout("Dashboard")
+                    .Width(44)
+                    .ColumnCount(3)
+                    .MinimumPaneWidth(6)
+                    .Gutter(1)
+                    .AddPanes(panes);
+
+                layout["Worker"].Update("Running", "yellow");
+
+                AnsiConsole.Write(constructed);
+                AnsiConsole.Write(layout);
+
+                Assert.Single(constructed.Panes);
+                Assert.Equal(3, layout.Panes.Count);
+                Assert.Equal(10, layout.Panes[0].SizeValue);
+                Assert.Equal(2, layout.Panes[1].RatioValue);
+                VisualAssert.ContainsText(scope.Driver, "Constructed");
+                VisualAssert.ContainsText(scope.Driver, "Constructor ready");
+                VisualAssert.ContainsText(scope.Driver, "Service");
+                VisualAssert.ContainsText(scope.Driver, "Ready");
+                VisualAssert.ContainsText(scope.Driver, "Worker");
+                VisualAssert.ContainsText(scope.Driver, "Running");
+                Assert.DoesNotContain("Hidden", scope.Driver.Text);
+                Assert.DoesNotContain("Secret", scope.Driver.Text);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Constructor ready") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Ready") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Running") && write.Color == ConsoleColor.Yellow);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 44, "Prepared layout pane line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Nested layouts expose mutable named panes for dashboard-style migration snippets.
         /// </summary>
         [Fact]
@@ -1016,6 +1148,49 @@ namespace ConsoulLibrary.Tests.Compatibility
                 VisualAssert.ContainsText(scope.Driver, "Ready");
                 VisualAssert.ContainsText(scope.Driver, "Metrics");
                 VisualAssert.ContainsText(scope.Driver, "Jobs: 4");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Split helpers accept reusable renderables directly for quick dashboard composition.
+        /// </summary>
+        [Fact]
+        public void Layout_SplitRowsAndColumns_AcceptRenderablePanes()
+        {
+            using (var scope = new ConsoleDriverScope(72))
+            {
+                var services = new Table()
+                    .Width(30)
+                    .HideFooter()
+                    .AddColumns("Service", "State")
+                    .AddRows(
+                        new[] { "API", "Ready" },
+                        new[] { "Worker", "Queued" });
+
+                var layout = new Layout("Ops")
+                    .Width(64)
+                    .MinimumPaneWidth(16)
+                    .SplitRows(
+                        new Panel("Release train").Header("Overview").Width(28),
+                        new Layout("Body").SplitColumns(
+                            services,
+                            new Rows()
+                                .Width(24)
+                                .Spacing(0)
+                                .AddRows(new Markup("[green]Healthy[/]"), new Text("Jobs: 4").Color(ConsoleColor.Cyan))));
+
+                AnsiConsole.Write(layout);
+
+                Assert.Equal(LayoutDirection.Rows, layout.Options.Direction);
+                Assert.Equal(2, layout.Panes.Count);
+                VisualAssert.ContainsText(scope.Driver, "Overview");
+                VisualAssert.ContainsText(scope.Driver, "Release train");
+                VisualAssert.ContainsText(scope.Driver, "API");
+                VisualAssert.ContainsText(scope.Driver, "Worker");
+                VisualAssert.ContainsText(scope.Driver, "Healthy");
+                VisualAssert.ContainsText(scope.Driver, "Jobs: 4");
+                Assert.DoesNotContain("ConsoulLibrary.", scope.Driver.Text);
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }

@@ -164,6 +164,34 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Common Spectre-style sparkline aliases map to the existing range and formatter options.
+        /// </summary>
+        [Fact]
+        public void Sparkline_SpectreStyleAliases_MapToExistingOptions()
+        {
+            using (var scope = new ConsoleDriverScope(40))
+            {
+                var sparkline = new Sparkline(new[] { 1d, 5d, 9d })
+                    .Width(40)
+                    .Label("Latency")
+                    .WithMinValue(0)
+                    .MinValue(1)
+                    .WithMaxValue(10)
+                    .MaxValue(9)
+                    .ShowRange()
+                    .Characters("123")
+                    .UseValueFormatter(value => value.ToString("0", CultureInfo.InvariantCulture) + " ms");
+
+                AnsiConsole.Write(sparkline);
+
+                VisualAssert.ContainsText(scope.Driver, "Latency");
+                VisualAssert.ContainsText(scope.Driver, "1 ms..9 ms");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("3") && write.Color == RenderOptions.OptionColor);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Sparkline rendering ignores non-finite values and handles flat data.
         /// </summary>
         [Fact]
@@ -196,6 +224,54 @@ namespace ConsoulLibrary.Tests.Rendering
                 }, new SparklineOptions { Label = "Rate", Characters = "abc" });
 
                 VisualAssert.WroteText(scope.Driver, "Rate");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("c"));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Builder callbacks accept immediate value params without allocating a separate sequence.
+        /// </summary>
+        [Fact]
+        public void Sparkline_BuilderCallback_AddRangeAcceptsParams()
+        {
+            using (var scope = new ConsoleDriverScope(40))
+            {
+                SparklineEntry captured = new SparklineEntry();
+
+                Consoul.Sparkline(line =>
+                {
+                    captured = line.AddRange(1, double.NaN, 2, double.PositiveInfinity, 3);
+                }, new SparklineOptions { Label = "Rate", ShowRange = true, Characters = "abc" });
+
+                Assert.Equal(new[] { 1d, 2d, 3d }, captured.Values);
+                VisualAssert.ContainsText(scope.Driver, "Rate");
+                VisualAssert.ContainsText(scope.Driver, "1..3");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("c"));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Fluent sparkline builders accept immediate value params for compact MVC-style dashboard snippets.
+        /// </summary>
+        [Fact]
+        public void Sparkline_FluentBuilder_AddValuesAcceptsParams()
+        {
+            using (var scope = new ConsoleDriverScope(40))
+            {
+                var sparkline = new Sparkline()
+                    .Width(32)
+                    .Label("Rate")
+                    .ShowRange()
+                    .Characters("abc")
+                    .AddValues(1, double.NaN, 2, double.PositiveInfinity, 3);
+
+                AnsiConsole.Write(sparkline);
+
+                Assert.Equal(new[] { 1d, 2d, 3d }, sparkline.Values);
+                VisualAssert.ContainsText(scope.Driver, "Rate");
+                VisualAssert.ContainsText(scope.Driver, "1..3");
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("c"));
                 VisualAssert.NoOverflow(scope.Driver);
             }

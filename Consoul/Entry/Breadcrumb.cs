@@ -129,6 +129,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds multiple item texts to the breadcrumb trail.
+        /// </summary>
+        /// <param name="firstItem">The first item text to add.</param>
+        /// <param name="additionalItems">Additional item texts to add.</param>
+        /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
+        public Breadcrumb AddItems(string firstItem, params string[] additionalItems)
+        {
+            AddItem(firstItem);
+
+            if (additionalItems != null)
+            {
+                foreach (string item in additionalItems)
+                {
+                    AddItem(item);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds items to the breadcrumb trail.
         /// </summary>
         /// <param name="items">The item texts.</param>
@@ -269,6 +290,9 @@ namespace ConsoulLibrary
         public Breadcrumb ItemColor(ConsoleColor color)
         {
             Options.ItemScheme = Scheme(color);
+            Options.ItemDecoration = Decoration.None;
+            Options.ItemForegroundRgb = null;
+            Options.ItemBackgroundRgb = null;
             return this;
         }
 
@@ -279,8 +303,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb ItemColor(SpectreColor color)
         {
-            Options.ItemScheme = Scheme(color);
-            return this;
+            return ItemColor(new Style(color));
         }
 
         /// <summary>
@@ -290,8 +313,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb ItemColor(RgbColor color)
         {
-            Options.ItemScheme = Scheme(color);
-            return this;
+            return ItemColor(new Style(color));
         }
 
         /// <summary>
@@ -301,7 +323,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb ItemColor(Style style)
         {
-            Options.ItemScheme = Scheme(style, Options.ResolveItemScheme());
+            ApplyItemStyle(style, Options.ResolveItemScheme());
             return this;
         }
 
@@ -312,8 +334,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb ItemColor(string style)
         {
-            Options.ItemScheme = Style.ParseScheme(style, Options.ResolveItemScheme());
-            return this;
+            return ItemColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -324,6 +345,9 @@ namespace ConsoulLibrary
         public Breadcrumb CurrentColor(ConsoleColor color)
         {
             Options.CurrentScheme = Scheme(color);
+            Options.CurrentDecoration = Decoration.None;
+            Options.CurrentForegroundRgb = null;
+            Options.CurrentBackgroundRgb = null;
             return this;
         }
 
@@ -334,8 +358,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb CurrentColor(SpectreColor color)
         {
-            Options.CurrentScheme = Scheme(color);
-            return this;
+            return CurrentColor(new Style(color));
         }
 
         /// <summary>
@@ -345,8 +368,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb CurrentColor(RgbColor color)
         {
-            Options.CurrentScheme = Scheme(color);
-            return this;
+            return CurrentColor(new Style(color));
         }
 
         /// <summary>
@@ -356,7 +378,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb CurrentColor(Style style)
         {
-            Options.CurrentScheme = Scheme(style, Options.ResolveCurrentScheme());
+            ApplyCurrentStyle(style, Options.ResolveCurrentScheme());
             return this;
         }
 
@@ -367,8 +389,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb CurrentColor(string style)
         {
-            Options.CurrentScheme = Style.ParseScheme(style, Options.ResolveCurrentScheme());
-            return this;
+            return CurrentColor(Style.Parse(style));
         }
 
         /// <summary>
@@ -379,6 +400,9 @@ namespace ConsoulLibrary
         public Breadcrumb SeparatorColor(ConsoleColor color)
         {
             Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorDecoration = Decoration.None;
+            Options.SeparatorForegroundRgb = null;
+            Options.SeparatorBackgroundRgb = null;
             return this;
         }
 
@@ -389,8 +413,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb SeparatorColor(SpectreColor color)
         {
-            Options.SeparatorScheme = Scheme(color);
-            return this;
+            return SeparatorColor(new Style(color));
         }
 
         /// <summary>
@@ -400,8 +423,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb SeparatorColor(RgbColor color)
         {
-            Options.SeparatorScheme = Scheme(color);
-            return this;
+            return SeparatorColor(new Style(color));
         }
 
         /// <summary>
@@ -411,7 +433,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb SeparatorColor(Style style)
         {
-            Options.SeparatorScheme = Scheme(style, Options.ResolveSeparatorScheme());
+            ApplySeparatorStyle(style, Options.ResolveSeparatorScheme());
             return this;
         }
 
@@ -422,8 +444,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Breadcrumb"/> instance.</returns>
         public Breadcrumb SeparatorColor(string style)
         {
-            Options.SeparatorScheme = Style.ParseScheme(style, Options.ResolveSeparatorScheme());
-            return this;
+            return SeparatorColor(Style.Parse(style));
         }
 
         private static ColorScheme Scheme(ConsoleColor color)
@@ -445,9 +466,31 @@ namespace ConsoulLibrary
             return Scheme(color.ToConsoleColor());
         }
 
-        private static ColorScheme Scheme(Style style, ColorScheme fallback)
+        private void ApplyItemStyle(Style style, ColorScheme fallback)
         {
-            return (style ?? Style.Plain).ToColorScheme(fallback);
+            BreadcrumbOptions.StyledText resolved = BreadcrumbOptions.StyledText.FromStyle(style, fallback);
+            Options.ItemScheme = resolved.Scheme;
+            Options.ItemDecoration = resolved.Decoration;
+            Options.ItemForegroundRgb = resolved.ForegroundRgb;
+            Options.ItemBackgroundRgb = resolved.BackgroundRgb;
+        }
+
+        private void ApplyCurrentStyle(Style style, ColorScheme fallback)
+        {
+            BreadcrumbOptions.StyledText resolved = BreadcrumbOptions.StyledText.FromStyle(style, fallback);
+            Options.CurrentScheme = resolved.Scheme;
+            Options.CurrentDecoration = resolved.Decoration;
+            Options.CurrentForegroundRgb = resolved.ForegroundRgb;
+            Options.CurrentBackgroundRgb = resolved.BackgroundRgb;
+        }
+
+        private void ApplySeparatorStyle(Style style, ColorScheme fallback)
+        {
+            BreadcrumbOptions.StyledText resolved = BreadcrumbOptions.StyledText.FromStyle(style, fallback);
+            Options.SeparatorScheme = resolved.Scheme;
+            Options.SeparatorDecoration = resolved.Decoration;
+            Options.SeparatorForegroundRgb = resolved.ForegroundRgb;
+            Options.SeparatorBackgroundRgb = resolved.BackgroundRgb;
         }
     }
 }

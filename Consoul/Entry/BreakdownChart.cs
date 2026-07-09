@@ -127,6 +127,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds existing items to the chart.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart AddItems(BreakdownChartItem firstItem, params BreakdownChartItem[] additionalItems)
+        {
+            AddItem(firstItem);
+
+            if (additionalItems != null)
+            {
+                foreach (BreakdownChartItem item in additionalItems)
+                {
+                    AddItem(item);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds items projected from a model collection.
         /// </summary>
         /// <typeparam name="T">The model item type.</typeparam>
@@ -477,6 +498,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets whether values should render in legend rows using the common singular alias.
+        /// </summary>
+        /// <param name="show">Whether values should render.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart ShowValue(bool show = true)
+        {
+            return ShowValues(show);
+        }
+
+        /// <summary>
         /// Hides values in legend rows.
         /// </summary>
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
@@ -484,6 +515,15 @@ namespace ConsoulLibrary
         {
             Options.ShowValues = false;
             return this;
+        }
+
+        /// <summary>
+        /// Hides values in legend rows using the common singular alias.
+        /// </summary>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart HideValue()
+        {
+            return HideValues();
         }
 
         /// <summary>
@@ -553,6 +593,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the formatter used for values rendered in legend rows using a Spectre-style alias.
+        /// </summary>
+        /// <param name="formatter">The value formatter.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart UseValueFormatter(Func<double, string> formatter)
+        {
+            return ValueFormatter(formatter);
+        }
+
+        /// <summary>
         /// Sets the formatter used for percentages rendered in legend rows.
         /// </summary>
         /// <param name="formatter">The percentage formatter.</param>
@@ -561,6 +611,16 @@ namespace ConsoulLibrary
         {
             Options.PercentageFormatter = formatter;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the formatter used for percentages rendered in legend rows using a Spectre-style alias.
+        /// </summary>
+        /// <param name="formatter">The percentage formatter.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart UsePercentageFormatter(Func<double, string> formatter)
+        {
+            return PercentageFormatter(formatter);
         }
 
         /// <summary>

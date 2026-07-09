@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -14,6 +16,10 @@ namespace ConsoulLibrary
         private readonly List<SelectOption> _options = new List<SelectOption>();
         private readonly HashSet<string> _defaultLabels = new HashSet<string>(StringComparer.Ordinal);
         private bool _selectAllByDefault;
+        private ConsoleColor _promptColor = RenderOptions.PromptColor;
+        private ConsoleColor _instructionColor = RenderOptions.SubnoteColor;
+        private ConsoleColor _optionDescriptionColor = RenderOptions.SubnoteColor;
+        private ConsoleColor _keyboardSelectionColor = RenderOptions.PromptColor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MultiSelectionPrompt"/> class with a message and optional behavior flags.
@@ -100,6 +106,33 @@ namespace ConsoulLibrary
         public MultiSelectionPrompt PromptStyle(ConsoleColor color)
         {
             PromptColor = color;
+            PromptDecoration = Decoration.None;
+            PromptForegroundRgb = null;
+            PromptBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt PromptStyle(SpectreColor color)
+        {
+            return PromptStyle(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt PromptStyle(RgbColor color)
+        {
+            PromptColor = color.ToConsoleColor();
+            PromptDecoration = Decoration.None;
+            PromptForegroundRgb = color;
+            PromptBackgroundRgb = null;
             return this;
         }
 
@@ -110,7 +143,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
         public MultiSelectionPrompt PromptStyle(Style style)
         {
-            PromptColor = PromptRenderHelpers.ResolveStyleColor(style, PromptColor);
+            ApplyPromptStyle(style);
             return this;
         }
 
@@ -121,8 +154,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
         public MultiSelectionPrompt PromptStyle(string style)
         {
-            PromptColor = ConsoulLibrary.Style.ParseForeground(style, PromptColor);
-            return this;
+            return PromptStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -174,6 +206,33 @@ namespace ConsoulLibrary
         public MultiSelectionPrompt InstructionStyle(ConsoleColor color)
         {
             InstructionColor = color;
+            InstructionDecoration = Decoration.None;
+            InstructionForegroundRgb = null;
+            InstructionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for prompt instruction text from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The instruction text color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt InstructionStyle(SpectreColor color)
+        {
+            return InstructionStyle(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the color used for prompt instruction text from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The instruction text color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt InstructionStyle(RgbColor color)
+        {
+            InstructionColor = color.ToConsoleColor();
+            InstructionDecoration = Decoration.None;
+            InstructionForegroundRgb = color;
+            InstructionBackgroundRgb = null;
             return this;
         }
 
@@ -184,7 +243,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
         public MultiSelectionPrompt InstructionStyle(Style style)
         {
-            InstructionColor = PromptRenderHelpers.ResolveStyleColor(style, InstructionColor);
+            ApplyInstructionStyle(style);
             return this;
         }
 
@@ -195,8 +254,63 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
         public MultiSelectionPrompt InstructionStyle(string style)
         {
-            InstructionColor = ConsoulLibrary.Style.ParseForeground(style, InstructionColor);
+            return InstructionStyle(ConsoulLibrary.Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt OptionDescriptionStyle(ConsoleColor color)
+        {
+            OptionDescriptionColor = color;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt OptionDescriptionStyle(SpectreColor color)
+        {
+            return OptionDescriptionStyle(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt OptionDescriptionStyle(RgbColor color)
+        {
+            OptionDescriptionColor = color.ToConsoleColor();
+            OptionDescriptionDecoration = Decoration.None;
+            OptionDescriptionForegroundRgb = color;
+            OptionDescriptionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for option descriptions.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt OptionDescriptionStyle(Style style)
+        {
+            ApplyOptionDescriptionStyle(style);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for option descriptions from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>grey</c>, <c>italic</c>, <c>#94a3b8</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt OptionDescriptionStyle(string style)
+        {
+            return OptionDescriptionStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -533,13 +647,37 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the color used for the currently highlighted keyboard choice from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The highlight color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt HighlightColor(SpectreColor color)
+        {
+            return HighlightColor(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the color used for the currently highlighted keyboard choice from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The highlight color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
+        public MultiSelectionPrompt HighlightColor(RgbColor color)
+        {
+            KeyboardSelectionColor = color.ToConsoleColor();
+            KeyboardSelectionDecoration = Decoration.None;
+            KeyboardSelectionForegroundRgb = color;
+            KeyboardSelectionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the color used for the currently highlighted keyboard choice from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
         /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
         public MultiSelectionPrompt HighlightColor(Style style)
         {
-            KeyboardSelectionColor = PromptRenderHelpers.ResolveStyleColor(style, KeyboardSelectionColor);
+            ApplyKeyboardSelectionStyle(style);
             return this;
         }
 
@@ -550,8 +688,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="MultiSelectionPrompt"/> instance.</returns>
         public MultiSelectionPrompt HighlightColor(string style)
         {
-            KeyboardSelectionColor = ConsoulLibrary.Style.ParseForeground(style, KeyboardSelectionColor);
-            return this;
+            return HighlightColor(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -617,7 +754,32 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for the prompt message.
         /// </summary>
-        public ConsoleColor PromptColor { get; set; } = RenderOptions.PromptColor;
+        public ConsoleColor PromptColor
+        {
+            get { return _promptColor; }
+            set
+            {
+                _promptColor = value;
+                PromptDecoration = Decoration.None;
+                PromptForegroundRgb = null;
+                PromptBackgroundRgb = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for the prompt message.
+        /// </summary>
+        public Decoration PromptDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the prompt message on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? PromptForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the prompt message on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? PromptBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the helper text shown above the options when line-based input is used.
@@ -627,7 +789,32 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for prompt instruction text.
         /// </summary>
-        public ConsoleColor InstructionColor { get; set; } = RenderOptions.SubnoteColor;
+        public ConsoleColor InstructionColor
+        {
+            get { return _instructionColor; }
+            set
+            {
+                _instructionColor = value;
+                InstructionDecoration = Decoration.None;
+                InstructionForegroundRgb = null;
+                InstructionBackgroundRgb = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for prompt instruction text.
+        /// </summary>
+        public Decoration InstructionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for prompt instruction text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InstructionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for prompt instruction text on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? InstructionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether slash commands can filter the rendered options.
@@ -667,7 +854,32 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for option descriptions.
         /// </summary>
-        public ConsoleColor OptionDescriptionColor { get; set; } = RenderOptions.SubnoteColor;
+        public ConsoleColor OptionDescriptionColor
+        {
+            get { return _optionDescriptionColor; }
+            set
+            {
+                _optionDescriptionColor = value;
+                OptionDescriptionDecoration = Decoration.None;
+                OptionDescriptionForegroundRgb = null;
+                OptionDescriptionBackgroundRgb = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for option descriptions.
+        /// </summary>
+        public Decoration OptionDescriptionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for option descriptions on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? OptionDescriptionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for option descriptions on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? OptionDescriptionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether the prompt uses arrow-key navigation when routine input is not queued.
@@ -697,7 +909,32 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for the currently highlighted keyboard option.
         /// </summary>
-        public ConsoleColor KeyboardSelectionColor { get; set; } = RenderOptions.PromptColor;
+        public ConsoleColor KeyboardSelectionColor
+        {
+            get { return _keyboardSelectionColor; }
+            set
+            {
+                _keyboardSelectionColor = value;
+                KeyboardSelectionDecoration = Decoration.None;
+                KeyboardSelectionForegroundRgb = null;
+                KeyboardSelectionBackgroundRgb = null;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the ANSI decoration used for the currently highlighted keyboard option.
+        /// </summary>
+        public Decoration KeyboardSelectionDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB foreground color used for the currently highlighted keyboard option on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? KeyboardSelectionForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the optional RGB background color used for the currently highlighted keyboard option on ANSI-capable terminals.
+        /// </summary>
+        public RgbColor? KeyboardSelectionBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets the style used for visible text that matches the active search filter.
@@ -1038,10 +1275,10 @@ namespace ConsoulLibrary
 
         private void RenderPromptFrame(int? pageSize, int currentPage, string filterText, int matchCount, int? highlightedIndex = null, bool keyboardMode = false)
         {
-            PromptRenderHelpers.WriteMarkupLine(Message, PromptColor);
+            PromptRenderHelpers.WriteMarkupLine(Message, ResolvePromptStyle());
             PromptRenderHelpers.WriteMarkupLine(
                 keyboardMode ? KeyboardNavigationHelpText : InstructionsMessage,
-                InstructionColor);
+                ResolveInstructionStyle());
 
             foreach (SelectOption option in GetVisibleOptions(pageSize, currentPage, filterText))
             {
@@ -1060,7 +1297,11 @@ namespace ConsoulLibrary
                 text = (highlighted ? "> " : "  ") + text;
             }
 
-            PromptRenderHelpers.WriteSearchHighlightedText(text, filterText, SearchHighlightStyle, highlighted ? KeyboardSelectionColor : ResolveOptionColor(option));
+            PromptRenderHelpers.WriteSearchHighlightedText(
+                text,
+                filterText,
+                SearchHighlightStyle,
+                highlighted ? ResolveKeyboardSelectionStyle() : ResolveOptionStyle(option));
             WriteOptionDescription(option, keyboardMode, filterText);
         }
 
@@ -1077,7 +1318,7 @@ namespace ConsoulLibrary
                 prefix = "  " + prefix;
             }
 
-            PromptRenderHelpers.WriteSearchHighlightedText(prefix + option.Description.Trim(), filterText, SearchHighlightStyle, OptionDescriptionColor);
+            PromptRenderHelpers.WriteSearchHighlightedText(prefix + option.Description.Trim(), filterText, SearchHighlightStyle, ResolveOptionDescriptionStyle(option));
         }
 
         private void AttachChildFactory(SelectOption option)
@@ -1773,14 +2014,103 @@ namespace ConsoulLibrary
             return option;
         }
 
-        private static ConsoleColor ResolveOptionColor(SelectOption option)
+        private static PromptRenderHelpers.StyledText ResolveOptionStyle(SelectOption option)
         {
             if (option.IsSeparator)
             {
-                return option.Color;
+                return option.ResolveStyle();
             }
 
-            return option.IsDisabled ? option.DisabledColor : option.Color;
+            return option.IsDisabled ? option.ResolveDisabledStyle(null) : option.ResolveStyle();
+        }
+
+        private PromptRenderHelpers.StyledText ResolvePromptStyle()
+        {
+            return PromptRenderHelpers.FromComponents(
+                PromptColor,
+                PromptDecoration,
+                PromptForegroundRgb,
+                PromptBackgroundRgb);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveInstructionStyle()
+        {
+            return PromptRenderHelpers.FromComponents(
+                InstructionColor,
+                InstructionDecoration,
+                InstructionForegroundRgb,
+                InstructionBackgroundRgb);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveOptionDescriptionStyle(SelectOption option)
+        {
+            PromptRenderHelpers.StyledText fallback = PromptRenderHelpers.FromComponents(
+                OptionDescriptionColor,
+                OptionDescriptionDecoration,
+                OptionDescriptionForegroundRgb,
+                OptionDescriptionBackgroundRgb);
+            return option == null ? fallback : option.ResolveDescriptionStyle(fallback);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveKeyboardSelectionStyle()
+        {
+            return PromptRenderHelpers.FromComponents(
+                KeyboardSelectionColor,
+                KeyboardSelectionDecoration,
+                KeyboardSelectionForegroundRgb,
+                KeyboardSelectionBackgroundRgb);
+        }
+
+        private void ApplyPromptStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            PromptColor = style.ToForegroundColor(PromptColor);
+            PromptDecoration = style.Decoration;
+            PromptForegroundRgb = style.ForegroundRgb;
+            PromptBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyInstructionStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            InstructionColor = style.ToForegroundColor(InstructionColor);
+            InstructionDecoration = style.Decoration;
+            InstructionForegroundRgb = style.ForegroundRgb;
+            InstructionBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyOptionDescriptionStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            OptionDescriptionColor = style.ToForegroundColor(OptionDescriptionColor);
+            OptionDescriptionDecoration = style.Decoration;
+            OptionDescriptionForegroundRgb = style.ForegroundRgb;
+            OptionDescriptionBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyKeyboardSelectionStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            KeyboardSelectionColor = style.ToForegroundColor(KeyboardSelectionColor);
+            KeyboardSelectionDecoration = style.Decoration;
+            KeyboardSelectionForegroundRgb = style.ForegroundRgb;
+            KeyboardSelectionBackgroundRgb = style.BackgroundRgb;
         }
 
         private MultiSelectionResult ResolveCancelResult()
@@ -1913,6 +2243,28 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the color used for the prompt message from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> PromptStyle(SpectreColor color)
+        {
+            base.PromptStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> PromptStyle(RgbColor color)
+        {
+            base.PromptStyle(color);
+            return this;
+        }
+
+        /// <summary>
         /// Sets the color used for the prompt message from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -1990,6 +2342,28 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the color used for prompt instruction text from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The instruction text color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> InstructionStyle(SpectreColor color)
+        {
+            base.InstructionStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for prompt instruction text from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The instruction text color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> InstructionStyle(RgbColor color)
+        {
+            base.InstructionStyle(color);
+            return this;
+        }
+
+        /// <summary>
         /// Sets the color used for prompt instruction text from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -2008,6 +2382,61 @@ namespace ConsoulLibrary
         public new MultiSelectionPrompt<T> InstructionStyle(string style)
         {
             base.InstructionStyle(style);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> OptionDescriptionStyle(ConsoleColor color)
+        {
+            base.OptionDescriptionStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> OptionDescriptionStyle(SpectreColor color)
+        {
+            base.OptionDescriptionStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> OptionDescriptionStyle(RgbColor color)
+        {
+            base.OptionDescriptionStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for option descriptions.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> OptionDescriptionStyle(Style style)
+        {
+            base.OptionDescriptionStyle(style);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for option descriptions from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>grey</c>, <c>italic</c>, <c>#94a3b8</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> OptionDescriptionStyle(string style)
+        {
+            base.OptionDescriptionStyle(style);
             return this;
         }
 
@@ -2337,6 +2766,28 @@ namespace ConsoulLibrary
         /// <param name="color">The highlight color.</param>
         /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
         public new MultiSelectionPrompt<T> HighlightColor(ConsoleColor color)
+        {
+            base.HighlightColor(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for the currently highlighted keyboard choice from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The highlight color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> HighlightColor(SpectreColor color)
+        {
+            base.HighlightColor(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for the currently highlighted keyboard choice from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The highlight color.</param>
+        /// <returns>The current <see cref="MultiSelectionPrompt{T}"/> instance.</returns>
+        public new MultiSelectionPrompt<T> HighlightColor(RgbColor color)
         {
             base.HighlightColor(color);
             return this;

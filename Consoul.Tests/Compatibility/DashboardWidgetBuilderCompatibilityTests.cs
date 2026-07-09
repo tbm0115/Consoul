@@ -124,6 +124,84 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Dashboard builders accept prepared item params for terse MVC-style POC summaries.
+        /// </summary>
+        [Fact]
+        public void DashboardBuilders_FluentBuilder_AcceptsPreparedItemParams()
+        {
+            using (var scope = new ConsoleDriverScope(72))
+            {
+                var bars = new BarChart()
+                    .Width(52)
+                    .LabelWidth(12)
+                    .MaximumValue(10)
+                    .BarCharacters('=')
+                    .AddItems(
+                        BarChartItem.Create("Bar Build", 6, ConsoleColor.Green),
+                        BarChartItem.Create("Bar Review", 3, "yellow"));
+
+                var breakdown = new BreakdownChart()
+                    .Width(52)
+                    .SegmentCharacters('=')
+                    .AddItems(
+                        BreakdownChartItem.Create("Slice Passing", 7, ConsoleColor.Cyan),
+                        BreakdownChartItem.Create("Slice Waiting", 3, "white on navy"));
+
+                var metrics = new Metrics()
+                    .Width(56)
+                    .ColumnCount(1)
+                    .MinimumColumnWidth(12)
+                    .AddMetrics(
+                        MetricItem.Create("Metric Build", 6, unit: "jobs", note: "ready", kind: MetricKind.Success, labelColor: ConsoleColor.Cyan, valueColor: ConsoleColor.Green, noteColor: ConsoleColor.DarkGray),
+                        MetricItem.Create("Metric Review", 2, unit: "jobs", note: "waiting", kind: MetricKind.Warning, labelColor: ConsoleColor.Yellow, valueColor: ConsoleColor.Yellow, noteColor: ConsoleColor.Gray));
+
+                var timeline = new Timeline()
+                    .Width(56)
+                    .HideTimestamps()
+                    .Markers(complete: "ok", warning: "!!")
+                    .AddSteps(
+                        TimelineItem.Create("Step Build", TimelineItemState.Complete, "ready", titleColor: ConsoleColor.Green, markerColor: ConsoleColor.Green, descriptionColor: ConsoleColor.DarkGray),
+                        TimelineItem.Create("Step Review", TimelineItemState.Warning, "waiting", titleColor: ConsoleColor.Yellow, markerColor: ConsoleColor.Yellow, descriptionColor: ConsoleColor.Gray));
+
+                var shortcuts = new ShortcutBar()
+                    .Width(56)
+                    .AddShortcuts(
+                        ShortcutItem.Create("Enter", "Select", keyColor: ConsoleColor.Cyan, descriptionColor: ConsoleColor.White),
+                        ShortcutItem.Create("Esc", "Back", keyColor: ConsoleColor.Yellow, descriptionColor: ConsoleColor.Gray));
+
+                AnsiConsole.Write(bars);
+                AnsiConsole.Write(breakdown);
+                AnsiConsole.Write(metrics);
+                AnsiConsole.Write(timeline);
+                AnsiConsole.Write(shortcuts);
+
+                VisualAssert.ContainsText(scope.Driver, "Bar Build");
+                VisualAssert.ContainsText(scope.Driver, "Bar Review");
+                VisualAssert.ContainsText(scope.Driver, "Slice Passing");
+                VisualAssert.ContainsText(scope.Driver, "Slice Waiting");
+                VisualAssert.ContainsText(scope.Driver, "Metric Build");
+                VisualAssert.ContainsText(scope.Driver, "Metric Review");
+                VisualAssert.ContainsText(scope.Driver, "Step Build");
+                VisualAssert.ContainsText(scope.Driver, "Step Review");
+                VisualAssert.ContainsText(scope.Driver, "[Enter]");
+                VisualAssert.ContainsText(scope.Driver, "Back");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Metric Build") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("6 jobs") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("ready") && write.Color == ConsoleColor.DarkGray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Step Review") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("waiting") && write.Color == ConsoleColor.Gray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[Enter]") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Back") && write.Color == ConsoleColor.Gray);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 56, "Prepared dashboard item line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Metrics aliases render through the existing responsive metrics renderer.
         /// </summary>
         [Fact]

@@ -1,6 +1,10 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Rendering
@@ -110,6 +114,34 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 4, "Collapsed Padder measured raw markup instead of visible text: " + line));
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Padder color helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Padder_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 48, height: 10, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new Padder("Styled").Padding(1, 0).Color("italic #112233 on #445566"));
+            console.Write(new Padder("RGB").Padding(1, 0).Color(RgbColor.FromHex("#778899")));
+            console.Write(new Padder("Color").Padding(1, 0).Color(SpectreColor.FromHex("#22c55e")));
+            console.Write(new Padder("Style").Padding(1, 0).Color(Style.Parse("bold #abcdef")));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[3;38;2;17;34;51;48;2;68;85;102m Styled", output);
+            Assert.Contains("\u001b[38;2;119;136;153m RGB", output);
+            Assert.Contains("\u001b[38;2;34;197;94m Color", output);
+            Assert.Contains("\u001b[1;38;2;171;205;239m Style", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[italic", output);
         }
 
         /// <summary>

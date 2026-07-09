@@ -118,6 +118,28 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the color used for the prompt message from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> PromptStyle(SpectreColor color)
+        {
+            base.PromptStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> PromptStyle(RgbColor color)
+        {
+            base.PromptStyle(color);
+            return this;
+        }
+
+        /// <summary>
         /// Sets the color used for the prompt message from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -195,6 +217,28 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the color used for prompt instruction text from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The instruction text color.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> InstructionStyle(SpectreColor color)
+        {
+            base.InstructionStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for prompt instruction text from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The instruction text color.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> InstructionStyle(RgbColor color)
+        {
+            base.InstructionStyle(color);
+            return this;
+        }
+
+        /// <summary>
         /// Sets the color used for prompt instruction text from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -213,6 +257,61 @@ namespace ConsoulLibrary
         public new SelectionPrompt<T> InstructionStyle(string style)
         {
             base.InstructionStyle(style);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> OptionDescriptionStyle(ConsoleColor color)
+        {
+            base.OptionDescriptionStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> OptionDescriptionStyle(SpectreColor color)
+        {
+            base.OptionDescriptionStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> OptionDescriptionStyle(RgbColor color)
+        {
+            base.OptionDescriptionStyle(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for option descriptions.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> OptionDescriptionStyle(Style style)
+        {
+            base.OptionDescriptionStyle(style);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for option descriptions from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>grey</c>, <c>italic</c>, <c>#94a3b8</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> OptionDescriptionStyle(string style)
+        {
+            base.OptionDescriptionStyle(style);
             return this;
         }
 
@@ -447,6 +546,28 @@ namespace ConsoulLibrary
         /// <param name="color">The highlight color.</param>
         /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
         public new SelectionPrompt<T> HighlightColor(ConsoleColor color)
+        {
+            base.HighlightColor(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for the currently highlighted keyboard choice from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The highlight color.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> HighlightColor(SpectreColor color)
+        {
+            base.HighlightColor(color);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for the currently highlighted keyboard choice from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The highlight color.</param>
+        /// <returns>The current <see cref="SelectionPrompt{T}"/> instance.</returns>
+        public new SelectionPrompt<T> HighlightColor(RgbColor color)
         {
             base.HighlightColor(color);
             return this;
@@ -705,6 +826,8 @@ namespace ConsoulLibrary
     /// </summary>
     public class SelectionPrompt : IPrompt<PromptResult>
     {
+        private ConsoleColor _optionDescriptionColor = RenderOptions.SubnoteColor;
+
         /// <summary>
         /// Stores the mutable option list used by derived prompt types.
         /// </summary>
@@ -830,7 +953,17 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for option descriptions.
         /// </summary>
-        public ConsoleColor OptionDescriptionColor { get; set; } = RenderOptions.SubnoteColor;
+        public ConsoleColor OptionDescriptionColor
+        {
+            get { return _optionDescriptionColor; }
+            set
+            {
+                _optionDescriptionColor = value;
+                OptionDescriptionDecoration = Decoration.None;
+                OptionDescriptionForegroundRgb = null;
+                OptionDescriptionBackgroundRgb = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the ANSI decoration used for option descriptions.
@@ -1174,6 +1307,62 @@ namespace ConsoulLibrary
         public SelectionPrompt InstructionStyle(string style)
         {
             return InstructionStyle(ConsoulLibrary.Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt OptionDescriptionStyle(ConsoleColor color)
+        {
+            OptionDescriptionColor = color;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt OptionDescriptionStyle(SpectreColor color)
+        {
+            return OptionDescriptionStyle(color.ToRgbColor());
+        }
+
+        /// <summary>
+        /// Sets the color used for option descriptions from an RGB foreground color.
+        /// </summary>
+        /// <param name="color">The option description foreground color.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt OptionDescriptionStyle(RgbColor color)
+        {
+            OptionDescriptionColor = color.ToConsoleColor();
+            OptionDescriptionDecoration = Decoration.None;
+            OptionDescriptionForegroundRgb = color;
+            OptionDescriptionBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for option descriptions.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt OptionDescriptionStyle(Style style)
+        {
+            ApplyOptionDescriptionStyle(style);
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for option descriptions from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>grey</c>, <c>italic</c>, <c>#94a3b8</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="SelectionPrompt"/> instance.</returns>
+        public SelectionPrompt OptionDescriptionStyle(string style)
+        {
+            return OptionDescriptionStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -1921,7 +2110,7 @@ namespace ConsoulLibrary
                 prefix = "  " + prefix;
             }
 
-            PromptRenderHelpers.WriteSearchHighlightedText(prefix + option.Description.Trim(), filterText, SearchHighlightStyle, ResolveOptionDescriptionStyle());
+            PromptRenderHelpers.WriteSearchHighlightedText(prefix + option.Description.Trim(), filterText, SearchHighlightStyle, ResolveOptionDescriptionStyle(option));
         }
 
         private void AttachChildFactory(SelectOption option)
@@ -2299,13 +2488,14 @@ namespace ConsoulLibrary
                 InstructionBackgroundRgb);
         }
 
-        private PromptRenderHelpers.StyledText ResolveOptionDescriptionStyle()
+        private PromptRenderHelpers.StyledText ResolveOptionDescriptionStyle(SelectOption option)
         {
-            return PromptRenderHelpers.FromComponents(
+            PromptRenderHelpers.StyledText fallback = PromptRenderHelpers.FromComponents(
                 OptionDescriptionColor,
                 OptionDescriptionDecoration,
                 OptionDescriptionForegroundRgb,
                 OptionDescriptionBackgroundRgb);
+            return option == null ? fallback : option.ResolveDescriptionStyle(fallback);
         }
 
         private PromptRenderHelpers.StyledText ResolveKeyboardSelectionStyle()
@@ -2349,6 +2539,19 @@ namespace ConsoulLibrary
             InstructionDecoration = style.Decoration;
             InstructionForegroundRgb = style.ForegroundRgb;
             InstructionBackgroundRgb = style.BackgroundRgb;
+        }
+
+        private void ApplyOptionDescriptionStyle(Style style)
+        {
+            if (style == null)
+            {
+                return;
+            }
+
+            OptionDescriptionColor = style.ToForegroundColor(OptionDescriptionColor);
+            OptionDescriptionDecoration = style.Decoration;
+            OptionDescriptionForegroundRgb = style.ForegroundRgb;
+            OptionDescriptionBackgroundRgb = style.BackgroundRgb;
         }
 
         private void ApplyKeyboardSelectionStyle(Style style)

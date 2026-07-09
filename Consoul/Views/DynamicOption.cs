@@ -455,6 +455,20 @@ namespace ConsoulLibrary
             }
         }
 
+        internal void ApplyStyleTo(ShortcutItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            PromptRenderHelpers.StyledText style = ResolveStyle();
+            item.DescriptionScheme = style.Scheme;
+            item.DescriptionDecoration = style.Decoration;
+            item.DescriptionForegroundRgb = style.ForegroundRgb;
+            item.DescriptionBackgroundRgb = style.BackgroundRgb;
+        }
+
         internal PromptRenderHelpers.StyledText ResolveStyle()
         {
             return _style == null ? PromptRenderHelpers.FromColor(Entry.SetColor()) : _style();

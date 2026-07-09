@@ -102,6 +102,68 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds progress task rows for the supplied descriptions.
+        /// </summary>
+        /// <param name="descriptions">The task descriptions to add.</param>
+        /// <returns>The added progress tasks in creation order.</returns>
+        public IReadOnlyList<ProgressTask> AddTasks(params string[] descriptions)
+        {
+            return AddTasks((IEnumerable<string>)descriptions);
+        }
+
+        /// <summary>
+        /// Adds progress task rows for the supplied descriptions.
+        /// </summary>
+        /// <param name="descriptions">The task descriptions to add.</param>
+        /// <param name="autoStart"><c>true</c> to start each task immediately; otherwise, <c>false</c>.</param>
+        /// <param name="maxValue">The value that represents completion for each task.</param>
+        /// <returns>The added progress tasks in creation order.</returns>
+        public IReadOnlyList<ProgressTask> AddTasks(IEnumerable<string> descriptions, bool autoStart = true, double maxValue = 100.0)
+        {
+            ThrowIfDisposed();
+            if (descriptions == null)
+            {
+                throw new ArgumentNullException(nameof(descriptions));
+            }
+
+            var tasks = new List<ProgressTask>();
+            foreach (string description in descriptions)
+            {
+                tasks.Add(AddTask(description, autoStart, maxValue));
+            }
+
+            return tasks;
+        }
+
+        /// <summary>
+        /// Adds progress task rows from prepared task settings.
+        /// </summary>
+        /// <param name="settings">The task settings to add.</param>
+        /// <returns>The added progress tasks in creation order.</returns>
+        public IReadOnlyList<ProgressTask> AddTasks(IEnumerable<ProgressTaskSettings> settings)
+        {
+            ThrowIfDisposed();
+            if (settings == null)
+            {
+                throw new ArgumentNullException(nameof(settings));
+            }
+
+            ProgressTaskSettings[] normalized = settings.ToArray();
+            if (normalized.Any(taskSettings => taskSettings == null))
+            {
+                throw new ArgumentException("Task settings collections cannot contain null items.", nameof(settings));
+            }
+
+            var tasks = new List<ProgressTask>();
+            foreach (ProgressTaskSettings taskSettings in normalized)
+            {
+                tasks.Add(AddTaskAtInternal(taskSettings.Description, taskSettings, _tasks.Count));
+            }
+
+            return tasks;
+        }
+
+        /// <summary>
         /// Adds a progress task row at the specified index.
         /// </summary>
         /// <param name="description">The task description.</param>
@@ -227,6 +289,8 @@ namespace ConsoulLibrary
             }
 
             var task = new ProgressTask(this, CreateTaskMessage(), description, settings.MaxValue, settings.AutoStart);
+            task.Tag = settings.Tag;
+            task.SetHideWhenCompletedSilently(settings.HideWhenCompleted);
             if (settings.IsIndeterminate)
             {
                 task.SetIndeterminateSilently(true);
@@ -419,8 +483,23 @@ namespace ConsoulLibrary
         /// <returns>The current progress context.</returns>
         public ProgressContext Columns(params ProgressColumn[] columns)
         {
+            return SetColumns(columns);
+        }
+
+        /// <summary>
+        /// Stores the requested progress columns and maps common columns to the current Consoul row renderer.
+        /// </summary>
+        /// <param name="columns">The requested progress columns.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext Columns(IEnumerable<ProgressColumn> columns)
+        {
+            return SetColumns(columns);
+        }
+
+        private ProgressContext SetColumns(IEnumerable<ProgressColumn> columns)
+        {
             ThrowIfDisposed();
-            _options.Columns = columns;
+            _options.Columns = columns == null ? null : columns.ToArray();
             IReadOnlyList<ProgressColumn> configured = _options.GetColumns();
             if (configured.Count > 0)
             {

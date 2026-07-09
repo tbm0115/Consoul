@@ -5,6 +5,64 @@ using System.Linq;
 
 namespace ConsoulLibrary
 {
+    internal struct TableRenderStyle
+    {
+        public TableRenderStyle(ColorScheme scheme, Decoration decoration = Decoration.None, RgbColor? foregroundRgb = null, RgbColor? backgroundRgb = null)
+        {
+            Scheme = scheme;
+            Decoration = decoration;
+            ForegroundRgb = foregroundRgb;
+            BackgroundRgb = backgroundRgb;
+        }
+
+        public ColorScheme Scheme { get; }
+
+        public Decoration Decoration { get; }
+
+        public RgbColor? ForegroundRgb { get; }
+
+        public RgbColor? BackgroundRgb { get; }
+
+        public bool HasAnsiStyle => Decoration != Decoration.None || ForegroundRgb.HasValue || BackgroundRgb.HasValue;
+
+        public static TableRenderStyle From(ColorScheme scheme)
+        {
+            return new TableRenderStyle(scheme);
+        }
+    }
+
+    internal static class TableRenderStyleWriter
+    {
+        public static void Write(string text, TableRenderStyle? style, bool writeLine = true)
+        {
+            if (!style.HasValue)
+            {
+                Consoul.Write(text, writeLine: writeLine);
+                return;
+            }
+
+            TableRenderStyle resolved = style.Value;
+            if (!resolved.HasAnsiStyle)
+            {
+                Consoul.Write(text, resolved.Scheme.Color, resolved.Scheme.BackgroundColor, writeLine);
+                return;
+            }
+
+            TerminalLinkWriter.WriteText(
+                text,
+                resolved.Scheme,
+                null,
+                resolved.Decoration,
+                resolved.ForegroundRgb,
+                resolved.BackgroundRgb);
+
+            if (writeLine)
+            {
+                Consoul.Write(string.Empty);
+            }
+        }
+    }
+
     /// <summary>
     /// Options for how a <see cref="TableView"/> is rendered.
     /// </summary>
@@ -25,14 +83,59 @@ namespace ConsoulLibrary
         public ColorScheme HeaderScheme { get; set; } = RenderOptions.DefaultScheme;
 
         /// <summary>
+        /// Gets or sets the text decoration used for header cells on ANSI-capable terminals.
+        /// </summary>
+        public Decoration HeaderDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for header cells on true-color terminals.
+        /// </summary>
+        public RgbColor? HeaderForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for header cells on true-color terminals.
+        /// </summary>
+        public RgbColor? HeaderBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Text color option 1.
         /// </summary>
         public ColorScheme ContentScheme1 { get; set; } = RenderOptions.DefaultScheme;
 
         /// <summary>
+        /// Gets or sets the text decoration used for primary content cells on ANSI-capable terminals.
+        /// </summary>
+        public Decoration ContentDecoration1 { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for primary content cells on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentForegroundRgb1 { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for primary content cells on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentBackgroundRgb1 { get; set; }
+
+        /// <summary>
         /// Text color option 2.
         /// </summary>
         public ColorScheme ContentScheme2 { get; set; } = RenderOptions.DefaultScheme;
+
+        /// <summary>
+        /// Gets or sets the text decoration used for alternate content cells on ANSI-capable terminals.
+        /// </summary>
+        public Decoration ContentDecoration2 { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for alternate content cells on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentForegroundRgb2 { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for alternate content cells on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentBackgroundRgb2 { get; set; }
 
         /// <summary>
         /// Text color for row(s) that are selected.
@@ -148,6 +251,21 @@ namespace ConsoulLibrary
         /// Gets or sets the color scheme used for column footer cells.
         /// </summary>
         public ColorScheme FooterScheme { get; set; } = RenderOptions.SubnoteScheme;
+
+        /// <summary>
+        /// Gets or sets the text decoration used for column footer cells on ANSI-capable terminals.
+        /// </summary>
+        public Decoration FooterDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for column footer cells on true-color terminals.
+        /// </summary>
+        public RgbColor? FooterForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for column footer cells on true-color terminals.
+        /// </summary>
+        public RgbColor? FooterBackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets a message rendered inside the table body when no rows are available.
@@ -282,6 +400,26 @@ namespace ConsoulLibrary
         /// </summary>
         public TableRenderOptions() { }
 
+        internal TableRenderStyle ResolveHeaderStyle()
+        {
+            return new TableRenderStyle(HeaderScheme, HeaderDecoration, HeaderForegroundRgb, HeaderBackgroundRgb);
+        }
+
+        internal TableRenderStyle ResolveContentStyle1()
+        {
+            return new TableRenderStyle(ContentScheme1, ContentDecoration1, ContentForegroundRgb1, ContentBackgroundRgb1);
+        }
+
+        internal TableRenderStyle ResolveContentStyle2()
+        {
+            return new TableRenderStyle(ContentScheme2, ContentDecoration2, ContentForegroundRgb2, ContentBackgroundRgb2);
+        }
+
+        internal TableRenderStyle ResolveFooterStyle()
+        {
+            return new TableRenderStyle(FooterScheme, FooterDecoration, FooterForegroundRgb, FooterBackgroundRgb);
+        }
+
         internal int GetMaximumTableWidth()
         {
             int requestedWidth = _maximumTableWidth ?? _normalizedMaximumTableWidth ?? Consoul.ConsoleBufferWidth;
@@ -368,9 +506,29 @@ namespace ConsoulLibrary
             public ColorScheme Color { get; set; } = RenderOptions.SubnoteScheme;
 
             /// <summary>
+            /// Gets or sets the text decoration used for table border and separator lines on ANSI-capable terminals.
+            /// </summary>
+            public Decoration Decoration { get; set; }
+
+            /// <summary>
+            /// Gets or sets the original RGB foreground used for table border and separator lines on true-color terminals.
+            /// </summary>
+            public RgbColor? ForegroundRgb { get; set; }
+
+            /// <summary>
+            /// Gets or sets the original RGB background used for table border and separator lines on true-color terminals.
+            /// </summary>
+            public RgbColor? BackgroundRgb { get; set; }
+
+            /// <summary>
             /// Constructs a new instance of <see cref="TableLineDisplayOptions"/>
             /// </summary>
             public TableLineDisplayOptions() { }
+
+            internal TableRenderStyle ResolveStyle()
+            {
+                return new TableRenderStyle(Color, Decoration, ForegroundRgb, BackgroundRgb);
+            }
 
             internal bool UsesPresetBorder()
             {

@@ -348,10 +348,14 @@ namespace ConsoulLibrary
             RgbColor? backgroundRgb;
             TryParseRgbMetadata(style, out foregroundRgb, out backgroundRgb);
 
+            string foregroundToken;
+            string backgroundToken;
+            GetColorTokens(style, out foregroundToken, out backgroundToken);
+
             parsed = new Style(
                 ParseDecoration(style),
-                scheme.Color,
-                scheme.BackgroundColor,
+                string.IsNullOrWhiteSpace(foregroundToken) ? (ConsoleColor?)null : scheme.Color,
+                string.IsNullOrWhiteSpace(backgroundToken) ? (ConsoleColor?)null : scheme.BackgroundColor,
                 foregroundRgb,
                 backgroundRgb);
             return true;
@@ -476,29 +480,9 @@ namespace ConsoulLibrary
             foregroundRgb = null;
             backgroundRgb = null;
 
-            style = RemoveDecorationTokens(style);
-            if (string.IsNullOrWhiteSpace(style))
-            {
-                return;
-            }
-
-            string foregroundToken = style;
-            string backgroundToken = null;
-            int onIndex = style.IndexOf(" on ", StringComparison.OrdinalIgnoreCase);
-            if (onIndex >= 0)
-            {
-                foregroundToken = style.Substring(0, onIndex);
-                backgroundToken = style.Substring(onIndex + 4);
-            }
-            else
-            {
-                int colonIndex = style.IndexOf(':');
-                if (colonIndex >= 0)
-                {
-                    foregroundToken = style.Substring(0, colonIndex);
-                    backgroundToken = style.Substring(colonIndex + 1);
-                }
-            }
+            string foregroundToken;
+            string backgroundToken;
+            GetColorTokens(style, out foregroundToken, out backgroundToken);
 
             if (RgbColor.TryFromHex(foregroundToken, out RgbColor foreground))
             {
@@ -508,6 +492,33 @@ namespace ConsoulLibrary
             if (RgbColor.TryFromHex(backgroundToken, out RgbColor background))
             {
                 backgroundRgb = background;
+            }
+        }
+
+        private static void GetColorTokens(string style, out string foregroundToken, out string backgroundToken)
+        {
+            style = RemoveDecorationTokens(style);
+            foregroundToken = style;
+            backgroundToken = null;
+            if (string.IsNullOrWhiteSpace(style))
+            {
+                foregroundToken = null;
+                return;
+            }
+
+            int onIndex = style.IndexOf(" on ", StringComparison.OrdinalIgnoreCase);
+            if (onIndex >= 0)
+            {
+                foregroundToken = style.Substring(0, onIndex);
+                backgroundToken = style.Substring(onIndex + 4);
+                return;
+            }
+
+            int colonIndex = style.IndexOf(':');
+            if (colonIndex >= 0)
+            {
+                foregroundToken = style.Substring(0, colonIndex);
+                backgroundToken = style.Substring(colonIndex + 1);
             }
         }
 

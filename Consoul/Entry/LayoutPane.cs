@@ -20,10 +20,33 @@ namespace ConsoulLibrary
         /// <param name="title">Optional title rendered above the pane content.</param>
         /// <param name="scheme">Optional color scheme used for pane content.</param>
         public LayoutPane(string content, string title = null, ColorScheme? scheme = null)
+            : this(content, title, scheme, Decoration.None, null, null)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="LayoutPane"/> class.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="scheme">Optional color scheme used for pane content.</param>
+        /// <param name="decoration">Optional text decoration metadata used for pane content.</param>
+        /// <param name="foregroundRgb">Optional RGB foreground metadata used for true-color terminals.</param>
+        /// <param name="backgroundRgb">Optional RGB background metadata used for true-color terminals.</param>
+        public LayoutPane(
+            string content,
+            string title,
+            ColorScheme? scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             _content = content ?? string.Empty;
             Title = title;
             Scheme = scheme;
+            Decoration = decoration;
+            ForegroundRgb = foregroundRgb;
+            BackgroundRgb = backgroundRgb;
         }
 
         /// <summary>
@@ -49,6 +72,21 @@ namespace ConsoulLibrary
         /// Gets or sets the optional content color scheme for this pane.
         /// </summary>
         public ColorScheme? Scheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional decoration metadata used for pane content.
+        /// </summary>
+        public Decoration Decoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional RGB foreground metadata used for true-color terminals.
+        /// </summary>
+        public RgbColor? ForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets optional RGB background metadata used for true-color terminals.
+        /// </summary>
+        public RgbColor? BackgroundRgb { get; set; }
 
         /// <summary>
         /// Gets or sets a fixed pane size hint. In column layouts this is a width in cells.
@@ -84,6 +122,9 @@ namespace ConsoulLibrary
             if (color.HasValue)
             {
                 Scheme = CreateScheme(color.Value);
+                Decoration = Decoration.None;
+                ForegroundRgb = null;
+                BackgroundRgb = null;
             }
 
             return this;
@@ -100,7 +141,7 @@ namespace ConsoulLibrary
             Content = content;
             if (!string.IsNullOrWhiteSpace(style))
             {
-                Scheme = Style.Parse(style).ToColorScheme(RenderOptions.DefaultScheme);
+                ApplyStyle(Style.Parse(style));
             }
 
             return this;
@@ -117,7 +158,7 @@ namespace ConsoulLibrary
             Content = content;
             if (style != null)
             {
-                Scheme = style.ToColorScheme(RenderOptions.DefaultScheme);
+                ApplyStyle(style);
             }
 
             return this;
@@ -253,11 +294,7 @@ namespace ConsoulLibrary
         /// <returns>A configured <see cref="LayoutPane"/>.</returns>
         public static LayoutPane Create(string content, string title, string style)
         {
-            ColorScheme? scheme = string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.Parse(style).ToColorScheme(RenderOptions.DefaultScheme);
-
-            return new LayoutPane(content, title, scheme);
+            return Create(content, title, string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style));
         }
 
         /// <summary>
@@ -269,11 +306,18 @@ namespace ConsoulLibrary
         /// <returns>A configured <see cref="LayoutPane"/>.</returns>
         public static LayoutPane Create(string content, string title, Style style)
         {
-            ColorScheme? scheme = style == null
-                ? (ColorScheme?)null
-                : style.ToColorScheme(RenderOptions.DefaultScheme);
+            if (style == null)
+            {
+                return new LayoutPane(content, title);
+            }
 
-            return new LayoutPane(content, title, scheme);
+            return new LayoutPane(
+                content,
+                title,
+                style.ToColorScheme(RenderOptions.DefaultScheme),
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
         }
 
         internal static LayoutPane CreateLive(IConsoulRenderable renderable, string title = null, ConsoleColor? color = null, int? captureWidth = null, int captureHeight = 200)
@@ -299,6 +343,26 @@ namespace ConsoulLibrary
             return pane;
         }
 
+        internal static LayoutPane CreateLive(IConsoulRenderable renderable, string title, Style style, int? captureWidth = null, int captureHeight = 200)
+        {
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            LayoutPane pane = style == null
+                ? new LayoutPane(string.Empty, title)
+                : new LayoutPane(
+                    string.Empty,
+                    title,
+                    style.ToColorScheme(RenderOptions.DefaultScheme),
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb);
+            pane.SetDeferredContent(renderable.Render, renderable as Layout, captureWidth, captureHeight);
+            return pane;
+        }
+
         internal string ResolveContent(int width)
         {
             if (_renderContent == null)
@@ -316,6 +380,14 @@ namespace ConsoulLibrary
             _captureWidth = captureWidth;
             _captureHeight = Math.Max(1, captureHeight);
             ChildLayout = childLayout;
+        }
+
+        private void ApplyStyle(Style style)
+        {
+            Scheme = style.ToColorScheme(RenderOptions.DefaultScheme);
+            Decoration = style.Decoration;
+            ForegroundRgb = style.ForegroundRgb;
+            BackgroundRgb = style.BackgroundRgb;
         }
 
         private static ColorScheme CreateScheme(ConsoleColor color)

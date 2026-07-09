@@ -385,7 +385,7 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                AddRow(rowSelector(item), colorSelector(item).ToConsoleColor());
+                AddRow(rowSelector(item), new Style(colorSelector(item)));
             }
 
             return this;
@@ -421,7 +421,7 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                AddRow(rowSelector(item), colorSelector(item).ToConsoleColor());
+                AddRow(rowSelector(item), new Style(colorSelector(item)));
             }
 
             return this;
@@ -515,6 +515,9 @@ namespace ConsoulLibrary
         public Rows ContentColor(ConsoleColor color)
         {
             Options.ContentScheme = Scheme(color);
+            Options.ContentDecoration = Decoration.None;
+            Options.ContentForegroundRgb = null;
+            Options.ContentBackgroundRgb = null;
             return this;
         }
 
@@ -525,7 +528,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Rows"/> instance.</returns>
         public Rows ContentColor(Style style)
         {
-            Options.ContentScheme = Scheme(style, Options.ResolveContentScheme());
+            ApplyContentStyle(style);
             return this;
         }
 
@@ -536,8 +539,16 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Rows"/> instance.</returns>
         public Rows ContentColor(string style)
         {
-            Options.ContentScheme = Style.ParseScheme(style, Options.ResolveContentScheme());
+            ApplyContentStyle(Style.Parse(style));
             return this;
+        }
+
+        private void ApplyContentStyle(Style style)
+        {
+            Options.ContentScheme = Scheme(style, Options.ResolveContentScheme());
+            Options.ContentDecoration = style?.Decoration ?? Decoration.None;
+            Options.ContentForegroundRgb = style?.ForegroundRgb;
+            Options.ContentBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

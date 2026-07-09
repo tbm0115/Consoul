@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using RgbColor = ConsoulLibrary.Color.RgbColor;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -173,6 +175,48 @@ namespace ConsoulLibrary.Tests.Rendering
                     write.Color == ConsoleColor.Red);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// RGB and parsed style progress updates preserve true-color and decoration metadata on ANSI-capable terminals.
+        /// </summary>
+        [Fact]
+        public void ProgressBar_RgbAndStyledUpdatesEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            var output = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true);
+            var settings = new AnsiConsoleSettings
+            {
+                Out = output,
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            };
+
+            using (Consoul.UseConsoleDriver(new TextWriterConsoleDriver(output, settings)))
+            using (var progress = new ProgressBar("Initial")
+            {
+                BarWidth = 8,
+                BlockCharacter = '#',
+                RefreshRate = 0
+            })
+            {
+                progress.Update(
+                    0.5,
+                    "RGB progress",
+                    RgbColor.FromHex("#336699"),
+                    RgbColor.FromHex("#22c55e"));
+                progress.UpdateStyled(
+                    0.75,
+                    "Styled progress",
+                    Style.Parse("italic #778899"),
+                    Style.Parse("bold #abcdef"));
+            }
+
+            string rendered = writer.ToString();
+            Assert.Contains("\u001b[38;2;51;102;153mRGB progress", rendered);
+            Assert.Contains("\u001b[38;2;34;197;94m####", rendered);
+            Assert.Contains("\u001b[3;38;2;119;136;153mStyled progress", rendered);
+            Assert.Contains("\u001b[1;38;2;171;205;239m######", rendered);
         }
 
         /// <summary>

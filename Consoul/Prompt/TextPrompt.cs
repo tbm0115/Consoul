@@ -35,6 +35,12 @@ namespace ConsoulLibrary
         private bool _useInvalidChoiceMessageForAcceptedValueMismatch;
         private bool _hasDefaultValue;
         private T _defaultValue;
+        private ConsoleColor _promptColor = RenderOptions.PromptColor;
+        private ConsoleColor _invalidColor = RenderOptions.InvalidColor;
+        private ConsoleColor _maskColor = RenderOptions.SubnoteColor;
+        private Style _promptTextStyle;
+        private Style _invalidTextStyle;
+        private Style _maskTextStyle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TextPrompt{T}"/> class.
@@ -108,12 +114,28 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for the prompt message.
         /// </summary>
-        public ConsoleColor PromptColor { get; set; } = RenderOptions.PromptColor;
+        public ConsoleColor PromptColor
+        {
+            get => _promptColor;
+            set
+            {
+                _promptColor = value;
+                _promptTextStyle = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the color used for invalid input messages.
         /// </summary>
-        public ConsoleColor InvalidColor { get; set; } = RenderOptions.InvalidColor;
+        public ConsoleColor InvalidColor
+        {
+            get => _invalidColor;
+            set
+            {
+                _invalidColor = value;
+                _invalidTextStyle = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the message rendered when parsing fails.
@@ -168,7 +190,15 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for rendered secret mask characters.
         /// </summary>
-        public ConsoleColor MaskColor { get; set; } = RenderOptions.SubnoteColor;
+        public ConsoleColor MaskColor
+        {
+            get => _maskColor;
+            set
+            {
+                _maskColor = value;
+                _maskTextStyle = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the converter used to display typed choices and default values.
@@ -214,7 +244,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPrompt{T}"/> instance.</returns>
         public TextPrompt<T> PromptStyle(Style style)
         {
-            PromptColor = ResolveStyleColor(style, PromptColor);
+            _promptColor = PromptRenderHelpers.ResolveStyleColor(style, PromptColor);
+            _promptTextStyle = style;
             return this;
         }
 
@@ -225,8 +256,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPrompt{T}"/> instance.</returns>
         public TextPrompt<T> PromptStyle(string style)
         {
-            PromptColor = ConsoulLibrary.Style.ParseForeground(style, PromptColor);
-            return this;
+            return PromptStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -277,7 +307,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPrompt{T}"/> instance.</returns>
         public TextPrompt<T> InvalidStyle(Style style)
         {
-            InvalidColor = ResolveStyleColor(style, InvalidColor);
+            _invalidColor = PromptRenderHelpers.ResolveStyleColor(style, InvalidColor);
+            _invalidTextStyle = style;
             return this;
         }
 
@@ -288,8 +319,40 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="TextPrompt{T}"/> instance.</returns>
         public TextPrompt<T> InvalidStyle(string style)
         {
-            InvalidColor = ConsoulLibrary.Style.ParseForeground(style, InvalidColor);
+            return InvalidStyle(ConsoulLibrary.Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the style used when secret text prompt mask characters are rendered.
+        /// </summary>
+        /// <param name="color">The mask character color.</param>
+        /// <returns>The current <see cref="TextPrompt{T}"/> instance.</returns>
+        public TextPrompt<T> MaskStyle(ConsoleColor color)
+        {
+            MaskColor = color;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the style used when secret text prompt mask characters are rendered from a reusable style object.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current <see cref="TextPrompt{T}"/> instance.</returns>
+        public TextPrompt<T> MaskStyle(Style style)
+        {
+            _maskColor = PromptRenderHelpers.ResolveStyleColor(style, MaskColor);
+            _maskTextStyle = style;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used when secret text prompt mask characters are rendered from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>cyan</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="TextPrompt{T}"/> instance.</returns>
+        public TextPrompt<T> MaskStyle(string style)
+        {
+            return MaskStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -733,7 +796,7 @@ namespace ConsoulLibrary
             }
 
             return IsSecret
-                ? Consoul.ReadPassword(MaskColor, Mask ?? '\0', cancellationToken)
+                ? Consoul.ReadPassword(ResolveMaskStyle(), Mask ?? '\0', cancellationToken)
                 : Consoul.Read(cancellationToken);
         }
 
@@ -828,7 +891,14 @@ namespace ConsoulLibrary
             Consoul.ConsoleDriver.SetCursorPosition(0, top);
             if (visible.Length > 0)
             {
-                Consoul.WriteCore(visible, IsSecret ? MaskColor : PromptColor, writeLine: false);
+                if (IsSecret)
+                {
+                    PromptRenderHelpers.WriteText(visible, ResolveMaskStyle(), writeLine: false);
+                }
+                else
+                {
+                    Consoul.WriteCore(visible, PromptColor, writeLine: false);
+                }
             }
 
             Consoul.ConsoleDriver.SetCursorPosition(cursorLeft, top);
@@ -885,31 +955,32 @@ namespace ConsoulLibrary
         private void WritePromptMessage()
         {
             List<PromptHint> hints = BuildPromptHints();
-            if (!PromptRenderHelpers.ContainsMarkup(Message) && HintsUsePromptColor(hints))
+            if (!PromptRenderHelpers.ContainsMarkup(Message) && CanUsePlainPromptLine(hints))
             {
                 Consoul.WriteCore(BuildPromptText(hints), PromptColor);
                 return;
             }
 
+            PromptRenderHelpers.StyledText promptStyle = ResolvePromptStyle();
             if (hints.Count == 0)
             {
-                PromptRenderHelpers.WriteMarkupLine(Message, PromptColor);
+                PromptRenderHelpers.WriteMarkupLine(Message, promptStyle);
                 return;
             }
 
-            PromptRenderHelpers.WriteMarkup(Message, PromptColor, writeLine: false);
-            Consoul.WriteCore(" (", PromptColor, writeLine: false);
+            PromptRenderHelpers.WriteMarkup(Message, promptStyle, writeLine: false);
+            PromptRenderHelpers.WriteMarkup(" (", promptStyle, writeLine: false);
             for (int i = 0; i < hints.Count; i++)
             {
                 if (i > 0)
                 {
-                    Consoul.WriteCore(", ", PromptColor, writeLine: false);
+                    PromptRenderHelpers.WriteMarkup(", ", promptStyle, writeLine: false);
                 }
 
-                Consoul.WriteCore(hints[i].Text, hints[i].Color, writeLine: false);
+                PromptRenderHelpers.WriteMarkup(hints[i].Text, hints[i].Style, writeLine: false);
             }
 
-            Consoul.WriteCore(")", PromptColor);
+            PromptRenderHelpers.WriteMarkup(")", promptStyle, writeLine: true);
         }
 
         private string BuildPromptText(IList<PromptHint> hints)
@@ -917,9 +988,10 @@ namespace ConsoulLibrary
             return hints.Count == 0 ? Message : Message + " (" + string.Join(", ", hints.Select(hint => hint.Text)) + ")";
         }
 
-        private bool HintsUsePromptColor(IList<PromptHint> hints)
+        private bool CanUsePlainPromptLine(IList<PromptHint> hints)
         {
-            return hints.All(hint => hint.Color == PromptColor);
+            return !HasStyleMetadata(_promptTextStyle) &&
+                hints.All(hint => hint.Color == PromptColor && !hint.HasStyleMetadata);
         }
 
         private List<PromptHint> BuildPromptHints()
@@ -936,14 +1008,14 @@ namespace ConsoulLibrary
             {
                 promptHints.Add(new PromptHint(
                     string.Join(string.Empty, hints),
-                    ResolveStyleColor(ChoicesStyle, PromptColor)));
+                    ResolvePromptHintStyle(ChoicesStyle)));
             }
 
             if (ShowDefaultValue && _hasDefaultValue)
             {
                 promptHints.Add(new PromptHint(
                     "default: " + FormatDefaultHintValue(_defaultValue),
-                    ResolveStyleColor(DefaultValueStyle, PromptColor)));
+                    ResolvePromptHintStyle(DefaultValueStyle)));
             }
 
             return promptHints;
@@ -1031,11 +1103,11 @@ namespace ConsoulLibrary
             string message = GetUnresolvedInputMessage();
             if (IsGeneratedAcceptedValuesValidationMessage(message))
             {
-                Consoul.WriteCore(message, InvalidColor);
+                PromptRenderHelpers.WriteMarkupOrPlainLine(message, ResolveInvalidStyle(), parseMarkup: false);
                 return;
             }
 
-            PromptRenderHelpers.WriteMarkupOrPlainLine(message, InvalidColor);
+            PromptRenderHelpers.WriteMarkupOrPlainLine(message, ResolveInvalidStyle());
         }
 
         private T ResolveEmptyValue()
@@ -1066,11 +1138,11 @@ namespace ConsoulLibrary
         {
             if (IsGeneratedAcceptedValuesValidationMessage(message))
             {
-                Consoul.WriteCore(message, InvalidColor);
+                PromptRenderHelpers.WriteMarkupOrPlainLine(message, ResolveInvalidStyle(), parseMarkup: false);
                 return;
             }
 
-            PromptRenderHelpers.WriteMarkupOrPlainLine(message, InvalidColor);
+            PromptRenderHelpers.WriteMarkupOrPlainLine(message, ResolveInvalidStyle());
         }
 
         private void EnsureAcceptedValuesValidator()
@@ -1308,22 +1380,52 @@ namespace ConsoulLibrary
             return "Value must be one of: " + string.Join(", ", allowedValues.Select(FormatValue)) + ".";
         }
 
-        private static ConsoleColor ResolveStyleColor(Style style, ConsoleColor fallback)
+        private PromptRenderHelpers.StyledText ResolvePromptStyle()
         {
-            return style == null ? fallback : style.ToForegroundColor(fallback);
+            return PromptRenderHelpers.ResolveStyle(_promptTextStyle, PromptColor);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveInvalidStyle()
+        {
+            return PromptRenderHelpers.ResolveStyle(_invalidTextStyle, InvalidColor);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveMaskStyle()
+        {
+            return PromptRenderHelpers.ResolveStyle(_maskTextStyle, MaskColor);
+        }
+
+        private PromptRenderHelpers.StyledText ResolvePromptHintStyle(Style style)
+        {
+            return PromptRenderHelpers.ResolveStyle(style, PromptColor);
+        }
+
+        private static bool HasStyleMetadata(Style style)
+        {
+            return style != null &&
+                (style.Decoration != Decoration.None ||
+                 style.ForegroundRgb.HasValue ||
+                 style.BackgroundRgb.HasValue);
         }
 
         private struct PromptHint
         {
-            public PromptHint(string text, ConsoleColor color)
+            public PromptHint(string text, PromptRenderHelpers.StyledText style)
             {
                 Text = text;
-                Color = color;
+                Style = style;
             }
 
             public string Text { get; }
 
-            public ConsoleColor Color { get; }
+            public PromptRenderHelpers.StyledText Style { get; }
+
+            public ConsoleColor Color => Style.Scheme.Color;
+
+            public bool HasStyleMetadata =>
+                Style.Decoration != Decoration.None ||
+                Style.ForegroundRgb.HasValue ||
+                Style.BackgroundRgb.HasValue;
         }
     }
 }

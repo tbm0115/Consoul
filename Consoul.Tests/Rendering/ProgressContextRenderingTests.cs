@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using ConsoulLibrary.Tests.Rendering;
@@ -315,6 +316,81 @@ namespace ConsoulLibrary.Tests.Rendering
                 VisualAssert.WroteText(scope.Driver, "Download package");
                 VisualAssert.WroteText(scope.Driver, "50%");
                 VisualAssert.WroteText(scope.Driver, "Package ready");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Batch helpers add model-backed progress task rows from descriptions and prepared task settings.
+        /// </summary>
+        [Fact]
+        public void ProgressContext_AddTasks_CreatesDescriptionAndSettingsBatches()
+        {
+            using (var scope = new ConsoleDriverScope(72))
+            {
+                using (ProgressContext progress = AnsiConsole.Progress(new ProgressContextOptions { Width = 64, LabelWidth = 20 })
+                    .AutoRefresh(false))
+                {
+                    IReadOnlyList<ProgressTask> descriptionTasks = progress.AddTasks("Restore packages", "Build app");
+                    IEnumerable<string> queuedDescriptions = new[] { "Package app" };
+                    IReadOnlyList<ProgressTask> queuedTasks = progress.AddTasks(
+                        queuedDescriptions,
+                        autoStart: false,
+                        maxValue: 3);
+                    var configuredTaskSettings = new[]
+                    {
+                        new ProgressTaskSettings
+                        {
+                            Description = "Publish app",
+                            MaxValue = 2,
+                            Tag = "release",
+                            HideWhenCompleted = true
+                        },
+                        new ProgressTaskSettings
+                        {
+                            Description = "Smoke tests",
+                            AutoStart = false,
+                            MaxValue = 4,
+                            IsIndeterminate = true,
+                            Tag = "qa"
+                        }
+                    };
+                    IReadOnlyList<ProgressTask> configuredTasks = progress.AddTasks(configuredTaskSettings);
+
+                    Assert.Equal(new[] { descriptionTasks[0], descriptionTasks[1], queuedTasks[0], configuredTasks[0], configuredTasks[1] }, progress.Tasks);
+                    Assert.All(descriptionTasks, task => Assert.Equal(ProgressTaskState.Active, task.State));
+                    Assert.Equal(ProgressTaskState.Pending, queuedTasks[0].State);
+                    Assert.Equal(3, queuedTasks[0].MaxValue);
+                    Assert.Equal("release", configuredTasks[0].Tag);
+                    Assert.True(configuredTasks[0].HideWhenCompleted.HasValue);
+                    Assert.True(configuredTasks[0].HideWhenCompleted.GetValueOrDefault());
+                    Assert.Equal(2, configuredTasks[0].MaxValue);
+                    Assert.Equal("qa", configuredTasks[1].Tag);
+                    Assert.Equal(ProgressTaskState.Pending, configuredTasks[1].State);
+                    Assert.True(configuredTasks[1].IsIndeterminateValue);
+
+                    descriptionTasks[0].Complete("Restore ready");
+                    descriptionTasks[1].Complete("Build ready");
+                    queuedTasks[0].StartTask();
+                    queuedTasks[0].Complete("Package ready");
+                    configuredTasks[0].Complete("Publish hidden");
+                    configuredTasks[1].StartTask();
+                    configuredTasks[1].IsIndeterminate(false);
+                    configuredTasks[1].Complete("Smoke ready");
+                    progress.Refresh();
+
+                    Assert.True(progress.IsFinished);
+                    Assert.Equal(5, progress.CompletedTaskCount);
+                }
+
+                string screen = string.Join(Environment.NewLine, scope.Driver.Lines);
+
+                VisualAssert.WroteText(scope.Driver, "Restore packages");
+                VisualAssert.WroteText(scope.Driver, "Build app");
+                VisualAssert.WroteText(scope.Driver, "Package app");
+                VisualAssert.WroteText(scope.Driver, "Publish app");
+                VisualAssert.WroteText(scope.Driver, "Smoke tests");
+                Assert.DoesNotContain("Publish hidden", screen);
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }
@@ -764,6 +840,39 @@ namespace ConsoulLibrary.Tests.Rendering
 
                 VisualAssert.WroteText(scope.Driver, "Package assets");
                 VisualAssert.WroteText(scope.Driver, "25%");
+                VisualAssert.WroteText(scope.Driver, "100%");
+                Assert.DoesNotContain(scope.Driver.Writes, write => write.Text.Contains("["));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Configured progress columns can come from generated MVC-style column collections.
+        /// </summary>
+        [Fact]
+        public void ProgressContext_ConfiguredColumns_AcceptsEnumerableColumns()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                IEnumerable<ProgressColumn> columns = new List<ProgressColumn>
+                {
+                    new TaskDescriptionColumn(),
+                    new PercentageColumn()
+                };
+
+                using (ProgressContext progress = AnsiConsole.Progress(new ProgressContextOptions { Width = 60, LabelWidth = 16 })
+                    .Columns(columns))
+                {
+                    Assert.Equal(2, progress.Options.GetColumns().Count);
+                    Assert.True(progress.Options.ShowPercentage);
+
+                    ProgressTask task = progress.AddTask("Generated", 4);
+                    task.Update(2);
+                    task.Complete("Generated ready");
+                }
+
+                VisualAssert.WroteText(scope.Driver, "Generated");
+                VisualAssert.WroteText(scope.Driver, "50%");
                 VisualAssert.WroteText(scope.Driver, "100%");
                 Assert.DoesNotContain(scope.Driver.Writes, write => write.Text.Contains("["));
                 VisualAssert.NoOverflow(scope.Driver);

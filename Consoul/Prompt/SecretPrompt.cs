@@ -11,6 +11,12 @@ namespace ConsoulLibrary
     public class SecretPrompt : IPrompt<SecretResult>
     {
         private readonly List<Func<string, string>> _validators = new List<Func<string, string>>();
+        private ConsoleColor _promptColor = RenderOptions.PromptColor;
+        private ConsoleColor _invalidColor = RenderOptions.InvalidColor;
+        private ConsoleColor _maskColor = RenderOptions.SubnoteColor;
+        private Style _promptTextStyle;
+        private Style _invalidTextStyle;
+        private Style _maskTextStyle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SecretPrompt"/> class.
@@ -77,17 +83,41 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for the prompt message.
         /// </summary>
-        public ConsoleColor PromptColor { get; set; } = RenderOptions.PromptColor;
+        public ConsoleColor PromptColor
+        {
+            get => _promptColor;
+            set
+            {
+                _promptColor = value;
+                _promptTextStyle = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the color used for rendered mask characters.
         /// </summary>
-        public ConsoleColor MaskColor { get; set; } = RenderOptions.SubnoteColor;
+        public ConsoleColor MaskColor
+        {
+            get => _maskColor;
+            set
+            {
+                _maskColor = value;
+                _maskTextStyle = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the color used for invalid input messages.
         /// </summary>
-        public ConsoleColor InvalidColor { get; set; } = RenderOptions.InvalidColor;
+        public ConsoleColor InvalidColor
+        {
+            get => _invalidColor;
+            set
+            {
+                _invalidColor = value;
+                _invalidTextStyle = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the message rendered when a non-empty value is required.
@@ -123,7 +153,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
         public SecretPrompt PromptStyle(Style style)
         {
-            PromptColor = PromptRenderHelpers.ResolveStyleColor(style, PromptColor);
+            _promptColor = PromptRenderHelpers.ResolveStyleColor(style, PromptColor);
+            _promptTextStyle = style;
             return this;
         }
 
@@ -134,8 +165,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
         public SecretPrompt PromptStyle(string style)
         {
-            PromptColor = ConsoulLibrary.Style.ParseForeground(style, PromptColor);
-            return this;
+            return PromptStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -197,7 +227,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
         public SecretPrompt MaskStyle(Style style)
         {
-            MaskColor = PromptRenderHelpers.ResolveStyleColor(style, MaskColor);
+            _maskColor = PromptRenderHelpers.ResolveStyleColor(style, MaskColor);
+            _maskTextStyle = style;
             return this;
         }
 
@@ -208,8 +239,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
         public SecretPrompt MaskStyle(string style)
         {
-            MaskColor = ConsoulLibrary.Style.ParseForeground(style, MaskColor);
-            return this;
+            return MaskStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -230,7 +260,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
         public SecretPrompt InvalidStyle(Style style)
         {
-            InvalidColor = PromptRenderHelpers.ResolveStyleColor(style, InvalidColor);
+            _invalidColor = PromptRenderHelpers.ResolveStyleColor(style, InvalidColor);
+            _invalidTextStyle = style;
             return this;
         }
 
@@ -241,8 +272,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
         public SecretPrompt InvalidStyle(string style)
         {
-            InvalidColor = ConsoulLibrary.Style.ParseForeground(style, InvalidColor);
-            return this;
+            return InvalidStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -334,8 +364,8 @@ namespace ConsoulLibrary
                     Consoul.ConsoleDriver.Clear();
                 }
 
-                PromptRenderHelpers.WriteMarkupLine(Message, PromptColor);
-                string value = Consoul.ReadPassword(MaskColor, MaskCharacter ?? '\0', cancellationToken);
+                PromptRenderHelpers.WriteMarkupLine(Message, ResolvePromptStyle());
+                string value = Consoul.ReadPassword(ResolveMaskStyle(), MaskCharacter ?? '\0', cancellationToken);
                 if (cancellationToken.IsCancellationRequested)
                 {
                     return SecretResult.Canceled();
@@ -348,7 +378,7 @@ namespace ConsoulLibrary
                         return SecretResult.FromValue(value);
                     }
 
-                    PromptRenderHelpers.WriteMarkupOrPlainLine(RequiredMessage, InvalidColor);
+                    PromptRenderHelpers.WriteMarkupOrPlainLine(RequiredMessage, ResolveInvalidStyle());
                     continue;
                 }
 
@@ -358,8 +388,23 @@ namespace ConsoulLibrary
                     return SecretResult.FromValue(value);
                 }
 
-                PromptRenderHelpers.WriteMarkupOrPlainLine(validationMessage, InvalidColor);
+                PromptRenderHelpers.WriteMarkupOrPlainLine(validationMessage, ResolveInvalidStyle());
             } while (true);
+        }
+
+        private PromptRenderHelpers.StyledText ResolvePromptStyle()
+        {
+            return PromptRenderHelpers.ResolveStyle(_promptTextStyle, PromptColor);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveInvalidStyle()
+        {
+            return PromptRenderHelpers.ResolveStyle(_invalidTextStyle, InvalidColor);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveMaskStyle()
+        {
+            return PromptRenderHelpers.ResolveStyle(_maskTextStyle, MaskColor);
         }
 
         private string ValidateValue(string value)

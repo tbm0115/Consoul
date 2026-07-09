@@ -205,6 +205,32 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Calendar builders accept prepared highlighted days for quick MVC schedule summaries.
+        /// </summary>
+        [Fact]
+        public void Calendar_FluentBuilder_AddCalendarEventsAcceptsPreparedParams()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                CalendarDay release = CalendarDay.Create(new DateTime(2026, 6, 18), ConsoleColor.Green, "Release");
+                CalendarDay freeze = CalendarDay.Create(new DateTime(2026, 6, 25), ConsoleColor.Yellow, "Freeze");
+
+                var calendar = new Calendar(new DateTime(2026, 6, 1))
+                    .Width(32)
+                    .Culture(CultureInfo.InvariantCulture)
+                    .AddCalendarEvents(release, freeze);
+
+                AnsiConsole.Write(calendar);
+
+                Assert.Contains(calendar.CalendarEvents, day => day.Date == new DateTime(2026, 6, 18) && day.Label == "Release");
+                Assert.Contains(calendar.CalendarEvents, day => day.Date == new DateTime(2026, 6, 25) && day.Label == "Freeze");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Trim() == "18" && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Trim() == "25" && write.Color == ConsoleColor.Yellow);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Model-backed dynamic views can render calendars as schedule sections.
         /// </summary>
         [Fact]

@@ -201,7 +201,68 @@ namespace ConsoulLibrary
             AddColumnCore(label, valueSelector, alignment, format);
         }
 
+        /// <summary>
+        /// Adds a property column only when the current source rows contain visible values for the selected property.
+        /// </summary>
+        /// <param name="selector">Lambda expression pointing to the property.</param>
+        /// <param name="label">Optional display label for the selected property. When omitted, the label is resolved from property metadata.</param>
+        /// <param name="alignment">Optional alignment for the selected column.</param>
+        /// <param name="format">Optional format used when rendering the selected property value. When omitted, property metadata is used.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalHeader(Expression<Func<T, object>> selector, string label = null, TableCellAlignment alignment = TableCellAlignment.Default, string format = null)
+        {
+            PropertyInfo selectedProperty = GetSelectedProperty(selector);
+            string header = !string.IsNullOrEmpty(label) ? label : ResolvePropertyLabel(selectedProperty);
+            Func<T, object> accessor = item => selectedProperty.GetValue(item);
+            TableCellAlignment resolvedAlignment = alignment == TableCellAlignment.Default
+                ? ResolvePropertyAlignment(selectedProperty)
+                : alignment;
+            string resolvedFormat = !string.IsNullOrWhiteSpace(format)
+                ? format
+                : ResolvePropertyFormat(selectedProperty);
+            return AddOptionalColumn(header, accessor, resolvedFormat, resolvedAlignment);
+        }
+
+        /// <summary>
+        /// Adds a computed column only when the current source rows contain visible values for the selected cells.
+        /// </summary>
+        /// <param name="label">Header label rendered for the column.</param>
+        /// <param name="valueSelector">Function used to read the cell value from each row item.</param>
+        /// <param name="alignment">Optional alignment for the computed column.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalColumn(string label, Func<T, object> valueSelector, TableCellAlignment alignment = TableCellAlignment.Default)
+        {
+            return AddOptionalColumn(label, valueSelector, null, alignment);
+        }
+
+        /// <summary>
+        /// Adds a formatted computed column only when the current source rows contain visible values for the selected cells.
+        /// </summary>
+        /// <param name="label">Header label rendered for the column.</param>
+        /// <param name="valueSelector">Function used to read the cell value from each row item.</param>
+        /// <param name="format">Format used when rendering the selected value.</param>
+        /// <param name="alignment">Optional alignment for the computed column.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalColumn(string label, Func<T, object> valueSelector, string format, TableCellAlignment alignment = TableCellAlignment.Default)
+        {
+            ValidateColumn(label, valueSelector);
+            if (!HasVisibleValues(valueSelector, format))
+            {
+                return false;
+            }
+
+            AddColumnCore(label, valueSelector, alignment, format);
+            return true;
+        }
+
         private void AddColumnCore(string label, Func<T, object> valueSelector, TableCellAlignment alignment, string format)
+        {
+            ValidateColumn(label, valueSelector);
+            _columns.Add(new DynamicTableColumn(label, valueSelector, alignment, format));
+            RebuildTableRows();
+        }
+
+        private static void ValidateColumn(string label, Func<T, object> valueSelector)
         {
             if (string.IsNullOrEmpty(label))
             {
@@ -212,9 +273,6 @@ namespace ConsoulLibrary
             {
                 throw new ArgumentNullException(nameof(valueSelector));
             }
-
-            _columns.Add(new DynamicTableColumn(label, valueSelector, alignment, format));
-            RebuildTableRows();
         }
 
         /// <summary>
@@ -650,6 +708,20 @@ namespace ConsoulLibrary
             return row;
         }
 
+        private bool HasVisibleValues(Func<T, object> valueSelector, string format)
+        {
+            foreach (T item in _contents)
+            {
+                object value = item == null ? null : valueSelector(item);
+                if (!string.IsNullOrWhiteSpace(FormatCellValue(value, format)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static PropertyInfo GetSelectedProperty(Expression<Func<T, object>> selector)
         {
             if (selector == null)
@@ -821,7 +893,7 @@ namespace ConsoulLibrary
 
             if (string.IsNullOrWhiteSpace(format))
             {
-                return Convert.ToString(value, CultureInfo.CurrentCulture) ?? string.Empty;
+                return Table.FormatCellValue(value);
             }
 
             try

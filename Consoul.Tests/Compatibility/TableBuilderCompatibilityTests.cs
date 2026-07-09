@@ -174,6 +174,38 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Fluent manual tables can add several inline rows without array/list wrappers.
+        /// </summary>
+        [Fact]
+        public void Table_FluentBuilder_AddRowsAcceptsInlineStringRowParams()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                var table = new Table()
+                    .Width(48)
+                    .AsciiBorder()
+                    .HideFooter()
+                    .AddColumns("Service", "State")
+                    .AddRows(
+                        new[] { "API", "Ready" },
+                        new[] { "Worker", "Queued" })
+                    .AddRow(new Markup("[cyan]Scheduler[/]"), new Text("Running", ConsoleColor.Green));
+
+                AnsiConsole.Write(table);
+
+                Assert.Equal(3, table.Rows.Count);
+                VisualAssert.ContainsText(scope.Driver, "API");
+                VisualAssert.ContainsText(scope.Driver, "Worker");
+                VisualAssert.ContainsText(scope.Driver, "Scheduler");
+                VisualAssert.ContainsText(scope.Driver, "Running");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Scheduler") && write.Color == ConsoleColor.Cyan);
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                Assert.DoesNotContain("ConsoulLibrary.", scope.Driver.Text);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Fluent table polish helpers configure width, colors, alignment, and separators.
         /// </summary>
         [Fact]
@@ -750,6 +782,59 @@ namespace ConsoulLibrary.Tests.Compatibility
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Ready") && write.Color == ConsoleColor.Green);
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Waiting") && write.Color == ConsoleColor.Yellow);
                 Assert.DoesNotContain("ConsoulLibrary.", scope.Driver.Text);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Optional manual table columns are added only when candidate values contain visible content.
+        /// </summary>
+        [Fact]
+        public void Table_AddOptionalColumn_AddsOnlyWhenValuesArePresent()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                var jobs = new[]
+                {
+                    new { Service = "API", State = "Ready", Latency = (int?)null, Owner = string.Empty },
+                    new { Service = "Worker", State = "Waiting", Latency = (int?)42, Owner = string.Empty }
+                };
+
+                var table = new Table()
+                    .Width(52)
+                    .AsciiBorder()
+                    .HideFooter()
+                    .AddColumn("Service")
+                    .AddColumn("State");
+                bool includeLatency = table.AddOptionalColumn("Latency", jobs.Select(job => job.Latency), column => column.RightAligned());
+                bool includeOwner = table.AddOptionalColumn("Owner", jobs.Select(job => job.Owner));
+
+                foreach (var job in jobs)
+                {
+                    var cells = new List<object> { job.Service, job.State };
+                    if (includeLatency)
+                    {
+                        cells.Add(job.Latency.HasValue ? (object)job.Latency.Value : string.Empty);
+                    }
+
+                    if (includeOwner)
+                    {
+                        cells.Add(job.Owner);
+                    }
+
+                    table.AddRow(cells.ToArray());
+                }
+
+                AnsiConsole.Write(table);
+
+                Assert.True(includeLatency);
+                Assert.False(includeOwner);
+                Assert.Equal(3, table.Columns.Count);
+                VisualAssert.ContainsText(scope.Driver, "Service");
+                VisualAssert.ContainsText(scope.Driver, "Latency");
+                VisualAssert.ContainsText(scope.Driver, "42");
+                Assert.DoesNotContain("Owner", scope.Driver.Text);
+                AssertRightAlignedCell(scope.Driver.Lines.First(line => line.Contains("Worker") && line.Contains("42")), "42");
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }

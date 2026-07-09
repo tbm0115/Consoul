@@ -85,6 +85,11 @@ namespace ConsoulLibrary
         public ConsoleColor ActiveColor { get; set; } = RenderOptions.SubnoteColor;
 
         /// <summary>
+        /// Gets or sets the optional reusable style used for active status messages on ANSI-capable terminals.
+        /// </summary>
+        public Style ActiveStyle { get; set; }
+
+        /// <summary>
         /// Gets or sets the color used for successful status messages.
         /// </summary>
         public ConsoleColor SuccessColor { get; set; } = ConsoleColor.Green;
@@ -111,6 +116,7 @@ namespace ConsoulLibrary
                 SuccessPrefix = SuccessPrefix,
                 FailurePrefix = FailurePrefix,
                 ActiveColor = ActiveColor,
+                ActiveStyle = ActiveStyle,
                 SuccessColor = SuccessColor,
                 FailureColor = FailureColor
             };

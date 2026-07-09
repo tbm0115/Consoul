@@ -1014,7 +1014,9 @@ namespace Consoul.Tests.Prompt
 
                     Assert.True(result.HasValue);
                     Assert.True(result.Value);
-                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy now? [y/N]") && write.Color == ConsoleColor.Magenta);
+                    Assert.Contains("Deploy now? [y/N]", scope.Driver.Text);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy now?") && write.Color == ConsoleColor.Magenta);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[y/N]") && write.Color == ConsoleColor.Magenta);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Use y or n.") && write.Color == ConsoleColor.Red);
                     VisualAssert.NoOverflow(scope.Driver);
                 }
@@ -2057,7 +2059,9 @@ namespace Consoul.Tests.Prompt
                     Assert.Equal("token-value", token.Value);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Retry count") && write.Color == ConsoleColor.Green);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Enter a whole number.") && write.Color == ConsoleColor.Red);
-                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy now? [y/N]") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains("Deploy now? [y/N]", scope.Driver.Text);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy now?") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[y/N]") && write.Color == ConsoleColor.Cyan);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Use yes or no.") && write.Color == ConsoleColor.DarkYellow);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("API token") && write.Color == ConsoleColor.Blue);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Token is required.") && write.Color == ConsoleColor.Red);

@@ -168,6 +168,47 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Plain text path color helpers clear previously configured RGB and decoration metadata.
+        /// </summary>
+        [Fact]
+        public void TextPath_ColorHelpersClearPriorRichStyleMetadata()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new TextPath(@"C:\repo\src\Program.cs")
+                .Width(80)
+                .Separator("/")
+                .RootColor("bold #112233")
+                .RootColor(ConsoleColor.DarkGray)
+                .DirectoryColor("italic #22c55e")
+                .DirectoryColor(ConsoleColor.Blue)
+                .StemColor("underline #336699")
+                .StemColor(ConsoleColor.Cyan)
+                .ExtensionColor("bold #778899")
+                .ExtensionColor(ConsoleColor.Green)
+                .SeparatorColor("italic #445566")
+                .SeparatorColor(ConsoleColor.Yellow));
+
+            string output = writer.ToString();
+            Assert.Contains("Program", output);
+            Assert.DoesNotContain("\u001b[1;", output);
+            Assert.DoesNotContain("\u001b[3;", output);
+            Assert.DoesNotContain("\u001b[4;", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[#22c55e", output);
+            Assert.DoesNotContain("[#336699", output);
+            Assert.DoesNotContain("[#778899", output);
+            Assert.DoesNotContain("[#445566", output);
+        }
+
+        /// <summary>
         /// TextPath style helpers use 256-color SGR when the terminal supports eight-bit color.
         /// </summary>
         [Fact]

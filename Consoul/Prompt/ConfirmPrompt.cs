@@ -11,6 +11,10 @@ namespace ConsoulLibrary
     {
         private bool _hasDefaultValue;
         private bool _defaultValue;
+        private ConsoleColor _promptColor = RenderOptions.PromptColor;
+        private ConsoleColor _invalidColor = RenderOptions.InvalidColor;
+        private Style _promptTextStyle;
+        private Style _invalidTextStyle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfirmPrompt"/> class.
@@ -67,12 +71,28 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for the prompt message.
         /// </summary>
-        public ConsoleColor PromptColor { get; set; } = RenderOptions.PromptColor;
+        public ConsoleColor PromptColor
+        {
+            get => _promptColor;
+            set
+            {
+                _promptColor = value;
+                _promptTextStyle = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the color used for invalid input messages.
         /// </summary>
-        public ConsoleColor InvalidColor { get; set; } = RenderOptions.InvalidColor;
+        public ConsoleColor InvalidColor
+        {
+            get => _invalidColor;
+            set
+            {
+                _invalidColor = value;
+                _invalidTextStyle = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the message rendered when the user enters an invalid confirmation value.
@@ -108,7 +128,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
         public ConfirmPrompt PromptStyle(Style style)
         {
-            PromptColor = PromptRenderHelpers.ResolveStyleColor(style, PromptColor);
+            _promptColor = PromptRenderHelpers.ResolveStyleColor(style, PromptColor);
+            _promptTextStyle = style;
             return this;
         }
 
@@ -119,8 +140,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
         public ConfirmPrompt PromptStyle(string style)
         {
-            PromptColor = ConsoulLibrary.Style.ParseForeground(style, PromptColor);
-            return this;
+            return PromptStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -171,7 +191,8 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
         public ConfirmPrompt InvalidStyle(Style style)
         {
-            InvalidColor = PromptRenderHelpers.ResolveStyleColor(style, InvalidColor);
+            _invalidColor = PromptRenderHelpers.ResolveStyleColor(style, InvalidColor);
+            _invalidTextStyle = style;
             return this;
         }
 
@@ -182,8 +203,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
         public ConfirmPrompt InvalidStyle(string style)
         {
-            InvalidColor = ConsoulLibrary.Style.ParseForeground(style, InvalidColor);
-            return this;
+            return InvalidStyle(ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -259,26 +279,23 @@ namespace ConsoulLibrary
                     return ConfirmResult.FromValue(value, input ?? string.Empty);
                 }
 
-                PromptRenderHelpers.WriteMarkupOrPlainLine(InvalidMessage, InvalidColor);
+                PromptRenderHelpers.WriteMarkupOrPlainLine(InvalidMessage, ResolveInvalidStyle());
             } while (true);
         }
 
         private void WritePromptMessage()
         {
-            if (!PromptRenderHelpers.ContainsMarkup(Message))
+            PromptRenderHelpers.StyledText promptStyle = ResolvePromptStyle();
+            if (!PromptRenderHelpers.ContainsMarkup(Message) && !HasStyleMetadata(_promptTextStyle))
             {
                 Consoul.WriteCore(BuildPromptMessage(), PromptColor);
                 return;
             }
 
-            PromptRenderHelpers.WriteMarkup(Message, PromptColor, writeLine: false);
-            if (!_hasDefaultValue)
-            {
-                Consoul.WriteCore(" [y/n]", PromptColor);
-                return;
-            }
-
-            Consoul.WriteCore(_defaultValue ? " [Y/n]" : " [y/N]", PromptColor);
+            PromptRenderHelpers.WriteMarkup(Message, promptStyle, writeLine: false);
+            PromptRenderHelpers.WriteMarkup(_hasDefaultValue
+                ? _defaultValue ? " [Y/n]" : " [y/N]"
+                : " [y/n]", promptStyle, writeLine: true);
         }
 
         private string BuildPromptMessage()
@@ -320,6 +337,24 @@ namespace ConsoulLibrary
                     value = false;
                     return false;
             }
+        }
+
+        private PromptRenderHelpers.StyledText ResolvePromptStyle()
+        {
+            return PromptRenderHelpers.ResolveStyle(_promptTextStyle, PromptColor);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveInvalidStyle()
+        {
+            return PromptRenderHelpers.ResolveStyle(_invalidTextStyle, InvalidColor);
+        }
+
+        private static bool HasStyleMetadata(Style style)
+        {
+            return style != null &&
+                (style.Decoration != Decoration.None ||
+                 style.ForegroundRgb.HasValue ||
+                 style.BackgroundRgb.HasValue);
         }
     }
 }

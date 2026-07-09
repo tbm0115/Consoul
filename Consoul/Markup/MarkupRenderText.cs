@@ -45,23 +45,49 @@ namespace ConsoulLibrary
 
         public static List<FixedMessageSegment> ParseSegmentsWithPrefix(string prefix, string text, ColorScheme defaultScheme)
         {
-            List<FixedMessageSegment> messageSegments = ParseSegments(text, defaultScheme);
+            return ParseSegmentsWithPrefix(prefix, text, defaultScheme, Decoration.None, null, null);
+        }
+
+        public static List<FixedMessageSegment> ParseSegmentsWithPrefix(
+            string prefix,
+            string text,
+            ColorScheme defaultScheme,
+            Decoration defaultDecoration,
+            RgbColor? defaultForegroundRgb,
+            RgbColor? defaultBackgroundRgb)
+        {
+            List<FixedMessageSegment> messageSegments = ParseSegments(
+                text,
+                defaultScheme,
+                defaultDecoration,
+                defaultForegroundRgb,
+                defaultBackgroundRgb);
             var segments = new List<FixedMessageSegment>();
             if (!string.IsNullOrEmpty(prefix))
             {
                 if (messageSegments.Count > 0 &&
                     HasScheme(messageSegments[0], defaultScheme) &&
-                    messageSegments[0].Decoration == Decoration.None &&
-                    !messageSegments[0].ForegroundRgb.HasValue &&
-                    !messageSegments[0].BackgroundRgb.HasValue &&
+                    HasStyle(messageSegments[0], defaultDecoration, defaultForegroundRgb, defaultBackgroundRgb) &&
                     messageSegments[0].Link == null)
                 {
-                    segments.Add(new FixedMessageSegment(prefix + messageSegments[0].Text, defaultScheme));
+                    segments.Add(new FixedMessageSegment(
+                        prefix + messageSegments[0].Text,
+                        defaultScheme,
+                        defaultDecoration,
+                        null,
+                        defaultForegroundRgb,
+                        defaultBackgroundRgb));
                     segments.AddRange(messageSegments.Skip(1));
                     return segments;
                 }
 
-                segments.Add(new FixedMessageSegment(prefix, defaultScheme));
+                segments.Add(new FixedMessageSegment(
+                    prefix,
+                    defaultScheme,
+                    defaultDecoration,
+                    null,
+                    defaultForegroundRgb,
+                    defaultBackgroundRgb));
             }
 
             segments.AddRange(messageSegments);
@@ -351,6 +377,18 @@ namespace ConsoulLibrary
 
         public static List<FixedMessageSegment> AlignSegments(IList<FixedMessageSegment> segments, int width, TextBlockAlignment alignment, ColorScheme paddingScheme)
         {
+            return AlignSegments(segments, width, alignment, paddingScheme, Decoration.None, null, null);
+        }
+
+        public static List<FixedMessageSegment> AlignSegments(
+            IList<FixedMessageSegment> segments,
+            int width,
+            TextBlockAlignment alignment,
+            ColorScheme paddingScheme,
+            Decoration paddingDecoration,
+            RgbColor? paddingForegroundRgb,
+            RgbColor? paddingBackgroundRgb)
+        {
             width = Math.Max(0, width);
             var content = TruncateSegments(segments, width);
             int remaining = Math.Max(0, width - GetLength(content));
@@ -371,9 +409,9 @@ namespace ConsoulLibrary
 
             int rightPadding = remaining - leftPadding;
             var aligned = new List<FixedMessageSegment>();
-            AddPadding(aligned, leftPadding, paddingScheme);
+            AddPadding(aligned, leftPadding, paddingScheme, paddingDecoration, paddingForegroundRgb, paddingBackgroundRgb);
             aligned.AddRange(content);
-            AddPadding(aligned, rightPadding, paddingScheme);
+            AddPadding(aligned, rightPadding, paddingScheme, paddingDecoration, paddingForegroundRgb, paddingBackgroundRgb);
             return aligned;
         }
 
@@ -383,14 +421,26 @@ namespace ConsoulLibrary
             int rightPadding,
             ColorScheme paddingScheme)
         {
+            return PadSegments(segments, leftPadding, rightPadding, paddingScheme, Decoration.None, null, null);
+        }
+
+        public static List<FixedMessageSegment> PadSegments(
+            IList<FixedMessageSegment> segments,
+            int leftPadding,
+            int rightPadding,
+            ColorScheme paddingScheme,
+            Decoration paddingDecoration,
+            RgbColor? paddingForegroundRgb,
+            RgbColor? paddingBackgroundRgb)
+        {
             var result = new List<FixedMessageSegment>();
-            AddPadding(result, leftPadding, paddingScheme);
+            AddPadding(result, leftPadding, paddingScheme, paddingDecoration, paddingForegroundRgb, paddingBackgroundRgb);
             if (segments != null)
             {
                 result.AddRange(segments);
             }
 
-            AddPadding(result, rightPadding, paddingScheme);
+            AddPadding(result, rightPadding, paddingScheme, paddingDecoration, paddingForegroundRgb, paddingBackgroundRgb);
             return result;
         }
 
@@ -464,12 +514,23 @@ namespace ConsoulLibrary
 
         public static void AddPadding(IList<FixedMessageSegment> segments, int count, ColorScheme scheme)
         {
+            AddPadding(segments, count, scheme, Decoration.None, null, null);
+        }
+
+        public static void AddPadding(
+            IList<FixedMessageSegment> segments,
+            int count,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
             if (count <= 0)
             {
                 return;
             }
 
-            segments.Add(new FixedMessageSegment(new string(' ', count), scheme));
+            segments.Add(new FixedMessageSegment(new string(' ', count), scheme, decoration, null, foregroundRgb, backgroundRgb));
         }
 
         private static int FindWrapIndex(string text, int width)
@@ -492,6 +553,17 @@ namespace ConsoulLibrary
             return segment.Scheme.HasValue &&
                 segment.Scheme.Value.Color == scheme.Color &&
                 segment.Scheme.Value.BackgroundColor == scheme.BackgroundColor;
+        }
+
+        private static bool HasStyle(
+            FixedMessageSegment segment,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            return segment.Decoration == decoration &&
+                segment.ForegroundRgb.Equals(foregroundRgb) &&
+                segment.BackgroundRgb.Equals(backgroundRgb);
         }
 
         private static bool SameScheme(ColorScheme left, ColorScheme right)

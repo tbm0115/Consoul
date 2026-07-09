@@ -275,7 +275,7 @@ namespace ConsoulLibrary
                 AddProjectedPane(
                     contentSelector(item),
                     titleSelector != null ? titleSelector(item) : null,
-                    colorSelector(item).ToConsoleColor(),
+                    new Style(colorSelector(item)),
                     captureWidth,
                     captureHeight);
             }
@@ -322,7 +322,7 @@ namespace ConsoulLibrary
                 AddProjectedPane(
                     contentSelector(item),
                     titleSelector != null ? titleSelector(item) : null,
-                    colorSelector(item).ToConsoleColor(),
+                    new Style(colorSelector(item)),
                     captureWidth,
                     captureHeight);
             }
@@ -410,7 +410,16 @@ namespace ConsoulLibrary
             {
                 foreach (LayoutRenderedLine line in BuildPaneLines(panes[paneIndex], width))
                 {
-                    MarkupRenderText.WriteSegments(PadOrTrimSegments(line.Segments, width, line.Scheme), line.Scheme, true);
+                    MarkupRenderText.WriteSegments(
+                        PadOrTrimSegments(
+                            line.Segments,
+                            width,
+                            line.Scheme,
+                            line.Decoration,
+                            line.ForegroundRgb,
+                            line.BackgroundRgb),
+                        line.Scheme,
+                        true);
                 }
 
                 if (paneIndex < panes.Count - 1)
@@ -443,10 +452,24 @@ namespace ConsoulLibrary
                     {
                         LayoutRenderedLine line = lineIndex < renderedPanes[paneIndex].Count
                             ? renderedPanes[paneIndex][lineIndex]
-                            : new LayoutRenderedLine(Array.Empty<FixedMessageSegment>(), _options.ResolveContentScheme());
+                            : new LayoutRenderedLine(
+                                Array.Empty<FixedMessageSegment>(),
+                                _options.ResolveContentScheme(),
+                                _options.ContentDecoration,
+                                _options.ContentForegroundRgb,
+                                _options.ContentBackgroundRgb);
 
                         bool isLastPane = paneIndex == rowPaneCount - 1;
-                        MarkupRenderText.WriteSegments(PadOrTrimSegments(line.Segments, paneWidths[paneIndex], line.Scheme), line.Scheme, isLastPane);
+                        MarkupRenderText.WriteSegments(
+                            PadOrTrimSegments(
+                                line.Segments,
+                                paneWidths[paneIndex],
+                                line.Scheme,
+                                line.Decoration,
+                                line.ForegroundRgb,
+                                line.BackgroundRgb),
+                            line.Scheme,
+                            isLastPane);
 
                         if (!isLastPane && gutter > 0)
                         {
@@ -557,21 +580,55 @@ namespace ConsoulLibrary
             if (!string.IsNullOrWhiteSpace(pane.Title))
             {
                 ColorScheme titleScheme = _options.ResolveTitleScheme();
-                foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(pane.Title.Trim(), width, titleScheme))
+                foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                    pane.Title.Trim(),
+                    width,
+                    titleScheme,
+                    _options.TitleDecoration,
+                    _options.TitleForegroundRgb,
+                    _options.TitleBackgroundRgb))
                 {
-                    lines.Add(new LayoutRenderedLine(line, titleScheme));
+                    lines.Add(new LayoutRenderedLine(
+                        line,
+                        titleScheme,
+                        _options.TitleDecoration,
+                        _options.TitleForegroundRgb,
+                        _options.TitleBackgroundRgb));
                 }
             }
 
             ColorScheme contentScheme = pane.Scheme ?? _options.ResolveContentScheme();
-            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(pane.ResolveContent(width), width, contentScheme))
+            bool hasPaneStyle = pane.Scheme.HasValue ||
+                pane.Decoration != Decoration.None ||
+                pane.ForegroundRgb.HasValue ||
+                pane.BackgroundRgb.HasValue;
+            Decoration contentDecoration = hasPaneStyle ? pane.Decoration : _options.ContentDecoration;
+            RgbColor? contentForegroundRgb = hasPaneStyle ? pane.ForegroundRgb : _options.ContentForegroundRgb;
+            RgbColor? contentBackgroundRgb = hasPaneStyle ? pane.BackgroundRgb : _options.ContentBackgroundRgb;
+            foreach (List<FixedMessageSegment> line in MarkupRenderText.WrapSegments(
+                pane.ResolveContent(width),
+                width,
+                contentScheme,
+                contentDecoration,
+                contentForegroundRgb,
+                contentBackgroundRgb))
             {
-                lines.Add(new LayoutRenderedLine(line, contentScheme));
+                lines.Add(new LayoutRenderedLine(
+                    line,
+                    contentScheme,
+                    contentDecoration,
+                    contentForegroundRgb,
+                    contentBackgroundRgb));
             }
 
             if (lines.Count == 0)
             {
-                lines.Add(new LayoutRenderedLine(Array.Empty<FixedMessageSegment>(), contentScheme));
+                lines.Add(new LayoutRenderedLine(
+                    Array.Empty<FixedMessageSegment>(),
+                    contentScheme,
+                    contentDecoration,
+                    contentForegroundRgb,
+                    contentBackgroundRgb));
             }
 
             return lines;
@@ -585,11 +642,45 @@ namespace ConsoulLibrary
             }
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        private static List<FixedMessageSegment> PadOrTrimSegments(
+            IList<FixedMessageSegment> segments,
+            int width,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             List<FixedMessageSegment> result = MarkupRenderText.TruncateSegments(segments, Math.Max(0, width));
-            MarkupRenderText.AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), scheme);
+            AddPadding(
+                result,
+                Math.Max(0, width - MarkupRenderText.GetLength(result)),
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb);
             return result;
+        }
+
+        private static void AddPadding(
+            IList<FixedMessageSegment> segments,
+            int count,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            segments.Add(new FixedMessageSegment(
+                new string(' ', count),
+                scheme,
+                decoration,
+                null,
+                foregroundRgb,
+                backgroundRgb));
         }
 
         private LayoutPane AddProjectedPane(object content, string title, ConsoleColor? color, int? captureWidth, int captureHeight)
@@ -619,6 +710,35 @@ namespace ConsoulLibrary
             }
 
             return Add(RenderActionContent.FormatValue(content), title, color);
+        }
+
+        private LayoutPane AddProjectedPane(object content, string title, Style style, int? captureWidth, int captureHeight)
+        {
+            var pane = content as LayoutPane;
+            if (pane != null)
+            {
+                return Add(pane);
+            }
+
+            var layout = content as Layout;
+            if (layout != null)
+            {
+                return Add(CreateProjectedLayoutPane(layout, title, style, captureWidth, captureHeight));
+            }
+
+            var renderable = content as IConsoulRenderable;
+            if (renderable != null)
+            {
+                return Add(renderable, title, style, captureWidth, captureHeight);
+            }
+
+            var render = content as Action;
+            if (render != null)
+            {
+                return Add(render, title, style, captureWidth, captureHeight);
+            }
+
+            return Add(RenderActionContent.FormatValue(content), title, style);
         }
 
         private LayoutPane AddProjectedPane(object content, string title, string style, int? captureWidth, int captureHeight)
@@ -661,11 +781,17 @@ namespace ConsoulLibrary
 
         private static LayoutPane CreateProjectedLayoutPane(Layout layout, string title, string style, int? captureWidth, int captureHeight)
         {
-            ColorScheme? scheme = string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.Parse(style).ToColorScheme(RenderOptions.DefaultScheme);
+            return CreateProjectedLayoutPane(
+                layout,
+                title,
+                string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style),
+                captureWidth,
+                captureHeight);
+        }
 
-            return LayoutPane.CreateLive(layout, title ?? layout.Name, scheme, captureWidth, captureHeight)
+        private static LayoutPane CreateProjectedLayoutPane(Layout layout, string title, Style style, int? captureWidth, int captureHeight)
+        {
+            return LayoutPane.CreateLive(layout, title ?? layout.Name, style, captureWidth, captureHeight)
                 .Size(layout.PaneSize)
                 .Ratio(layout.PaneRatio)
                 .MinimumSize(layout.PaneMinimumSize)
@@ -674,17 +800,31 @@ namespace ConsoulLibrary
 
         private readonly struct LayoutRenderedLine
         {
-            public LayoutRenderedLine(IEnumerable<FixedMessageSegment> segments, ColorScheme scheme)
+            public LayoutRenderedLine(
+                IEnumerable<FixedMessageSegment> segments,
+                ColorScheme scheme,
+                Decoration decoration = Decoration.None,
+                RgbColor? foregroundRgb = null,
+                RgbColor? backgroundRgb = null)
             {
                 Segments = segments == null
                     ? new List<FixedMessageSegment>()
                     : new List<FixedMessageSegment>(segments);
                 Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
             }
 
             public IList<FixedMessageSegment> Segments { get; }
 
             public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

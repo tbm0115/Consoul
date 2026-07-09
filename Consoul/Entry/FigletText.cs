@@ -1,5 +1,7 @@
 using System;
 using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -156,7 +158,30 @@ namespace ConsoulLibrary
         public FigletText Color(ConsoleColor color)
         {
             Options.Scheme = Scheme(color);
+            Options.Decoration = Decoration.None;
+            Options.ForegroundRgb = null;
+            Options.BackgroundRgb = null;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the glyph foreground color from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The glyph foreground color.</param>
+        /// <returns>The current <see cref="FigletText"/> instance.</returns>
+        public FigletText Color(SpectreColor color)
+        {
+            return Color(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the glyph foreground color from an RGB value.
+        /// </summary>
+        /// <param name="color">The glyph foreground color.</param>
+        /// <returns>The current <see cref="FigletText"/> instance.</returns>
+        public FigletText Color(RgbColor color)
+        {
+            return Color(new Style(color));
         }
 
         /// <summary>
@@ -166,7 +191,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="FigletText"/> instance.</returns>
         public FigletText Color(Style style)
         {
-            Options.Scheme = (style ?? Style.Plain).ToColorScheme(Options.ResolveScheme());
+            ApplyStyle(style);
             return this;
         }
 
@@ -177,7 +202,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="FigletText"/> instance.</returns>
         public FigletText Color(string style)
         {
-            Options.Scheme = Style.ParseScheme(style, Options.ResolveScheme());
+            ApplyStyle(Style.Parse(style));
             return this;
         }
 
@@ -188,6 +213,15 @@ namespace ConsoulLibrary
                 Color = color,
                 BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
             };
+        }
+
+        private void ApplyStyle(Style style)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            Options.Scheme = resolvedStyle.ToColorScheme(Options.ResolveScheme());
+            Options.Decoration = resolvedStyle.Decoration;
+            Options.ForegroundRgb = resolvedStyle.ForegroundRgb;
+            Options.BackgroundRgb = resolvedStyle.BackgroundRgb;
         }
     }
 }

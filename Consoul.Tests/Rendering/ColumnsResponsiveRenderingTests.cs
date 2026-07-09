@@ -1,6 +1,9 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary.Tests.Rendering
 {
@@ -184,6 +187,80 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Model-projected columns preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Columns_ProjectionStyleSelectorsEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var statuses = new[]
+            {
+                new StyledDashboardStatus("API", "Ready", RgbColor.FromHex("#112233"), SpectreColor.FromHex("#445566"))
+            };
+
+            var columns = new Columns()
+                .Width(48)
+                .ColumnCount(2)
+                .MinimumColumnWidth(12)
+                .Gutter(1)
+                .AddColumns(statuses, status => "RGB column " + status.State, status => status.Name, status => status.RgbColor)
+                .AddColumns(statuses, status => "Color column " + status.State, status => status.Name + " Color", status => status.SpectreColor)
+                .AddColumns(statuses, status => "Style column " + status.State, status => status.Name + " Style", status => "bold #778899");
+
+            console.Write(columns);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;17;34;51mRGB column", output);
+            Assert.Contains("\u001b[38;2;68;85;102mColor column", output);
+            Assert.Contains("\u001b[1;38;2;119;136;153mStyle column", output);
+            Assert.DoesNotContain("[#778899", output);
+            Assert.DoesNotContain("[bold", output);
+        }
+
+        /// <summary>
+        /// Column-level default header and content style helpers preserve RGB and decoration metadata.
+        /// </summary>
+        [Fact]
+        public void Columns_DefaultStyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var columns = new Columns()
+                .Width(48)
+                .ColumnCount(2)
+                .MinimumColumnWidth(12)
+                .Gutter(1)
+                .HeaderColor("bold #112233")
+                .ContentColor("italic #445566");
+            columns.Add("Ready", "Status");
+            columns.Add("Override", "Manual", "underline #778899");
+
+            console.Write(columns);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;17;34;51m", output);
+            Assert.Contains("\u001b[3;38;2;68;85;102m", output);
+            Assert.Contains("\u001b[4;38;2;119;136;153m", output);
+            Assert.Contains("Status", output);
+            Assert.Contains("Ready", output);
+            Assert.Contains("Override", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[#445566", output);
+            Assert.DoesNotContain("[#778899", output);
+        }
+
+        /// <summary>
         /// Model-backed dynamic views can render columns as dashboard sections.
         /// </summary>
         [Fact]
@@ -252,6 +329,25 @@ namespace ConsoulLibrary.Tests.Rendering
             public string State { get; private set; }
 
             public bool Warning { get; private set; }
+        }
+
+        private sealed class StyledDashboardStatus
+        {
+            public StyledDashboardStatus(string name, string state, RgbColor rgbColor, SpectreColor spectreColor)
+            {
+                Name = name;
+                State = state;
+                RgbColor = rgbColor;
+                SpectreColor = spectreColor;
+            }
+
+            public string Name { get; private set; }
+
+            public string State { get; private set; }
+
+            public RgbColor RgbColor { get; private set; }
+
+            public SpectreColor SpectreColor { get; private set; }
         }
 
         private sealed class TestRoutine : Routine

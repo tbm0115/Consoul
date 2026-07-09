@@ -792,7 +792,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(string title, Action<T> renderer, string titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(model => title, renderer, model => ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return SectionStyled(model => title, renderer, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -805,7 +805,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(string title, Action<T> renderer, Style titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(model => title, renderer, model => ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return SectionStyled(model => title, renderer, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -842,7 +842,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(Func<T, string> title, Action<T> renderer, Func<T, string> titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderer, model => ResolveStyle(titleStyle != null ? titleStyle(model) : null, RenderOptions.DefaultColor), alignment);
+            return SectionStyled(title, renderer, RuleTitleStyle(titleStyle), alignment);
         }
 
         /// <summary>
@@ -855,7 +855,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(Func<T, string> title, Action<T> renderer, Func<T, Style> titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderer, model => ResolveStyle(titleStyle != null ? titleStyle(model) : null, RenderOptions.DefaultColor), alignment);
+            return SectionStyled(title, renderer, RuleTitleStyle(titleStyle), alignment);
         }
 
         /// <summary>
@@ -868,7 +868,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(Func<T, string> title, Action<T> renderer, Func<T, SpectreColor> titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderer, StyleColor(titleColor), alignment);
+            return SectionStyled(title, renderer, RuleTitleStyle(titleColor), alignment);
         }
 
         /// <summary>
@@ -881,7 +881,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(Func<T, string> title, Action<T> renderer, Func<T, RgbColor> titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderer, StyleColor(titleColor), alignment);
+            return SectionStyled(title, renderer, RuleTitleStyle(titleColor), alignment);
         }
 
         /// <summary>
@@ -912,7 +912,12 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(string title, IConsoulRenderable renderable, string titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderable, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            return SectionStyled(model => title, model => Consoul.Render(renderable), RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -925,7 +930,12 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(string title, IConsoulRenderable renderable, Style titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderable, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            return SectionStyled(model => title, model => Consoul.Render(renderable), RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -951,7 +961,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(string title, Func<T, IConsoulRenderable> renderer, string titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(model => title, renderer, model => ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return SectionRenderableStyled(model => title, renderer, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -964,7 +974,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(string title, Func<T, IConsoulRenderable> renderer, Style titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(model => title, renderer, model => ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return SectionRenderableStyled(model => title, renderer, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1002,7 +1012,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(Func<T, string> title, Func<T, IConsoulRenderable> renderer, Func<T, string> titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderer, model => ResolveStyle(titleStyle != null ? titleStyle(model) : null, RenderOptions.DefaultColor), alignment);
+            return SectionRenderableStyled(title, renderer, RuleTitleStyle(titleStyle), alignment);
         }
 
         /// <summary>
@@ -1015,7 +1025,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(Func<T, string> title, Func<T, IConsoulRenderable> renderer, Func<T, Style> titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderer, model => ResolveStyle(titleStyle != null ? titleStyle(model) : null, RenderOptions.DefaultColor), alignment);
+            return SectionRenderableStyled(title, renderer, RuleTitleStyle(titleStyle), alignment);
         }
 
         /// <summary>
@@ -1028,7 +1038,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(Func<T, string> title, Func<T, IConsoulRenderable> renderer, Func<T, SpectreColor> titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderer, StyleColor(titleColor), alignment);
+            return SectionRenderableStyled(title, renderer, RuleTitleStyle(titleColor), alignment);
         }
 
         /// <summary>
@@ -1041,7 +1051,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> Section(Func<T, string> title, Func<T, IConsoulRenderable> renderer, Func<T, RgbColor> titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return Section(title, renderer, StyleColor(titleColor), alignment);
+            return SectionRenderableStyled(title, renderer, RuleTitleStyle(titleColor), alignment);
         }
 
         /// <summary>
@@ -1069,7 +1079,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(string title, Action<T> renderer, Func<T, bool> isVisible, string titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(model => title, renderer, isVisible, model => ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return SectionWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1083,7 +1093,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(string title, Action<T> renderer, Func<T, bool> isVisible, Style titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(model => title, renderer, isVisible, model => ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return SectionWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1127,7 +1137,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(Func<T, string> title, Action<T> renderer, Func<T, bool> isVisible, Func<T, string> titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderer, isVisible, model => ResolveStyle(titleStyle != null ? titleStyle(model) : null, RenderOptions.DefaultColor), alignment);
+            return SectionWhenStyled(title, renderer, isVisible, RuleTitleStyle(titleStyle), alignment);
         }
 
         /// <summary>
@@ -1141,7 +1151,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(Func<T, string> title, Action<T> renderer, Func<T, bool> isVisible, Func<T, Style> titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderer, isVisible, model => ResolveStyle(titleStyle != null ? titleStyle(model) : null, RenderOptions.DefaultColor), alignment);
+            return SectionWhenStyled(title, renderer, isVisible, RuleTitleStyle(titleStyle), alignment);
         }
 
         /// <summary>
@@ -1155,7 +1165,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(Func<T, string> title, Action<T> renderer, Func<T, bool> isVisible, Func<T, SpectreColor> titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderer, isVisible, StyleColor(titleColor), alignment);
+            return SectionWhenStyled(title, renderer, isVisible, RuleTitleStyle(titleColor), alignment);
         }
 
         /// <summary>
@@ -1169,7 +1179,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(Func<T, string> title, Action<T> renderer, Func<T, bool> isVisible, Func<T, RgbColor> titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderer, isVisible, StyleColor(titleColor), alignment);
+            return SectionWhenStyled(title, renderer, isVisible, RuleTitleStyle(titleColor), alignment);
         }
 
         /// <summary>
@@ -1202,7 +1212,12 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(string title, IConsoulRenderable renderable, Func<T, bool> isVisible, string titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderable, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            return SectionWhenStyled(model => title, model => Consoul.Render(renderable), isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1216,7 +1231,12 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(string title, IConsoulRenderable renderable, Func<T, bool> isVisible, Style titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderable, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            return SectionWhenStyled(model => title, model => Consoul.Render(renderable), isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1244,7 +1264,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(string title, Func<T, IConsoulRenderable> renderer, Func<T, bool> isVisible, string titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(model => title, renderer, isVisible, model => ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return SectionRenderableWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1258,7 +1278,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(string title, Func<T, IConsoulRenderable> renderer, Func<T, bool> isVisible, Style titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(model => title, renderer, isVisible, model => ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return SectionRenderableWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1298,7 +1318,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(Func<T, string> title, Func<T, IConsoulRenderable> renderer, Func<T, bool> isVisible, Func<T, string> titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderer, isVisible, model => ResolveStyle(titleStyle != null ? titleStyle(model) : null, RenderOptions.DefaultColor), alignment);
+            return SectionRenderableWhenStyled(title, renderer, isVisible, RuleTitleStyle(titleStyle), alignment);
         }
 
         /// <summary>
@@ -1312,7 +1332,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(Func<T, string> title, Func<T, IConsoulRenderable> renderer, Func<T, bool> isVisible, Func<T, Style> titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderer, isVisible, model => ResolveStyle(titleStyle != null ? titleStyle(model) : null, RenderOptions.DefaultColor), alignment);
+            return SectionRenderableWhenStyled(title, renderer, isVisible, RuleTitleStyle(titleStyle), alignment);
         }
 
         /// <summary>
@@ -1326,7 +1346,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(Func<T, string> title, Func<T, IConsoulRenderable> renderer, Func<T, bool> isVisible, Func<T, SpectreColor> titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderer, isVisible, StyleColor(titleColor), alignment);
+            return SectionRenderableWhenStyled(title, renderer, isVisible, RuleTitleStyle(titleColor), alignment);
         }
 
         /// <summary>
@@ -1340,7 +1360,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> SectionWhen(Func<T, string> title, Func<T, IConsoulRenderable> renderer, Func<T, bool> isVisible, Func<T, RgbColor> titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SectionWhen(title, renderer, isVisible, StyleColor(titleColor), alignment);
+            return SectionRenderableWhenStyled(title, renderer, isVisible, RuleTitleStyle(titleColor), alignment);
         }
 
         /// <summary>
@@ -1415,7 +1435,7 @@ namespace ConsoulLibrary
             RuleTitleAlignment alignment = RuleTitleAlignment.Left,
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.Instance)
         {
-            return PropertyListSection(title, model => model, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment, bindingAttr);
+            return PropertyListSectionStyledCore(title, model => model, options, RuleTitleStyle(model => titleStyle), alignment, bindingAttr);
         }
 
         /// <summary>
@@ -1436,7 +1456,7 @@ namespace ConsoulLibrary
             RuleTitleAlignment alignment = RuleTitleAlignment.Left,
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.Instance)
         {
-            return PropertyListSection(title, modelSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment, bindingAttr);
+            return PropertyListSectionStyledCore(title, modelSelector, options, RuleTitleStyle(model => titleStyle), alignment, bindingAttr);
         }
 
         /// <summary>
@@ -1455,7 +1475,7 @@ namespace ConsoulLibrary
             RuleTitleAlignment alignment = RuleTitleAlignment.Left,
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.Instance)
         {
-            return PropertyListSection(title, model => model, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment, bindingAttr);
+            return PropertyListSectionStyledCore(title, model => model, options, RuleTitleStyle(model => titleStyle), alignment, bindingAttr);
         }
 
         /// <summary>
@@ -1476,7 +1496,7 @@ namespace ConsoulLibrary
             RuleTitleAlignment alignment = RuleTitleAlignment.Left,
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.Instance)
         {
-            return PropertyListSection(title, modelSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment, bindingAttr);
+            return PropertyListSectionStyledCore(title, modelSelector, options, RuleTitleStyle(model => titleStyle), alignment, bindingAttr);
         }
 
         /// <summary>
@@ -1545,7 +1565,7 @@ namespace ConsoulLibrary
             RuleTitleAlignment alignment = RuleTitleAlignment.Left,
             params Expression<Func<TItem, object>>[] selectors) where TItem : class
         {
-            return TableSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment, selectors);
+            return TableSectionStyledCore(title, itemsSelector, options, RuleTitleStyle(model => titleStyle), alignment, selectors);
         }
 
         /// <summary>
@@ -1567,7 +1587,7 @@ namespace ConsoulLibrary
             RuleTitleAlignment alignment = RuleTitleAlignment.Left,
             params Expression<Func<TItem, object>>[] selectors) where TItem : class
         {
-            return TableSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment, selectors);
+            return TableSectionStyledCore(title, itemsSelector, options, RuleTitleStyle(model => titleStyle), alignment, selectors);
         }
 
         /// <summary>
@@ -1614,7 +1634,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return MetricsSection(title, metricsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return MetricsSectionStyledCore(title, metricsSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1633,7 +1653,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return MetricsSection(title, metricsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return MetricsSectionStyledCore(title, metricsSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1738,7 +1758,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return MetricsSection(title, metricsSelector, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return MetricsSectionStyledCore(title, metricsSelector, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1768,7 +1788,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return MetricsSection(title, metricsSelector, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return MetricsSectionStyledCore(title, metricsSelector, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -1839,7 +1859,16 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BarChartSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<BarChartItem> items = itemsSelector(model) ?? Enumerable.Empty<BarChartItem>();
+                new BarChart(options).AddItems(items).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -1951,7 +1980,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(valueSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var chart = new BarChart(options);
@@ -1965,7 +1994,7 @@ namespace ConsoulLibrary
                 }
 
                 chart.Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2012,7 +2041,16 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BreakdownChartSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<BreakdownChartItem> items = itemsSelector(model) ?? Enumerable.Empty<BreakdownChartItem>();
+                new BreakdownChart(options).AddItems(items).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2124,7 +2162,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(valueSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var chart = new BreakdownChart(options);
@@ -2138,7 +2176,7 @@ namespace ConsoulLibrary
                 }
 
                 chart.Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2184,7 +2222,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TextBlockSection(title, contentSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return TextBlockSectionStyledCore(title, contentSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2203,7 +2241,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TextBlockSection(title, contentSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return TextBlockSectionStyledCore(title, contentSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2249,7 +2287,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return PanelSection(title, contentSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return PanelSectionStyledCore(title, contentSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2268,7 +2306,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return PanelSection(title, contentSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return PanelSectionStyledCore(title, contentSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2320,7 +2358,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return CalloutSection(title, messageSelector, kindSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return CalloutSectionStyledCore(title, messageSelector, kindSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2341,7 +2379,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return CalloutSection(title, messageSelector, kindSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return CalloutSectionStyledCore(title, messageSelector, kindSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2413,7 +2451,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ExceptionSection(title, exceptionSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ExceptionSectionStyled(title, exceptionSelector, null, options, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2434,7 +2472,20 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ExceptionSection(title, exceptionSelector, messageSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (exceptionSelector == null)
+            {
+                throw new ArgumentNullException(nameof(exceptionSelector));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                Exception exception = exceptionSelector(model);
+                if (exception != null)
+                {
+                    string message = messageSelector != null ? messageSelector(model) : null;
+                    new ExceptionEntry(exception, message, options).Render();
+                }
+            }, model => exceptionSelector(model) != null, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2453,7 +2504,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ExceptionSection(title, exceptionSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ExceptionSection(title, exceptionSelector, null, options, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2474,7 +2525,20 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ExceptionSection(title, exceptionSelector, messageSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (exceptionSelector == null)
+            {
+                throw new ArgumentNullException(nameof(exceptionSelector));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                Exception exception = exceptionSelector(model);
+                if (exception != null)
+                {
+                    string message = messageSelector != null ? messageSelector(model) : null;
+                    new ExceptionEntry(exception, message, options).Render();
+                }
+            }, model => exceptionSelector(model) != null, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2521,7 +2585,16 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BreadcrumbSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<string> items = itemsSelector(model) ?? Enumerable.Empty<string>();
+                new BreadcrumbEntry(items, options).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2540,7 +2613,16 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BreadcrumbSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<string> items = itemsSelector(model) ?? Enumerable.Empty<string>();
+                new BreadcrumbEntry(items, options).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2626,7 +2708,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(itemSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var breadcrumb = new BreadcrumbEntry(options);
@@ -2640,7 +2722,7 @@ namespace ConsoulLibrary
                 }
 
                 breadcrumb.Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2687,7 +2769,16 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ShortcutBarSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<ShortcutItem> items = itemsSelector(model) ?? Enumerable.Empty<ShortcutItem>();
+                new ShortcutBar(items, options).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2706,7 +2797,16 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ShortcutBarSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<ShortcutItem> items = itemsSelector(model) ?? Enumerable.Empty<ShortcutItem>();
+                new ShortcutBar(items, options).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2840,13 +2940,13 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(descriptionSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 new ShortcutBar(options)
                     .AddShortcuts(items, keySelector, descriptionSelector, disabledSelector, keyStyleSelector, descriptionStyleSelector)
                     .Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -2892,7 +2992,15 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return CalendarSection(title, monthSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (monthSelector == null)
+            {
+                throw new ArgumentNullException(nameof(monthSelector));
+            }
+
+            return Section(title, model =>
+            {
+                new Calendar(monthSelector(model), options).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -2911,7 +3019,15 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return CalendarSection(title, monthSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (monthSelector == null)
+            {
+                throw new ArgumentNullException(nameof(monthSelector));
+            }
+
+            return Section(title, model =>
+            {
+                new Calendar(monthSelector(model), options).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3003,13 +3119,13 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(dateSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TEvent> events = eventsSelector(model) ?? Enumerable.Empty<TEvent>();
                 new Calendar(monthSelector(model), options)
                     .AddCalendarEventsStyled(events, dateSelector, labelSelector, styleSelector)
                     .Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -3056,7 +3172,16 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BulletListSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<BulletListItem> items = itemsSelector(model) ?? Enumerable.Empty<BulletListItem>();
+                new BulletList(options).AddItems(items).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3075,7 +3200,16 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BulletListSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<BulletListItem> items = itemsSelector(model) ?? Enumerable.Empty<BulletListItem>();
+                new BulletList(options).AddItems(items).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3210,7 +3344,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(textSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var list = new BulletList(options);
@@ -3223,7 +3357,7 @@ namespace ConsoulLibrary
                 }
 
                 list.Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -3266,7 +3400,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(childrenSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var list = new BulletList(options);
@@ -3280,7 +3414,7 @@ namespace ConsoulLibrary
                 }
 
                 list.Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -3327,7 +3461,16 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ChecklistSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<ChecklistItem> items = itemsSelector(model) ?? Enumerable.Empty<ChecklistItem>();
+                new Checklist(options).AddItems(items).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3346,7 +3489,16 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ChecklistSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<ChecklistItem> items = itemsSelector(model) ?? Enumerable.Empty<ChecklistItem>();
+                new Checklist(options).AddItems(items).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3430,7 +3582,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(labelSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var checklist = new Checklist(options);
@@ -3446,7 +3598,7 @@ namespace ConsoulLibrary
                 }
 
                 checklist.Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -3493,7 +3645,16 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SparklineSection(title, valuesSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (valuesSelector == null)
+            {
+                throw new ArgumentNullException(nameof(valuesSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<double> values = valuesSelector(model) ?? Enumerable.Empty<double>();
+                new Sparkline(values, options).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3512,7 +3673,16 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SparklineSection(title, valuesSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (valuesSelector == null)
+            {
+                throw new ArgumentNullException(nameof(valuesSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<double> values = valuesSelector(model) ?? Enumerable.Empty<double>();
+                new Sparkline(values, options).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3570,7 +3740,21 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SparklineSection(title, itemsSelector, valueSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (valueSelector == null)
+            {
+                throw new ArgumentNullException(nameof(valueSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
+                new Sparkline(options).AddValues(items, valueSelector).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3620,7 +3804,19 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TreeSection(title, rootSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (rootSelector == null)
+            {
+                throw new ArgumentNullException(nameof(rootSelector));
+            }
+
+            return Section(title, model =>
+            {
+                TreeNode root = rootSelector(model);
+                if (root != null)
+                {
+                    new Tree(root, options).Render();
+                }
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3639,7 +3835,19 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TreeSection(title, rootSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (rootSelector == null)
+            {
+                throw new ArgumentNullException(nameof(rootSelector));
+            }
+
+            return Section(title, model =>
+            {
+                TreeNode root = rootSelector(model);
+                if (root != null)
+                {
+                    new Tree(root, options).Render();
+                }
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3728,14 +3936,14 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(childrenSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 TreeNode root = BuildTreeNodeStyled(rootSelector(model), contentSelector, childrenSelector, styleSelector);
                 if (root != null)
                 {
                     new Tree(root, options).Render();
                 }
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -3782,7 +3990,16 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TimelineSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<TimelineItem> items = itemsSelector(model) ?? Enumerable.Empty<TimelineItem>();
+                new Timeline(options).AddSteps(items).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3801,7 +4018,16 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TimelineSection(title, itemsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return Section(title, model =>
+            {
+                IEnumerable<TimelineItem> items = itemsSelector(model) ?? Enumerable.Empty<TimelineItem>();
+                new Timeline(options).AddSteps(items).Render();
+            }, titleStyle, alignment);
         }
 
         /// <summary>
@@ -3889,13 +4115,13 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(titleSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TStep> items = itemsSelector(model) ?? Enumerable.Empty<TStep>();
                 new Timeline(options)
                     .AddStepsStyled(items, titleSelector, stateSelector, descriptionSelector, timestampSelector, titleStyleSelector, markerStyleSelector, descriptionStyleSelector)
                     .Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -3942,7 +4168,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return RowsSection(title, rowsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return RowsSectionStyledCore(title, rowsSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -3961,7 +4187,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return RowsSection(title, rowsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return RowsSectionStyledCore(title, rowsSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4033,7 +4259,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(rowSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TRow> items = itemsSelector(model) ?? Enumerable.Empty<TRow>();
                 var rows = new Rows(options);
@@ -4047,7 +4273,7 @@ namespace ConsoulLibrary
                 }
 
                 rows.Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4094,7 +4320,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ColumnsSection(title, columnsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ColumnsSectionStyledCore(title, columnsSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4113,7 +4339,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ColumnsSection(title, columnsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ColumnsSectionStyledCore(title, columnsSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4189,7 +4415,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(contentSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TColumn> items = itemsSelector(model) ?? Enumerable.Empty<TColumn>();
                 var columns = new Columns(options);
@@ -4203,7 +4429,7 @@ namespace ConsoulLibrary
                 }
 
                 columns.Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4256,7 +4482,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return GridSection(title, cellsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return GridSectionStyledCore(title, cellsSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4275,7 +4501,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return GridSection(title, cellsSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return GridSectionStyledCore(title, cellsSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4351,7 +4577,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(contentSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TCell> items = itemsSelector(model) ?? Enumerable.Empty<TCell>();
                 var grid = new Grid(options);
@@ -4365,7 +4591,7 @@ namespace ConsoulLibrary
                 }
 
                 grid.Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4417,7 +4643,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return LayoutSection(title, layoutBuilder, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return LayoutSectionStyledCore(title, layoutBuilder, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4436,7 +4662,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return LayoutSection(title, layoutBuilder, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return LayoutSectionStyledCore(title, layoutBuilder, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4522,13 +4748,13 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(contentSelector));
             }
 
-            return Section(title, model =>
+            return SectionStyled(model => title, model =>
             {
                 IEnumerable<TPane> items = itemsSelector(model) ?? Enumerable.Empty<TPane>();
                 new Layout(options)
                     .AddPanes(items, contentSelector, paneTitleSelector, styleSelector, captureWidth, captureHeight)
                     .Render();
-            }, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4614,7 +4840,7 @@ namespace ConsoulLibrary
             RuleTitleAlignment alignment = RuleTitleAlignment.Left,
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.Instance)
         {
-            return PropertyListSectionWhen(title, model => model, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment, bindingAttr);
+            return PropertyListSectionWhenStyledCore(title, model => model, isVisible, options, RuleTitleStyle(model => titleStyle), alignment, bindingAttr);
         }
 
         /// <summary>
@@ -4694,7 +4920,7 @@ namespace ConsoulLibrary
             RuleTitleAlignment alignment = RuleTitleAlignment.Left,
             params Expression<Func<TItem, object>>[] selectors) where TItem : class
         {
-            return TableSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment, selectors);
+            return TableSectionWhenStyledCore(title, itemsSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment, selectors);
         }
 
         /// <summary>
@@ -4750,7 +4976,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return MetricsSectionWhen(title, metricsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return MetricsSectionWhenStyledCore(title, metricsSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4771,7 +4997,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return MetricsSectionWhen(title, metricsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return MetricsSectionWhenStyledCore(title, metricsSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4887,7 +5113,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return MetricsSectionWhen(title, metricsSelector, isVisible, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return MetricsSectionWhenStyledCore(title, metricsSelector, isVisible, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -4919,7 +5145,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return MetricsSectionWhen(title, metricsSelector, isVisible, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return MetricsSectionWhenStyledCore(title, metricsSelector, isVisible, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5001,7 +5227,21 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BarChartSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<BarChartItem> items = itemsSelector(model) ?? Enumerable.Empty<BarChartItem>();
+                new BarChart(options).AddItems(items).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -5129,7 +5369,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(valueSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var chart = new BarChart(options);
@@ -5143,7 +5383,7 @@ namespace ConsoulLibrary
                 }
 
                 chart.Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5199,7 +5439,21 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BreakdownChartSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<BreakdownChartItem> items = itemsSelector(model) ?? Enumerable.Empty<BreakdownChartItem>();
+                new BreakdownChart(options).AddItems(items).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -5327,7 +5581,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(valueSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var chart = new BreakdownChart(options);
@@ -5341,7 +5595,7 @@ namespace ConsoulLibrary
                 }
 
                 chart.Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5396,7 +5650,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TextBlockSectionWhen(title, contentSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return TextBlockSectionWhenStyledCore(title, contentSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5417,7 +5671,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TextBlockSectionWhen(title, contentSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return TextBlockSectionWhenStyledCore(title, contentSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5472,7 +5726,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return PanelSectionWhen(title, contentSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return PanelSectionWhenStyledCore(title, contentSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5493,7 +5747,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return PanelSectionWhen(title, contentSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return PanelSectionWhenStyledCore(title, contentSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5554,7 +5808,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return CalloutSectionWhen(title, messageSelector, isVisible, kindSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return CalloutSectionWhenStyledCore(title, messageSelector, isVisible, kindSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5577,7 +5831,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return CalloutSectionWhen(title, messageSelector, isVisible, kindSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return CalloutSectionWhenStyledCore(title, messageSelector, isVisible, kindSelector, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5660,7 +5914,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ExceptionSectionWhen(title, exceptionSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ExceptionSectionWhenStyled(title, exceptionSelector, isVisible, null, options, titleStyle, alignment);
         }
 
         /// <summary>
@@ -5683,7 +5937,25 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ExceptionSectionWhen(title, exceptionSelector, isVisible, messageSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (exceptionSelector == null)
+            {
+                throw new ArgumentNullException(nameof(exceptionSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                Exception exception = exceptionSelector(model);
+                if (exception != null)
+                {
+                    string message = messageSelector != null ? messageSelector(model) : null;
+                    new ExceptionEntry(exception, message, options).Render();
+                }
+            }, model => isVisible(model) && exceptionSelector(model) != null, titleStyle, alignment);
         }
 
         /// <summary>
@@ -5704,7 +5976,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ExceptionSectionWhen(title, exceptionSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ExceptionSectionWhen(title, exceptionSelector, isVisible, null, options, titleStyle, alignment);
         }
 
         /// <summary>
@@ -5727,7 +5999,25 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ExceptionSectionWhen(title, exceptionSelector, isVisible, messageSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (exceptionSelector == null)
+            {
+                throw new ArgumentNullException(nameof(exceptionSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                Exception exception = exceptionSelector(model);
+                if (exception != null)
+                {
+                    string message = messageSelector != null ? messageSelector(model) : null;
+                    new ExceptionEntry(exception, message, options).Render();
+                }
+            }, model => isVisible(model) && exceptionSelector(model) != null, titleStyle, alignment);
         }
 
         /// <summary>
@@ -5783,7 +6073,21 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BreadcrumbSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<string> items = itemsSelector(model) ?? Enumerable.Empty<string>();
+                new BreadcrumbEntry(items, options).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -5804,7 +6108,21 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BreadcrumbSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<string> items = itemsSelector(model) ?? Enumerable.Empty<string>();
+                new BreadcrumbEntry(items, options).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -5904,7 +6222,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(itemSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var breadcrumb = new BreadcrumbEntry(options);
@@ -5918,7 +6236,7 @@ namespace ConsoulLibrary
                 }
 
                 breadcrumb.Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -5974,7 +6292,21 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ShortcutBarSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<ShortcutItem> items = itemsSelector(model) ?? Enumerable.Empty<ShortcutItem>();
+                new ShortcutBar(items, options).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -5995,7 +6327,21 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ShortcutBarSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<ShortcutItem> items = itemsSelector(model) ?? Enumerable.Empty<ShortcutItem>();
+                new ShortcutBar(items, options).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -6146,13 +6492,13 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(descriptionSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 new ShortcutBar(options)
                     .AddShortcuts(items, keySelector, descriptionSelector, disabledSelector, keyStyleSelector, descriptionStyleSelector)
                     .Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -6207,7 +6553,20 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return CalendarSectionWhen(title, monthSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (monthSelector == null)
+            {
+                throw new ArgumentNullException(nameof(monthSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                new Calendar(monthSelector(model), options).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -6228,7 +6587,20 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return CalendarSectionWhen(title, monthSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (monthSelector == null)
+            {
+                throw new ArgumentNullException(nameof(monthSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                new Calendar(monthSelector(model), options).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -6334,13 +6706,13 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(dateSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TEvent> events = eventsSelector(model) ?? Enumerable.Empty<TEvent>();
                 new Calendar(monthSelector(model), options)
                     .AddCalendarEventsStyled(events, dateSelector, labelSelector, styleSelector)
                     .Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -6396,7 +6768,21 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BulletListSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<BulletListItem> items = itemsSelector(model) ?? Enumerable.Empty<BulletListItem>();
+                new BulletList(options).AddItems(items).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -6417,7 +6803,21 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return BulletListSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<BulletListItem> items = itemsSelector(model) ?? Enumerable.Empty<BulletListItem>();
+                new BulletList(options).AddItems(items).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -6573,7 +6973,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(textSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var list = new BulletList(options);
@@ -6586,7 +6986,7 @@ namespace ConsoulLibrary
                 }
 
                 list.Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -6636,7 +7036,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(childrenSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var list = new BulletList(options);
@@ -6650,7 +7050,7 @@ namespace ConsoulLibrary
                 }
 
                 list.Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -6706,7 +7106,21 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ChecklistSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<ChecklistItem> items = itemsSelector(model) ?? Enumerable.Empty<ChecklistItem>();
+                new Checklist(options).AddItems(items).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -6727,7 +7141,21 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ChecklistSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<ChecklistItem> items = itemsSelector(model) ?? Enumerable.Empty<ChecklistItem>();
+                new Checklist(options).AddItems(items).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -6825,7 +7253,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(labelSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
                 var checklist = new Checklist(options);
@@ -6841,7 +7269,7 @@ namespace ConsoulLibrary
                 }
 
                 checklist.Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -6897,7 +7325,21 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SparklineSectionWhen(title, valuesSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (valuesSelector == null)
+            {
+                throw new ArgumentNullException(nameof(valuesSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<double> values = valuesSelector(model) ?? Enumerable.Empty<double>();
+                new Sparkline(values, options).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -6918,7 +7360,21 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SparklineSectionWhen(title, valuesSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (valuesSelector == null)
+            {
+                throw new ArgumentNullException(nameof(valuesSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<double> values = valuesSelector(model) ?? Enumerable.Empty<double>();
+                new Sparkline(values, options).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -6985,7 +7441,26 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return SparklineSectionWhen(title, itemsSelector, isVisible, valueSelector, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            if (valueSelector == null)
+            {
+                throw new ArgumentNullException(nameof(valueSelector));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
+                new Sparkline(options).AddValues(items, valueSelector).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -7044,7 +7519,24 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TreeSectionWhen(title, rootSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (rootSelector == null)
+            {
+                throw new ArgumentNullException(nameof(rootSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                TreeNode root = rootSelector(model);
+                if (root != null)
+                {
+                    new Tree(root, options).Render();
+                }
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -7065,7 +7557,24 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TreeSectionWhen(title, rootSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (rootSelector == null)
+            {
+                throw new ArgumentNullException(nameof(rootSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                TreeNode root = rootSelector(model);
+                if (root != null)
+                {
+                    new Tree(root, options).Render();
+                }
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -7168,14 +7677,14 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(childrenSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 TreeNode root = BuildTreeNodeStyled(rootSelector(model), contentSelector, childrenSelector, styleSelector);
                 if (root != null)
                 {
                     new Tree(root, options).Render();
                 }
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7231,7 +7740,21 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TimelineSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<TimelineItem> items = itemsSelector(model) ?? Enumerable.Empty<TimelineItem>();
+                new Timeline(options).AddSteps(items).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -7252,7 +7775,21 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return TimelineSectionWhen(title, itemsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhen(title, model =>
+            {
+                IEnumerable<TimelineItem> items = itemsSelector(model) ?? Enumerable.Empty<TimelineItem>();
+                new Timeline(options).AddSteps(items).Render();
+            }, isVisible, titleStyle, alignment);
         }
 
         /// <summary>
@@ -7354,13 +7891,13 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(titleSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TStep> items = itemsSelector(model) ?? Enumerable.Empty<TStep>();
                 new Timeline(options)
                     .AddStepsStyled(items, titleSelector, stateSelector, descriptionSelector, timestampSelector, titleStyleSelector, markerStyleSelector, descriptionStyleSelector)
                     .Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7416,7 +7953,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return RowsSectionWhen(title, rowsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return RowsSectionWhenStyledCore(title, rowsSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7437,7 +7974,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return RowsSectionWhen(title, rowsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return RowsSectionWhenStyledCore(title, rowsSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7523,7 +8060,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(rowSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TRow> items = itemsSelector(model) ?? Enumerable.Empty<TRow>();
                 var rows = new Rows(options);
@@ -7537,7 +8074,7 @@ namespace ConsoulLibrary
                 }
 
                 rows.Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7593,7 +8130,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ColumnsSectionWhen(title, columnsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ColumnsSectionWhenStyledCore(title, columnsSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7614,7 +8151,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ColumnsSectionWhen(title, columnsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ColumnsSectionWhenStyledCore(title, columnsSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7704,7 +8241,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(contentSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TColumn> items = itemsSelector(model) ?? Enumerable.Empty<TColumn>();
                 var columns = new Columns(options);
@@ -7718,7 +8255,7 @@ namespace ConsoulLibrary
                 }
 
                 columns.Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7780,7 +8317,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return GridSectionWhen(title, cellsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return GridSectionWhenStyledCore(title, cellsSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7801,7 +8338,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return GridSectionWhen(title, cellsSelector, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return GridSectionWhenStyledCore(title, cellsSelector, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7891,7 +8428,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(contentSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TCell> items = itemsSelector(model) ?? Enumerable.Empty<TCell>();
                 var grid = new Grid(options);
@@ -7905,7 +8442,7 @@ namespace ConsoulLibrary
                 }
 
                 grid.Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7966,7 +8503,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return LayoutSectionWhen(title, layoutBuilder, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return LayoutSectionWhenStyledCore(title, layoutBuilder, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -7987,7 +8524,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return LayoutSectionWhen(title, layoutBuilder, isVisible, options, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return LayoutSectionWhenStyledCore(title, layoutBuilder, isVisible, options, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -8087,13 +8624,13 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(contentSelector));
             }
 
-            return SectionWhen(title, model =>
+            return SectionWhenStyled(model => title, model =>
             {
                 IEnumerable<TPane> items = itemsSelector(model) ?? Enumerable.Empty<TPane>();
                 new Layout(options)
                     .AddPanes(items, contentSelector, paneTitleSelector, styleSelector, captureWidth, captureHeight)
                     .Render();
-            }, isVisible, ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            }, isVisible, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -8127,7 +8664,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ValidationSummarySection(options, title, (ConsoleColor?)ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ValidationSummarySectionWhenStyledCore(model => true, options, title, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -8144,7 +8681,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ValidationSummarySection(options, title, (ConsoleColor?)ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ValidationSummarySectionWhenStyledCore(model => true, options, title, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -8152,7 +8689,7 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="options">Optional validation summary options.</param>
         /// <param name="title">Optional section title rendered above the validation summary.</param>
-        /// <param name="titleColor">Color facade mapped to the nearest console color for the section rule title.</param>
+        /// <param name="titleColor">Color facade used for the section rule title.</param>
         /// <param name="alignment">Alignment used for the section rule title.</param>
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ValidationSummarySection(
@@ -8161,7 +8698,7 @@ namespace ConsoulLibrary
             SpectreColor titleColor,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ValidationSummarySection(options, title, (ConsoleColor?)titleColor.ToConsoleColor(), alignment);
+            return ValidationSummarySectionWhenStyledCore(model => true, options, title, RuleTitleStyle(model => titleColor), alignment);
         }
 
         /// <summary>
@@ -8169,7 +8706,7 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="options">Optional validation summary options.</param>
         /// <param name="title">Optional section title rendered above the validation summary.</param>
-        /// <param name="titleColor">RGB color mapped to the nearest console color for the section rule title.</param>
+        /// <param name="titleColor">RGB color used for the section rule title.</param>
         /// <param name="alignment">Alignment used for the section rule title.</param>
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ValidationSummarySection(
@@ -8178,7 +8715,37 @@ namespace ConsoulLibrary
             RgbColor titleColor,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ValidationSummarySection(options, title, (ConsoleColor?)titleColor.ToConsoleColor(), alignment);
+            return ValidationSummarySectionWhenStyledCore(model => true, options, title, RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
+        /// Adds a model validation summary section with a Spectre-style title color.
+        /// </summary>
+        /// <param name="title">Optional section title rendered above the validation summary.</param>
+        /// <param name="titleColor">Color facade used for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> ValidationSummarySection(
+            string title,
+            SpectreColor titleColor,
+            RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return ValidationSummarySection(null, title, titleColor, alignment);
+        }
+
+        /// <summary>
+        /// Adds a model validation summary section with an RGB title color.
+        /// </summary>
+        /// <param name="title">Optional section title rendered above the validation summary.</param>
+        /// <param name="titleColor">RGB color used for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> ValidationSummarySection(
+            string title,
+            RgbColor titleColor,
+            RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return ValidationSummarySection(null, title, titleColor, alignment);
         }
 
         /// <summary>
@@ -8221,7 +8788,7 @@ namespace ConsoulLibrary
             string titleStyle = null,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ValidationSummarySectionWhen(isVisible, options, title, (ConsoleColor?)ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ValidationSummarySectionWhenStyledCore(isVisible, options, title, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -8240,7 +8807,7 @@ namespace ConsoulLibrary
             Style titleStyle,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ValidationSummarySectionWhen(isVisible, options, title, (ConsoleColor?)ResolveStyle(titleStyle, RenderOptions.DefaultColor), alignment);
+            return ValidationSummarySectionWhenStyledCore(isVisible, options, title, RuleTitleStyle(model => titleStyle), alignment);
         }
 
         /// <summary>
@@ -8249,7 +8816,7 @@ namespace ConsoulLibrary
         /// <param name="isVisible">Predicate that returns <c>true</c> when the validation summary should be rendered.</param>
         /// <param name="options">Optional validation summary options.</param>
         /// <param name="title">Optional section title rendered above the validation summary.</param>
-        /// <param name="titleColor">Color facade mapped to the nearest console color for the section rule title.</param>
+        /// <param name="titleColor">Color facade used for the section rule title.</param>
         /// <param name="alignment">Alignment used for the section rule title.</param>
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ValidationSummarySectionWhen(
@@ -8259,7 +8826,7 @@ namespace ConsoulLibrary
             SpectreColor titleColor,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ValidationSummarySectionWhen(isVisible, options, title, (ConsoleColor?)titleColor.ToConsoleColor(), alignment);
+            return ValidationSummarySectionWhenStyledCore(isVisible, options, title, RuleTitleStyle(model => titleColor), alignment);
         }
 
         /// <summary>
@@ -8268,7 +8835,7 @@ namespace ConsoulLibrary
         /// <param name="isVisible">Predicate that returns <c>true</c> when the validation summary should be rendered.</param>
         /// <param name="options">Optional validation summary options.</param>
         /// <param name="title">Optional section title rendered above the validation summary.</param>
-        /// <param name="titleColor">RGB color mapped to the nearest console color for the section rule title.</param>
+        /// <param name="titleColor">RGB color used for the section rule title.</param>
         /// <param name="alignment">Alignment used for the section rule title.</param>
         /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
         public DynamicView<T> ValidationSummarySectionWhen(
@@ -8278,7 +8845,41 @@ namespace ConsoulLibrary
             RgbColor titleColor,
             RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
-            return ValidationSummarySectionWhen(isVisible, options, title, (ConsoleColor?)titleColor.ToConsoleColor(), alignment);
+            return ValidationSummarySectionWhenStyledCore(isVisible, options, title, RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
+        /// Adds a conditional model validation summary section with a Spectre-style title color.
+        /// </summary>
+        /// <param name="isVisible">Predicate that returns <c>true</c> when the validation summary should be rendered.</param>
+        /// <param name="title">Optional section title rendered above the validation summary.</param>
+        /// <param name="titleColor">Color facade used for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> ValidationSummarySectionWhen(
+            Func<T, bool> isVisible,
+            string title,
+            SpectreColor titleColor,
+            RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return ValidationSummarySectionWhen(isVisible, null, title, titleColor, alignment);
+        }
+
+        /// <summary>
+        /// Adds a conditional model validation summary section with an RGB title color.
+        /// </summary>
+        /// <param name="isVisible">Predicate that returns <c>true</c> when the validation summary should be rendered.</param>
+        /// <param name="title">Optional section title rendered above the validation summary.</param>
+        /// <param name="titleColor">RGB color used for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> ValidationSummarySectionWhen(
+            Func<T, bool> isVisible,
+            string title,
+            RgbColor titleColor,
+            RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return ValidationSummarySectionWhen(isVisible, null, title, titleColor, alignment);
         }
 
         /// <summary>
@@ -12471,6 +13072,56 @@ namespace ConsoulLibrary
             return model => color(model).ToConsoleColor();
         }
 
+        private static Func<T, PromptRenderHelpers.StyledText?> RuleTitleStyle(Func<T, ConsoleColor?> color)
+        {
+            if (color == null)
+            {
+                return null;
+            }
+
+            return model =>
+            {
+                ConsoleColor? resolvedColor = color(model);
+                return resolvedColor.HasValue
+                    ? (PromptRenderHelpers.StyledText?)PromptRenderHelpers.FromColor(resolvedColor.Value)
+                    : null;
+            };
+        }
+
+        private static Func<T, PromptRenderHelpers.StyledText?> RuleTitleStyle(Func<T, string> style)
+        {
+            return model => PromptRenderHelpers.ResolveStyle(
+                ParseStyle(style != null ? style(model) : null),
+                RenderOptions.DefaultColor);
+        }
+
+        private static Func<T, PromptRenderHelpers.StyledText?> RuleTitleStyle(Func<T, Style> style)
+        {
+            return model => PromptRenderHelpers.ResolveStyle(
+                style != null ? style(model) : null,
+                RenderOptions.DefaultColor);
+        }
+
+        private static Func<T, PromptRenderHelpers.StyledText?> RuleTitleStyle(Func<T, SpectreColor> color)
+        {
+            if (color == null)
+            {
+                return null;
+            }
+
+            return model => PromptRenderHelpers.ResolveStyle(new Style(color(model)), RenderOptions.DefaultColor);
+        }
+
+        private static Func<T, PromptRenderHelpers.StyledText?> RuleTitleStyle(Func<T, RgbColor> color)
+        {
+            if (color == null)
+            {
+                return null;
+            }
+
+            return model => PromptRenderHelpers.ResolveStyle(new Style(color(model)), RenderOptions.DefaultColor);
+        }
+
         private static BulletListItem BuildBulletListItem<TItem>(
             TItem source,
             Func<TItem, string> textSelector,
@@ -12646,11 +13297,632 @@ namespace ConsoulLibrary
             return ValidationSummaryEntry.Validate(model, validationOptions).IsValid;
         }
 
+        private DynamicView<T> SectionStyled(
+            Func<T, string> title,
+            Action<T> renderer,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (title == null)
+            {
+                throw new ArgumentNullException(nameof(title));
+            }
+
+            if (renderer == null)
+            {
+                throw new ArgumentNullException(nameof(renderer));
+            }
+
+            AddSection(title, renderer, null, titleStyle, alignment);
+            return this;
+        }
+
+        private DynamicView<T> SectionWhenStyled(
+            Func<T, string> title,
+            Action<T> renderer,
+            Func<T, bool> isVisible,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (title == null)
+            {
+                throw new ArgumentNullException(nameof(title));
+            }
+
+            if (renderer == null)
+            {
+                throw new ArgumentNullException(nameof(renderer));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            AddSection(title, renderer, isVisible, titleStyle, alignment);
+            return this;
+        }
+
+        private DynamicView<T> SectionRenderableStyled(
+            Func<T, string> title,
+            Func<T, IConsoulRenderable> renderer,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (renderer == null)
+            {
+                throw new ArgumentNullException(nameof(renderer));
+            }
+
+            return SectionStyled(
+                title,
+                model =>
+                {
+                    IConsoulRenderable renderable = renderer(model);
+                    if (renderable != null)
+                    {
+                        Consoul.Render(renderable);
+                    }
+                },
+                titleStyle,
+                alignment);
+        }
+
+        private DynamicView<T> SectionRenderableWhenStyled(
+            Func<T, string> title,
+            Func<T, IConsoulRenderable> renderer,
+            Func<T, bool> isVisible,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (renderer == null)
+            {
+                throw new ArgumentNullException(nameof(renderer));
+            }
+
+            return SectionWhenStyled(
+                title,
+                model =>
+                {
+                    IConsoulRenderable renderable = renderer(model);
+                    if (renderable != null)
+                    {
+                        Consoul.Render(renderable);
+                    }
+                },
+                isVisible,
+                titleStyle,
+                alignment);
+        }
+
+        private DynamicView<T> PropertyListSectionStyledCore(
+            string title,
+            Func<T, object> modelSelector,
+            PropertyListOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment,
+            BindingFlags bindingAttr)
+        {
+            if (modelSelector == null)
+            {
+                throw new ArgumentNullException(nameof(modelSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                object selectedModel = modelSelector(model);
+                if (selectedModel == null)
+                {
+                    return;
+                }
+
+                new PropertyListEntry(options)
+                    .AddModel(selectedModel, bindingAttr)
+                    .Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> PropertyListSectionWhenStyledCore(
+            string title,
+            Func<T, object> modelSelector,
+            Func<T, bool> isVisible,
+            PropertyListOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment,
+            BindingFlags bindingAttr)
+        {
+            if (modelSelector == null)
+            {
+                throw new ArgumentNullException(nameof(modelSelector));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                object selectedModel = modelSelector(model);
+                if (selectedModel == null)
+                {
+                    return;
+                }
+
+                new PropertyListEntry(options)
+                    .AddModel(selectedModel, bindingAttr)
+                    .Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> TableSectionStyledCore<TItem>(
+            string title,
+            Func<T, IEnumerable<TItem>> itemsSelector,
+            TableRenderOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment,
+            Expression<Func<TItem, object>>[] selectors) where TItem : class
+        {
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
+                DynamicTableView<TItem>.Create(items, options, selectors).RenderInline();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> TableSectionWhenStyledCore<TItem>(
+            string title,
+            Func<T, IEnumerable<TItem>> itemsSelector,
+            Func<T, bool> isVisible,
+            TableRenderOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment,
+            Expression<Func<TItem, object>>[] selectors) where TItem : class
+        {
+            if (itemsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(itemsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                IEnumerable<TItem> items = itemsSelector(model) ?? Enumerable.Empty<TItem>();
+                DynamicTableView<TItem>.Create(items, options, selectors).RenderInline();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> MetricsSectionStyledCore(
+            string title,
+            Func<T, IEnumerable<MetricItem>> metricsSelector,
+            MetricsOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (metricsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(metricsSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                IEnumerable<MetricItem> metrics = metricsSelector(model) ?? Enumerable.Empty<MetricItem>();
+                new Metrics(metrics, options).Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> MetricsSectionWhenStyledCore(
+            string title,
+            Func<T, IEnumerable<MetricItem>> metricsSelector,
+            Func<T, bool> isVisible,
+            MetricsOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (metricsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(metricsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                IEnumerable<MetricItem> metrics = metricsSelector(model) ?? Enumerable.Empty<MetricItem>();
+                new Metrics(metrics, options).Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> MetricsSectionStyledCore<TMetric>(
+            string title,
+            Func<T, IEnumerable<TMetric>> metricsSelector,
+            Func<TMetric, string> labelSelector,
+            Func<TMetric, object> valueSelector,
+            Func<TMetric, string> unitSelector,
+            Func<TMetric, string> noteSelector,
+            Func<TMetric, MetricKind> kindSelector,
+            MetricsOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (metricsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(metricsSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                IEnumerable<TMetric> metrics = metricsSelector(model) ?? Enumerable.Empty<TMetric>();
+                new Metrics(options)
+                    .AddMetrics(metrics, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector)
+                    .Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> MetricsSectionWhenStyledCore<TMetric>(
+            string title,
+            Func<T, IEnumerable<TMetric>> metricsSelector,
+            Func<T, bool> isVisible,
+            Func<TMetric, string> labelSelector,
+            Func<TMetric, object> valueSelector,
+            Func<TMetric, string> unitSelector,
+            Func<TMetric, string> noteSelector,
+            Func<TMetric, MetricKind> kindSelector,
+            MetricsOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (metricsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(metricsSelector));
+            }
+
+            if (isVisible == null)
+            {
+                throw new ArgumentNullException(nameof(isVisible));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                IEnumerable<TMetric> metrics = metricsSelector(model) ?? Enumerable.Empty<TMetric>();
+                new Metrics(options)
+                    .AddMetrics(metrics, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector)
+                .Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> TextBlockSectionStyledCore(
+            string title,
+            Func<T, string> contentSelector,
+            TextBlockOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (contentSelector == null)
+            {
+                throw new ArgumentNullException(nameof(contentSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                new TextBlockEntry(contentSelector(model), options).Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> TextBlockSectionWhenStyledCore(
+            string title,
+            Func<T, string> contentSelector,
+            Func<T, bool> isVisible,
+            TextBlockOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (contentSelector == null)
+            {
+                throw new ArgumentNullException(nameof(contentSelector));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                new TextBlockEntry(contentSelector(model), options).Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> PanelSectionStyledCore(
+            string title,
+            Func<T, string> contentSelector,
+            PanelOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (contentSelector == null)
+            {
+                throw new ArgumentNullException(nameof(contentSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                new PanelEntry(contentSelector(model), options).Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> PanelSectionWhenStyledCore(
+            string title,
+            Func<T, string> contentSelector,
+            Func<T, bool> isVisible,
+            PanelOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (contentSelector == null)
+            {
+                throw new ArgumentNullException(nameof(contentSelector));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                new PanelEntry(contentSelector(model), options).Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> CalloutSectionStyledCore(
+            string title,
+            Func<T, string> messageSelector,
+            Func<T, CalloutKind> kindSelector,
+            CalloutOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (messageSelector == null)
+            {
+                throw new ArgumentNullException(nameof(messageSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                string message = messageSelector(model);
+                CalloutKind kind = kindSelector != null ? kindSelector(model) : CalloutKind.Info;
+                new CalloutEntry(message, kind, options).Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> CalloutSectionWhenStyledCore(
+            string title,
+            Func<T, string> messageSelector,
+            Func<T, bool> isVisible,
+            Func<T, CalloutKind> kindSelector,
+            CalloutOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (messageSelector == null)
+            {
+                throw new ArgumentNullException(nameof(messageSelector));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                string message = messageSelector(model);
+                CalloutKind kind = kindSelector != null ? kindSelector(model) : CalloutKind.Info;
+                new CalloutEntry(message, kind, options).Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> RowsSectionStyledCore(
+            string title,
+            Func<T, IEnumerable<object>> rowsSelector,
+            RowsOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (rowsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(rowsSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                IEnumerable<object> rows = rowsSelector(model) ?? Enumerable.Empty<object>();
+                new Rows(options).AddRows(rows).Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> RowsSectionWhenStyledCore(
+            string title,
+            Func<T, IEnumerable<object>> rowsSelector,
+            Func<T, bool> isVisible,
+            RowsOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (rowsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(rowsSelector));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                IEnumerable<object> rows = rowsSelector(model) ?? Enumerable.Empty<object>();
+                new Rows(options).AddRows(rows).Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> ColumnsSectionStyledCore(
+            string title,
+            Func<T, IEnumerable<object>> columnsSelector,
+            ColumnsOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (columnsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(columnsSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                IEnumerable<object> columns = columnsSelector(model) ?? Enumerable.Empty<object>();
+                new Columns(options).AddColumns(columns).Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> ColumnsSectionWhenStyledCore(
+            string title,
+            Func<T, IEnumerable<object>> columnsSelector,
+            Func<T, bool> isVisible,
+            ColumnsOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (columnsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(columnsSelector));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                IEnumerable<object> columns = columnsSelector(model) ?? Enumerable.Empty<object>();
+                new Columns(options).AddColumns(columns).Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> GridSectionStyledCore(
+            string title,
+            Func<T, IEnumerable<object>> cellsSelector,
+            GridOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (cellsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(cellsSelector));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                IEnumerable<object> cells = cellsSelector(model) ?? Enumerable.Empty<object>();
+                var grid = new Grid(options);
+                foreach (object cell in cells)
+                {
+                    grid.AddCell(cell);
+                }
+
+                grid.Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> GridSectionWhenStyledCore(
+            string title,
+            Func<T, IEnumerable<object>> cellsSelector,
+            Func<T, bool> isVisible,
+            GridOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (cellsSelector == null)
+            {
+                throw new ArgumentNullException(nameof(cellsSelector));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                IEnumerable<object> cells = cellsSelector(model) ?? Enumerable.Empty<object>();
+                var grid = new Grid(options);
+                foreach (object cell in cells)
+                {
+                    grid.AddCell(cell);
+                }
+
+                grid.Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> LayoutSectionStyledCore(
+            string title,
+            Action<T, Layout> layoutBuilder,
+            LayoutOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (layoutBuilder == null)
+            {
+                throw new ArgumentNullException(nameof(layoutBuilder));
+            }
+
+            return SectionStyled(model => title, model =>
+            {
+                var layout = new Layout(options)
+                {
+                    Name = title
+                };
+
+                layoutBuilder(model, layout);
+                layout.Render();
+            }, titleStyle, alignment);
+        }
+
+        private DynamicView<T> LayoutSectionWhenStyledCore(
+            string title,
+            Action<T, Layout> layoutBuilder,
+            Func<T, bool> isVisible,
+            LayoutOptions options,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (layoutBuilder == null)
+            {
+                throw new ArgumentNullException(nameof(layoutBuilder));
+            }
+
+            return SectionWhenStyled(model => title, model =>
+            {
+                var layout = new Layout(options)
+                {
+                    Name = title
+                };
+
+                layoutBuilder(model, layout);
+                layout.Render();
+            }, isVisible, titleStyle, alignment);
+        }
+
+        private DynamicView<T> ValidationSummarySectionWhenStyledCore(
+            Func<T, bool> isVisible,
+            ValidationSummaryOptions options,
+            string title,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            return SectionWhenStyled(
+                model => title,
+                model => new ValidationSummaryEntry(model, options).Render(),
+                isVisible ?? (model => true),
+                titleStyle,
+                alignment);
+        }
+
         private void AddSection(
             Func<T, string> title,
             Action<T> renderer,
             Func<T, bool> isVisible,
             Func<T, ConsoleColor?> titleColor,
+            RuleTitleAlignment alignment)
+        {
+            AddSection(title, renderer, isVisible, RuleTitleStyle(titleColor), alignment);
+        }
+
+        private void AddSection(
+            Func<T, string> title,
+            Action<T> renderer,
+            Func<T, bool> isVisible,
+            Func<T, PromptRenderHelpers.StyledText?> titleStyle,
             RuleTitleAlignment alignment)
         {
             _modelSections.Add(model =>
@@ -12663,14 +13935,42 @@ namespace ConsoulLibrary
                 string resolvedTitle = title(model);
                 if (!string.IsNullOrWhiteSpace(resolvedTitle))
                 {
-                    Consoul.Rule(
+                    RenderSectionRule(
                         resolvedTitle,
-                        color: titleColor != null ? titleColor(model) : (ConsoleColor?)null,
-                        alignment: alignment);
+                        titleStyle != null ? titleStyle(model) : null,
+                        alignment);
                 }
 
                 renderer(model);
             });
+        }
+
+        private static void RenderSectionRule(
+            string title,
+            PromptRenderHelpers.StyledText? titleStyle,
+            RuleTitleAlignment alignment)
+        {
+            if (!titleStyle.HasValue)
+            {
+                Consoul.Rule(title, alignment: alignment);
+                return;
+            }
+
+            PromptRenderHelpers.StyledText style = titleStyle.Value;
+            Consoul.Rule(
+                title,
+                new RuleOptions
+                {
+                    Alignment = alignment,
+                    RuleScheme = style.Scheme,
+                    RuleDecoration = style.Decoration,
+                    RuleForegroundRgb = style.ForegroundRgb,
+                    RuleBackgroundRgb = style.BackgroundRgb,
+                    TitleScheme = style.Scheme,
+                    TitleDecoration = style.Decoration,
+                    TitleForegroundRgb = style.ForegroundRgb,
+                    TitleBackgroundRgb = style.BackgroundRgb
+                });
         }
 
         private void RenderModelContent(T model)
@@ -13586,7 +14886,8 @@ namespace ConsoulLibrary
                     continue;
                 }
 
-                shortcutBar.Add(option.Shortcut, option.Entry.SetMessage(), !option.IsEnabled);
+                ShortcutItem item = shortcutBar.Add(option.Shortcut, option.Entry.SetMessage(), !option.IsEnabled);
+                option.ApplyStyleTo(item);
             }
 
             if (Chrome.ShowGoBackShortcut && !string.IsNullOrWhiteSpace(Chrome.GoBackShortcut))

@@ -1,6 +1,10 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Rendering
@@ -112,6 +116,35 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Alpha") && write.Color == ConsoleColor.Cyan);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Alignment color helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Align_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 48, height: 8, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new Align("Styled", TextBlockAlignment.Center).Width(12).Color("italic #112233 on #445566"));
+            console.Write(new Align("RGB", TextBlockAlignment.Left).Width(8).Color(RgbColor.FromHex("#778899")));
+            console.Write(new Align("Color", TextBlockAlignment.Left).Width(8).Color(SpectreColor.FromHex("#22c55e")));
+            console.Write(new Align("Style", TextBlockAlignment.Left).Width(8).Color(Style.Parse("bold #abcdef")));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[3;38;2;17;34;51;48;2;68;85;102m", output);
+            Assert.Contains("Styled", output);
+            Assert.Contains("\u001b[38;2;119;136;153mRGB", output);
+            Assert.Contains("\u001b[38;2;34;197;94mColor", output);
+            Assert.Contains("\u001b[1;38;2;171;205;239mStyle", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[italic", output);
         }
 
         /// <summary>

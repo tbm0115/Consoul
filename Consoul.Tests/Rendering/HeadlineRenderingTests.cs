@@ -1,5 +1,8 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Rendering
@@ -74,6 +77,51 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("#") && write.Color == ConsoleColor.Cyan);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Headline options preserve RGB and decoration metadata across headline styles.
+        /// </summary>
+        [Fact]
+        public void HeadlineOptions_TextMetadataEmitsTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 48, height: 20, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var options = new[]
+            {
+                new HeadlineOptions { Width = 24, Style = HeadlineStyle.Plain },
+                new HeadlineOptions { Width = 24, Style = HeadlineStyle.Box },
+                new HeadlineOptions { Width = 24, Style = HeadlineStyle.Rule },
+                new HeadlineOptions { Width = 24, Style = HeadlineStyle.Block, Alignment = TextBlockAlignment.Left, BlockCharacter = '@', Pad = false }
+            };
+
+            foreach (HeadlineOptions option in options)
+            {
+                option.Scheme = new ColorScheme
+                {
+                    Color = ConsoleColor.Green,
+                    BackgroundColor = ConsoleColor.Black
+                };
+                option.Decoration = Decoration.Bold;
+                option.ForegroundRgb = RgbColor.FromHex("#22c55e");
+            }
+
+            console.Write(new HeadlineEntry("Plain", options[0]));
+            console.Write(new HeadlineEntry("Box", options[1]));
+            console.Write(new HeadlineEntry("Rule", options[2]));
+            console.Write(new HeadlineEntry("I", options[3]));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mPlain", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94mBox", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94mRule", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94m@@@", output);
         }
 
         /// <summary>

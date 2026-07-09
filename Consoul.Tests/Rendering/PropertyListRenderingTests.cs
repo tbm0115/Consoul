@@ -320,6 +320,35 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Property lists accept prepared item params for quick MVC state summaries.
+        /// </summary>
+        [Fact]
+        public void PropertyList_AddItems_AcceptsPreparedItemParams()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                PropertyListItem environment = PropertyListItem.Create("Environment", "Production", "white on navy", "grey");
+                PropertyListItem approval = PropertyListItem.Create("Approval", "Pending", "yellow", "grey");
+
+                var entry = new PropertyListEntry(new PropertyListOptions { Width = 42, LabelWidth = 14 })
+                    .AddItems(environment, approval);
+
+                AnsiConsole.Write(entry);
+
+                Assert.Equal(2, entry.Items.Count);
+                VisualAssert.WroteText(scope.Driver, "Environment");
+                VisualAssert.WroteText(scope.Driver, "Production");
+                VisualAssert.WroteText(scope.Driver, "Approval");
+                VisualAssert.WroteText(scope.Driver, "Pending");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Environment") && write.Color == ConsoleColor.Gray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Production") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Approval") && write.Color == ConsoleColor.Gray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Pending") && write.Color == ConsoleColor.Yellow);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Non-generic dictionaries can still be rendered as property lists for legacy settings bags.
         /// </summary>
         [Fact]

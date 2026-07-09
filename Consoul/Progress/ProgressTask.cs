@@ -444,6 +444,11 @@ namespace ConsoulLibrary
             Touch();
         }
 
+        internal void SetHideWhenCompletedSilently(bool? hideWhenCompleted)
+        {
+            _hideWhenCompleted = hideWhenCompleted;
+        }
+
         internal TimeSpan GetElapsed(DateTimeOffset now)
         {
             DateTimeOffset end = IsFinished ? LastUpdatedAt : now;

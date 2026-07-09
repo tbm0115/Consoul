@@ -227,6 +227,34 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Common Spectre-style chart aliases map to the existing bar chart option model.
+        /// </summary>
+        [Fact]
+        public void BarChart_SpectreStyleAliases_MapToExistingOptions()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                var chart = new BarChart()
+                    .Width(48)
+                    .Label("Build queue")
+                    .WithMaxValue(100)
+                    .MaxValue(10)
+                    .ShowValue()
+                    .UseValueFormatter(value => value.ToString("0", CultureInfo.InvariantCulture) + " jobs")
+                    .AddItem("Passing", 5, ConsoleColor.Green)
+                    .AddItem("Failing", 2, ConsoleColor.Red);
+
+                AnsiConsole.Write(chart);
+
+                VisualAssert.ContainsText(scope.Driver, "Build queue");
+                VisualAssert.ContainsText(scope.Driver, "Passing");
+                VisualAssert.ContainsText(scope.Driver, "5 jobs");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("#") && write.Color == ConsoleColor.Green);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Bar charts handle zero and negative values without overflowing or throwing.
         /// </summary>
         [Fact]

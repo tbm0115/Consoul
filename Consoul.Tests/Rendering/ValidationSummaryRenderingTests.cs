@@ -128,6 +128,46 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Validation summaries can append ad hoc controller-rule issues to model validation.
+        /// </summary>
+        [Fact]
+        public void ValidationSummaryEntry_AddIssues_AppendsControllerRuleIssues()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                var model = new DeploymentSettings
+                {
+                    ServiceName = string.Empty,
+                    RetryCount = 2
+                };
+
+                ValidationSummaryResult result = new ValidationSummaryEntry(
+                    model,
+                    new ValidationSummaryOptions
+                    {
+                        Width = 56,
+                        InvalidTitle = "Before Save"
+                    })
+                    .IssueColor("yellow")
+                    .AddIssue("Approval", "Approval", "Owner approval is required.")
+                    .AddIssues(new ValidationIssue("ReleaseWindow", "Release window", "Release window has closed."))
+                    .Render();
+
+                Assert.False(result.IsValid);
+                Assert.Equal(3, result.Count);
+                Assert.Equal(2, result.Issues.Count(issue => issue.PropertyName != nameof(DeploymentSettings.ServiceName)));
+                VisualAssert.WroteText(scope.Driver, "Before Save");
+                VisualAssert.WroteText(scope.Driver, "Service is required.");
+                VisualAssert.WroteText(scope.Driver, "Approval");
+                VisualAssert.WroteText(scope.Driver, "Owner approval is required.");
+                VisualAssert.WroteText(scope.Driver, "Release window");
+                VisualAssert.WroteText(scope.Driver, "Release window has closed.");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Owner approval") && write.Color == ConsoleColor.Yellow);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Model validation honors display order and auto-generation metadata.
         /// </summary>
         [Fact]

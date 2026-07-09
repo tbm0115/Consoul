@@ -47,8 +47,16 @@ namespace ConsoulLibrary
         /// <param name="writeLine">Indicates whether to append a newline after writing the badge.</param>
         public void Render(bool writeLine = true)
         {
-            ColorScheme scheme = _options.ResolveScheme(Kind);
-            MarkupRenderText.WriteSegments(BuildSegments(ResolveWidth(null), scheme), scheme, writeLine);
+            BadgeOptions.StyledBadge style = _options.ResolveStyle(Kind);
+            MarkupRenderText.WriteSegments(
+                BuildSegments(
+                    ResolveWidth(null),
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb),
+                style.Scheme,
+                writeLine);
         }
 
         void IConsoulRenderable.Render()
@@ -63,10 +71,22 @@ namespace ConsoulLibrary
         /// <returns>A bounded single-line badge string.</returns>
         public string ToText(int? maxWidth = null)
         {
-            return MarkupRenderText.GetPlainText(BuildSegments(ResolveWidth(maxWidth), _options.ResolveScheme(Kind)));
+            BadgeOptions.StyledBadge style = _options.ResolveStyle(Kind);
+            return MarkupRenderText.GetPlainText(
+                BuildSegments(
+                    ResolveWidth(maxWidth),
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb));
         }
 
-        private IList<FixedMessageSegment> BuildSegments(int width, ColorScheme scheme)
+        private IList<FixedMessageSegment> BuildSegments(
+            int width,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             width = Math.Max(0, width);
             if (width <= 0)
@@ -74,7 +94,13 @@ namespace ConsoulLibrary
                 return new List<FixedMessageSegment>();
             }
 
-            IList<FixedMessageSegment> label = NormalizeLabelSegments(Label, _options.Uppercase, scheme);
+            IList<FixedMessageSegment> label = NormalizeLabelSegments(
+                Label,
+                _options.Uppercase,
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb);
             string leftEdge = _options.LeftEdge ?? string.Empty;
             string rightEdge = _options.RightEdge ?? string.Empty;
             int padding = Math.Max(0, _options.HorizontalPadding);
@@ -84,14 +110,39 @@ namespace ConsoulLibrary
             int badgeWidth = leftEdge.Length + leftPadding.Length + MarkupRenderText.GetLength(label) + rightPadding.Length + rightEdge.Length;
             if (badgeWidth <= width)
             {
-                return BuildBadgeSegments(leftEdge, leftPadding, label, rightPadding, rightEdge, scheme);
+                return BuildBadgeSegments(
+                    leftEdge,
+                    leftPadding,
+                    label,
+                    rightPadding,
+                    rightEdge,
+                    scheme,
+                    decoration,
+                    foregroundRgb,
+                    backgroundRgb);
             }
 
             int availableLabelWidth = width - leftEdge.Length - rightEdge.Length - leftPadding.Length - rightPadding.Length;
             if (availableLabelWidth > 0)
             {
-                IList<FixedMessageSegment> clippedLabel = TrimWithEllipsis(label, availableLabelWidth, _options.Ellipsis, scheme);
-                IList<FixedMessageSegment> badge = BuildBadgeSegments(leftEdge, leftPadding, clippedLabel, rightPadding, rightEdge, scheme);
+                IList<FixedMessageSegment> clippedLabel = TrimWithEllipsis(
+                    label,
+                    availableLabelWidth,
+                    _options.Ellipsis,
+                    scheme,
+                    decoration,
+                    foregroundRgb,
+                    backgroundRgb);
+                IList<FixedMessageSegment> badge = BuildBadgeSegments(
+                    leftEdge,
+                    leftPadding,
+                    clippedLabel,
+                    rightPadding,
+                    rightEdge,
+                    scheme,
+                    decoration,
+                    foregroundRgb,
+                    backgroundRgb);
                 if (MarkupRenderText.GetLength(badge) <= width)
                 {
                     return badge;
@@ -99,7 +150,16 @@ namespace ConsoulLibrary
             }
 
             return MarkupRenderText.TruncateSegments(
-                BuildBadgeSegments(leftEdge, leftPadding, label, rightPadding, rightEdge, scheme),
+                BuildBadgeSegments(
+                    leftEdge,
+                    leftPadding,
+                    label,
+                    rightPadding,
+                    rightEdge,
+                    scheme,
+                    decoration,
+                    foregroundRgb,
+                    backgroundRgb),
                 width);
         }
 
@@ -141,18 +201,27 @@ namespace ConsoulLibrary
             IList<FixedMessageSegment> label,
             string rightPadding,
             string rightEdge,
-            ColorScheme scheme)
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             var segments = new List<FixedMessageSegment>();
-            AddPlainSegment(segments, leftEdge, scheme);
-            AddPlainSegment(segments, leftPadding, scheme);
+            AddPlainSegment(segments, leftEdge, scheme, decoration, foregroundRgb, backgroundRgb);
+            AddPlainSegment(segments, leftPadding, scheme, decoration, foregroundRgb, backgroundRgb);
             AddSegments(segments, label);
-            AddPlainSegment(segments, rightPadding, scheme);
-            AddPlainSegment(segments, rightEdge, scheme);
+            AddPlainSegment(segments, rightPadding, scheme, decoration, foregroundRgb, backgroundRgb);
+            AddPlainSegment(segments, rightEdge, scheme, decoration, foregroundRgb, backgroundRgb);
             return segments;
         }
 
-        private static IList<FixedMessageSegment> NormalizeLabelSegments(string label, bool uppercase, ColorScheme scheme)
+        private static IList<FixedMessageSegment> NormalizeLabelSegments(
+            string label,
+            bool uppercase,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
         {
             label = (label ?? string.Empty)
                 .Replace("\r\n", " ")
@@ -160,7 +229,12 @@ namespace ConsoulLibrary
                 .Replace('\n', ' ')
                 .Trim();
 
-            List<FixedMessageSegment> segments = MarkupRenderText.ParseSegments(label, scheme);
+            List<FixedMessageSegment> segments = MarkupRenderText.ParseSegments(
+                label,
+                scheme,
+                decoration,
+                foregroundRgb,
+                backgroundRgb);
             if (!uppercase)
             {
                 return segments;
@@ -181,7 +255,10 @@ namespace ConsoulLibrary
             IList<FixedMessageSegment> value,
             int width,
             string ellipsis,
-            ColorScheme ellipsisScheme)
+            ColorScheme ellipsisScheme,
+            Decoration ellipsisDecoration,
+            RgbColor? ellipsisForegroundRgb,
+            RgbColor? ellipsisBackgroundRgb)
         {
             width = Math.Max(0, width);
             if (MarkupRenderText.GetLength(value) <= width)
@@ -196,7 +273,13 @@ namespace ConsoulLibrary
             }
 
             var segments = MarkupRenderText.TruncateSegments(value, width - ellipsis.Length);
-            AddPlainSegment(segments, ellipsis, ellipsisScheme);
+            AddPlainSegment(
+                segments,
+                ellipsis,
+                ellipsisScheme,
+                ellipsisDecoration,
+                ellipsisForegroundRgb,
+                ellipsisBackgroundRgb);
             return segments;
         }
 
@@ -218,6 +301,17 @@ namespace ConsoulLibrary
         private static void AddPlainSegment(IList<FixedMessageSegment> segments, string text, ColorScheme scheme)
         {
             AddSegment(segments, text, scheme);
+        }
+
+        private static void AddPlainSegment(
+            IList<FixedMessageSegment> segments,
+            string text,
+            ColorScheme scheme,
+            Decoration decoration,
+            RgbColor? foregroundRgb,
+            RgbColor? backgroundRgb)
+        {
+            AddSegment(segments, text, scheme, decoration, null, foregroundRgb, backgroundRgb);
         }
 
         private static void AddSegment(IList<FixedMessageSegment> segments, string text, ColorScheme scheme)

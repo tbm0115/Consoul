@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using ConsoulLibrary.Color;
 using RgbColor = ConsoulLibrary.Color.RgbColor;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -14,8 +16,7 @@ namespace ConsoulLibrary
         private readonly StatusOptions _options;
         private readonly ConsoleColor _defaultActiveColor;
         private int _frameIndex;
-        private ConsoleColor? _activeColorOverride;
-        private ConsoleColor? _activeBackgroundColorOverride;
+        private StyledText? _activeStyleOverride;
         private Spinner _spinner;
         private Style _spinnerStyle;
         private bool _disposed;
@@ -29,6 +30,7 @@ namespace ConsoulLibrary
         {
             _options = options != null ? options.Clone() : new StatusOptions();
             _defaultActiveColor = _options.ActiveColor;
+            _spinnerStyle = _options.ActiveStyle;
             _spinner = _options.Spinner ?? (_options.HasSpinnerFrames ? new Spinner(_options.SpinnerFrames) : null);
             _message = new FixedMessage
             {
@@ -66,8 +68,9 @@ namespace ConsoulLibrary
         {
             ThrowIfDisposed();
             Message = message ?? string.Empty;
-            _activeColorOverride = color;
-            _activeBackgroundColorOverride = null;
+            _activeStyleOverride = color.HasValue
+                ? (StyledText?)CreateStyle(color.Value)
+                : null;
             if (_options.AutoRefresh)
             {
                 RenderActive();
@@ -78,20 +81,20 @@ namespace ConsoulLibrary
         /// Updates the active status message using a Spectre-style color facade.
         /// </summary>
         /// <param name="message">The status message to render.</param>
-        /// <param name="color">Color facade mapped to the nearest console color for the message.</param>
+        /// <param name="color">Color facade used for the message.</param>
         public void Update(string message, SpectreColor color)
         {
-            Update(message, (ConsoleColor?)color.ToConsoleColor());
+            UpdateStyled(message, new Style(color));
         }
 
         /// <summary>
         /// Updates the active status message using an RGB color mapped to Consoul's console palette.
         /// </summary>
         /// <param name="message">The status message to render.</param>
-        /// <param name="color">RGB color mapped to the nearest console color for the message.</param>
+        /// <param name="color">RGB color used for the message.</param>
         public void Update(string message, RgbColor color)
         {
-            Update(message, (ConsoleColor?)color.ToConsoleColor());
+            UpdateStyled(message, new Style(color));
         }
 
         /// <summary>
@@ -103,8 +106,9 @@ namespace ConsoulLibrary
         {
             ThrowIfDisposed();
             Message = message ?? string.Empty;
-            _activeColorOverride = style?.Foreground;
-            _activeBackgroundColorOverride = style?.Background;
+            _activeStyleOverride = style == null
+                ? (StyledText?)null
+                : ResolveStyle(style, _options.ActiveColor);
             if (_options.AutoRefresh)
             {
                 RenderActive();
@@ -242,6 +246,24 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the spinner frames used for active status messages.
+        /// </summary>
+        /// <param name="frames">The frames rendered by successive refreshes.</param>
+        /// <returns>The current status scope.</returns>
+        public StatusScope Frames(IEnumerable<string> frames)
+        {
+            ThrowIfDisposed();
+            _spinner = null;
+            _options.SpinnerFrames = frames == null ? null : frames.ToArray();
+            if (_options.AutoRefresh)
+            {
+                RenderActive();
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Sets the foreground color used for active status and spinner text.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -366,11 +388,17 @@ namespace ConsoulLibrary
 
         private void RenderActive()
         {
-            ColorScheme scheme = CreateScheme(_activeColorOverride ?? _options.ActiveColor, _activeBackgroundColorOverride);
+            StyledText style = ResolveActiveStyle();
             _message.RenderSegments(
-                MarkupRenderText.ParseSegmentsWithPrefix(GetActivePrefix(), Message, scheme),
-                scheme.Color,
-                scheme.BackgroundColor);
+                MarkupRenderText.ParseSegmentsWithPrefix(
+                    GetActivePrefix(),
+                    Message,
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb),
+                style.Scheme.Color,
+                style.Scheme.BackgroundColor);
         }
 
         private void Complete(string prefix, string message, ConsoleColor color)
@@ -414,6 +442,37 @@ namespace ConsoulLibrary
             };
         }
 
+        private StyledText ResolveActiveStyle()
+        {
+            if (_activeStyleOverride.HasValue)
+            {
+                return _activeStyleOverride.Value;
+            }
+
+            if (_spinnerStyle != null)
+            {
+                return ResolveStyle(_spinnerStyle, _options.ActiveColor);
+            }
+
+            return CreateStyle(_options.ActiveColor);
+        }
+
+        private static StyledText ResolveStyle(Style style, ConsoleColor fallbackColor)
+        {
+            return style == null
+                ? CreateStyle(fallbackColor)
+                : new StyledText(
+                    style.ToColorScheme(CreateScheme(fallbackColor)),
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb);
+        }
+
+        private static StyledText CreateStyle(ConsoleColor color)
+        {
+            return new StyledText(CreateScheme(color), Decoration.None, null, null);
+        }
+
         internal Spinner CurrentSpinner => _spinner;
 
         internal Style CurrentSpinnerStyle => _spinnerStyle;
@@ -452,6 +511,7 @@ namespace ConsoulLibrary
         {
             ThrowIfDisposed();
             _spinnerStyle = style;
+            _options.ActiveStyle = style;
             _options.ActiveColor = style?.ToForegroundColor(_defaultActiveColor) ?? _defaultActiveColor;
             if (_options.AutoRefresh)
             {
@@ -459,6 +519,25 @@ namespace ConsoulLibrary
             }
 
             return this;
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

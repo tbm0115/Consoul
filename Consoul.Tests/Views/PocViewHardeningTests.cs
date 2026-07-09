@@ -4807,6 +4807,364 @@ namespace ConsoulLibrary.Tests.Views
         }
 
         /// <summary>
+        /// Dynamic MVC-style section titles preserve style decorations and RGB metadata on ANSI true-color terminals.
+        /// </summary>
+        [Fact]
+        public void DynamicView_SectionTitleStyles_PreserveTrueColorMvcViewSurface()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer))
+            {
+                InitializeRoutine("back");
+
+                try
+                {
+                    var model = new StyleDrivenModel
+                    {
+                        Accent = RgbColor.FromHex("#445566")
+                    };
+
+                    DynamicView<StyleDrivenModel> view = Consoul.View("Release", model)
+                        .Section(
+                            "Styled Summary",
+                            release => Consoul.Write("Summary body", ConsoleColor.White),
+                            "bold #112233")
+                        .Section(
+                            release => "Model Style",
+                            release => new Text("Renderable body"),
+                            release => new Style(release.Accent, Decoration.Italic))
+                        .Section(
+                            release => "Rgb Title",
+                            release => Consoul.Write("RGB body", ConsoleColor.White),
+                            release => RgbColor.FromHex("#778899"))
+                        .SectionWhen(
+                            release => "Visible Rgb",
+                            release => Consoul.Write("Visible body", ConsoleColor.White),
+                            release => true,
+                            release => RgbColor.FromHex("#abcdef"));
+
+                    view.Render();
+
+                    string output = writer.ToString();
+                    Assert.True(view.GoBackRequested);
+                    Assert.Contains("\u001b[1;38;2;17;34;51mStyled Summary", output);
+                    Assert.Contains("\u001b[3;38;2;68;85;102mModel Style", output);
+                    Assert.Contains("\u001b[38;2;119;136;153mRgb Title", output);
+                    Assert.Contains("\u001b[38;2;171;205;239mVisible Rgb", output);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Specialized MVC-style section helpers preserve true-color and decoration metadata for their rule titles.
+        /// </summary>
+        [Fact]
+        public void DynamicView_SpecializedSectionTitleStyles_PreserveTrueColorMvcViewSurface()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer))
+            {
+                InitializeRoutine("back");
+
+                try
+                {
+                    var model = new SpecializedVisualModel();
+                    model.Services.Add(new ServiceSummary("Api", "Ready", 3));
+                    model.Metrics.Add(new MetricItem("Queued", 2, "jobs", "waiting", MetricKind.Info));
+
+                    DynamicView<SpecializedVisualModel> view = Consoul.View("Dashboard", model)
+                        .TableSectionStyled(
+                            "Styled Table",
+                            dashboard => dashboard.Services,
+                            titleStyle: "bold #112233")
+                        .MetricsSection(
+                            "Style Metrics",
+                            dashboard => dashboard.Metrics,
+                            options: null,
+                            titleStyle: new Style(RgbColor.FromHex("#445566"), Decoration.Italic))
+                        .MetricsSectionWhenStyled(
+                            "Visible Metrics",
+                            dashboard => dashboard.Metrics,
+                            dashboard => true,
+                            titleStyle: "underline #778899")
+                        .ValidationSummarySectionStyled(
+                            title: "Styled Validation",
+                            titleStyle: "bold #abcdef")
+                        .ValidationSummarySectionWhen(
+                            dashboard => true,
+                            title: "Rgb Validation",
+                            titleColor: RgbColor.FromHex("#fedcba"));
+
+                    view.Render();
+
+                    string output = writer.ToString();
+                    Assert.True(view.GoBackRequested);
+                    Assert.Contains("\u001b[1;38;2;17;34;51mStyled Table", output);
+                    Assert.Contains("\u001b[3;38;2;68;85;102mStyle Metrics", output);
+                    Assert.Contains("\u001b[4;38;2;119;136;153mVisible Metrics", output);
+                    Assert.Contains("\u001b[1;38;2;171;205;239mStyled Validation", output);
+                    Assert.Contains("\u001b[38;2;254;220;186mRgb Validation", output);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
+        /// MVC-style composition section helpers preserve true-color and decoration metadata for their rule titles.
+        /// </summary>
+        [Fact]
+        public void DynamicView_CompositionSectionTitleStyles_PreserveTrueColorMvcViewSurface()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer, width: 110))
+            {
+                InitializeRoutine("back");
+
+                try
+                {
+                    var model = new SpecializedVisualModel
+                    {
+                        Summary = "Deployment summary is ready.",
+                        Details = "Build is waiting for owner approval.",
+                        StatusMessage = "All release checks are green.",
+                        StatusKind = CalloutKind.Success
+                    };
+                    model.Rows.Add(new CompositionItem("Build", "Ready", ConsoleColor.Green, "green"));
+                    model.Columns.Add(new CompositionItem("Owner", "Platform", ConsoleColor.Cyan, "aqua"));
+                    model.Cells.Add(new CompositionItem("Service", "API", ConsoleColor.Yellow, "yellow"));
+
+                    DynamicView<SpecializedVisualModel> view = Consoul.View("Composition", model)
+                        .PropertyListSectionStyled(
+                            "Property Summary",
+                            dashboard => dashboard.Settings,
+                            titleStyle: "bold #102030")
+                        .TextBlockSectionStyled(
+                            "Text Summary",
+                            dashboard => dashboard.Summary,
+                            titleStyle: "italic #203040")
+                        .PanelSection(
+                            "Panel Detail",
+                            dashboard => dashboard.Details,
+                            options: null,
+                            titleStyle: new Style(RgbColor.FromHex("#304050"), Decoration.Underline))
+                        .CalloutSectionStyled(
+                            "Callout Status",
+                            dashboard => dashboard.StatusMessage,
+                            dashboard => dashboard.StatusKind,
+                            titleStyle: "bold #405060")
+                        .RowsSectionStyled(
+                            "Rows Title",
+                            dashboard => dashboard.Rows.Select(item => (object)(item.Label + ": " + item.Value)),
+                            titleStyle: "italic #506070")
+                        .ColumnsSection(
+                            "Columns Title",
+                            dashboard => dashboard.Columns.Select(item => (object)item.Value),
+                            options: null,
+                            titleStyle: new Style(RgbColor.FromHex("#607080"), Decoration.Bold))
+                        .GridSectionStyled(
+                            "Grid Title",
+                            dashboard => dashboard.Cells.Select(item => (object)item.Value),
+                            titleStyle: "underline #708090")
+                        .LayoutSectionWhenStyled(
+                            "Layout Title",
+                            (dashboard, layout) => layout.Width(60).ColumnCount(1).AddPane("Pane content", "Pane"),
+                            dashboard => true,
+                            titleStyle: "bold #8090a0");
+
+                    view.Render();
+
+                    string output = writer.ToString();
+                    Assert.True(view.GoBackRequested);
+                    Assert.Contains("\u001b[1;38;2;16;32;48mProperty Summary", output);
+                    Assert.Contains("\u001b[3;38;2;32;48;64mText Summary", output);
+                    Assert.Contains("\u001b[4;38;2;48;64;80mPanel Detail", output);
+                    Assert.Contains("\u001b[1;38;2;64;80;96mCallout Status", output);
+                    Assert.Contains("\u001b[3;38;2;80;96;112mRows Title", output);
+                    Assert.Contains("\u001b[1;38;2;96;112;128mColumns Title", output);
+                    Assert.Contains("\u001b[4;38;2;112;128;144mGrid Title", output);
+                    Assert.Contains("\u001b[1;38;2;128;144;160mLayout Title", output);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
+        /// MVC-style chart, navigation, status, and timeline helpers preserve true-color title styles.
+        /// </summary>
+        [Fact]
+        public void DynamicView_RemainingVisualSectionTitleStyles_PreserveTrueColorMvcViewSurface()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer, width: 132))
+            {
+                InitializeRoutine("back");
+
+                try
+                {
+                    var model = new RemainingVisualSectionsModel
+                    {
+                        LastError = new InvalidOperationException("Deployment failed."),
+                        ErrorContext = "Release gate diagnostics",
+                        Month = new DateTime(2026, 7, 1),
+                        DependencyRoot = new DependencyNode("Release", "Ready", ConsoleColor.Green, "green")
+                    };
+                    model.ChartItems.Add(new DashboardChartItem("Passing", 8, ConsoleColor.Green, "green"));
+                    model.ChartItems.Add(new DashboardChartItem("Failing", 1, ConsoleColor.Red, "red"));
+                    model.Breadcrumbs.Add(new BreadcrumbSegment("Home", ConsoleColor.Cyan, "aqua"));
+                    model.Breadcrumbs.Add(new BreadcrumbSegment("Deploy", ConsoleColor.Yellow, "yellow"));
+                    model.Shortcuts.Add(ShortcutItem.Create("enter", "Run", keyColor: ConsoleColor.Cyan, descriptionColor: ConsoleColor.White));
+                    model.Actions.Add(new ShortcutAction("esc", "Cancel", false, "gray", "white"));
+                    model.Events.Add(new DashboardScheduleEvent("Freeze", new DateTime(2026, 7, 10), ConsoleColor.Magenta, "magenta"));
+                    var parentNote = new DiagnosticNote("Check API", ConsoleColor.White, ConsoleColor.Cyan, "white", "aqua");
+                    parentNote.Children.Add(new DiagnosticNote("Confirm worker", ConsoleColor.Gray, ConsoleColor.Yellow, "gray", "yellow"));
+                    model.Notes.Add(parentNote);
+                    model.Checks.Add(new ReadinessCheck("Smoke tests", ChecklistItemState.Complete, "Passed", "green", "green", "gray"));
+                    model.Samples.Add(new DashboardTrendSample("Queue", 1.5));
+                    model.Samples.Add(new DashboardTrendSample("Build", 2.75));
+                    model.DependencyRoot.Children.Add(new DependencyNode("API", "Healthy", ConsoleColor.Cyan, "aqua"));
+                    model.Steps.Add(new DashboardTimelineStep(
+                        "Package",
+                        TimelineItemState.Complete,
+                        "Package created",
+                        new DateTimeOffset(2026, 7, 1, 8, 0, 0, TimeSpan.Zero),
+                        "green",
+                        "green",
+                        "gray"));
+
+                    DynamicView<RemainingVisualSectionsModel> view = Consoul.View("Visuals", model)
+                        .BarChartSectionStyled(
+                            "Bar Chart Title",
+                            dashboard => dashboard.ChartItems,
+                            item => item.Label,
+                            item => item.Value,
+                            item => item.StyleText,
+                            titleStyle: "bold #010203")
+                        .BreakdownChartSectionWhenStyled(
+                            "Breakdown Title",
+                            dashboard => dashboard.ChartItems,
+                            dashboard => true,
+                            item => item.Label,
+                            item => item.Value,
+                            item => item.StyleText,
+                            titleStyle: "italic #040506")
+                        .ExceptionSection(
+                            "Exception Title",
+                            dashboard => dashboard.LastError,
+                            dashboard => dashboard.ErrorContext,
+                            options: null,
+                            titleStyle: new Style(RgbColor.FromHex("#070809"), Decoration.Underline))
+                        .BreadcrumbSectionWhenStyled(
+                            "Breadcrumb Title",
+                            dashboard => dashboard.Breadcrumbs,
+                            dashboard => true,
+                            segment => segment.Label,
+                            segment => segment.StyleText,
+                            titleStyle: "bold #0a0b0c")
+                        .ShortcutBarSectionWhenStyled(
+                            "Shortcut Title",
+                            dashboard => dashboard.Actions,
+                            dashboard => true,
+                            action => action.Key,
+                            action => action.Label,
+                            action => action.Disabled,
+                            action => action.KeyStyle,
+                            action => action.LabelStyle,
+                            titleStyle: "italic #0d0e0f")
+                        .ShortcutBarSection(
+                            "Shortcut Items Title",
+                            dashboard => dashboard.Shortcuts,
+                            options: null,
+                            titleStyle: new Style(RgbColor.FromHex("#101112"), Decoration.Bold))
+                        .CalendarSectionWhenStyled(
+                            "Calendar Title",
+                            dashboard => dashboard.Month,
+                            dashboard => true,
+                            dashboard => dashboard.Events,
+                            calendarEvent => calendarEvent.Date,
+                            calendarEvent => calendarEvent.Label,
+                            calendarEvent => calendarEvent.StyleText,
+                            titleStyle: "underline #131415")
+                        .BulletListSectionStyled(
+                            "Bullet Title",
+                            dashboard => dashboard.Notes,
+                            note => note.Text,
+                            note => note.Children,
+                            note => note.TextStyle,
+                            note => note.MarkerStyle,
+                            titleStyle: "bold #161718")
+                        .ChecklistSectionWhenStyled(
+                            "Checklist Title",
+                            dashboard => dashboard.Checks,
+                            dashboard => true,
+                            check => check.Label,
+                            check => check.State,
+                            check => check.Description,
+                            check => check.LabelStyle,
+                            check => check.MarkerStyle,
+                            check => check.DescriptionStyle,
+                            titleStyle: "italic #191a1b")
+                        .SparklineSectionWhenStyled(
+                            "Sparkline Title",
+                            dashboard => dashboard.Samples,
+                            dashboard => true,
+                            sample => sample.Minutes,
+                            titleStyle: "underline #1c1d1e")
+                        .TreeSectionWhenStyled(
+                            "Tree Title",
+                            dashboard => dashboard.DependencyRoot,
+                            dashboard => true,
+                            dependency => dependency.Name + " " + dependency.State,
+                            dependency => dependency.Children,
+                            dependency => dependency.StyleText,
+                            titleStyle: "bold #1f2021")
+                        .TimelineSectionWhenStyled(
+                            "Timeline Title",
+                            dashboard => dashboard.Steps,
+                            dashboard => true,
+                            step => step.Title,
+                            step => step.State,
+                            step => step.Description,
+                            step => step.Timestamp,
+                            step => step.TitleStyle,
+                            step => step.MarkerStyle,
+                            step => step.DescriptionStyle,
+                            titleStyle: "italic #222324");
+
+                    view.Render();
+
+                    string output = writer.ToString();
+                    Assert.True(view.GoBackRequested);
+                    Assert.Contains("\u001b[1;38;2;1;2;3mBar Chart Title", output);
+                    Assert.Contains("\u001b[3;38;2;4;5;6mBreakdown Title", output);
+                    Assert.Contains("\u001b[4;38;2;7;8;9mException Title", output);
+                    Assert.Contains("\u001b[1;38;2;10;11;12mBreadcrumb Title", output);
+                    Assert.Contains("\u001b[3;38;2;13;14;15mShortcut Title", output);
+                    Assert.Contains("\u001b[1;38;2;16;17;18mShortcut Items Title", output);
+                    Assert.Contains("\u001b[4;38;2;19;20;21mCalendar Title", output);
+                    Assert.Contains("\u001b[1;38;2;22;23;24mBullet Title", output);
+                    Assert.Contains("\u001b[3;38;2;25;26;27mChecklist Title", output);
+                    Assert.Contains("\u001b[4;38;2;28;29;30mSparkline Title", output);
+                    Assert.Contains("\u001b[1;38;2;31;32;33mTree Title", output);
+                    Assert.Contains("\u001b[3;38;2;34;35;36mTimeline Title", output);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
         /// Dynamic MVC-style views accept reusable style objects for sections, separators, options, help, and command palette entries.
         /// </summary>
         [Fact]
@@ -5166,6 +5524,40 @@ namespace ConsoulLibrary.Tests.Views
         }
 
         /// <summary>
+        /// Static MVC-style helper overloads preserve RGB and decoration metadata on ANSI true-color terminals.
+        /// </summary>
+        [Fact]
+        public void StaticView_HelperOverloads_PreserveTrueColorMvcViewSurface()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer))
+            {
+                InitializeRoutine("back");
+                TrueColorHelperStaticView.PreviewCount = 0;
+
+                try
+                {
+                    var view = new TrueColorHelperStaticView();
+
+                    view.Render();
+
+                    string output = writer.ToString();
+                    Assert.True(view.GoBackRequested);
+                    Assert.Equal(0, TrueColorHelperStaticView.PreviewCount);
+                    Assert.Contains("\u001b[38;2;18;52;86m1) RGB sync", output);
+                    Assert.Contains("\u001b[1;38;2;34;197;94m2) Styled confirm", output);
+                    Assert.Contains("\u001b[38;2;119;136;153m3) Edit rgb", output);
+                    Assert.Contains("\u001b[38;2;171;205;239m4) Nav rgb", output);
+                    Assert.Contains("\u001b[3;38;2;254;220;186m5) Factory styled", output);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
         /// Static MVC-style views accept reusable style objects for manually added options, separators, help, and command palette entries.
         /// </summary>
         [Fact]
@@ -5448,6 +5840,69 @@ namespace ConsoulLibrary.Tests.Views
                     VisualAssert.WroteText(scope.Driver, "Help");
                     VisualAssert.WroteText(scope.Driver, "[back]");
                     VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Dynamic view shortcut chrome preserves option RGB and decoration metadata on ANSI true-color terminals.
+        /// </summary>
+        [Fact]
+        public void DynamicView_ShowShortcuts_PreservesOptionTrueColorInShortcutChrome()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer))
+            {
+                InitializeRoutine("2");
+
+                try
+                {
+                    DynamicView<object> view = Consoul.View("Release")
+                        .ShowShortcuts()
+                        .Option("Deploy", () => { }, "bold #112233")
+                        .ShortcutLastOption("d");
+
+                    view.Render();
+
+                    string output = writer.ToString();
+                    Assert.True(view.GoBackRequested);
+                    Assert.Contains("[d]", output);
+                    Assert.Contains("\u001b[1;38;2;17;34;51mDeploy", output);
+                    Assert.Contains("\u001b[1;38;2;17;34;51m1) Deploy", output);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Static view shortcut chrome preserves option RGB and decoration metadata on ANSI true-color terminals.
+        /// </summary>
+        [Fact]
+        public void StaticView_ShowShortcuts_PreservesOptionTrueColorInShortcutChrome()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            using (UseTrueColorConsole(writer))
+            {
+                InitializeRoutine("2");
+
+                try
+                {
+                    var view = new TrueColorShortcutStaticView();
+
+                    view.Render();
+
+                    string output = writer.ToString();
+                    Assert.True(view.GoBackRequested);
+                    Assert.Contains("[p]", output);
+                    Assert.Contains("\u001b[3;38;2;68;85;102mPreview", output);
+                    Assert.Contains("\u001b[3;38;2;68;85;102m1) Preview", output);
                 }
                 finally
                 {
@@ -6669,6 +7124,63 @@ namespace ConsoulLibrary.Tests.Views
             public RgbColor Accent { get; set; }
         }
 
+        private sealed class RemainingVisualSectionsModel
+        {
+            public List<DashboardChartItem> ChartItems { get; } = new List<DashboardChartItem>();
+
+            public Exception LastError { get; set; } = null!;
+
+            public string ErrorContext { get; set; } = string.Empty;
+
+            public List<BreadcrumbSegment> Breadcrumbs { get; } = new List<BreadcrumbSegment>();
+
+            public List<ShortcutItem> Shortcuts { get; } = new List<ShortcutItem>();
+
+            public List<ShortcutAction> Actions { get; } = new List<ShortcutAction>();
+
+            public DateTime Month { get; set; }
+
+            public List<DashboardScheduleEvent> Events { get; } = new List<DashboardScheduleEvent>();
+
+            public List<DiagnosticNote> Notes { get; } = new List<DiagnosticNote>();
+
+            public List<ReadinessCheck> Checks { get; } = new List<ReadinessCheck>();
+
+            public List<DashboardTrendSample> Samples { get; } = new List<DashboardTrendSample>();
+
+            public DependencyNode DependencyRoot { get; set; } = null!;
+
+            public List<DashboardTimelineStep> Steps { get; } = new List<DashboardTimelineStep>();
+        }
+
+        private sealed class SpecializedVisualModel
+        {
+            public SummarySettings Settings { get; } = new SummarySettings
+            {
+                Service = "Api",
+                Environment = "Production",
+                Port = 443
+            };
+
+            public List<ServiceSummary> Services { get; } = new List<ServiceSummary>();
+
+            public List<MetricItem> Metrics { get; } = new List<MetricItem>();
+
+            public List<CompositionItem> Rows { get; } = new List<CompositionItem>();
+
+            public List<CompositionItem> Columns { get; } = new List<CompositionItem>();
+
+            public List<CompositionItem> Cells { get; } = new List<CompositionItem>();
+
+            public string Summary { get; set; } = string.Empty;
+
+            public string Details { get; set; } = string.Empty;
+
+            public string StatusMessage { get; set; } = string.Empty;
+
+            public CalloutKind StatusKind { get; set; }
+        }
+
         private sealed class ApprovalPaletteModel
         {
             public string Name { get; set; } = "Production";
@@ -6809,6 +7321,36 @@ namespace ConsoulLibrary.Tests.Views
                 Options.Add(new ViewOption("Preview", () => PreviewCount++, "bold #112233", "Ship release"));
                 AddHelpOptionStyled(style: "bold #22c55e");
                 AddCommandPaletteOptionStyled(style: "italic #abcdef");
+            }
+        }
+
+        private sealed class TrueColorHelperStaticView : StaticView
+        {
+            public static int PreviewCount { get; set; }
+
+            public TrueColorHelperStaticView()
+            {
+                Title = "True color helper static";
+                AddOption("RGB sync", () => PreviewCount++, RgbColor.FromHex("#123456"));
+                AddConfirmOption("Styled confirm", "Run styled confirm?", () => PreviewCount++, "bold #22c55e");
+                AddEditFormOption("Edit rgb", new EditableSettings(), RgbColor.FromHex("#778899"), enableDocumentEditor: false);
+                AddNavigationOption<DestinationView>("Nav rgb", RgbColor.FromHex("#abcdef"), replace: false);
+                AddNavigationOption<DestinationView>(
+                    "Factory styled",
+                    () => new DestinationView { Title = "Styled factory detail" },
+                    "italic #fedcba",
+                    replace: true);
+            }
+        }
+
+        private sealed class TrueColorShortcutStaticView : StaticView
+        {
+            public TrueColorShortcutStaticView()
+            {
+                Title = "True color shortcut static";
+                ShowShortcuts();
+                AddOption("Preview", () => { }, "italic #445566")
+                    .UseShortcut("p");
             }
         }
 

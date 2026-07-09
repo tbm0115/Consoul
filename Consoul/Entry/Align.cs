@@ -291,6 +291,9 @@ namespace ConsoulLibrary
                 Color = color,
                 BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
             };
+            Options.Decoration = Decoration.None;
+            Options.ForegroundRgb = null;
+            Options.BackgroundRgb = null;
             return this;
         }
 
@@ -301,17 +304,17 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Align"/> instance.</returns>
         public Align Color(SpectreColor color)
         {
-            return Color(color.ToConsoleColor());
+            return Color(new Style(color));
         }
 
         /// <summary>
-        /// Sets the foreground color used for aligned content from an RGB value mapped to Consoul's console palette.
+        /// Sets the foreground color used for aligned content from an RGB value.
         /// </summary>
         /// <param name="color">The foreground color.</param>
         /// <returns>The current <see cref="Align"/> instance.</returns>
         public Align Color(RgbColor color)
         {
-            return Color(color.ToConsoleColor());
+            return Color(new Style(color));
         }
 
         /// <summary>
@@ -321,7 +324,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Align"/> instance.</returns>
         public Align Color(Style style)
         {
-            Options.Scheme = (style ?? Style.Plain).ToColorScheme(Options.ResolveScheme());
+            ApplyStyle(style);
             return this;
         }
 
@@ -332,7 +335,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Align"/> instance.</returns>
         public Align Color(string style)
         {
-            Options.Scheme = Style.ParseScheme(style, Options.ResolveScheme());
+            ApplyStyle(Style.Parse(style));
             return this;
         }
 
@@ -356,6 +359,15 @@ namespace ConsoulLibrary
                 default:
                     return TextBlockAlignment.Left;
             }
+        }
+
+        private void ApplyStyle(Style style)
+        {
+            Style resolvedStyle = style ?? Style.Plain;
+            Options.Scheme = resolvedStyle.ToColorScheme(Options.ResolveScheme());
+            Options.Decoration = resolvedStyle.Decoration;
+            Options.ForegroundRgb = resolvedStyle.ForegroundRgb;
+            Options.BackgroundRgb = resolvedStyle.BackgroundRgb;
         }
     }
 }

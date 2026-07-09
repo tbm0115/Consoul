@@ -263,6 +263,66 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Tree builders can project recursive model collections without hand-written nested node loops.
+        /// </summary>
+        [Fact]
+        public void Tree_FluentBuilder_AddTreeProjectsNestedModelCollections()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                var services = new[]
+                {
+                    new TreeBranch(
+                        "API",
+                        ConsoleColor.Cyan,
+                        "aqua",
+                        new[]
+                        {
+                            new TreeBranch("Build", ConsoleColor.Green, "green"),
+                            new TreeBranch("Smoke tests", ConsoleColor.Yellow, "yellow")
+                        }),
+                    new TreeBranch(
+                        "Worker",
+                        ConsoleColor.Magenta,
+                        "white on navy",
+                        new[]
+                        {
+                            new TreeBranch("Queue", ConsoleColor.Green, "green")
+                        })
+                };
+
+                var tree = new Tree("Deployment")
+                    .AsciiGuide()
+                    .Width(44)
+                    .BranchColor("grey")
+                    .TextColor(ConsoleColor.White)
+                    .AddTree(
+                        services,
+                        service => service.Name,
+                        service => service.Children,
+                        service => service.StyleText);
+
+                AnsiConsole.Write(tree);
+
+                Assert.Equal(2, tree.Root.Children.Count);
+                Assert.Equal(2, tree.Root.Children[0].Children.Count);
+                Assert.Single(tree.Root.Children[1].Children);
+                VisualAssert.ContainsText(scope.Driver, "Deployment");
+                VisualAssert.ContainsText(scope.Driver, "API");
+                VisualAssert.ContainsText(scope.Driver, "Build");
+                VisualAssert.ContainsText(scope.Driver, "Smoke tests");
+                VisualAssert.ContainsText(scope.Driver, "Worker");
+                VisualAssert.ContainsText(scope.Driver, "Queue");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("API") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Worker") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Build") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Smoke tests") && write.Color == ConsoleColor.Yellow);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 44, "Recursive model tree line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Tree aliases accept Spectre-style guide presets and sibling AddNodes helpers.
         /// </summary>
         [Fact]

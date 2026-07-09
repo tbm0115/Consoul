@@ -15,6 +15,9 @@ namespace ConsoulLibrary
         private readonly IConsoulRenderable _renderable;
         private int? _width;
         private ColorScheme? _scheme;
+        private Decoration _decoration;
+        private RgbColor? _foregroundRgb;
+        private RgbColor? _backgroundRgb;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Padder"/> class with text content.
@@ -58,6 +61,9 @@ namespace ConsoulLibrary
             PadOptions options = padding.ToPadOptions();
             options.Width = ResolveWidth(content, padding);
             options.Scheme = _scheme;
+            options.Decoration = _decoration;
+            options.ForegroundRgb = _foregroundRgb;
+            options.BackgroundRgb = _backgroundRgb;
             PadEntry.Render(content, options);
         }
 
@@ -72,9 +78,16 @@ namespace ConsoulLibrary
             return this;
         }
 
-        internal Padder SetColor(ColorScheme scheme)
+        internal Padder SetColor(
+            ColorScheme scheme,
+            Decoration decoration = Decoration.None,
+            RgbColor? foregroundRgb = null,
+            RgbColor? backgroundRgb = null)
         {
             _scheme = scheme;
+            _decoration = decoration;
+            _foregroundRgb = foregroundRgb;
+            _backgroundRgb = backgroundRgb;
             return this;
         }
 
@@ -277,18 +290,18 @@ namespace ConsoulLibrary
         /// <returns>The configured <see cref="Padder"/> instance.</returns>
         public static Padder Color(this Padder padder, SpectreColor color)
         {
-            return Color(padder, color.ToConsoleColor());
+            return Color(padder, new Style(color));
         }
 
         /// <summary>
-        /// Sets the foreground color used for padded content from an RGB value mapped to Consoul's console palette.
+        /// Sets the foreground color used for padded content from an RGB value.
         /// </summary>
         /// <param name="padder">The padder to configure.</param>
         /// <param name="color">The foreground color.</param>
         /// <returns>The configured <see cref="Padder"/> instance.</returns>
         public static Padder Color(this Padder padder, RgbColor color)
         {
-            return Color(padder, color.ToConsoleColor());
+            return Color(padder, new Style(color));
         }
 
         /// <summary>
@@ -304,7 +317,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(padder));
             }
 
-            return padder.SetColor((style ?? Style.Plain).ToColorScheme(RenderOptions.DefaultScheme));
+            return SetStyle(padder, style);
         }
 
         /// <summary>
@@ -320,7 +333,22 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(padder));
             }
 
-            return padder.SetColor(Style.ParseScheme(style, RenderOptions.DefaultScheme));
+            return SetStyle(padder, Style.Parse(style));
+        }
+
+        private static Padder SetStyle(Padder padder, Style style)
+        {
+            if (padder == null)
+            {
+                throw new ArgumentNullException(nameof(padder));
+            }
+
+            Style resolvedStyle = style ?? Style.Plain;
+            return padder.SetColor(
+                resolvedStyle.ToColorScheme(RenderOptions.DefaultScheme),
+                resolvedStyle.Decoration,
+                resolvedStyle.ForegroundRgb,
+                resolvedStyle.BackgroundRgb);
         }
 
         private static Padder MutatePadding(Padder padder, Action<Padding> mutate)

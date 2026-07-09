@@ -189,7 +189,7 @@ namespace ConsoulLibrary
             };
         }
 
-        private static void WriteText(string text, StyledText style, bool writeLine)
+        internal static void WriteText(string text, StyledText style, bool writeLine)
         {
             TerminalLinkWriter.WriteText(
                 text,

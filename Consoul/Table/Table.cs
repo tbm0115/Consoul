@@ -640,7 +640,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table BorderColor(ConsoleColor color)
         {
-            TableRenderOptions.Lines.Color = Scheme(color);
+            ApplyLineStyle(new Style(color));
             return this;
         }
 
@@ -651,7 +651,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table BorderColor(SpectreColor color)
         {
-            TableRenderOptions.Lines.Color = Scheme(color);
+            ApplyLineStyle(new Style(color));
             return this;
         }
 
@@ -662,7 +662,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table BorderColor(RgbColor color)
         {
-            TableRenderOptions.Lines.Color = Scheme(color);
+            ApplyLineStyle(new Style(color));
             return this;
         }
 
@@ -673,7 +673,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table BorderColor(string style)
         {
-            TableRenderOptions.Lines.Color = Style.ParseScheme(style, TableRenderOptions.Lines.Color);
+            ApplyLineStyle(Style.Parse(style));
             return this;
         }
 
@@ -684,7 +684,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table BorderColor(Style style)
         {
-            TableRenderOptions.Lines.Color = Scheme(style, TableRenderOptions.Lines.Color);
+            ApplyLineStyle(style);
             return this;
         }
 
@@ -695,7 +695,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table HeaderColor(ConsoleColor color)
         {
-            TableRenderOptions.HeaderScheme = Scheme(color);
+            ApplyHeaderStyle(new Style(color));
             return this;
         }
 
@@ -706,7 +706,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table HeaderColor(SpectreColor color)
         {
-            TableRenderOptions.HeaderScheme = Scheme(color);
+            ApplyHeaderStyle(new Style(color));
             return this;
         }
 
@@ -717,7 +717,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table HeaderColor(RgbColor color)
         {
-            TableRenderOptions.HeaderScheme = Scheme(color);
+            ApplyHeaderStyle(new Style(color));
             return this;
         }
 
@@ -728,7 +728,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table HeaderColor(string style)
         {
-            TableRenderOptions.HeaderScheme = Style.ParseScheme(style, TableRenderOptions.HeaderScheme);
+            ApplyHeaderStyle(Style.Parse(style));
             return this;
         }
 
@@ -739,7 +739,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table HeaderColor(Style style)
         {
-            TableRenderOptions.HeaderScheme = Scheme(style, TableRenderOptions.HeaderScheme);
+            ApplyHeaderStyle(style);
             return this;
         }
 
@@ -750,8 +750,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table ContentColor(ConsoleColor color)
         {
-            TableRenderOptions.ContentScheme1 = Scheme(color);
-            TableRenderOptions.ContentScheme2 = Scheme(color);
+            ApplyContentStyles(new Style(color));
             return this;
         }
 
@@ -762,9 +761,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table ContentColor(SpectreColor color)
         {
-            ColorScheme scheme = Scheme(color);
-            TableRenderOptions.ContentScheme1 = scheme;
-            TableRenderOptions.ContentScheme2 = scheme;
+            ApplyContentStyles(new Style(color));
             return this;
         }
 
@@ -775,9 +772,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table ContentColor(RgbColor color)
         {
-            ColorScheme scheme = Scheme(color);
-            TableRenderOptions.ContentScheme1 = scheme;
-            TableRenderOptions.ContentScheme2 = scheme;
+            ApplyContentStyles(new Style(color));
             return this;
         }
 
@@ -788,9 +783,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table ContentColor(string style)
         {
-            ColorScheme scheme = Style.ParseScheme(style, TableRenderOptions.ContentScheme1);
-            TableRenderOptions.ContentScheme1 = scheme;
-            TableRenderOptions.ContentScheme2 = scheme;
+            ApplyContentStyles(Style.Parse(style));
             return this;
         }
 
@@ -801,9 +794,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table ContentColor(Style style)
         {
-            ColorScheme scheme = Scheme(style, TableRenderOptions.ContentScheme1);
-            TableRenderOptions.ContentScheme1 = scheme;
-            TableRenderOptions.ContentScheme2 = scheme;
+            ApplyContentStyles(style);
             return this;
         }
 
@@ -814,7 +805,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table AlternatingRowColor(ConsoleColor color)
         {
-            TableRenderOptions.ContentScheme2 = Scheme(color);
+            ApplyContentStyle2(new Style(color));
             return this;
         }
 
@@ -825,7 +816,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table AlternatingRowColor(SpectreColor color)
         {
-            TableRenderOptions.ContentScheme2 = Scheme(color);
+            ApplyContentStyle2(new Style(color));
             return this;
         }
 
@@ -836,7 +827,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table AlternatingRowColor(RgbColor color)
         {
-            TableRenderOptions.ContentScheme2 = Scheme(color);
+            ApplyContentStyle2(new Style(color));
             return this;
         }
 
@@ -847,7 +838,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table AlternatingRowColor(string style)
         {
-            TableRenderOptions.ContentScheme2 = Style.ParseScheme(style, TableRenderOptions.ContentScheme2);
+            ApplyContentStyle2(Style.Parse(style));
             return this;
         }
 
@@ -858,7 +849,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table AlternatingRowColor(Style style)
         {
-            TableRenderOptions.ContentScheme2 = Scheme(style, TableRenderOptions.ContentScheme2);
+            ApplyContentStyle2(style);
             return this;
         }
 
@@ -1005,7 +996,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table FooterColor(ConsoleColor color)
         {
-            TableRenderOptions.FooterScheme = Scheme(color);
+            ApplyFooterStyle(new Style(color));
             return this;
         }
 
@@ -1016,7 +1007,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table FooterColor(SpectreColor color)
         {
-            TableRenderOptions.FooterScheme = Scheme(color);
+            ApplyFooterStyle(new Style(color));
             return this;
         }
 
@@ -1027,7 +1018,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table FooterColor(RgbColor color)
         {
-            TableRenderOptions.FooterScheme = Scheme(color);
+            ApplyFooterStyle(new Style(color));
             return this;
         }
 
@@ -1038,7 +1029,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table FooterColor(string style)
         {
-            TableRenderOptions.FooterScheme = Style.ParseScheme(style, TableRenderOptions.FooterScheme);
+            ApplyFooterStyle(Style.Parse(style));
             return this;
         }
 
@@ -1049,7 +1040,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table FooterColor(Style style)
         {
-            TableRenderOptions.FooterScheme = Scheme(style, TableRenderOptions.FooterScheme);
+            ApplyFooterStyle(style);
             return this;
         }
 
@@ -1135,6 +1126,60 @@ namespace ConsoulLibrary
             ApplyColumnConfiguration(columnIndex, column);
 
             return this;
+        }
+
+        /// <summary>
+        /// Adds a table column only when the supplied values contain visible cell content.
+        /// </summary>
+        /// <param name="header">The header text.</param>
+        /// <param name="values">Candidate values used to decide whether the column should be shown.</param>
+        /// <param name="alignment">Optional alignment for this column.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalColumn(string header, IEnumerable values, TableCellAlignment alignment = TableCellAlignment.Default)
+        {
+            var column = new TableColumn(header);
+            if (alignment != TableCellAlignment.Default)
+            {
+                column.Alignment = alignment;
+            }
+
+            return AddOptionalColumn(column, values);
+        }
+
+        /// <summary>
+        /// Adds and configures a table column only when the supplied values contain visible cell content.
+        /// </summary>
+        /// <param name="header">The header text.</param>
+        /// <param name="values">Candidate values used to decide whether the column should be shown.</param>
+        /// <param name="configure">Column configuration callback.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalColumn(string header, IEnumerable values, Action<TableColumn> configure)
+        {
+            var column = new TableColumn(header);
+            configure?.Invoke(column);
+            return AddOptionalColumn(column, values);
+        }
+
+        /// <summary>
+        /// Adds a configured table column only when the supplied values contain visible cell content.
+        /// </summary>
+        /// <param name="column">The table column configuration.</param>
+        /// <param name="values">Candidate values used to decide whether the column should be shown.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalColumn(TableColumn column, IEnumerable values)
+        {
+            if (column == null)
+            {
+                throw new ArgumentNullException(nameof(column));
+            }
+
+            if (!HasVisibleValues(values))
+            {
+                return false;
+            }
+
+            AddColumn(column);
+            return true;
         }
 
         /// <summary>
@@ -1226,6 +1271,24 @@ namespace ConsoulLibrary
         public Table AddRow(params object[] cells)
         {
             return AddRow(new List<string>(FormatCells(cells)).ToArray());
+        }
+
+        /// <summary>
+        /// Adds multiple rows to the table from inline string row arrays.
+        /// </summary>
+        /// <param name="firstRow">The first row to add.</param>
+        /// <param name="additionalRows">Additional rows to add.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table AddRows(string[] firstRow, params string[][] additionalRows)
+        {
+            AddRow(firstRow ?? new string[0]);
+
+            foreach (string[] row in additionalRows ?? new string[0][])
+            {
+                AddRow(row);
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -1567,6 +1630,30 @@ namespace ConsoulLibrary
             return NormalizeCellText(Convert.ToString(cell, CultureInfo.CurrentCulture));
         }
 
+        private static bool HasVisibleValues(IEnumerable values)
+        {
+            if (values == null)
+            {
+                return false;
+            }
+
+            var singleValue = values as string;
+            if (singleValue != null)
+            {
+                return !string.IsNullOrWhiteSpace(FormatCellValue(singleValue));
+            }
+
+            foreach (object value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(FormatCellValue(value)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void EnsureKeyValueColumns(string keyHeader, string valueHeader)
         {
             if (HeaderCount <= 0)
@@ -1640,6 +1727,52 @@ namespace ConsoulLibrary
             }
 
             return this;
+        }
+
+        private void ApplyLineStyle(Style style)
+        {
+            TableRenderOptions.Lines.Color = Scheme(style, TableRenderOptions.Lines.Color);
+            TableRenderOptions.Lines.Decoration = style?.Decoration ?? Decoration.None;
+            TableRenderOptions.Lines.ForegroundRgb = style?.ForegroundRgb;
+            TableRenderOptions.Lines.BackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyHeaderStyle(Style style)
+        {
+            TableRenderOptions.HeaderScheme = Scheme(style, TableRenderOptions.HeaderScheme);
+            TableRenderOptions.HeaderDecoration = style?.Decoration ?? Decoration.None;
+            TableRenderOptions.HeaderForegroundRgb = style?.ForegroundRgb;
+            TableRenderOptions.HeaderBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyContentStyles(Style style)
+        {
+            ApplyContentStyle1(style);
+            ApplyContentStyle2(style);
+        }
+
+        private void ApplyContentStyle1(Style style)
+        {
+            TableRenderOptions.ContentScheme1 = Scheme(style, TableRenderOptions.ContentScheme1);
+            TableRenderOptions.ContentDecoration1 = style?.Decoration ?? Decoration.None;
+            TableRenderOptions.ContentForegroundRgb1 = style?.ForegroundRgb;
+            TableRenderOptions.ContentBackgroundRgb1 = style?.BackgroundRgb;
+        }
+
+        private void ApplyContentStyle2(Style style)
+        {
+            TableRenderOptions.ContentScheme2 = Scheme(style, TableRenderOptions.ContentScheme2);
+            TableRenderOptions.ContentDecoration2 = style?.Decoration ?? Decoration.None;
+            TableRenderOptions.ContentForegroundRgb2 = style?.ForegroundRgb;
+            TableRenderOptions.ContentBackgroundRgb2 = style?.BackgroundRgb;
+        }
+
+        private void ApplyFooterStyle(Style style)
+        {
+            TableRenderOptions.FooterScheme = Scheme(style, TableRenderOptions.FooterScheme);
+            TableRenderOptions.FooterDecoration = style?.Decoration ?? Decoration.None;
+            TableRenderOptions.FooterForegroundRgb = style?.ForegroundRgb;
+            TableRenderOptions.FooterBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

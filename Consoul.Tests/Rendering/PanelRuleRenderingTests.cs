@@ -218,6 +218,55 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Plain panel and rule color helpers clear previously configured RGB and decoration metadata.
+        /// </summary>
+        [Fact]
+        public void PanelAndRule_ColorHelpersClearPriorRichStyleMetadata()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new Panel("Body")
+                .Width(28)
+                .Padding(0)
+                .AsciiBorder()
+                .Header("Head")
+                .Footer("Foot")
+                .BorderColor("bold #112233")
+                .BorderColor(ConsoleColor.Green)
+                .ContentColor("underline #445566")
+                .ContentColor(ConsoleColor.White)
+                .HeaderColor("italic #778899")
+                .HeaderColor(ConsoleColor.Cyan)
+                .FooterColor("bold #abcdef")
+                .FooterColor(ConsoleColor.Yellow));
+
+            console.Write(new Rule("Deploy")
+                .Width(28)
+                .RuleStyle("bold #112233")
+                .RuleColor(ConsoleColor.Green)
+                .TitleStyle("underline #445566")
+                .TitleColor(ConsoleColor.Cyan));
+
+            string output = writer.ToString();
+            Assert.Contains("Body", output);
+            Assert.Contains("Deploy", output);
+            Assert.DoesNotContain("\u001b[1;", output);
+            Assert.DoesNotContain("\u001b[3;", output);
+            Assert.DoesNotContain("\u001b[4;", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[#445566", output);
+            Assert.DoesNotContain("[bold", output);
+            Assert.DoesNotContain("[underline", output);
+        }
+
+        /// <summary>
         /// Panel and rule style helpers use 256-color SGR when the terminal supports eight-bit color.
         /// </summary>
         [Fact]

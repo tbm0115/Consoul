@@ -481,6 +481,91 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Table builder style helpers preserve default cell and border decoration metadata.
+        /// </summary>
+        [Fact]
+        public void TableBuilder_DefaultStylesEmitSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var table = new Table()
+                .Width(42)
+                .AsciiBorder()
+                .HideFooter()
+                .BorderColor("dim #010203")
+                .HeaderColor("bold #112233")
+                .ContentColor("italic #445566")
+                .AlternatingRowColor("underline #778899")
+                .FooterColor("strikethrough #aabbcc")
+                .AddColumns(
+                    new TableColumn("Service").Footer("Total"),
+                    new TableColumn("State").Footer("2"))
+                .AddRow("Build", "Ready")
+                .AddRow("Deploy", "Waiting");
+
+            console.Write(table);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[2;38;2;1;2;3m+", output);
+            Assert.Contains("\u001b[1;38;2;17;34;51m", output);
+            Assert.Contains("\u001b[3;38;2;68;85;102m", output);
+            Assert.Contains("\u001b[4;38;2;119;136;153m", output);
+            Assert.Contains("\u001b[9;38;2;170;187;204m", output);
+            Assert.Contains("Service", output);
+            Assert.Contains("Build", output);
+            Assert.Contains("Deploy", output);
+            Assert.Contains("Total", output);
+        }
+
+        /// <summary>
+        /// The lower-level table renderer preserves configured row and line style metadata.
+        /// </summary>
+        [Fact]
+        public void TableRenderer_DefaultStylesEmitSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var options = new TableRenderOptions
+            {
+                MaximumTableWidth = 24
+            };
+            options.Normalize(new[] { new[] { "Service" } });
+            options.Lines.Color = Style.Parse("#010203").ToColorScheme(options.Lines.Color);
+            options.Lines.Decoration = Decoration.Dim;
+            options.Lines.ForegroundRgb = RgbColor.FromHex("#010203");
+            options.HeaderScheme = Style.Parse("#112233").ToColorScheme(options.HeaderScheme);
+            options.HeaderDecoration = Decoration.Bold;
+            options.HeaderForegroundRgb = RgbColor.FromHex("#112233");
+            options.ContentScheme1 = Style.Parse("#445566").ToColorScheme(options.ContentScheme1);
+            options.ContentDecoration1 = Decoration.Italic;
+            options.ContentForegroundRgb1 = RgbColor.FromHex("#445566");
+            var renderer = new TableRenderer(options);
+
+            console.WriteAnsi(() =>
+            {
+                renderer.RenderHeaders(new[] { "Service" }, 0);
+                renderer.RenderRow(new[] { "Build" }, 0);
+            });
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[2;38;2;1;2;3m", output);
+            Assert.Contains("\u001b[1;38;2;17;34;51m", output);
+            Assert.Contains("\u001b[3;38;2;68;85;102m", output);
+            Assert.Contains("Service", output);
+            Assert.Contains("Build", output);
+        }
+
+        /// <summary>
         /// Paragraph reusable styles preserve decoration flags through paragraph wrapping.
         /// </summary>
         [Fact]

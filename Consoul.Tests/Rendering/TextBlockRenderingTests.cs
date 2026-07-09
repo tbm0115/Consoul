@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -162,6 +164,30 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Gamma") && write.Color == ConsoleColor.Cyan);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Plain text color helpers clear previously configured RGB and decoration metadata.
+        /// </summary>
+        [Fact]
+        public void Text_ColorHelperClearsPriorRichStyleMetadata()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 48, height: 8, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new Text("Plain text").Color("bold #112233").Color(ConsoleColor.Green).Width(24));
+
+            string output = writer.ToString();
+            Assert.Contains("Plain text", output);
+            Assert.DoesNotContain("\u001b[1;", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[bold", output);
         }
 
         /// <summary>

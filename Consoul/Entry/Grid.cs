@@ -71,6 +71,18 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds and configures a grid column.
+        /// </summary>
+        /// <param name="configure">Column configuration callback.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddColumn(Action<GridColumn> configure)
+        {
+            var column = new GridColumn();
+            configure?.Invoke(column);
+            return AddColumn(column);
+        }
+
+        /// <summary>
         /// Adds multiple columns to the preferred grid column count.
         /// </summary>
         /// <param name="count">The number of columns to add.</param>
@@ -91,6 +103,16 @@ namespace ConsoulLibrary
         /// <param name="columns">The column configurations.</param>
         /// <returns>The current <see cref="Grid"/> instance.</returns>
         public Grid AddColumns(params GridColumn[] columns)
+        {
+            return AddColumns((IEnumerable<GridColumn>)columns);
+        }
+
+        /// <summary>
+        /// Adds multiple configured grid columns.
+        /// </summary>
+        /// <param name="columns">The column configurations.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddColumns(IEnumerable<GridColumn> columns)
         {
             if (columns == null)
             {
@@ -289,6 +311,42 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds multiple rows of text cells from inline row arrays.
+        /// </summary>
+        /// <param name="firstRow">The first row to add.</param>
+        /// <param name="additionalRows">Additional rows to add.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddRows(string[] firstRow, params string[][] additionalRows)
+        {
+            AddRow(firstRow);
+
+            foreach (string[] row in additionalRows ?? new string[0][])
+            {
+                AddRow(row);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds multiple rows whose cells may mix plain values and reusable renderable components.
+        /// </summary>
+        /// <param name="firstRow">The first row to add.</param>
+        /// <param name="additionalRows">Additional rows to add.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddRows(object[] firstRow, params object[][] additionalRows)
+        {
+            AddRow(firstRow);
+
+            foreach (object[] row in additionalRows ?? new object[0][])
+            {
+                AddRow(row);
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds cells projected from a model collection. Cells flow according to the configured preferred column count.
         /// </summary>
         /// <typeparam name="T">The model item type.</typeparam>
@@ -359,7 +417,7 @@ namespace ConsoulLibrary
                 AddCell(
                     contentSelector(item),
                     headerSelector != null ? headerSelector(item) : null,
-                    colorSelector(item).ToConsoleColor());
+                    new Style(colorSelector(item)));
             }
 
             return this;
@@ -400,7 +458,7 @@ namespace ConsoulLibrary
                 AddCell(
                     contentSelector(item),
                     headerSelector != null ? headerSelector(item) : null,
-                    colorSelector(item).ToConsoleColor());
+                    new Style(colorSelector(item)));
             }
 
             return this;
@@ -557,7 +615,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Grid"/> instance.</returns>
         public Grid HeaderColor(ConsoleColor color)
         {
-            Options.HeaderScheme = Scheme(color);
+            ApplyHeaderStyle(new Style(color));
             return this;
         }
 
@@ -568,7 +626,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Grid"/> instance.</returns>
         public Grid HeaderColor(Style style)
         {
-            Options.HeaderScheme = Scheme(style, Options.ResolveHeaderScheme());
+            ApplyHeaderStyle(style);
             return this;
         }
 
@@ -579,7 +637,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Grid"/> instance.</returns>
         public Grid HeaderColor(string style)
         {
-            Options.HeaderScheme = Style.ParseScheme(style, Options.ResolveHeaderScheme());
+            ApplyHeaderStyle(Style.Parse(style));
             return this;
         }
 
@@ -590,7 +648,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Grid"/> instance.</returns>
         public Grid ContentColor(ConsoleColor color)
         {
-            Options.ContentScheme = Scheme(color);
+            ApplyContentStyle(new Style(color));
             return this;
         }
 
@@ -601,7 +659,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Grid"/> instance.</returns>
         public Grid ContentColor(Style style)
         {
-            Options.ContentScheme = Scheme(style, Options.ResolveContentScheme());
+            ApplyContentStyle(style);
             return this;
         }
 
@@ -612,8 +670,24 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Grid"/> instance.</returns>
         public Grid ContentColor(string style)
         {
-            Options.ContentScheme = Style.ParseScheme(style, Options.ResolveContentScheme());
+            ApplyContentStyle(Style.Parse(style));
             return this;
+        }
+
+        private void ApplyHeaderStyle(Style style)
+        {
+            Options.HeaderScheme = Scheme(style, Options.ResolveHeaderScheme());
+            Options.HeaderDecoration = style?.Decoration ?? Decoration.None;
+            Options.HeaderForegroundRgb = style?.ForegroundRgb;
+            Options.HeaderBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyContentStyle(Style style)
+        {
+            Options.ContentScheme = Scheme(style, Options.ResolveContentScheme());
+            Options.ContentDecoration = style?.Decoration ?? Decoration.None;
+            Options.ContentForegroundRgb = style?.ForegroundRgb;
+            Options.ContentBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

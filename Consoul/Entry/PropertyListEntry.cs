@@ -119,6 +119,47 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds existing property list items.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>The current <see cref="PropertyListEntry"/> instance.</returns>
+        public PropertyListEntry AddItems(IEnumerable<PropertyListItem> items)
+        {
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (PropertyListItem item in items)
+            {
+                Add(item);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds existing property list items.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="PropertyListEntry"/> instance.</returns>
+        public PropertyListEntry AddItems(PropertyListItem firstItem, params PropertyListItem[] additionalItems)
+        {
+            Add(firstItem);
+
+            if (additionalItems != null)
+            {
+                foreach (PropertyListItem item in additionalItems)
+                {
+                    Add(item);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds key/value pairs as labeled values for quick settings and diagnostic summaries.
         /// </summary>
         /// <typeparam name="TKey">The key type.</typeparam>

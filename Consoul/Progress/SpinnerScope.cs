@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using ConsoulLibrary.Color;
 using RgbColor = ConsoulLibrary.Color.RgbColor;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -129,6 +131,23 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the spinner frames used for active messages.
+        /// </summary>
+        /// <param name="frames">The frames rendered by successive ticks.</param>
+        /// <returns>The current spinner scope.</returns>
+        public SpinnerScope Frames(IEnumerable<string> frames)
+        {
+            ThrowIfDisposed();
+            _options.Frames = frames == null ? null : frames.ToArray();
+            if (_options.AutoRefresh)
+            {
+                RenderActive();
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Sets the foreground color used for active spinner text.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -142,6 +161,7 @@ namespace ConsoulLibrary
             }
 
             _options.ActiveColor = style.ToForegroundColor(_options.ActiveColor);
+            _options.ActiveStyle = style;
             if (_options.AutoRefresh)
             {
                 RenderActive();
@@ -260,11 +280,17 @@ namespace ConsoulLibrary
 
         private void RenderActive()
         {
-            ColorScheme scheme = CreateScheme(_options.ActiveColor);
+            StyledText style = ResolveActiveStyle();
             _message.RenderSegments(
-                MarkupRenderText.ParseSegmentsWithPrefix(GetActivePrefix(), Message, scheme),
-                scheme.Color,
-                scheme.BackgroundColor);
+                MarkupRenderText.ParseSegmentsWithPrefix(
+                    GetActivePrefix(),
+                    Message,
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb),
+                style.Scheme.Color,
+                style.Scheme.BackgroundColor);
         }
 
         private void Complete(string prefix, string message, ConsoleColor color)
@@ -305,6 +331,48 @@ namespace ConsoulLibrary
                 Color = color,
                 BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
             };
+        }
+
+        private StyledText ResolveActiveStyle()
+        {
+            return _options.ActiveStyle == null
+                ? CreateStyle(_options.ActiveColor)
+                : ResolveStyle(_options.ActiveStyle, _options.ActiveColor);
+        }
+
+        private static StyledText ResolveStyle(Style style, ConsoleColor fallbackColor)
+        {
+            return style == null
+                ? CreateStyle(fallbackColor)
+                : new StyledText(
+                    style.ToColorScheme(CreateScheme(fallbackColor)),
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb);
+        }
+
+        private static StyledText CreateStyle(ConsoleColor color)
+        {
+            return new StyledText(CreateScheme(color), Decoration.None, null, null);
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
     }
 }

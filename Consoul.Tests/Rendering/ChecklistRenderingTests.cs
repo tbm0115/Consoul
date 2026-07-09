@@ -111,6 +111,45 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Checklist builders accept prepared item params for MVC-style readiness summaries.
+        /// </summary>
+        [Fact]
+        public void Checklist_AddItems_AcceptsPreparedItemParams()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                new Checklist()
+                    .Width(40)
+                    .AddItems(
+                        ChecklistItem.CreateStyled(
+                            "Smoke tests",
+                            ChecklistItemState.Complete,
+                            "Passing",
+                            labelStyle: "aqua",
+                            markerStyle: "green",
+                            descriptionStyle: "darkgray"),
+                        ChecklistItem.Create(
+                            "Owner approval",
+                            ChecklistItemState.Warning,
+                            "Waiting",
+                            ConsoleColor.Yellow,
+                            ConsoleColor.DarkYellow,
+                            ConsoleColor.Gray))
+                    .Render();
+
+                VisualAssert.ContainsText(scope.Driver, "Smoke tests");
+                VisualAssert.ContainsText(scope.Driver, "Passing");
+                VisualAssert.ContainsText(scope.Driver, "Owner approval");
+                VisualAssert.ContainsText(scope.Driver, "Waiting");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Smoke tests") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Passing") && write.Color == ConsoleColor.DarkGray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Owner approval") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Waiting") && write.Color == ConsoleColor.Gray);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Checklist style helpers preserve RGB and decoration metadata for true-color terminals.
         /// </summary>
         [Fact]

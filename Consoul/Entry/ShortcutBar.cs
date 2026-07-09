@@ -187,6 +187,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds existing shortcut items.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar AddShortcuts(ShortcutItem firstItem, params ShortcutItem[] additionalItems)
+        {
+            AddShortcut(firstItem);
+
+            if (additionalItems != null)
+            {
+                foreach (ShortcutItem item in additionalItems)
+                {
+                    AddShortcut(item);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds shortcuts projected from a model collection using Spectre-style style text.
         /// </summary>
         /// <typeparam name="T">The model item type.</typeparam>

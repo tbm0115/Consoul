@@ -1,5 +1,9 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Rendering
@@ -90,6 +94,34 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length < 32, "Unpadded figlet line should not expand to the configured width: " + line));
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Figlet color helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void FigletText_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 48, height: 20, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Write(new FigletText("I").Width(12).LeftJustified().Pad(false).Color("italic #112233 on #445566"));
+            console.Write(new FigletText("I").Width(12).LeftJustified().Pad(false).Color(RgbColor.FromHex("#778899")));
+            console.Write(new FigletText("I").Width(12).LeftJustified().Pad(false).Color(SpectreColor.FromHex("#22c55e")));
+            console.Write(new FigletText("I").Width(12).LeftJustified().Pad(false).Color(Style.Parse("bold #abcdef")));
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[3;38;2;17;34;51;48;2;68;85;102m", output);
+            Assert.Contains("\u001b[38;2;119;136;153m", output);
+            Assert.Contains("\u001b[38;2;34;197;94m", output);
+            Assert.Contains("\u001b[1;38;2;171;205;239m", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[italic", output);
         }
 
         /// <summary>

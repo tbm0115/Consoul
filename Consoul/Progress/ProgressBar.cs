@@ -91,7 +91,7 @@ namespace ConsoulLibrary
             {
                 RefreshRate = RefreshRate
             };
-            RenderMessage(initialMessage, CreateScheme(RenderOptions.DefaultColor));
+            RenderMessage(initialMessage, CreateStyle(RenderOptions.DefaultColor));
             Consoul.LineBreak();
             _barArea = new FixedMessage
             {
@@ -132,8 +132,8 @@ namespace ConsoulLibrary
             UpdateCore(
                 progress,
                 message,
-                CreateScheme(messageColor ?? RenderOptions.DefaultColor),
-                CreateScheme(barColor ?? RenderOptions.SubnoteColor));
+                CreateStyle(messageColor ?? RenderOptions.DefaultColor),
+                CreateStyle(barColor ?? RenderOptions.SubnoteColor));
         }
 
         /// <summary>
@@ -141,14 +141,14 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="progress">Progress value as a value between 0.0 and 1.0.</param>
         /// <param name="message">Optional message to display above the progress bar.</param>
-        /// <param name="messageColor">Color facade mapped to the nearest console color for the message text.</param>
+        /// <param name="messageColor">Color facade used for the message text.</param>
         public void Update(double progress, string message, SpectreColor messageColor)
         {
             UpdateCore(
                 progress,
                 message,
-                CreateScheme(messageColor.ToConsoleColor()),
-                CreateScheme(RenderOptions.SubnoteColor));
+                ResolveStyle(new Style(messageColor), RenderOptions.DefaultColor),
+                CreateStyle(RenderOptions.SubnoteColor));
         }
 
         /// <summary>
@@ -156,14 +156,14 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="progress">Progress value as a value between 0.0 and 1.0.</param>
         /// <param name="message">Optional message to display above the progress bar.</param>
-        /// <param name="messageColor">RGB color mapped to the nearest console color for the message text.</param>
+        /// <param name="messageColor">RGB color used for the message text.</param>
         public void Update(double progress, string message, RgbColor messageColor)
         {
             UpdateCore(
                 progress,
                 message,
-                CreateScheme(messageColor.ToConsoleColor()),
-                CreateScheme(RenderOptions.SubnoteColor));
+                ResolveStyle(new Style(messageColor), RenderOptions.DefaultColor),
+                CreateStyle(RenderOptions.SubnoteColor));
         }
 
         /// <summary>
@@ -171,15 +171,15 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="progress">Progress value as a value between 0.0 and 1.0.</param>
         /// <param name="message">Optional message to display above the progress bar.</param>
-        /// <param name="messageColor">Color facade mapped to the nearest console color for the message text.</param>
-        /// <param name="barColor">Color facade mapped to the nearest console color for the progress bar.</param>
+        /// <param name="messageColor">Color facade used for the message text.</param>
+        /// <param name="barColor">Color facade used for the progress bar.</param>
         public void Update(double progress, string message, SpectreColor messageColor, SpectreColor barColor)
         {
             UpdateCore(
                 progress,
                 message,
-                CreateScheme(messageColor.ToConsoleColor()),
-                CreateScheme(barColor.ToConsoleColor()));
+                ResolveStyle(new Style(messageColor), RenderOptions.DefaultColor),
+                ResolveStyle(new Style(barColor), RenderOptions.SubnoteColor));
         }
 
         /// <summary>
@@ -187,15 +187,15 @@ namespace ConsoulLibrary
         /// </summary>
         /// <param name="progress">Progress value as a value between 0.0 and 1.0.</param>
         /// <param name="message">Optional message to display above the progress bar.</param>
-        /// <param name="messageColor">RGB color mapped to the nearest console color for the message text.</param>
-        /// <param name="barColor">RGB color mapped to the nearest console color for the progress bar.</param>
+        /// <param name="messageColor">RGB color used for the message text.</param>
+        /// <param name="barColor">RGB color used for the progress bar.</param>
         public void Update(double progress, string message, RgbColor messageColor, RgbColor barColor)
         {
             UpdateCore(
                 progress,
                 message,
-                CreateScheme(messageColor.ToConsoleColor()),
-                CreateScheme(barColor.ToConsoleColor()));
+                ResolveStyle(new Style(messageColor), RenderOptions.DefaultColor),
+                ResolveStyle(new Style(barColor), RenderOptions.SubnoteColor));
         }
 
         /// <summary>
@@ -214,25 +214,58 @@ namespace ConsoulLibrary
                 ResolveStyle(barStyle, RenderOptions.SubnoteColor));
         }
 
-        private void UpdateCore(double progress, string message, ColorScheme messageScheme, ColorScheme barScheme)
+        private void UpdateCore(double progress, string message, StyledText messageStyle, StyledText barStyle)
         {
             _progress = NormalizeProgress(progress);
 
-            RenderMessage(message, messageScheme);
-            _barArea.Render(FormatBar(_progress), barScheme.Color, barScheme.BackgroundColor);
+            RenderMessage(message, messageStyle);
+            RenderBar(FormatBar(_progress), barStyle);
         }
 
-        private void RenderMessage(string message, ColorScheme scheme)
+        private void RenderMessage(string message, StyledText style)
         {
             _messageArea.RenderSegments(
-                MarkupRenderText.ParseSegments(message ?? string.Empty, scheme),
-                scheme.Color,
-                scheme.BackgroundColor);
+                MarkupRenderText.ParseSegments(
+                    message ?? string.Empty,
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb),
+                style.Scheme.Color,
+                style.Scheme.BackgroundColor);
         }
 
-        private static ColorScheme ResolveStyle(Style style, ConsoleColor fallbackColor)
+        private void RenderBar(string bar, StyledText style)
         {
-            return style?.ToColorScheme(CreateScheme(fallbackColor)) ?? CreateScheme(fallbackColor);
+            _barArea.RenderSegments(
+                new[]
+                {
+                    new FixedMessageSegment(
+                        bar,
+                        style.Scheme,
+                        style.Decoration,
+                        null,
+                        style.ForegroundRgb,
+                        style.BackgroundRgb)
+                },
+                style.Scheme.Color,
+                style.Scheme.BackgroundColor);
+        }
+
+        private static StyledText ResolveStyle(Style style, ConsoleColor fallbackColor)
+        {
+            return style == null
+                ? CreateStyle(fallbackColor)
+                : new StyledText(
+                    style.ToColorScheme(CreateScheme(fallbackColor)),
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb);
+        }
+
+        private static StyledText CreateStyle(ConsoleColor color)
+        {
+            return new StyledText(CreateScheme(color), Decoration.None, null, null);
         }
 
         private static ColorScheme CreateScheme(ConsoleColor color)
@@ -288,6 +321,25 @@ namespace ConsoulLibrary
         {
             int percentage = (int)Math.Round(progress * 100, MidpointRounding.AwayFromZero);
             return (percentage.ToString(CultureInfo.InvariantCulture) + "%").PadLeft(4);
+        }
+
+        private readonly struct StyledText
+        {
+            public StyledText(ColorScheme scheme, Decoration decoration, RgbColor? foregroundRgb, RgbColor? backgroundRgb)
+            {
+                Scheme = scheme;
+                Decoration = decoration;
+                ForegroundRgb = foregroundRgb;
+                BackgroundRgb = backgroundRgb;
+            }
+
+            public ColorScheme Scheme { get; }
+
+            public Decoration Decoration { get; }
+
+            public RgbColor? ForegroundRgb { get; }
+
+            public RgbColor? BackgroundRgb { get; }
         }
 
         /// <summary>

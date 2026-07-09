@@ -17,6 +17,7 @@ namespace ConsoulLibrary
     public class ValidationSummaryEntry : IRenderable
     {
         private readonly object _model;
+        private readonly List<ValidationIssue> _additionalIssues = new List<ValidationIssue>();
         private readonly ValidationSummaryOptions _options;
 
         /// <summary>
@@ -39,6 +40,11 @@ namespace ConsoulLibrary
         /// Gets the options used by the validation summary.
         /// </summary>
         public ValidationSummaryOptions Options => _options;
+
+        /// <summary>
+        /// Gets additional validation issues appended to the model validation result.
+        /// </summary>
+        public IReadOnlyList<ValidationIssue> AdditionalIssues => _additionalIssues;
 
         /// <summary>
         /// Sets the requested validation summary width.
@@ -320,12 +326,87 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds an additional validation issue to the summary.
+        /// </summary>
+        /// <param name="propertyName">The source property or rule name.</param>
+        /// <param name="displayName">The display name rendered for the issue.</param>
+        /// <param name="message">The validation message.</param>
+        /// <returns>The current <see cref="ValidationSummaryEntry"/> instance.</returns>
+        public ValidationSummaryEntry AddIssue(string propertyName, string displayName, string message)
+        {
+            return AddIssue(new ValidationIssue(propertyName, displayName, message));
+        }
+
+        /// <summary>
+        /// Adds an additional validation issue to the summary.
+        /// </summary>
+        /// <param name="issue">The validation issue to add.</param>
+        /// <returns>The current <see cref="ValidationSummaryEntry"/> instance.</returns>
+        public ValidationSummaryEntry AddIssue(ValidationIssue issue)
+        {
+            if (issue == null)
+            {
+                throw new ArgumentNullException(nameof(issue));
+            }
+
+            _additionalIssues.Add(issue);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds additional validation issues to the summary.
+        /// </summary>
+        /// <param name="issues">The validation issues to add.</param>
+        /// <returns>The current <see cref="ValidationSummaryEntry"/> instance.</returns>
+        public ValidationSummaryEntry AddIssues(IEnumerable<ValidationIssue> issues)
+        {
+            if (issues == null)
+            {
+                return this;
+            }
+
+            foreach (ValidationIssue issue in issues)
+            {
+                AddIssue(issue);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds additional validation issues to the summary.
+        /// </summary>
+        /// <param name="firstIssue">The first validation issue to add.</param>
+        /// <param name="additionalIssues">Additional validation issues to add.</param>
+        /// <returns>The current <see cref="ValidationSummaryEntry"/> instance.</returns>
+        public ValidationSummaryEntry AddIssues(ValidationIssue firstIssue, params ValidationIssue[] additionalIssues)
+        {
+            AddIssue(firstIssue);
+
+            if (additionalIssues != null)
+            {
+                foreach (ValidationIssue issue in additionalIssues)
+                {
+                    AddIssue(issue);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Validates the model without rendering output.
         /// </summary>
         /// <returns>The validation result for the model.</returns>
         public ValidationSummaryResult Validate()
         {
-            return Validate(_model, _options);
+            ValidationSummaryResult result = Validate(_model, _options);
+            if (_additionalIssues.Count == 0)
+            {
+                return result;
+            }
+
+            return new ValidationSummaryResult(result.Issues.Concat(_additionalIssues));
         }
 
         /// <summary>

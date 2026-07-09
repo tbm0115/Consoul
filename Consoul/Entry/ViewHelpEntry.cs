@@ -245,6 +245,47 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds existing help items to the help surface.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>The current <see cref="ViewHelpEntry"/> instance.</returns>
+        public ViewHelpEntry AddItems(IEnumerable<ViewHelpItem> items)
+        {
+            if (items == null)
+            {
+                return this;
+            }
+
+            foreach (ViewHelpItem item in items)
+            {
+                Add(item);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds existing help items to the help surface.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="ViewHelpEntry"/> instance.</returns>
+        public ViewHelpEntry AddItems(ViewHelpItem firstItem, params ViewHelpItem[] additionalItems)
+        {
+            Add(firstItem);
+
+            if (additionalItems != null)
+            {
+                foreach (ViewHelpItem item in additionalItems)
+                {
+                    Add(item);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Renders the help surface to the active console driver.
         /// </summary>
         public void Render()

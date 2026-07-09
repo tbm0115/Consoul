@@ -37,6 +37,24 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Layout"/> class with configured panes.
+        /// </summary>
+        /// <param name="panes">The panes to render.</param>
+        public Layout(params LayoutPane[] panes) : this()
+        {
+            AddPanes(panes);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Layout"/> class with configured panes.
+        /// </summary>
+        /// <param name="panes">The panes to render.</param>
+        public Layout(IEnumerable<LayoutPane> panes) : this()
+        {
+            AddPanes(panes);
+        }
+
+        /// <summary>
         /// Gets or sets the optional layout name.
         /// </summary>
         public string Name { get; set; }
@@ -241,6 +259,36 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds multiple configured panes to the layout.
+        /// </summary>
+        /// <param name="panes">The panes to add.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout AddPanes(params LayoutPane[] panes)
+        {
+            return AddPanes((IEnumerable<LayoutPane>)panes);
+        }
+
+        /// <summary>
+        /// Adds multiple configured panes to the layout.
+        /// </summary>
+        /// <param name="panes">The panes to add.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout AddPanes(IEnumerable<LayoutPane> panes)
+        {
+            if (panes == null)
+            {
+                return this;
+            }
+
+            foreach (LayoutPane pane in panes)
+            {
+                AddPane(pane);
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds panes projected from a model collection.
         /// </summary>
         /// <typeparam name="T">The model item type.</typeparam>
@@ -350,6 +398,26 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Replaces current panes and renders the supplied renderable components side by side when possible.
+        /// </summary>
+        /// <param name="renderables">The renderable components to capture as panes.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout SplitColumns(params IConsoulRenderable[] renderables)
+        {
+            Panes.Clear();
+            Options.Direction = LayoutDirection.Columns;
+            foreach (IConsoulRenderable renderable in renderables ?? new IConsoulRenderable[0])
+            {
+                if (renderable != null)
+                {
+                    Add(renderable);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Replaces current panes and renders the supplied layouts side by side when possible.
         /// </summary>
         /// <param name="layouts">The layouts to capture as panes.</param>
@@ -381,6 +449,26 @@ namespace ConsoulLibrary
             foreach (string pane in panes ?? new string[0])
             {
                 AddPane(pane);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Replaces current panes and renders the supplied renderable components vertically.
+        /// </summary>
+        /// <param name="renderables">The renderable components to capture as panes.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout SplitRows(params IConsoulRenderable[] renderables)
+        {
+            Panes.Clear();
+            Options.Direction = LayoutDirection.Rows;
+            foreach (IConsoulRenderable renderable in renderables ?? new IConsoulRenderable[0])
+            {
+                if (renderable != null)
+                {
+                    Add(renderable);
+                }
             }
 
             return this;
@@ -542,6 +630,9 @@ namespace ConsoulLibrary
         public Layout TitleColor(ConsoleColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
+            Options.TitleForegroundRgb = null;
+            Options.TitleBackgroundRgb = null;
             return this;
         }
 
@@ -552,7 +643,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Layout"/> instance.</returns>
         public Layout TitleColor(Style style)
         {
-            Options.TitleScheme = Scheme(style, Options.ResolveTitleScheme());
+            ApplyTitleStyle(style);
             return this;
         }
 
@@ -563,7 +654,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Layout"/> instance.</returns>
         public Layout TitleColor(string style)
         {
-            Options.TitleScheme = Style.ParseScheme(style, Options.ResolveTitleScheme());
+            ApplyTitleStyle(Style.Parse(style));
             return this;
         }
 
@@ -575,6 +666,9 @@ namespace ConsoulLibrary
         public Layout ContentColor(ConsoleColor color)
         {
             Options.ContentScheme = Scheme(color);
+            Options.ContentDecoration = Decoration.None;
+            Options.ContentForegroundRgb = null;
+            Options.ContentBackgroundRgb = null;
             return this;
         }
 
@@ -585,7 +679,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Layout"/> instance.</returns>
         public Layout ContentColor(Style style)
         {
-            Options.ContentScheme = Scheme(style, Options.ResolveContentScheme());
+            ApplyContentStyle(style);
             return this;
         }
 
@@ -596,8 +690,24 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Layout"/> instance.</returns>
         public Layout ContentColor(string style)
         {
-            Options.ContentScheme = Style.ParseScheme(style, Options.ResolveContentScheme());
+            ApplyContentStyle(Style.Parse(style));
             return this;
+        }
+
+        private void ApplyTitleStyle(Style style)
+        {
+            Options.TitleScheme = Scheme(style, Options.ResolveTitleScheme());
+            Options.TitleDecoration = style?.Decoration ?? Decoration.None;
+            Options.TitleForegroundRgb = style?.ForegroundRgb;
+            Options.TitleBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private void ApplyContentStyle(Style style)
+        {
+            Options.ContentScheme = Scheme(style, Options.ResolveContentScheme());
+            Options.ContentDecoration = style?.Decoration ?? Decoration.None;
+            Options.ContentForegroundRgb = style?.ForegroundRgb;
+            Options.ContentBackgroundRgb = style?.BackgroundRgb;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

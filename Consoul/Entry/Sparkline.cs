@@ -58,6 +58,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds sparkline values.
+        /// </summary>
+        /// <param name="values">The values to add.</param>
+        /// <returns>The current <see cref="Sparkline"/> instance.</returns>
+        public Sparkline AddValues(params double[] values)
+        {
+            return AddValues((IEnumerable<double>)values);
+        }
+
+        /// <summary>
         /// Adds sparkline values projected from a model collection.
         /// </summary>
         /// <typeparam name="T">The model item type.</typeparam>
@@ -139,6 +149,26 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the minimum value used to scale the sparkline using a shorter Spectre-style alias.
+        /// </summary>
+        /// <param name="value">The minimum value. When null, the minimum data value is used.</param>
+        /// <returns>The current <see cref="Sparkline"/> instance.</returns>
+        public Sparkline MinValue(double? value)
+        {
+            return MinimumValue(value);
+        }
+
+        /// <summary>
+        /// Sets the minimum value used to scale the sparkline using a chain-oriented Spectre-style alias.
+        /// </summary>
+        /// <param name="value">The minimum value. When null, the minimum data value is used.</param>
+        /// <returns>The current <see cref="Sparkline"/> instance.</returns>
+        public Sparkline WithMinValue(double? value)
+        {
+            return MinimumValue(value);
+        }
+
+        /// <summary>
         /// Sets the maximum value used to scale the sparkline.
         /// </summary>
         /// <param name="value">The maximum value. When null, the maximum data value is used.</param>
@@ -147,6 +177,26 @@ namespace ConsoulLibrary
         {
             Options.MaximumValue = value;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the maximum value used to scale the sparkline using a shorter Spectre-style alias.
+        /// </summary>
+        /// <param name="value">The maximum value. When null, the maximum data value is used.</param>
+        /// <returns>The current <see cref="Sparkline"/> instance.</returns>
+        public Sparkline MaxValue(double? value)
+        {
+            return MaximumValue(value);
+        }
+
+        /// <summary>
+        /// Sets the maximum value used to scale the sparkline using a chain-oriented Spectre-style alias.
+        /// </summary>
+        /// <param name="value">The maximum value. When null, the maximum data value is used.</param>
+        /// <returns>The current <see cref="Sparkline"/> instance.</returns>
+        public Sparkline WithMaxValue(double? value)
+        {
+            return MaximumValue(value);
         }
 
         /// <summary>
@@ -203,6 +253,16 @@ namespace ConsoulLibrary
         {
             Options.ValueFormatter = formatter;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the formatter used for range values using a Spectre-style alias.
+        /// </summary>
+        /// <param name="formatter">The value formatter.</param>
+        /// <returns>The current <see cref="Sparkline"/> instance.</returns>
+        public Sparkline UseValueFormatter(Func<double, string> formatter)
+        {
+            return ValueFormatter(formatter);
         }
 
         /// <summary>

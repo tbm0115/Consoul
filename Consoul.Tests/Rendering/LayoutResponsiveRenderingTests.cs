@@ -1,7 +1,10 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
 using Xunit;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary.Tests.Rendering
 {
@@ -190,6 +193,80 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Model-projected layout panes preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Layout_ProjectionStyleSelectorsEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var panes = new[]
+            {
+                new StyledLayoutProjectionPane("API", "Ready", RgbColor.FromHex("#112233"), SpectreColor.FromHex("#445566"))
+            };
+
+            var layout = new Layout("Dashboard")
+                .Width(56)
+                .ColumnCount(3)
+                .MinimumPaneWidth(12)
+                .Gutter(1)
+                .AddPanes(panes, pane => "RGB pane " + pane.State, pane => pane.Name, pane => pane.RgbColor)
+                .AddPanes(panes, pane => "Color pane " + pane.State, pane => pane.Name + " Color", pane => pane.SpectreColor)
+                .AddPanes(panes, pane => "Style pane " + pane.State, pane => pane.Name + " Style", pane => "bold #778899");
+
+            console.Write(layout);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;17;34;51mRGB pane", output);
+            Assert.Contains("\u001b[38;2;68;85;102mColor pane", output);
+            Assert.Contains("\u001b[1;38;2;119;136;153mStyle pane", output);
+            Assert.DoesNotContain("[#778899", output);
+            Assert.DoesNotContain("[bold", output);
+        }
+
+        /// <summary>
+        /// Default layout style helpers preserve RGB and decoration metadata while pane overrides stay exact.
+        /// </summary>
+        [Fact]
+        public void Layout_DefaultStyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var layout = new Layout("Dashboard")
+                .Width(56)
+                .ColumnCount(2)
+                .MinimumPaneWidth(12)
+                .Gutter(1)
+                .TitleColor("bold #112233")
+                .ContentColor("italic #445566")
+                .AddPane("Inherited pane", "Inherited")
+                .AddPane("Explicit pane", "Explicit", "underline #778899");
+
+            console.Write(layout);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;17;34;51mInherited", output);
+            Assert.Contains("\u001b[3;38;2;68;85;102mInherited pane", output);
+            Assert.Contains("\u001b[4;38;2;119;136;153mExplicit pane", output);
+            Assert.DoesNotContain("[#112233", output);
+            Assert.DoesNotContain("[#445566", output);
+            Assert.DoesNotContain("[#778899", output);
+            Assert.DoesNotContain("[italic", output);
+            Assert.DoesNotContain("[underline", output);
+        }
+
+        /// <summary>
         /// Row-oriented layouts honor configured width and color schemes.
         /// </summary>
         [Fact]
@@ -327,6 +404,25 @@ namespace ConsoulLibrary.Tests.Rendering
             public object Content { get; }
 
             public ConsoleColor? Color { get; }
+        }
+
+        private sealed class StyledLayoutProjectionPane
+        {
+            public StyledLayoutProjectionPane(string name, string state, RgbColor rgbColor, SpectreColor spectreColor)
+            {
+                Name = name;
+                State = state;
+                RgbColor = rgbColor;
+                SpectreColor = spectreColor;
+            }
+
+            public string Name { get; }
+
+            public string State { get; }
+
+            public RgbColor RgbColor { get; }
+
+            public SpectreColor SpectreColor { get; }
         }
 
         private sealed class TestRoutine : Routine

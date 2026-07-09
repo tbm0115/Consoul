@@ -127,6 +127,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds existing items to the chart.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart AddItems(BarChartItem firstItem, params BarChartItem[] additionalItems)
+        {
+            AddItem(firstItem);
+
+            if (additionalItems != null)
+            {
+                foreach (BarChartItem item in additionalItems)
+                {
+                    AddItem(item);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds items projected from a model collection.
         /// </summary>
         /// <typeparam name="T">The model item type.</typeparam>
@@ -446,6 +467,26 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the maximum value used to scale bars using a shorter Spectre-style alias.
+        /// </summary>
+        /// <param name="value">The maximum value. When null, the largest item value is used.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart MaxValue(double? value)
+        {
+            return MaximumValue(value);
+        }
+
+        /// <summary>
+        /// Sets the maximum value used to scale bars using a chain-oriented Spectre-style alias.
+        /// </summary>
+        /// <param name="value">The maximum value. When null, the largest item value is used.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart WithMaxValue(double? value)
+        {
+            return MaximumValue(value);
+        }
+
+        /// <summary>
         /// Sets whether formatted values should render after bars.
         /// </summary>
         /// <param name="show">Whether formatted values should render.</param>
@@ -457,6 +498,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets whether formatted values should render after bars using the common singular alias.
+        /// </summary>
+        /// <param name="show">Whether formatted values should render.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart ShowValue(bool show = true)
+        {
+            return ShowValues(show);
+        }
+
+        /// <summary>
         /// Hides formatted values after bars.
         /// </summary>
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
@@ -464,6 +515,15 @@ namespace ConsoulLibrary
         {
             Options.ShowValues = false;
             return this;
+        }
+
+        /// <summary>
+        /// Hides formatted values after bars using the common singular alias.
+        /// </summary>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart HideValue()
+        {
+            return HideValues();
         }
 
         /// <summary>
@@ -499,6 +559,16 @@ namespace ConsoulLibrary
         {
             Options.ValueFormatter = formatter;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the formatter used for values rendered after bars using a Spectre-style alias.
+        /// </summary>
+        /// <param name="formatter">The value formatter.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart UseValueFormatter(Func<double, string> formatter)
+        {
+            return ValueFormatter(formatter);
         }
 
         /// <summary>

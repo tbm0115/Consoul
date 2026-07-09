@@ -9,6 +9,9 @@ namespace ConsoulLibrary
     /// </summary>
     public class ConfirmationPrompt : IPrompt<ConfirmResult>
     {
+        private ConsoleColor _promptColor = RenderOptions.PromptColor;
+        private ConsoleColor _invalidColor = RenderOptions.InvalidColor;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="ConfirmationPrompt"/> class.
         /// </summary>
@@ -107,12 +110,32 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the color used for the prompt message.
         /// </summary>
-        public ConsoleColor PromptColor { get; set; } = RenderOptions.PromptColor;
+        public ConsoleColor PromptColor
+        {
+            get => _promptColor;
+            set
+            {
+                _promptColor = value;
+                PromptTextStyle = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the color used for invalid input messages.
         /// </summary>
-        public ConsoleColor InvalidColor { get; set; } = RenderOptions.InvalidColor;
+        public ConsoleColor InvalidColor
+        {
+            get => _invalidColor;
+            set
+            {
+                _invalidColor = value;
+                InvalidTextStyle = null;
+            }
+        }
+
+        internal Style PromptTextStyle { get; set; }
+
+        internal Style InvalidTextStyle { get; set; }
 
         /// <summary>
         /// Displays the prompt and waits for confirmation input.
@@ -149,7 +172,7 @@ namespace ConsoulLibrary
                     return ConfirmResult.FromValue(value, input ?? string.Empty);
                 }
 
-                PromptRenderHelpers.WriteMarkupOrPlainLine(InvalidChoiceMessage, InvalidColor);
+                PromptRenderHelpers.WriteMarkupOrPlainLine(InvalidChoiceMessage, ResolveInvalidStyle());
             } while (true);
         }
 
@@ -166,11 +189,12 @@ namespace ConsoulLibrary
 
         private void WritePromptMessage()
         {
+            PromptRenderHelpers.StyledText promptStyle = ResolvePromptStyle();
             if (ChoicesStyle == null && DefaultValueStyle == null)
             {
-                if (PromptRenderHelpers.ContainsMarkup(Message))
+                if (PromptRenderHelpers.ContainsMarkup(Message) || HasStyleMetadata(PromptTextStyle))
                 {
-                    WritePromptMessageWithLiteralChoices();
+                    WritePromptMessageWithLiteralChoices(promptStyle);
                 }
                 else
                 {
@@ -182,56 +206,56 @@ namespace ConsoulLibrary
 
             if (!ShowChoices)
             {
-                WritePromptWithoutChoices();
+                WritePromptWithoutChoices(promptStyle);
                 return;
             }
 
-            PromptRenderHelpers.WriteMarkup(Message, PromptColor, writeLine: false);
-            Consoul.WriteCore(" [", PromptColor, writeLine: false);
+            PromptRenderHelpers.WriteMarkup(Message, promptStyle, writeLine: false);
+            PromptRenderHelpers.WriteMarkup(" [", promptStyle, writeLine: false);
             WriteChoice(Yes, DefaultValue);
-            Consoul.WriteCore("/", ResolveStyleColor(ChoicesStyle, PromptColor), writeLine: false);
+            PromptRenderHelpers.WriteMarkup("/", ResolvePromptChoiceStyle(ChoicesStyle), writeLine: false);
             WriteChoice(No, !DefaultValue);
-            Consoul.WriteCore("]", PromptColor);
+            PromptRenderHelpers.WriteMarkup("]", promptStyle, writeLine: true);
         }
 
-        private void WritePromptWithoutChoices()
+        private void WritePromptWithoutChoices(PromptRenderHelpers.StyledText promptStyle)
         {
             if (!ShowDefaultValue)
             {
-                PromptRenderHelpers.WriteMarkupLine(Message, PromptColor);
+                PromptRenderHelpers.WriteMarkupLine(Message, promptStyle);
                 return;
             }
 
-            PromptRenderHelpers.WriteMarkup(Message, PromptColor, writeLine: false);
-            Consoul.WriteCore(" [", PromptColor, writeLine: false);
-            Consoul.WriteCore(ResolveDefaultCharacter(), ResolveStyleColor(DefaultValueStyle, PromptColor), writeLine: false);
-            Consoul.WriteCore("]", PromptColor);
+            PromptRenderHelpers.WriteMarkup(Message, promptStyle, writeLine: false);
+            PromptRenderHelpers.WriteMarkup(" [", promptStyle, writeLine: false);
+            PromptRenderHelpers.WriteMarkup(ResolveDefaultCharacter(), ResolvePromptChoiceStyle(DefaultValueStyle), writeLine: false);
+            PromptRenderHelpers.WriteMarkup("]", promptStyle, writeLine: true);
         }
 
-        private void WritePromptMessageWithLiteralChoices()
+        private void WritePromptMessageWithLiteralChoices(PromptRenderHelpers.StyledText promptStyle)
         {
-            PromptRenderHelpers.WriteMarkup(Message, PromptColor, writeLine: false);
+            PromptRenderHelpers.WriteMarkup(Message, promptStyle, writeLine: false);
             if (!ShowChoices)
             {
                 if (ShowDefaultValue)
                 {
-                    Consoul.WriteCore(" [" + ResolveDefaultCharacter() + "]", PromptColor);
+                    PromptRenderHelpers.WriteMarkup(" [" + ResolveDefaultCharacter() + "]", promptStyle, writeLine: true);
                     return;
                 }
 
-                Consoul.WriteCore(string.Empty, PromptColor);
+                PromptRenderHelpers.WriteMarkup(string.Empty, promptStyle, writeLine: true);
                 return;
             }
 
             string yes = FormatChoice(Yes, DefaultValue);
             string no = FormatChoice(No, !DefaultValue);
-            Consoul.WriteCore(" [" + yes + "/" + no + "]", PromptColor);
+            PromptRenderHelpers.WriteMarkup(" [" + yes + "/" + no + "]", promptStyle, writeLine: true);
         }
 
         private void WriteChoice(char choice, bool isDefault)
         {
             Style style = ShowDefaultValue && isDefault ? DefaultValueStyle : ChoicesStyle;
-            Consoul.WriteCore(FormatChoice(choice, isDefault), ResolveStyleColor(style, PromptColor), writeLine: false);
+            PromptRenderHelpers.WriteMarkup(FormatChoice(choice, isDefault), ResolvePromptChoiceStyle(style), writeLine: false);
         }
 
         private string BuildPromptMessage()
@@ -284,9 +308,27 @@ namespace ConsoulLibrary
             return false;
         }
 
-        private static ConsoleColor ResolveStyleColor(Style style, ConsoleColor fallback)
+        private PromptRenderHelpers.StyledText ResolvePromptStyle()
         {
-            return style == null ? fallback : style.ToForegroundColor(fallback);
+            return PromptRenderHelpers.ResolveStyle(PromptTextStyle, PromptColor);
+        }
+
+        private PromptRenderHelpers.StyledText ResolveInvalidStyle()
+        {
+            return PromptRenderHelpers.ResolveStyle(InvalidTextStyle, InvalidColor);
+        }
+
+        private PromptRenderHelpers.StyledText ResolvePromptChoiceStyle(Style style)
+        {
+            return PromptRenderHelpers.ResolveStyle(style, PromptColor);
+        }
+
+        private static bool HasStyleMetadata(Style style)
+        {
+            return style != null &&
+                (style.Decoration != Decoration.None ||
+                 style.ForegroundRgb.HasValue ||
+                 style.BackgroundRgb.HasValue);
         }
     }
 }

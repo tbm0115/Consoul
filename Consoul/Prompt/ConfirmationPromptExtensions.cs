@@ -180,6 +180,7 @@ namespace ConsoulLibrary
         {
             ConfirmationPrompt configured = Require(prompt);
             configured.PromptColor = PromptRenderHelpers.ResolveStyleColor(style, configured.PromptColor);
+            configured.PromptTextStyle = style;
             return configured;
         }
 
@@ -191,9 +192,7 @@ namespace ConsoulLibrary
         /// <returns>The configured prompt.</returns>
         public static ConfirmationPrompt PromptStyle(this ConfirmationPrompt prompt, string style)
         {
-            ConfirmationPrompt configured = Require(prompt);
-            configured.PromptColor = ConsoulLibrary.Style.ParseForeground(style, configured.PromptColor);
-            return configured;
+            return PromptStyle(prompt, ConsoulLibrary.Style.Parse(style));
         }
 
         /// <summary>
@@ -252,6 +251,7 @@ namespace ConsoulLibrary
         {
             ConfirmationPrompt configured = Require(prompt);
             configured.InvalidColor = PromptRenderHelpers.ResolveStyleColor(style, configured.InvalidColor);
+            configured.InvalidTextStyle = style;
             return configured;
         }
 
@@ -263,9 +263,7 @@ namespace ConsoulLibrary
         /// <returns>The configured prompt.</returns>
         public static ConfirmationPrompt InvalidStyle(this ConfirmationPrompt prompt, string style)
         {
-            ConfirmationPrompt configured = Require(prompt);
-            configured.InvalidColor = ConsoulLibrary.Style.ParseForeground(style, configured.InvalidColor);
-            return configured;
+            return InvalidStyle(prompt, ConsoulLibrary.Style.Parse(style));
         }
 
         private static ConfirmationPrompt Require(ConfirmationPrompt prompt)

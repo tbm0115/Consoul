@@ -258,6 +258,7 @@ namespace ConsoulLibrary
         public Text Color(ConsoleColor color)
         {
             Options.Scheme = Scheme(color);
+            Options.Decoration = Decoration.None;
             Options.ForegroundRgb = null;
             Options.BackgroundRgb = null;
             return this;
@@ -271,6 +272,7 @@ namespace ConsoulLibrary
         public Text Color(SpectreColor color)
         {
             Options.Scheme = Scheme(color);
+            Options.Decoration = Decoration.None;
             Options.ForegroundRgb = color.ToRgbColor();
             Options.BackgroundRgb = null;
             return this;
@@ -284,6 +286,7 @@ namespace ConsoulLibrary
         public Text Color(RgbColor color)
         {
             Options.Scheme = Scheme(color);
+            Options.Decoration = Decoration.None;
             Options.ForegroundRgb = color;
             Options.BackgroundRgb = null;
             return this;

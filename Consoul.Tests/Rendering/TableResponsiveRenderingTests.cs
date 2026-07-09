@@ -1237,6 +1237,42 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Dynamic tables can add model-backed optional columns after rows are loaded.
+        /// </summary>
+        [Fact]
+        public void DynamicTableView_AddOptionalColumn_AddsOnlyWhenVisibleValuesExist()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                var rows = new[]
+                {
+                    new ServiceRow { Name = "Billing", Status = "Ready", Details = null },
+                    new ServiceRow { Name = "Worker", Status = "Waiting", Details = new Markup("[yellow]retry[/]") }
+                };
+                var table = new DynamicTableView<ServiceRow>(new TableRenderOptions { ShowFooterHelp = false });
+
+                table.AddHeader(row => row.Name);
+                table.AddRows(rows);
+                bool addedDetails = table.AddOptionalHeader(row => row.Details, "Details");
+                bool addedOwner = table.AddOptionalColumn("Owner", row => string.Empty);
+
+                table.Render();
+
+                Assert.True(addedDetails);
+                Assert.False(addedOwner);
+                Assert.Contains("Name", table.Headers);
+                Assert.Contains("Details", table.Headers);
+                Assert.DoesNotContain("Owner", table.Headers);
+                VisualAssert.ContainsText(scope.Driver, "Billing");
+                VisualAssert.ContainsText(scope.Driver, "Worker");
+                VisualAssert.ContainsText(scope.Driver, "retry");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("retry") && write.Color == ConsoleColor.Yellow);
+                Assert.DoesNotContain("Owner", scope.Driver.Text);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Spectre-style table column padding helpers affect manual table cells without overflowing.
         /// </summary>
         [Fact]

@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using ConsoulLibrary.Tests.Rendering;
@@ -102,6 +105,38 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Spinner builders keep parsed spinner-style metadata until the started scope renders it.
+        /// </summary>
+        [Fact]
+        public void SpinnerBuilder_SpinnerStylePreservesTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            var output = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true);
+            var settings = new AnsiConsoleSettings
+            {
+                Out = output,
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            };
+
+            using (Consoul.UseConsoleDriver(new TextWriterConsoleDriver(output, settings)))
+            {
+                AnsiConsole.Spinner()
+                    .Spinner(Spinner.Known.Line)
+                    .SpinnerStyle("italic #778899")
+                    .RefreshRate(0)
+                    .Start("Builder initial", spinner =>
+                    {
+                        spinner.Tick("Builder styled");
+                    });
+            }
+
+            string rendered = writer.ToString();
+            Assert.Contains("\u001b[3;38;2;119;136;153m", rendered);
+            Assert.Contains("Builder styled", rendered);
+        }
+
+        /// <summary>
         /// Common Spectre-style spinner aliases can be used by spinner and status builders.
         /// </summary>
         [Fact]
@@ -163,6 +198,47 @@ namespace ConsoulLibrary.Tests.Rendering
                 VisualAssert.WroteText(scope.Driver, ".. Ready");
                 VisualAssert.WroteText(scope.Driver, "/\\ Triangulating");
                 VisualAssert.WroteText(scope.Driver, "|> Aligned");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Reusable spinners accept generated frame collections for MVC-style status palettes.
+        /// </summary>
+        [Fact]
+        public void Spinner_Constructors_AcceptEnumerableFrames()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                IEnumerable<string> frames = new List<string> { "G1", "G2" };
+                IEnumerable<string> namedFrames = new List<string> { "N1", "N2" };
+
+                var generated = new Spinner(frames);
+                var named = new Spinner("Generated", namedFrames);
+
+                Assert.Equal(string.Empty, generated.Name);
+                Assert.Equal("Generated", named.Name);
+                Assert.Equal(new[] { "G1", "G2" }, generated.Frames);
+                Assert.Equal(new[] { "N1", "N2" }, named.Frames);
+
+                AnsiConsole.Spinner()
+                    .Spinner(generated)
+                    .Start("Generated spinner", spinner =>
+                    {
+                        spinner.Tick("Generated spinner tick");
+                    });
+
+                AnsiConsole.Status()
+                    .Spinner(named)
+                    .Start("Generated status", status =>
+                    {
+                        status.Status("Generated status tick");
+                    });
+
+                VisualAssert.WroteText(scope.Driver, "G1 Generated spinner");
+                VisualAssert.WroteText(scope.Driver, "G2 Generated spinner tick");
+                VisualAssert.WroteText(scope.Driver, "N1 Generated status");
+                VisualAssert.WroteText(scope.Driver, "N2 Generated status tick");
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }

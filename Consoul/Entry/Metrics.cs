@@ -145,6 +145,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds existing metric items.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public Metrics AddMetrics(MetricItem firstItem, params MetricItem[] additionalItems)
+        {
+            AddMetric(firstItem);
+
+            if (additionalItems != null)
+            {
+                foreach (MetricItem item in additionalItems)
+                {
+                    AddMetric(item);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds metric items projected from a model collection.
         /// </summary>
         /// <typeparam name="T">The model item type.</typeparam>

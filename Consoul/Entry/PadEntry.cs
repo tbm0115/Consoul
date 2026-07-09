@@ -54,18 +54,26 @@ namespace ConsoulLibrary
             }
 
             int innerWidth = Math.Max(1, width - left - right);
-            ColorScheme scheme = _options.ResolveScheme();
+            PadOptions.StyledText style = _options.ResolveStyle();
+            ColorScheme scheme = style.Scheme;
 
-            WriteBlankLines(_options.ResolveTop(), width, scheme);
+            WriteBlankLines(_options.ResolveTop(), width, style);
 
-            foreach (List<FixedMessageSegment> line in BuildContentLines(innerWidth, scheme))
+            foreach (List<FixedMessageSegment> line in BuildContentLines(innerWidth, style))
             {
-                List<FixedMessageSegment> inner = PadOrTrimSegments(line, innerWidth, scheme);
-                List<FixedMessageSegment> padded = MarkupRenderText.PadSegments(inner, left, right, scheme);
-                MarkupRenderText.WriteSegments(PadOrTrimSegments(padded, width, scheme), scheme, true);
+                List<FixedMessageSegment> inner = PadOrTrimSegments(line, innerWidth, style);
+                List<FixedMessageSegment> padded = MarkupRenderText.PadSegments(
+                    inner,
+                    left,
+                    right,
+                    scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb);
+                MarkupRenderText.WriteSegments(PadOrTrimSegments(padded, width, style), scheme, true);
             }
 
-            WriteBlankLines(_options.ResolveBottom(), width, scheme);
+            WriteBlankLines(_options.ResolveBottom(), width, style);
         }
 
         /// <summary>
@@ -106,25 +114,52 @@ namespace ConsoulLibrary
             new PadEntry(content, resolvedOptions, false).Render();
         }
 
-        private static void WriteBlankLines(int count, int width, ColorScheme scheme)
+        private static void WriteBlankLines(int count, int width, PadOptions.StyledText style)
         {
             for (int index = 0; index < count; index++)
             {
-                Consoul.Write(new string(' ', width), scheme, true);
+                MarkupRenderText.WriteSegments(
+                    new[]
+                    {
+                        new FixedMessageSegment(
+                            new string(' ', width),
+                            style.Scheme,
+                            style.Decoration,
+                            null,
+                            style.ForegroundRgb,
+                            style.BackgroundRgb)
+                    },
+                    style.Scheme,
+                    true);
             }
         }
 
-        private IEnumerable<List<FixedMessageSegment>> BuildContentLines(int innerWidth, ColorScheme scheme)
+        private IEnumerable<List<FixedMessageSegment>> BuildContentLines(int innerWidth, PadOptions.StyledText style)
         {
             if (_parseMarkup)
             {
-                return MarkupRenderText.WrapSegments(Content, innerWidth, scheme);
+                return MarkupRenderText.WrapSegments(
+                    Content,
+                    innerWidth,
+                    style.Scheme,
+                    style.Decoration,
+                    style.ForegroundRgb,
+                    style.BackgroundRgb);
             }
 
             var lines = new List<List<FixedMessageSegment>>();
             foreach (string line in PanelEntry.WrapLines(Content, innerWidth))
             {
-                lines.Add(new List<FixedMessageSegment> { new FixedMessageSegment(line, scheme) });
+                lines.Add(new List<FixedMessageSegment>
+                {
+                    new FixedMessageSegment(
+                        line,
+                        style.Scheme,
+                        style.Decoration,
+                        null,
+                        style.ForegroundRgb,
+                        style.BackgroundRgb)
+                });
             }
 
             if (lines.Count == 0)
@@ -135,10 +170,16 @@ namespace ConsoulLibrary
             return lines;
         }
 
-        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, ColorScheme scheme)
+        private static List<FixedMessageSegment> PadOrTrimSegments(IList<FixedMessageSegment> segments, int width, PadOptions.StyledText style)
         {
             List<FixedMessageSegment> result = MarkupRenderText.TruncateSegments(segments, Math.Max(0, width));
-            MarkupRenderText.AddPadding(result, Math.Max(0, width - MarkupRenderText.GetLength(result)), scheme);
+            MarkupRenderText.AddPadding(
+                result,
+                Math.Max(0, width - MarkupRenderText.GetLength(result)),
+                style.Scheme,
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
             return result;
         }
     }

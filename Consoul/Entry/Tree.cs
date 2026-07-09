@@ -336,6 +336,98 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a recursive tree of child nodes to the root node projected from a model collection.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into child nodes.</param>
+        /// <param name="contentSelector">Selects each node content. Values may be plain objects, existing nodes, or reusable renderables.</param>
+        /// <param name="childrenSelector">Selects the child items for each model item.</param>
+        /// <param name="colorSelector">Optionally selects the foreground color used for each node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree AddTree<T>(
+            IEnumerable<T> items,
+            Func<T, object> contentSelector,
+            Func<T, IEnumerable<T>> childrenSelector,
+            Func<T, ConsoleColor?> colorSelector = null,
+            int? captureWidth = null,
+            int captureHeight = 20)
+        {
+            Root.AddTree(items, contentSelector, childrenSelector, colorSelector, captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a recursive tree of child nodes to the root node projected from a model collection with Spectre-style node colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into child nodes.</param>
+        /// <param name="contentSelector">Selects each node content. Values may be plain objects, existing nodes, or reusable renderables.</param>
+        /// <param name="childrenSelector">Selects the child items for each model item.</param>
+        /// <param name="colorSelector">Selects the foreground color used for each node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree AddTree<T>(
+            IEnumerable<T> items,
+            Func<T, object> contentSelector,
+            Func<T, IEnumerable<T>> childrenSelector,
+            Func<T, SpectreColor> colorSelector,
+            int? captureWidth = null,
+            int captureHeight = 20)
+        {
+            Root.AddTree(items, contentSelector, childrenSelector, colorSelector, captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a recursive tree of child nodes to the root node projected from a model collection with RGB node colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into child nodes.</param>
+        /// <param name="contentSelector">Selects each node content. Values may be plain objects, existing nodes, or reusable renderables.</param>
+        /// <param name="childrenSelector">Selects the child items for each model item.</param>
+        /// <param name="colorSelector">Selects the foreground color used for each node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree AddTree<T>(
+            IEnumerable<T> items,
+            Func<T, object> contentSelector,
+            Func<T, IEnumerable<T>> childrenSelector,
+            Func<T, RgbColor> colorSelector,
+            int? captureWidth = null,
+            int captureHeight = 20)
+        {
+            Root.AddTree(items, contentSelector, childrenSelector, colorSelector, captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a recursive tree of child nodes to the root node projected from a model collection using Spectre-style style text.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into child nodes.</param>
+        /// <param name="contentSelector">Selects each node content. Values may be plain objects, existing nodes, or reusable renderables.</param>
+        /// <param name="childrenSelector">Selects the child items for each model item.</param>
+        /// <param name="styleSelector">Optionally selects style text such as <c>green</c>, <c>#22c55e</c>, or <c>white on blue</c> for each node.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing renderable content.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing renderable content.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree AddTree<T>(
+            IEnumerable<T> items,
+            Func<T, object> contentSelector,
+            Func<T, IEnumerable<T>> childrenSelector,
+            Func<T, string> styleSelector,
+            int? captureWidth = null,
+            int captureHeight = 20)
+        {
+            Root.AddTree(items, contentSelector, childrenSelector, styleSelector, captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
         /// Adds a child node with captured renderable content to the root node.
         /// </summary>
         /// <param name="renderable">The renderable content used as the child node label.</param>

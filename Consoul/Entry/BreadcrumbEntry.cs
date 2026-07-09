@@ -13,7 +13,7 @@ namespace ConsoulLibrary
     public class BreadcrumbEntry : IRenderable
     {
         private readonly List<string> _items = new List<string>();
-        private readonly List<ColorScheme?> _itemSchemes = new List<ColorScheme?>();
+        private readonly List<BreadcrumbOptions.StyledText?> _itemStyles = new List<BreadcrumbOptions.StyledText?>();
         private readonly BreadcrumbOptions _options;
 
         /// <summary>
@@ -71,11 +71,7 @@ namespace ConsoulLibrary
         /// <returns>The breadcrumb entry.</returns>
         public BreadcrumbEntry Add(string item, ConsoleColor color)
         {
-            return AddCore(item, new ColorScheme
-            {
-                Color = color,
-                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
-            });
+            return AddCore(item, new BreadcrumbOptions.StyledText(Scheme(color), Decoration.None, null, null));
         }
 
         /// <summary>
@@ -86,7 +82,11 @@ namespace ConsoulLibrary
         /// <returns>The breadcrumb entry.</returns>
         public BreadcrumbEntry Add(string item, Style style)
         {
-            return AddCore(item, style?.ToColorScheme(RenderOptions.DefaultScheme));
+            return AddCore(
+                item,
+                style == null
+                    ? (BreadcrumbOptions.StyledText?)null
+                    : BreadcrumbOptions.StyledText.FromStyle(style, RenderOptions.DefaultScheme));
         }
 
         /// <summary>
@@ -97,11 +97,7 @@ namespace ConsoulLibrary
         /// <returns>The breadcrumb entry.</returns>
         public BreadcrumbEntry Add(string item, string style)
         {
-            ColorScheme? scheme = string.IsNullOrWhiteSpace(style)
-                ? (ColorScheme?)null
-                : Style.Parse(style).ToColorScheme(RenderOptions.DefaultScheme);
-
-            return AddCore(item, scheme);
+            return Add(item, string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style));
         }
 
         /// <summary>
@@ -197,7 +193,7 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                Add(itemSelector(item), colorSelector(item).ToConsoleColor());
+                Add(itemSelector(item), new Style(colorSelector(item)));
             }
 
             return this;
@@ -230,19 +226,19 @@ namespace ConsoulLibrary
 
             foreach (T item in items)
             {
-                Add(itemSelector(item), colorSelector(item).ToConsoleColor());
+                Add(itemSelector(item), new Style(colorSelector(item)));
             }
 
             return this;
         }
 
-        private BreadcrumbEntry AddCore(string item, ColorScheme? scheme)
+        private BreadcrumbEntry AddCore(string item, BreadcrumbOptions.StyledText? style)
         {
             string normalized = Normalize(item);
             if (normalized.Length > 0)
             {
                 _items.Add(normalized);
-                _itemSchemes.Add(scheme);
+                _itemStyles.Add(style);
             }
 
             return this;
@@ -347,7 +343,7 @@ namespace ConsoulLibrary
                     CreateItemSegments(0, 1),
                     width,
                     ResolveEllipsis(),
-                    ResolveItemScheme(0, 1));
+                    ResolveItemStyle(0, 1));
             }
 
             string separator = ResolveSeparator();
@@ -368,7 +364,7 @@ namespace ConsoulLibrary
                     fullSegments,
                     width,
                     ellipsis,
-                    ResolveItemScheme(_items.Count - 1, _items.Count));
+                    ResolveItemStyle(_items.Count - 1, _items.Count));
             }
 
             int firstWidth = Math.Max(1, Math.Min(firstLength, available / 3));
@@ -383,18 +379,18 @@ namespace ConsoulLibrary
             if (_items.Count == 2)
             {
                 var segments = new List<FixedMessageSegment>();
-                AddSegments(segments, TrimMiddleSegments(CreateItemSegments(0, _items.Count), firstWidth, ellipsis, ResolveItemScheme(0, _items.Count)));
-                AddPlainSegment(segments, separator, _options.ResolveSeparatorScheme());
-                AddSegments(segments, TrimMiddleSegments(CreateItemSegments(1, _items.Count), currentWidth, ellipsis, ResolveItemScheme(1, _items.Count)));
+                AddSegments(segments, TrimMiddleSegments(CreateItemSegments(0, _items.Count), firstWidth, ellipsis, ResolveItemStyle(0, _items.Count)));
+                AddPlainSegment(segments, separator, _options.ResolveSeparatorStyle());
+                AddSegments(segments, TrimMiddleSegments(CreateItemSegments(1, _items.Count), currentWidth, ellipsis, ResolveItemStyle(1, _items.Count)));
                 return segments;
             }
 
             var result = new List<FixedMessageSegment>();
-            AddSegments(result, TrimMiddleSegments(CreateItemSegments(0, _items.Count), firstWidth, ellipsis, ResolveItemScheme(0, _items.Count)));
-            AddPlainSegment(result, separator, _options.ResolveSeparatorScheme());
-            AddPlainSegment(result, ellipsis, _options.ResolveEllipsisScheme());
-            AddPlainSegment(result, separator, _options.ResolveSeparatorScheme());
-            AddSegments(result, TrimMiddleSegments(CreateItemSegments(_items.Count - 1, _items.Count), currentWidth, ellipsis, ResolveItemScheme(_items.Count - 1, _items.Count)));
+            AddSegments(result, TrimMiddleSegments(CreateItemSegments(0, _items.Count), firstWidth, ellipsis, ResolveItemStyle(0, _items.Count)));
+            AddPlainSegment(result, separator, _options.ResolveSeparatorStyle());
+            AddPlainSegment(result, ellipsis, _options.ResolveEllipsisStyle());
+            AddPlainSegment(result, separator, _options.ResolveSeparatorStyle());
+            AddSegments(result, TrimMiddleSegments(CreateItemSegments(_items.Count - 1, _items.Count), currentWidth, ellipsis, ResolveItemStyle(_items.Count - 1, _items.Count)));
             return result;
         }
 
@@ -406,7 +402,7 @@ namespace ConsoulLibrary
             {
                 if (index > 0)
                 {
-                    AddPlainSegment(segments, separator, _options.ResolveSeparatorScheme());
+                    AddPlainSegment(segments, separator, _options.ResolveSeparatorStyle());
                 }
 
                 AddSegments(segments, CreateItemSegments(index, items.Count));
@@ -417,26 +413,32 @@ namespace ConsoulLibrary
 
         private IList<FixedMessageSegment> CreateItemSegments(int index, int count)
         {
-            return MarkupRenderText.ParseSegments(_items[index], ResolveItemScheme(index, count));
+            BreadcrumbOptions.StyledText style = ResolveItemStyle(index, count);
+            return MarkupRenderText.ParseSegments(
+                _items[index],
+                style.Scheme,
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
         }
 
-        private ColorScheme ResolveItemScheme(int index, int count)
+        private BreadcrumbOptions.StyledText ResolveItemStyle(int index, int count)
         {
-            ColorScheme? itemScheme = index >= 0 && index < _itemSchemes.Count
-                ? _itemSchemes[index]
+            BreadcrumbOptions.StyledText? itemStyle = index >= 0 && index < _itemStyles.Count
+                ? _itemStyles[index]
                 : null;
 
-            if (itemScheme.HasValue)
+            if (itemStyle.HasValue)
             {
-                return itemScheme.Value;
+                return itemStyle.Value;
             }
 
             if (_options.HighlightCurrent && index == count - 1)
             {
-                return _options.ResolveCurrentScheme();
+                return _options.ResolveCurrentStyle();
             }
 
-            return _options.ResolveItemScheme();
+            return _options.ResolveItemStyle();
         }
 
         private int ResolveWidth(int? width = null)
@@ -465,7 +467,7 @@ namespace ConsoulLibrary
             IList<FixedMessageSegment> segments,
             int width,
             string ellipsis,
-            ColorScheme ellipsisScheme)
+            BreadcrumbOptions.StyledText ellipsisStyle)
         {
             width = Math.Max(0, width);
             if (width == 0 || segments == null || segments.Count == 0)
@@ -490,7 +492,7 @@ namespace ConsoulLibrary
             int right = remaining - left;
             var result = new List<FixedMessageSegment>();
             AddSegments(result, MarkupRenderText.TakeVisibleSegments(segments, left));
-            AddPlainSegment(result, ellipsis, ellipsisScheme);
+            AddPlainSegment(result, ellipsis, ellipsisStyle);
             AddSegments(result, MarkupRenderText.SkipVisibleSegments(segments, length - right));
             return result;
         }
@@ -510,9 +512,9 @@ namespace ConsoulLibrary
             }
         }
 
-        private static void AddPlainSegment(IList<FixedMessageSegment> segments, string text, ColorScheme scheme)
+        private static void AddPlainSegment(IList<FixedMessageSegment> segments, string text, BreadcrumbOptions.StyledText style)
         {
-            AddSegment(segments, text, scheme);
+            AddSegment(segments, text, style.Scheme, style.Decoration, null, style.ForegroundRgb, style.BackgroundRgb);
         }
 
         private static void AddSegment(IList<FixedMessageSegment> segments, string text, ColorScheme scheme)
@@ -554,6 +556,15 @@ namespace ConsoulLibrary
             }
 
             segments.Add(new FixedMessageSegment(text, scheme, decoration, link, foregroundRgb, backgroundRgb));
+        }
+
+        private static ColorScheme Scheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
         }
 
         private static bool SameScheme(ColorScheme? left, ColorScheme right)

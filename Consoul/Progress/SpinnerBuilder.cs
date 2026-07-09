@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using RgbColor = ConsoulLibrary.Color.RgbColor;
@@ -77,6 +79,17 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the spinner frames used for active messages.
+        /// </summary>
+        /// <param name="frames">The frames rendered by successive ticks.</param>
+        /// <returns>The current builder.</returns>
+        public SpinnerBuilder Frames(IEnumerable<string> frames)
+        {
+            _options.Frames = frames == null ? null : frames.ToArray();
+            return this;
+        }
+
+        /// <summary>
         /// Sets the foreground color used for active spinner text.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -88,6 +101,7 @@ namespace ConsoulLibrary
                 throw new ArgumentNullException(nameof(style));
             }
 
+            _options.ActiveStyle = style;
             _options.ActiveColor = style.ToForegroundColor(_options.ActiveColor);
             return this;
         }

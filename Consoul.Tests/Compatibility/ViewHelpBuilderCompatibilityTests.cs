@@ -58,6 +58,39 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// View help entries accept prepared item params for quick MVC command summaries.
+        /// </summary>
+        [Fact]
+        public void ViewHelpEntry_AddItems_AcceptsPreparedItemParams()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                var help = new ViewHelpEntry("Commands", new ViewHelpOptions
+                {
+                    Width = 42,
+                    LabelWidth = 12,
+                    ShortcutWidth = 6
+                })
+                .AddItems(
+                    ViewHelpItem.Styled("Deploy", "green", "Publish release", "d"),
+                    ViewHelpItem.Separator("Danger", ConsoleColor.DarkGray),
+                    ViewHelpItem.Styled("Docs", new Style(ConsoleColor.Magenta), "Open runbook", "docs"));
+
+                AnsiConsole.Write(help);
+
+                Assert.Equal(3, help.Items.Count);
+                VisualAssert.ContainsText(scope.Driver, "Commands");
+                VisualAssert.ContainsText(scope.Driver, "Deploy");
+                VisualAssert.ContainsText(scope.Driver, "Danger");
+                VisualAssert.ContainsText(scope.Driver, "Docs");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Danger") && write.Color == ConsoleColor.DarkGray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Docs") && write.Color == ConsoleColor.Magenta);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// View help labels, descriptions, disabled reasons, and separators can use raw markup without leaking tags.
         /// </summary>
         /// <param name="width">The fake terminal width.</param>

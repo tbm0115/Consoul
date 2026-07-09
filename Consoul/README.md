@@ -410,11 +410,17 @@ AnsiConsole.Write(new Tree("Services")
     .AddNodes(services, service => service.Name, service => service.Color)
     .AddNodes(services, service => "Styled " + service.Name, service => service.Style));
 
+// For nested view models, AddTree(...) projects children recursively.
+AnsiConsole.Write(new Tree("Dependency graph")
+    .Width(48)
+    .AddTree(nodes, node => node.Name, node => node.Children, node => node.Style));
+
 var chart = new BarChart()
     .Label("Job health")
     .CenterLabel()
     .Width(40)
-    .MaximumValue(10)
+    .WithMaxValue(10)
+    .UseValueFormatter(value => value.ToString("0") + " jobs")
     .AddItem("Passing", 8, ConsoleColor.Green)
     .AddItem("Failing", 2, ConsoleColor.Red);
 
@@ -443,10 +449,10 @@ AnsiConsole.Write(new BreakdownChart()
     .AddItem("Failed", 1, Color.Red)
     .AddItems(jobs, job => job.Name + " styled", job => job.Count, job => job.StyleText));
 
-`BarChart` and `BreakdownChart` label, segment/bar, value, and item style helpers preserve RGB/hex colors and ANSI decorations on capable terminals while still mapping to readable `ConsoleColor` values for simpler hosts.
+`BarChart` and `BreakdownChart` label, segment/bar, value, and item style helpers preserve RGB/hex colors and ANSI decorations on capable terminals while still mapping to readable `ConsoleColor` values for simpler hosts. Chart aliases such as `BarChart.MaxValue(...)`, `WithMaxValue(...)`, `UseValueFormatter(...)`, `ShowValue()`, `HideValue()`, `BreakdownChart.UseValueFormatter(...)`, and `UsePercentageFormatter(...)` keep copied snippets terse while routing through the same MVC-friendly option model.
 ```
 
-Dashboard widgets use the same renderable-builder pattern for quick POC status screens. Metric labels, values, units, and notes, timeline titles/descriptions, and sparkline labels can contain raw markup while still wrapping, padding, and truncating by visible text. Metric colors, timeline title/description/marker/connector colors, and sparkline label, line, and range colors accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values; Metrics, Timeline, and Sparkline preserve RGB/hex colors and ANSI decorations on capable terminals:
+Dashboard widgets use the same renderable-builder pattern for quick POC status screens. Metric labels, values, units, and notes, timeline titles/descriptions, and sparkline labels can contain raw markup while still wrapping, padding, and truncating by visible text. Metric colors, timeline title/description/marker/connector colors, and sparkline label, line, and range colors accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values; Metrics, Timeline, and Sparkline preserve RGB/hex colors and ANSI decorations on capable terminals. Prepared dashboard item params such as `Metrics.AddMetrics(metric1, metric2)`, `Timeline.AddSteps(step1, step2)`, `ShortcutBar.AddShortcuts(shortcut1, shortcut2)`, `Calendar.AddCalendarEvents(releaseDay, freezeDay)`, and `ViewHelpEntry.AddItems(deployHelp, docsHelp)` keep small MVC-style view summaries terse, and `BarChart.AddItems(bar1, bar2)` / `BreakdownChart.AddItems(slice1, slice2)` do the same for quick model-backed chart cards. Sparkline accepts immediate value params such as `Sparkline.AddValues(12, 10, 14)` or `Consoul.Sparkline(line => line.AddRange(12, 10, 14))` alongside selector-backed model projections. Sparkline aliases such as `MinValue(...)`, `MaxValue(...)`, `WithMinValue(...)`, `WithMaxValue(...)`, and `UseValueFormatter(...)` route copied snippets through the same range and formatter options:
 
 ```csharp
 AnsiConsole.Write(new Metrics()
@@ -475,7 +481,10 @@ AnsiConsole.Write(new Metrics()
 AnsiConsole.Write(new Sparkline(new[] { 12d, 10d, 11d, 8d, 7d, 9d })
     .Width(40)
     .Label("Duration")
+    .WithMinValue(0)
+    .WithMaxValue(20)
     .ShowRange()
+    .UseValueFormatter(value => value.ToString("0") + "m")
     .LineColor(RgbColor.Green)
     .RangeColor(Color.Aqua));
 
@@ -544,7 +553,7 @@ AnsiConsole.ValidationSummary(
     new ValidationSummaryOptions { Width = 48 }.InvalidColor(Color.Red).IssueColor(RgbColor.Yellow));
 ```
 
-Composition builders make quick dashboard layouts readable without leaving the renderable path. Their color helpers accept `ConsoleColor`, reusable `Style` objects, Spectre-style style strings, `Color`, and `RgbColor` values, and item-level row, cell, column, and pane overloads can use the same palette vocabulary so branded POC regions share colors with tables, prompts, and status widgets. `Padder.Color(...)` and `Align.Color(...)` keep wrapper components on that same shared-palette path. `Rows`, `Columns`, and `Grid` can mix plain values, configured row/cell objects, strings, and reusable renderables, which keeps quick MVC-style diagnostic layouts from needing adapter code. Aligned text, padded text, row text, column content, grid headers, grid cell text, layout pane titles, and layout pane content can contain raw markup and still wrap, collapse, pad, align, and render by visible text. `Rows.AddRows(...)`, `Columns.AddColumns(...)`, and `Grid.AddCells(...)` accept text, renderable, and mixed object params as well as enumerables for pasted fluent snippets; selector-backed overloads such as `Rows.AddRows(models, item => item.Summary, item => item.StyleText)`, `Columns.AddColumns(models, item => item.Panel, item => item.Title, item => item.StyleText)`, `Grid.AddCells(models, item => item.Value, item => item.Label, item => item.StyleText)`, and `Layout.AddPanes(models, item => item.Content, item => item.Title, item => item.StyleText)` keep model-backed dashboard sections out of hand-written adapter loops. Those row, column, cell, and pane color selectors can also return `Color` or `RgbColor` directly when the view model owns palette objects. `Layout.AddPanes(...)` selectors can return plain values, reusable renderables, render actions, configured `LayoutPane` instances, or nested `Layout` regions. `Align` accepts `LeftJustified()` and `RightJustified()` aliases alongside `LeftAligned()`, `Centered()`, and `RightAligned()`, so dashboard snippets use the same alignment vocabulary as text, rules, and figlet titles. Captured `Align` and `Padder` content stays plain text after capture, while direct text parses raw markup. `GridColumn` accepts `LeftAligned()`, `Centered()`, and `RightAligned()` helpers alongside `Justify(...)`, so compact model-state grids use the same fluent alignment names as table columns. Named layouts can use `Size(...)`, `Ratio(...)`, `MinimumSize(...)`, `Visible(...)`, and `Invisible()` hints while still being updated as MVC-style view regions.
+Composition builders make quick dashboard layouts readable without leaving the renderable path. Their color helpers accept `ConsoleColor`, reusable `Style` objects, Spectre-style style strings, `Color`, and `RgbColor` values, and item-level row, cell, column, and pane overloads can use the same palette vocabulary so branded POC regions share colors with tables, prompts, and status widgets. `Padder.Color(...)` and `Align.Color(...)` keep wrapper components on that same shared-palette path, preserving RGB/hex colors and ANSI decorations across padded or aligned text and spacing on capable terminals. `Rows`, `Columns`, and `Grid` can mix plain values, configured row/cell objects, strings, and reusable renderables, which keeps quick MVC-style diagnostic layouts from needing adapter code. Aligned text, padded text, row text, column content, grid headers, grid cell text, layout pane titles, and layout pane content can contain raw markup and still wrap, collapse, pad, align, and render by visible text. `Rows.AddRows(...)`, `Columns.AddColumns(...)`, `Grid.AddRows(new[] { "API", "Ready" }, new[] { "Worker", "Queued" })`, and `Grid.AddCells(...)` accept text, renderable, and mixed object params as well as enumerables for pasted fluent snippets; selector-backed overloads such as `Rows.AddRows(models, item => item.Summary, item => item.StyleText)`, `Columns.AddColumns(models, item => item.Panel, item => item.Title, item => item.StyleText)`, `Grid.AddCells(models, item => item.Value, item => item.Label, item => item.StyleText)`, and `Layout.AddPanes(models, item => item.Content, item => item.Title, item => item.StyleText)` keep model-backed dashboard sections out of hand-written adapter loops. Row, column, cell, and pane selectors preserve `Style` decorations and RGB/hex metadata on capable terminals, and their color selectors can return `Color` or `RgbColor` directly when the view model owns palette objects. `new Layout(panes)` and `Layout.AddPanes(panes)` accept prepared `LayoutPane` collections, while selector-backed `Layout.AddPanes(...)` can return plain values, reusable renderables, render actions, configured `LayoutPane` instances, or nested `Layout` regions. `Layout.SplitColumns(renderable1, renderable2)` and `SplitRows(...)` also accept reusable renderables directly for static dashboard composition, while named nested layouts keep mutable MVC-style view regions addressable. `Align` accepts `LeftJustified()` and `RightJustified()` aliases alongside `LeftAligned()`, `Centered()`, and `RightAligned()`, so dashboard snippets use the same alignment vocabulary as text, rules, and figlet titles. Captured `Align` and `Padder` content stays plain text after capture, while direct text parses raw markup. `Grid.AddColumn(column => ...)` and `Grid.AddColumns(columns)` accept configured `GridColumn` metadata from inline builders or model-projected collections; `GridColumn` accepts `LeftAligned()`, `Centered()`, and `RightAligned()` helpers alongside `Justify(...)`, so compact model-state grids use the same fluent alignment names as table columns. Named layouts can use `Size(...)`, `Ratio(...)`, `MinimumSize(...)`, `Visible(...)`, and `Invisible()` hints while still being updated as MVC-style view regions.
 
 ```csharp
 AnsiConsole.Rows(
@@ -609,14 +618,19 @@ AnsiConsole.Write(new Columns()
         status => new Markup(status.Warning ? "[yellow]" + status.State + "[/]" : "[green]" + status.State + "[/]"),
         status => status.Name));
 
+var dashboardGridColumns = new[]
+{
+    new GridColumn().RightAligned()
+};
 AnsiConsole.Write(new Grid()
-    .AddColumns(
-        new GridColumn().Width(14).Padding(1, 1).NoWrap(),
-        new GridColumn().RightAligned())
+    .AddColumn(column => column.Width(14).Padding(1, 1).NoWrap())
+    .AddColumns(dashboardGridColumns)
     .Collapse()
-    .AddRow("Build", new Markup("[green]Ready[/]"))
+    .AddRows(
+        new[] { "Build", "Ready" },
+        new[] { "Deploy", "Waiting" })
     .AddEmptyRow()
-    .AddRow("Deploy", 2));
+    .AddRow("Retries", 2));
 
 AnsiConsole.Write(new Grid()
     .ColumnCount(3)
@@ -638,6 +652,24 @@ AnsiConsole.Write(new Align(new Panel("Centered summary").Header("Overview"), Ho
 var target = new Tree("Deploy");
 target.AddNode("Production");
 
+var summaryPanes = new[]
+{
+    LayoutPane.Create("Ready", "Status", "green").Size(12),
+    LayoutPane.Create("Jobs: 4", "Metrics", "aqua")
+};
+AnsiConsole.Write(new Layout(summaryPanes).Width(36).ColumnCount(2));
+
+AnsiConsole.Write(new Layout("Snapshot")
+    .Width(48)
+    .SplitColumns(
+        new Panel("Ready").Header("API").Width(18),
+        new Table()
+            .HideFooter()
+            .AddColumns("Job", "State")
+            .AddRows(
+                new[] { "Build", "OK" },
+                new[] { "Deploy", "Waiting" })));
+
 var layout = new Layout("Dashboard")
     .SplitRows(
         new Layout("Header").Size(3),
@@ -653,7 +685,7 @@ layout["Target"].Update(target);
 AnsiConsole.Write(layout);
 ```
 
-Text and terminal-art builders cover quick labels, splash text, schedules, and small diagrams. `Text` and `Paragraph` color helpers accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values. Their content can include raw markup such as `[green]Ready[/]`; the text-block renderer wraps, aligns, crops, and ellipsizes by visible text while preserving parsed colors and RGB/hex metadata:
+Text and terminal-art builders cover quick labels, splash text, schedules, and small diagrams. `Text`, `Paragraph`, `HeadlineOptions`, and `FigletText` color helpers accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values while preserving RGB/hex colors and ANSI decorations on capable terminals. Their content can include raw markup such as `[green]Ready[/]`; the text-block renderer wraps, aligns, crops, and ellipsizes by visible text while preserving parsed colors and RGB/hex metadata:
 
 ```csharp
 AnsiConsole.Write(new Text("Ready", ConsoleColor.Green));
@@ -678,7 +710,7 @@ AnsiConsole.Write(new FigletText("Consoul")
     .Character('#')
     .Fitted()
     .Pad(false)
-    .Color(ConsoleColor.Cyan));
+    .Color("bold #22c55e"));
 
 AnsiConsole.Write(new Calendar(new DateTime(2026, 6, 1))
     .Culture(System.Globalization.CultureInfo.InvariantCulture)
@@ -727,7 +759,7 @@ AnsiConsole.Write(new CanvasImage(thumbnail)
 
 `CanvasImage` renders in-memory pixels or `ConsoleColor` matrices as terminal half-blocks without adding image-decoding dependencies to the core package. Keep PNG/JPEG loading in an optional companion package or application adapter, then pass the decoded pixels into `CanvasImage` when the screen needs a quick thumbnail or status image.
 
-Status and list builders keep dashboards scannable. Their marker, label, content, border, separator, key, and disabled color helpers accept `ConsoleColor`, style strings, reusable `Style` objects, `Color`, and `RgbColor` values. Badge labels, breadcrumb labels, bullet-list item text, checklist labels/descriptions, timeline titles/descriptions, property-list labels/values, and shortcut-bar keys/descriptions can also contain raw markup such as `[green]Ready[/]` or `[white on navy]Approval[/]`; rendering wraps by visible text and preserves parsed colors, RGB/hex metadata, and ANSI-capable text decorations. Callout border/title/content helpers, ShortcutBar key/description/separator/disabled helpers, and selector-backed shortcut styles preserve RGB/hex colors and ANSI decorations on capable terminals, and Calendar header, weekday, day, today, marked-day, and event styles preserve the same metadata. `Breadcrumb.AddItems(models, item => item.Label)` projects model-backed navigation trails, `BulletList.AddItems("Build", "Test")` and `BulletListItem.AddItems("Lint", "Sign")` accept quick params labels, `AddItems(IEnumerable<BulletListItem>)` accepts reusable nested item models, and bullet lists/checklists accept selector-based `AddItems(...)` overloads for model-backed MVC status views. Breadcrumb, bullet-list, and checklist item projections also accept per-item style strings, such as `Breadcrumb.AddItems(models, item => item.Label, item => item.StyleText)`, `BulletList.AddItems(models, item => item.Label, item => item.StyleText)`, or `Checklist.AddItems(models, item => item.Label, item => item.State, item => item.Description, item => item.StyleText)`. Breadcrumb, bullet-list, and checklist palette selectors can return `Color` or `RgbColor` directly when the view model owns palette objects. Calendar events, property-list label/value rows, shortcut key/description rows, and tree nodes support the same direct `Color` / `RgbColor` selector shape, so quick status notes can keep palette choices in the view model:
+Status and list builders keep dashboards scannable. Their marker, label, content, border, separator, key, and disabled color helpers accept `ConsoleColor`, style strings, reusable `Style` objects, `Color`, and `RgbColor` values. Badge labels, breadcrumb labels, bullet-list item text, checklist labels/descriptions, timeline titles/descriptions, property-list labels/values, and shortcut-bar keys/descriptions can also contain raw markup such as `[green]Ready[/]` or `[white on navy]Approval[/]`; rendering wraps by visible text and preserves parsed colors, RGB/hex metadata, and ANSI-capable text decorations. Callout border/title/content helpers, Breadcrumb item/current/separator helpers and selector-backed breadcrumb segment styles, ShortcutBar key/description/separator/disabled helpers, and selector-backed shortcut styles preserve RGB/hex colors and ANSI decorations on capable terminals, and Calendar header, weekday, day, today, marked-day, and event styles preserve the same metadata. `Breadcrumb.AddItems("Home", "Deploy")` accepts quick params labels for controller/view navigation hints, `Breadcrumb.AddItems(models, item => item.Label)` projects model-backed navigation trails, `BulletList.AddItems("Build", "Test")` and `BulletListItem.AddItems("Lint", "Sign")` accept quick params labels, `AddItems(IEnumerable<BulletListItem>)` accepts reusable nested item models, `Checklist.AddItems(item1, item2)` accepts prepared readiness items, and bullet lists/checklists accept selector-based `AddItems(...)` overloads for model-backed MVC status views. Breadcrumb, bullet-list, and checklist item projections also accept per-item style strings, such as `Breadcrumb.AddItems(models, item => item.Label, item => item.StyleText)`, `BulletList.AddItems(models, item => item.Label, item => item.StyleText)`, or `Checklist.AddItems(models, item => item.Label, item => item.State, item => item.Description, item => item.StyleText)`. Breadcrumb, bullet-list, and checklist palette selectors can return `Color` or `RgbColor` directly, with breadcrumb selectors preserving true-color metadata on capable terminals when the view model owns palette objects. Calendar events, property-list label/value rows, shortcut key/description rows, and tree nodes support the same direct `Color` / `RgbColor` selector shape, so quick status notes can keep palette choices in the view model:
 
 ```csharp
 AnsiConsole.Write(new Badge("ready").Success().Color(Color.Green));
@@ -782,7 +814,11 @@ var readiness = new[]
     ChecklistItem.CreateStyled("Smoke tests", ChecklistItemState.Complete, labelStyle: "aqua"),
     ChecklistItem.Create("Owner approval", ChecklistItemState.Warning, "Waiting")
 };
-AnsiConsole.Write(new Checklist(readiness).Width(40));
+AnsiConsole.Write(new Checklist().AddItems(readiness).Width(40));
+AnsiConsole.Write(new Checklist()
+    .AddItems(
+        ChecklistItem.Create("Security review", ChecklistItemState.Complete),
+        ChecklistItem.Create("Go-live approval", ChecklistItemState.Pending, "Waiting")));
 ```
 
 ## Themes
@@ -1455,7 +1491,26 @@ catch (Exception exception)
 }
 ```
 
-Trees are useful for nested model state, command plans, dependency graphs, and quick diagnostics. Fluent tree builders also support `TreeGuide` presets, `TextColor(...)`, `BranchColor(...)`, `AddNodes(...)`, mixed scalar/existing-node/renderable labels, collapsed branches, renderable node labels, and raw markup labels for migration-friendly snippets. Node, default text, and branch color helpers accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values; style strings, captured markup labels, and RGB selectors preserve decoration plus RGB/hex metadata on capable terminals while still falling back to readable console colors elsewhere.
+Aggregate exceptions flatten by default so task and parallel-action failures show each child error. Set `MaxAggregateExceptions` to keep noisy batches bounded, or turn off flattening when a migrated snippet needs the original inner-exception chain:
+
+```csharp
+AnsiConsole.WriteException(
+    aggregateException,
+    new ExceptionSettings
+    {
+        Format = ExceptionFormats.NoStackTrace | ExceptionFormats.ShortenTypes,
+        MaxAggregateExceptions = 3
+    });
+
+Consoul.WriteException(
+    aggregateException,
+    new ExceptionRenderOptions
+    {
+        FlattenAggregateExceptions = false
+    });
+```
+
+Trees are useful for nested model state, command plans, dependency graphs, and quick diagnostics. Fluent tree builders also support `TreeGuide` presets, `TextColor(...)`, `BranchColor(...)`, `AddNodes(...)`, `AddTree(...)` recursive model projections, mixed scalar/existing-node/renderable labels, collapsed branches, renderable node labels, and raw markup labels for migration-friendly snippets. Node, default text, and branch color helpers accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values; style strings, captured markup labels, and RGB selectors preserve decoration plus RGB/hex metadata on capable terminals while still falling back to readable console colors elsewhere.
 
 ```csharp
 Consoul.Tree("[cyan]Deployment[/]", root =>
@@ -1468,6 +1523,10 @@ Consoul.Tree("[cyan]Deployment[/]", root =>
     checks.Add("Database");
     checks.Add("[green]Feature flags[/]");
 });
+
+Consoul.Write(new Tree("Dependencies")
+    .AsciiGuide()
+    .AddTree(nodes, node => node.Name, node => node.Children, node => node.Style));
 ```
 
 ## Terminal Profile
@@ -1686,9 +1745,9 @@ editor.Render();
 
 Model-backed `DynamicView<TModel>` instances can call `.EditForm(...)` or `.AddEditFormOption(...)` to add the same editor as a menu option; named static screens can call `AddEditFormOption(...)` for a settings object stored in a field or supplied by a service. This keeps quick POC screens in the MVC-style flow: render the model, edit the model, then continue with view actions. `Consoul.EditObject(...)` and `.EditModel(...)` remain available compatibility names over the same form editor stack. Built-in property prompts, nested object editors, and custom `IPropertyEditor` implementations receive the active render token through `PropertyEditContext.CancellationToken`, so hosted POC views can cancel the whole edit flow cleanly.
 
-Use `Consoul.PropertyList(model)` for a read-only model summary before opening the object editor. It honors `[Display]` names and order, `[DisplayName]`, `[Description]`, `[Browsable(false)]`, `[ScaffoldColumn(false)]`, `[Display(AutoGenerateField = false)]`, and `[PropertyEditorIgnore]`, so the summary and editor share the same model metadata. Use `PropertyListEntry.AddKeyValues(...)` for dictionary-backed settings or diagnostic state when creating a temporary model type would add noise, and `AddItems(...)` / `AddItemsStyled(...)` when a POC dashboard already has label/value rows in a view model. `Add(...)`, `AddKeyValues(...)`, `AddItems(...)`, and `AddModel(...)` all accept reusable `Style` objects or style strings for shared label/value palettes, preserving RGB/hex colors and ANSI decorations for labels and values on capable terminals, and selector-backed `AddItems(...)` accepts `Color` / `RgbColor` value and label selectors directly. Generated object-editor menus also group properties with `[Display(GroupName = "...")]` or `[Category("...")]`, which keeps larger POC forms readable without custom view code.
+Use `Consoul.PropertyList(model)` for a read-only model summary before opening the object editor. It honors `[Display]` names and order, `[DisplayName]`, `[Description]`, `[Browsable(false)]`, `[ScaffoldColumn(false)]`, `[Display(AutoGenerateField = false)]`, and `[PropertyEditorIgnore]`, so the summary and editor share the same model metadata. Use `PropertyListEntry.AddKeyValues(...)` for dictionary-backed settings or diagnostic state when creating a temporary model type would add noise, `AddItems(item1, item2)` for prepared summary rows, and selector-backed `AddItems(...)` / `AddItemsStyled(...)` when a POC dashboard already has label/value rows in a view model. `Add(...)`, `AddKeyValues(...)`, `AddItems(...)`, and `AddModel(...)` all accept reusable `Style` objects or style strings for shared label/value palettes, preserving RGB/hex colors and ANSI decorations for labels and values on capable terminals, and selector-backed `AddItems(...)` accepts `Color` / `RgbColor` value and label selectors directly. Generated object-editor menus also group properties with `[Display(GroupName = "...")]` or `[Category("...")]`, which keeps larger POC forms readable without custom view code.
 
-Use `DynamicView<TModel>.ValidationSummarySection(...)` when a view should show DataAnnotations-style validation status above its menu on every render; pass `title` or use `ValidationSummarySectionStyled(...)` when the validation block should sit under the same titled section chrome as property lists, tables, and dashboards. Use `ValidationSummarySectionWhen(...)` for post-action checks, advanced validation details, or other validation blocks that should appear only after model state makes them relevant. Pair validation sections with `OptionWhenValid(...)` for save, publish, or deploy actions that should remain visible but disabled until the model is valid. Validation includes property attributes and object-level `IValidatableObject` results, so cross-field checks can guard controller-style actions too. `ValidationSummaryOptions.InvalidColor(...)`, `IssueColor(...)`, `ValidColor(...)`, and `ValidMessageColor(...)` accept `ConsoleColor`, reusable `Style` objects, Spectre-style strings, `Color`, and `RgbColor` values while preserving RGB/hex colors and ANSI decorations on capable terminals, so a model-backed POC view can share one palette between validation, prompts, and status widgets. Use `Consoul.ValidationSummary(model)` when an ad hoc action needs to render and inspect `ValidationSummaryResult` directly, or `new ValidationSummaryEntry(model, options).InvalidColor(Color.Red).IssueColor(RgbColor.Yellow)` when the same validation block should be captured, placed in a panel/layout, or returned from `DynamicView<TModel>.RenderModel(...)`.
+Use `DynamicView<TModel>.ValidationSummarySection(...)` when a view should show DataAnnotations-style validation status above its menu on every render; pass `title` or use `ValidationSummarySectionStyled(...)` when the validation block should sit under the same titled section chrome as property lists, tables, and dashboards. Use `ValidationSummarySectionWhen(...)` for post-action checks, advanced validation details, or other validation blocks that should appear only after model state makes them relevant. Pair validation sections with `OptionWhenValid(...)` for save, publish, or deploy actions that should remain visible but disabled until the model is valid. Validation includes property attributes and object-level `IValidatableObject` results, so cross-field checks can guard controller-style actions too; controller actions can append business-rule failures with `new ValidationSummaryEntry(model).AddIssue(...)` or `AddIssues(issue1, issue2)` and render the combined result through the same bounded summary. `ValidationSummaryOptions.InvalidColor(...)`, `IssueColor(...)`, `ValidColor(...)`, and `ValidMessageColor(...)` accept `ConsoleColor`, reusable `Style` objects, Spectre-style strings, `Color`, and `RgbColor` values while preserving RGB/hex colors and ANSI decorations on capable terminals, so a model-backed POC view can share one palette between validation, prompts, and status widgets. Use `Consoul.ValidationSummary(model)` when an ad hoc action needs to render and inspect `ValidationSummaryResult` directly, or `new ValidationSummaryEntry(model, options).InvalidColor(Color.Red).IssueColor(RgbColor.Yellow)` when the same validation block should be captured, placed in a panel/layout, or returned from `DynamicView<TModel>.RenderModel(...)`.
 
 When a simple property is edited, the default editor uses the same typed prompt stack as direct prompts. Text and numeric properties use `TextPrompt<T>`, boolean properties use `ConfirmPrompt`, and enum properties use metadata-backed selection prompts. Nullable booleans and enums add a clear-value choice for optional settings unless `[Required]` is present. The current property value is offered as the Enter default, `back`/`exit` cancels without mutating the model, and DataAnnotations-style validation is enforced during the edit, including common attributes such as `[Required]`, `[Range]`, `[StringLength]`, `[MinLength]`, `[MaxLength]`, plus context-aware `ValidationAttribute` types such as `[RegularExpression]`, `[EmailAddress]`, `[Compare]`, and custom validators.
 
@@ -1978,7 +2037,7 @@ TextPromptResult<string> environment = Consoul.Text<string>("Environment")
     .Render();
 ```
 
-Use the Spectre-shaped `Choices(...)` alias or direct `AddChoice(...)` / `AddChoices(...)` methods when adapting pasted snippets. Set `ShowChoices = false` or call `HideChoices()` for quieter prompts, use `HideDefaultValue()` when Enter should still accept a default without rendering it, call `EditableDefaultValue()` when keyboard users should start from an editable default buffer, and call `ClearOnFinish()` when a transient POC form should not leave the prompt text on screen after a successful entry. Call `Secret(...)` or set `IsSecret` when a typed prompt should mask input but still parse through `TextPrompt<T>`. Change `ChoicesSeparator(...)`, `ChoicesStyle(...)`, `DefaultValueStyle(...)`, or `MaskStyle(...)` when a view needs different hint styling; prompt style helpers accept reusable `Style` objects, color names, `Color`, and `RgbColor`. Pass a `StringComparer` to the `TextPrompt<T>` constructor when accepted choice text should be case-sensitive or use a custom comparer. For object choices, `UseConverter(...)` controls both rendered labels and display-text choice lookup, while `InvalidChoiceMessage(...)` customizes copy for unmatched display text. Set `Culture` or call `Culture(...)` when decimal, date, or duration input should parse and render defaults with a specific locale.
+Use the Spectre-shaped `Choices(...)` alias or direct `AddChoice(...)` / `AddChoices(...)` methods when adapting pasted snippets. Set `ShowChoices = false` or call `HideChoices()` for quieter prompts, use `HideDefaultValue()` when Enter should still accept a default without rendering it, call `EditableDefaultValue()` when keyboard users should start from an editable default buffer, and call `ClearOnFinish()` when a transient POC form should not leave the prompt text on screen after a successful entry. Call `Secret(...)` or set `IsSecret` when a typed prompt should mask input but still parse through `TextPrompt<T>`. Change `ChoicesSeparator(...)`, `ChoicesStyle(...)`, `DefaultValueStyle(...)`, or `MaskStyle(...)` when a view needs different hint styling; prompt style helpers accept reusable `Style` objects, color names, `Color`, and `RgbColor`. On ANSI-capable terminals, text, secret, confirm, and confirmation prompts preserve RGB/hex foregrounds and text decorations for prompt, invalid, accepted-choice, and default-value styling instead of flattening them to the nearest `ConsoleColor`. Pass a `StringComparer` to the `TextPrompt<T>` constructor when accepted choice text should be case-sensitive or use a custom comparer. For object choices, `UseConverter(...)` controls both rendered labels and display-text choice lookup, while `InvalidChoiceMessage(...)` customizes copy for unmatched display text. Set `Culture` or call `Culture(...)` when decimal, date, or duration input should parse and render defaults with a specific locale.
 
 For POC commands that need files or folders, use the path prompt factories. They return the same result-first `TextPromptResult<string>` shape, trim pasted quotes, and can require the target to exist:
 
@@ -2114,7 +2173,7 @@ if (selectedJobs.HasSelection)
 
 Set `TableRenderOptions.Title` and `Caption` when a table should keep its own heading in panels, grids, captured diagnostics, or model-rendered views. `TitleAlignment`, `CaptionAlignment`, `TitleScheme`, and `CaptionScheme` keep those labels bounded to the table width. The older `table.Render("Jobs", ConsoleColor.Cyan)` overload still works as a per-render title and takes precedence over the configured title.
 
-For Spectre-style manual snippets, use `Table`. It wraps `TableView` with fluent `Title(...)`, `Title(new TableTitle(...))`, `Caption(...)`, `Caption(new TableTitle(...))`, `Caption(new TableCaption(...))`, inline title/caption style overloads, `Width(...)`, `Expand()`, `Collapse()`, named border helpers such as `Border(TableBorder.Rounded)`, `Border(TableBorder.None)`, `Border(TableBorder.Minimal)`, `Border(TableBorder.HeavyHead)`, `RoundedBorder()`, and `DoubleBorder()`, table-wide alignment/color helpers, row separators, row numbers, `AddColumns(...)`, configurable columns through `AddColumn("Name", column => column.RightAligned())`, synchronized post-add metadata through `table.Columns[index]`, object-friendly `AddRow(...)`, model-backed `AddRows(items, item => item.Name, ...)`, key/value diagnostic helpers through `AddKeyValueRows(...)`, and `TableColumn` padding helpers such as `Padding(...)`, `PadLeft(...)`, and `PadRight(...)`. Horizontal padding adjusts cell content; top and bottom padding render bounded blank table rows around content while preserving column alignment. `Table` and `TableColumn` both accept `LeftJustified()` and `RightJustified()` aliases alongside the aligned naming used by table examples. Use `Collapse()` for content-sized diagnostic tables and `Expand()` or `Width(...)` when an MVC view should intentionally fill its terminal layout. Common Spectre-style border names such as `Ascii2`, `AsciiDoubleHead`, `Markdown`, `SimpleHeavy`, `MinimalHeavyHead`, `MinimalDoubleHead`, `Horizontal`, `HeavyEdge`, `DoubleEdge`, and `Safe` map to the closest existing Consoul renderer. Add `using ConsoulLibrary.Color;` when you want aliases such as `Color.Grey`, `Color.Aqua`, `Color.FromHex(...)`, `Colors.Grey`, or `RgbColor.Red`.
+For Spectre-style manual snippets, use `Table`. It wraps `TableView` with fluent `Title(...)`, `Title(new TableTitle(...))`, `Caption(...)`, `Caption(new TableTitle(...))`, `Caption(new TableCaption(...))`, inline title/caption style overloads, `Width(...)`, `Expand()`, `Collapse()`, named border helpers such as `Border(TableBorder.Rounded)`, `Border(TableBorder.None)`, `Border(TableBorder.Minimal)`, `Border(TableBorder.HeavyHead)`, `RoundedBorder()`, and `DoubleBorder()`, table-wide alignment/color helpers, row separators, row numbers, `AddColumns(...)`, configurable columns through `AddColumn("Name", column => column.RightAligned())`, synchronized post-add metadata through `table.Columns[index]`, object-friendly `AddRow(...)`, inline manual rows through `AddRows(new[] { "API", "Ready" }, new[] { "Worker", "Queued" })`, model-backed `AddRows(items, item => item.Name, ...)`, optional detail columns through `AddOptionalColumn(...)`, key/value diagnostic helpers through `AddKeyValueRows(...)`, and `TableColumn` padding helpers such as `Padding(...)`, `PadLeft(...)`, and `PadRight(...)`. Horizontal padding adjusts cell content; top and bottom padding render bounded blank table rows around content while preserving column alignment. `Table` and `TableColumn` both accept `LeftJustified()` and `RightJustified()` aliases alongside the aligned naming used by table examples. Use `Collapse()` for content-sized diagnostic tables and `Expand()` or `Width(...)` when an MVC view should intentionally fill its terminal layout. Common Spectre-style border names such as `Ascii2`, `AsciiDoubleHead`, `Markdown`, `SimpleHeavy`, `MinimalHeavyHead`, `MinimalDoubleHead`, `Horizontal`, `HeavyEdge`, `DoubleEdge`, and `Safe` map to the closest existing Consoul renderer. Add `using ConsoulLibrary.Color;` when you want aliases such as `Color.Grey`, `Color.Aqua`, `Color.FromHex(...)`, `Colors.Grey`, or `RgbColor.Red`.
 
 ```csharp
 var manual = new Table()
@@ -2138,6 +2197,16 @@ AnsiConsole.Write(manual);
 ```
 
 Raw Spectre-style markup strings in table headers and cells are treated as display markup, so snippets like `AddRow("[green]API[/]", "[white on navy]Ready[/]")` keep their responsive widths, preserve foreground/background color metadata, and render visible text instead of literal tags. Use reusable `Markup`, `Text`, or other renderable values when you want cell content that can be composed outside the table too.
+
+Inline row params keep quick controller/view sketches compact:
+
+```csharp
+manual.AddRows(
+    new[] { "API", "Ready" },
+    new[] { "Worker", "Queued" });
+
+manual.AddRow(new Markup("[cyan]Scheduler[/]"), new Text("Running", ConsoleColor.Green));
+```
 
 Manual tables can still project model rows when a view needs a custom shell but the data should stay in a view model:
 
@@ -2352,7 +2421,7 @@ using var bar = new ProgressBar("[green]Starting[/] [[prod]]");
 bar.Update(0.5, "[cyan]Halfway[/] [[prod]]", Color.Aqua, RgbColor.Green);
 ```
 
-Static `AnsiConsole` and injected `IAnsiConsole` async helpers accept quick `Func<..., Task>` delegates for first-run POCs and token-aware `(context, cancellationToken) => ...` delegates when work should observe the active cancellation token. `StatusContext` supports property-style `Status`, `Spinner`, and `SpinnerStyle` updates plus direct `Succeed(...)` / `Fail(...)` completion helpers for copied Spectre-style status snippets. `StatusScope.Update(...)`, `StatusScope.Status(...)`, `StatusContext.Status(...)`, and `ProgressBar.Update(...)` accept `ConsoleColor`, `Color`, and `RgbColor` values for direct palette changes, while `UpdateStyled(...)` remains available for reusable foreground/background styles. `RefreshRate(...)` helpers on status builders/scopes and spinner builders/scopes accept milliseconds or `TimeSpan` values, and `SpinnerStyle(...)` helpers on status and spinner builders/scopes accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values.
+Static `AnsiConsole` and injected `IAnsiConsole` async helpers accept quick `Func<..., Task>` delegates for first-run POCs and token-aware `(context, cancellationToken) => ...` delegates when work should observe the active cancellation token. `StatusContext` supports property-style `Status`, `Spinner`, and `SpinnerStyle` updates plus direct `Succeed(...)` / `Fail(...)` completion helpers for copied Spectre-style status snippets. `StatusScope.Update(...)`, `StatusScope.Status(...)`, `StatusContext.Status(...)`, and `ProgressBar.Update(...)` accept `ConsoleColor`, `Color`, and `RgbColor` values for direct palette changes; `Color`/`RgbColor` and `UpdateStyled(...)` preserve RGB/hex metadata and ANSI decorations on capable terminals while keeping console-color fallbacks. `RefreshRate(...)` helpers on status builders/scopes and spinner builders/scopes accept milliseconds or `TimeSpan` values, `Frames(...)` helpers and reusable `Spinner` constructors accept pasted params frames or generated `IEnumerable<string>` frame collections, and `SpinnerStyle(...)` helpers on status and spinner builders/scopes accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values.
 
 Use `ProgressContext` when a workflow has several task rows:
 
@@ -2378,7 +2447,7 @@ queued.Value = 1024;
 queued.StopTask();
 ```
 
-`ProgressTask` also supports direct `Description`, `Value`, `MaxValue`, `Tag`, and `HideWhenCompleted` members, plus `Id`, `StartedAt`, `LastUpdatedAt`, `StartTime`, `StopTime`, `Elapsed`, `ElapsedTime`, `RemainingTime`, `Percentage`, `Speed`, `IsStarted`, `IsFinished`, `StartTask()`, `StopTask()`, and `IsIndeterminate(...)`. Property-named helpers such as `task.Description("Download").MaxValue(2048).Value(1024).Tag("nuget").HideWhenCompleted()` are available for chain-oriented pasted snippets. Tasks created without a max value default to `100`, matching common progress examples. Use `ProgressTaskSettings` when a task should be created pending, indeterminate, or with a configured max value:
+`ProgressTask` also supports direct `Description`, `Value`, `MaxValue`, `Tag`, and `HideWhenCompleted` members, plus `Id`, `StartedAt`, `LastUpdatedAt`, `StartTime`, `StopTime`, `Elapsed`, `ElapsedTime`, `RemainingTime`, `Percentage`, `Speed`, `IsStarted`, `IsFinished`, `StartTask()`, `StopTask()`, and `IsIndeterminate(...)`. Property-named helpers such as `task.Description("Download").MaxValue(2048).Value(1024).Tag("nuget").HideWhenCompleted()` are available for chain-oriented pasted snippets. Tasks created without a max value default to `100`, matching common progress examples. Use `ProgressTaskSettings` when a task should be created pending, indeterminate, tagged, hidden on completion, or with a configured max value:
 
 ```csharp
 ProgressTask download = progress.AddTask(
@@ -2389,6 +2458,33 @@ ProgressTask download = progress.AddTask(
         MaxValue = 2048,
         IsIndeterminate = true
     });
+```
+
+For MVC-style workflow views, `AddTasks(...)` accepts quick description params, generated `IEnumerable<string>` descriptions, or prepared `ProgressTaskSettings` objects. Settings can carry `Description`, `Tag`, and per-task `HideWhenCompleted` metadata alongside `AutoStart`, `MaxValue`, and `IsIndeterminate`, so a controller can project model state directly into progress rows:
+
+```csharp
+IReadOnlyList<ProgressTask> setup = progress.AddTasks("Restore", "Build");
+
+var deploySteps = new[]
+{
+    new ProgressTaskSettings
+    {
+        Description = "Publish",
+        MaxValue = 2,
+        Tag = "release",
+        HideWhenCompleted = true
+    },
+    new ProgressTaskSettings
+    {
+        Description = "Smoke tests",
+        AutoStart = false,
+        MaxValue = 4,
+        IsIndeterminate = true,
+        Tag = "qa"
+    }
+};
+
+IReadOnlyList<ProgressTask> deploy = progress.AddTasks(deploySteps);
 ```
 
 Task descriptions passed to `AddTask(...)`, `Description`, `Complete(...)`, `Fail(...)`, and `Start(...)` can contain raw Spectre-style markup. Default progress rows and `TaskDescriptionColumn` rows measure by visible text, preserve parsed colors plus RGB/hex metadata and ANSI-capable text decorations, and keep escaped brackets such as `[[prod]]` literal:
@@ -2416,7 +2512,7 @@ progress.RemoveTask(build);
 progress.Refresh();
 ```
 
-Configured progress columns now control the rendered row order and content, including compact text-only rows and operational metrics.
+Configured progress columns now control the rendered row order and content, including compact text-only rows and operational metrics. `ProgressContext.Columns(...)` accepts either pasted params columns or generated `IEnumerable<ProgressColumn>` collections, so MVC-style workflow code can choose columns from model or environment state without adapter arrays.
 
 ```csharp
 int processed = AnsiConsole.Progress()
@@ -2634,6 +2730,8 @@ Consoul.View("Deploy", settings)
     .HelpOption("Help", null, RgbColor.Green)
     .Render();
 ```
+
+`StaticView` helper overloads for options, confirmation actions, edit forms, navigation, help, and command palettes accept the same `ConsoleColor`, `Style`, style string, `Color`, and `RgbColor` inputs, preserving RGB/hex colors and ANSI decorations on capable terminals while keeping console-color fallbacks for simpler output.
 
 The sample app includes small POC examples for dynamic menus, badges, breadcrumbs, bullet lists, callouts, metrics, shortcut bars, timelines, table display, tree display, and form/object editing under `Consoul.Test/Views/PocViews.cs`.
 

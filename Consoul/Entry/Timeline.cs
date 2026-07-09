@@ -139,6 +139,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds existing timeline items.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline AddSteps(TimelineItem firstItem, params TimelineItem[] additionalItems)
+        {
+            AddStep(firstItem);
+
+            if (additionalItems != null)
+            {
+                foreach (TimelineItem item in additionalItems)
+                {
+                    AddStep(item);
+                }
+            }
+
+            return this;
+        }
+
+        /// <summary>
         /// Adds timeline steps projected from a model collection.
         /// </summary>
         /// <typeparam name="T">The model item type.</typeparam>

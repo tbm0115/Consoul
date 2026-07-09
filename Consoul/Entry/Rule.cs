@@ -256,6 +256,7 @@ namespace ConsoulLibrary
         public Rule RuleColor(ConsoleColor color)
         {
             Options.RuleScheme = Scheme(color);
+            Options.RuleDecoration = Decoration.None;
             Options.RuleForegroundRgb = null;
             Options.RuleBackgroundRgb = null;
             return this;
@@ -269,6 +270,7 @@ namespace ConsoulLibrary
         public Rule RuleColor(SpectreColor color)
         {
             Options.RuleScheme = Scheme(color);
+            Options.RuleDecoration = Decoration.None;
             Options.RuleForegroundRgb = color.ToRgbColor();
             Options.RuleBackgroundRgb = null;
             return this;
@@ -282,6 +284,7 @@ namespace ConsoulLibrary
         public Rule RuleColor(RgbColor color)
         {
             Options.RuleScheme = Scheme(color);
+            Options.RuleDecoration = Decoration.None;
             Options.RuleForegroundRgb = color;
             Options.RuleBackgroundRgb = null;
             return this;
@@ -295,6 +298,7 @@ namespace ConsoulLibrary
         public Rule TitleColor(ConsoleColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
             Options.TitleForegroundRgb = null;
             Options.TitleBackgroundRgb = null;
             return this;
@@ -308,6 +312,7 @@ namespace ConsoulLibrary
         public Rule TitleColor(SpectreColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
             Options.TitleForegroundRgb = color.ToRgbColor();
             Options.TitleBackgroundRgb = null;
             return this;
@@ -321,6 +326,7 @@ namespace ConsoulLibrary
         public Rule TitleColor(RgbColor color)
         {
             Options.TitleScheme = Scheme(color);
+            Options.TitleDecoration = Decoration.None;
             Options.TitleForegroundRgb = color;
             Options.TitleBackgroundRgb = null;
             return this;

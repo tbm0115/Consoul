@@ -73,6 +73,7 @@ namespace ConsoulLibrary
         public TextPath RootColor(ConsoleColor color)
         {
             Options.RootScheme = Scheme(color);
+            Options.RootDecoration = Decoration.None;
             Options.RootForegroundRgb = null;
             Options.RootBackgroundRgb = null;
             return this;
@@ -86,6 +87,7 @@ namespace ConsoulLibrary
         public TextPath RootColor(SpectreColor color)
         {
             Options.RootScheme = Scheme(color);
+            Options.RootDecoration = Decoration.None;
             Options.RootForegroundRgb = color.ToRgbColor();
             Options.RootBackgroundRgb = null;
             return this;
@@ -99,6 +101,7 @@ namespace ConsoulLibrary
         public TextPath RootColor(RgbColor color)
         {
             Options.RootScheme = Scheme(color);
+            Options.RootDecoration = Decoration.None;
             Options.RootForegroundRgb = color;
             Options.RootBackgroundRgb = null;
             return this;
@@ -144,6 +147,7 @@ namespace ConsoulLibrary
         public TextPath DirectoryColor(ConsoleColor color)
         {
             Options.DirectoryScheme = Scheme(color);
+            Options.DirectoryDecoration = Decoration.None;
             Options.DirectoryForegroundRgb = null;
             Options.DirectoryBackgroundRgb = null;
             return this;
@@ -157,6 +161,7 @@ namespace ConsoulLibrary
         public TextPath DirectoryColor(SpectreColor color)
         {
             Options.DirectoryScheme = Scheme(color);
+            Options.DirectoryDecoration = Decoration.None;
             Options.DirectoryForegroundRgb = color.ToRgbColor();
             Options.DirectoryBackgroundRgb = null;
             return this;
@@ -170,6 +175,7 @@ namespace ConsoulLibrary
         public TextPath DirectoryColor(RgbColor color)
         {
             Options.DirectoryScheme = Scheme(color);
+            Options.DirectoryDecoration = Decoration.None;
             Options.DirectoryForegroundRgb = color;
             Options.DirectoryBackgroundRgb = null;
             return this;
@@ -215,6 +221,7 @@ namespace ConsoulLibrary
         public TextPath FileNameColor(ConsoleColor color)
         {
             Options.FileNameScheme = Scheme(color);
+            Options.FileNameDecoration = Decoration.None;
             Options.FileNameForegroundRgb = null;
             Options.FileNameBackgroundRgb = null;
             return this;
@@ -228,6 +235,7 @@ namespace ConsoulLibrary
         public TextPath FileNameColor(SpectreColor color)
         {
             Options.FileNameScheme = Scheme(color);
+            Options.FileNameDecoration = Decoration.None;
             Options.FileNameForegroundRgb = color.ToRgbColor();
             Options.FileNameBackgroundRgb = null;
             return this;
@@ -241,6 +249,7 @@ namespace ConsoulLibrary
         public TextPath FileNameColor(RgbColor color)
         {
             Options.FileNameScheme = Scheme(color);
+            Options.FileNameDecoration = Decoration.None;
             Options.FileNameForegroundRgb = color;
             Options.FileNameBackgroundRgb = null;
             return this;
@@ -346,6 +355,7 @@ namespace ConsoulLibrary
         public TextPath ExtensionColor(ConsoleColor color)
         {
             Options.ExtensionScheme = Scheme(color);
+            Options.ExtensionDecoration = Decoration.None;
             Options.ExtensionForegroundRgb = null;
             Options.ExtensionBackgroundRgb = null;
             return this;
@@ -359,6 +369,7 @@ namespace ConsoulLibrary
         public TextPath ExtensionColor(SpectreColor color)
         {
             Options.ExtensionScheme = Scheme(color);
+            Options.ExtensionDecoration = Decoration.None;
             Options.ExtensionForegroundRgb = color.ToRgbColor();
             Options.ExtensionBackgroundRgb = null;
             return this;
@@ -372,6 +383,7 @@ namespace ConsoulLibrary
         public TextPath ExtensionColor(RgbColor color)
         {
             Options.ExtensionScheme = Scheme(color);
+            Options.ExtensionDecoration = Decoration.None;
             Options.ExtensionForegroundRgb = color;
             Options.ExtensionBackgroundRgb = null;
             return this;
@@ -418,8 +430,10 @@ namespace ConsoulLibrary
         {
             Options.FileNameScheme = Scheme(color);
             Options.ExtensionScheme = Scheme(color);
+            Options.FileNameDecoration = Decoration.None;
             Options.FileNameForegroundRgb = null;
             Options.FileNameBackgroundRgb = null;
+            Options.ExtensionDecoration = Decoration.None;
             Options.ExtensionForegroundRgb = null;
             Options.ExtensionBackgroundRgb = null;
             return this;
@@ -436,8 +450,10 @@ namespace ConsoulLibrary
             Options.FileNameScheme = scheme;
             Options.ExtensionScheme = scheme;
             RgbColor rgb = color.ToRgbColor();
+            Options.FileNameDecoration = Decoration.None;
             Options.FileNameForegroundRgb = rgb;
             Options.FileNameBackgroundRgb = null;
+            Options.ExtensionDecoration = Decoration.None;
             Options.ExtensionForegroundRgb = rgb;
             Options.ExtensionBackgroundRgb = null;
             return this;
@@ -453,8 +469,10 @@ namespace ConsoulLibrary
             ColorScheme scheme = Scheme(color);
             Options.FileNameScheme = scheme;
             Options.ExtensionScheme = scheme;
+            Options.FileNameDecoration = Decoration.None;
             Options.FileNameForegroundRgb = color;
             Options.FileNameBackgroundRgb = null;
+            Options.ExtensionDecoration = Decoration.None;
             Options.ExtensionForegroundRgb = color;
             Options.ExtensionBackgroundRgb = null;
             return this;
@@ -500,6 +518,7 @@ namespace ConsoulLibrary
         public TextPath SeparatorColor(ConsoleColor color)
         {
             Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorDecoration = Decoration.None;
             Options.SeparatorForegroundRgb = null;
             Options.SeparatorBackgroundRgb = null;
             return this;
@@ -513,6 +532,7 @@ namespace ConsoulLibrary
         public TextPath SeparatorColor(SpectreColor color)
         {
             Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorDecoration = Decoration.None;
             Options.SeparatorForegroundRgb = color.ToRgbColor();
             Options.SeparatorBackgroundRgb = null;
             return this;
@@ -526,6 +546,7 @@ namespace ConsoulLibrary
         public TextPath SeparatorColor(RgbColor color)
         {
             Options.SeparatorScheme = Scheme(color);
+            Options.SeparatorDecoration = Decoration.None;
             Options.SeparatorForegroundRgb = color;
             Options.SeparatorBackgroundRgb = null;
             return this;

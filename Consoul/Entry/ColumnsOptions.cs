@@ -39,9 +39,39 @@ namespace ConsoulLibrary
         public ColorScheme? HeaderScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the text decoration used for optional column headers on ANSI-capable terminals.
+        /// </summary>
+        public Decoration HeaderDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for optional column headers on true-color terminals.
+        /// </summary>
+        public RgbColor? HeaderForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for optional column headers on true-color terminals.
+        /// </summary>
+        public RgbColor? HeaderBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Gets or sets the default color scheme used for column content.
         /// </summary>
         public ColorScheme? ContentScheme { get; set; }
+
+        /// <summary>
+        /// Gets or sets the text decoration used for default column content on ANSI-capable terminals.
+        /// </summary>
+        public Decoration ContentDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for default column content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for default column content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentBackgroundRgb { get; set; }
 
         /// <summary>
         /// Creates a copy of the current column options.
@@ -57,7 +87,13 @@ namespace ConsoulLibrary
                 MinimumColumnWidth = MinimumColumnWidth,
                 Gutter = Gutter,
                 HeaderScheme = HeaderScheme,
-                ContentScheme = ContentScheme
+                HeaderDecoration = HeaderDecoration,
+                HeaderForegroundRgb = HeaderForegroundRgb,
+                HeaderBackgroundRgb = HeaderBackgroundRgb,
+                ContentScheme = ContentScheme,
+                ContentDecoration = ContentDecoration,
+                ContentForegroundRgb = ContentForegroundRgb,
+                ContentBackgroundRgb = ContentBackgroundRgb
             };
         }
 
@@ -71,7 +107,13 @@ namespace ConsoulLibrary
                 MinimumColumnWidth = Math.Max(1, MinimumColumnWidth),
                 Gutter = Math.Max(0, Gutter),
                 HeaderScheme = HeaderScheme,
-                ContentScheme = ContentScheme
+                HeaderDecoration = HeaderDecoration,
+                HeaderForegroundRgb = HeaderForegroundRgb,
+                HeaderBackgroundRgb = HeaderBackgroundRgb,
+                ContentScheme = ContentScheme,
+                ContentDecoration = ContentDecoration,
+                ContentForegroundRgb = ContentForegroundRgb,
+                ContentBackgroundRgb = ContentBackgroundRgb
             };
         }
     }

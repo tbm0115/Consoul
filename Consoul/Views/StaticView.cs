@@ -246,7 +246,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddOption(string label, Action action, SpectreColor color, string description = null)
         {
-            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -259,7 +260,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddOption(string label, Action action, RgbColor color, string description = null)
         {
-            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -326,7 +328,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddOption(string label, Func<Task> action, SpectreColor color, string description = null)
         {
-            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -339,7 +342,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddOption(string label, Func<Task> action, RgbColor color, string description = null)
         {
-            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -406,7 +410,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddOption(string label, Func<CancellationToken, Task> action, SpectreColor color, string description = null)
         {
-            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -419,7 +424,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddOption(string label, Func<CancellationToken, Task> action, RgbColor color, string description = null)
         {
-            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description);
+            return AddOption(label, action, (ConsoleColor?)color.ToConsoleColor(), description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -464,7 +470,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Action action, string style, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -479,7 +486,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Action action, Style style, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -494,7 +502,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Action action, SpectreColor color, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -509,7 +518,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Action action, RgbColor color, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -544,7 +554,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Func<Task> action, string style, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -559,7 +570,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Func<Task> action, Style style, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -574,7 +586,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Func<Task> action, SpectreColor color, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -589,7 +602,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Func<Task> action, RgbColor color, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -639,7 +653,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Func<CancellationToken, Task> action, string style, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -654,7 +669,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Func<CancellationToken, Task> action, Style style, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, ResolveStyle(style, RenderOptions.OptionColor), defaultValue, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -669,7 +685,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Func<CancellationToken, Task> action, SpectreColor color, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -684,7 +701,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddConfirmOption(string label, string confirmationMessage, Func<CancellationToken, Task> action, RgbColor color, bool? defaultValue = false, string description = null)
         {
-            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description);
+            return AddConfirmOption(label, confirmationMessage, action, (ConsoleColor?)color.ToConsoleColor(), defaultValue, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -739,7 +757,8 @@ namespace ConsoulLibrary
             bool enableDocumentEditor = true,
             string description = null)
         {
-            return AddEditFormOption(label, model, ResolveStyle(style, RenderOptions.OptionColor), bindingAttr, enableDocumentEditor, description);
+            return AddEditFormOption(label, model, ResolveStyle(style, RenderOptions.OptionColor), bindingAttr, enableDocumentEditor, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -760,7 +779,8 @@ namespace ConsoulLibrary
             bool enableDocumentEditor = true,
             string description = null)
         {
-            return AddEditFormOption(label, model, ResolveStyle(style, RenderOptions.OptionColor), bindingAttr, enableDocumentEditor, description);
+            return AddEditFormOption(label, model, ResolveStyle(style, RenderOptions.OptionColor), bindingAttr, enableDocumentEditor, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -781,7 +801,8 @@ namespace ConsoulLibrary
             bool enableDocumentEditor = true,
             string description = null)
         {
-            return AddEditFormOption(label, model, (ConsoleColor?)color.ToConsoleColor(), bindingAttr, enableDocumentEditor, description);
+            return AddEditFormOption(label, model, (ConsoleColor?)color.ToConsoleColor(), bindingAttr, enableDocumentEditor, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -802,7 +823,8 @@ namespace ConsoulLibrary
             bool enableDocumentEditor = true,
             string description = null)
         {
-            return AddEditFormOption(label, model, (ConsoleColor?)color.ToConsoleColor(), bindingAttr, enableDocumentEditor, description);
+            return AddEditFormOption(label, model, (ConsoleColor?)color.ToConsoleColor(), bindingAttr, enableDocumentEditor, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -858,7 +880,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddNavigationOption<TView>(string label, SpectreColor color, bool replace = false, string description = null) where TView : IView
         {
-            return AddNavigationOption<TView>(label, (ConsoleColor?)color.ToConsoleColor(), replace, description);
+            return AddNavigationOption<TView>(label, (ConsoleColor?)color.ToConsoleColor(), replace, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -872,7 +895,8 @@ namespace ConsoulLibrary
         /// <returns>The added <see cref="ViewOption"/> instance.</returns>
         public ViewOption AddNavigationOption<TView>(string label, RgbColor color, bool replace = false, string description = null) where TView : IView
         {
-            return AddNavigationOption<TView>(label, (ConsoleColor?)color.ToConsoleColor(), replace, description);
+            return AddNavigationOption<TView>(label, (ConsoleColor?)color.ToConsoleColor(), replace, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -919,7 +943,8 @@ namespace ConsoulLibrary
             string description = null)
             where TView : IView
         {
-            return AddNavigationOption(label, viewFactory, ResolveStyle(style, RenderOptions.OptionColor), replace, description);
+            return AddNavigationOption(label, viewFactory, ResolveStyle(style, RenderOptions.OptionColor), replace, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -940,7 +965,8 @@ namespace ConsoulLibrary
             string description = null)
             where TView : IView
         {
-            return AddNavigationOption(label, viewFactory, ResolveStyle(style, RenderOptions.OptionColor), replace, description);
+            return AddNavigationOption(label, viewFactory, ResolveStyle(style, RenderOptions.OptionColor), replace, description)
+                .UseStyle(style);
         }
 
         /// <summary>
@@ -961,7 +987,8 @@ namespace ConsoulLibrary
             string description = null)
             where TView : IView
         {
-            return AddNavigationOption(label, viewFactory, (ConsoleColor?)color.ToConsoleColor(), replace, description);
+            return AddNavigationOption(label, viewFactory, (ConsoleColor?)color.ToConsoleColor(), replace, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -982,7 +1009,8 @@ namespace ConsoulLibrary
             string description = null)
             where TView : IView
         {
-            return AddNavigationOption(label, viewFactory, (ConsoleColor?)color.ToConsoleColor(), replace, description);
+            return AddNavigationOption(label, viewFactory, (ConsoleColor?)color.ToConsoleColor(), replace, description)
+                .UseColor(color);
         }
 
         /// <summary>
@@ -1702,7 +1730,8 @@ namespace ConsoulLibrary
                     continue;
                 }
 
-                shortcutBar.Add(option.Shortcut, option.Render());
+                ShortcutItem item = shortcutBar.Add(option.Shortcut, option.Render());
+                option.ApplyStyleTo(item);
             }
 
             if (Chrome.ShowGoBackShortcut && !string.IsNullOrWhiteSpace(Chrome.GoBackShortcut))

@@ -29,6 +29,21 @@ namespace ConsoulLibrary
         public ColorScheme? ContentScheme { get; set; }
 
         /// <summary>
+        /// Gets or sets the text decoration used for default row content on ANSI-capable terminals.
+        /// </summary>
+        public Decoration ContentDecoration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB foreground used for default row content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentForegroundRgb { get; set; }
+
+        /// <summary>
+        /// Gets or sets the original RGB background used for default row content on true-color terminals.
+        /// </summary>
+        public RgbColor? ContentBackgroundRgb { get; set; }
+
+        /// <summary>
         /// Creates a copy of the current row options.
         /// </summary>
         /// <returns>A new <see cref="RowsOptions"/> instance with the same values.</returns>
@@ -39,7 +54,10 @@ namespace ConsoulLibrary
                 Width = Width,
                 Expand = Expand,
                 Spacing = Spacing,
-                ContentScheme = ContentScheme
+                ContentScheme = ContentScheme,
+                ContentDecoration = ContentDecoration,
+                ContentForegroundRgb = ContentForegroundRgb,
+                ContentBackgroundRgb = ContentBackgroundRgb
             };
         }
 

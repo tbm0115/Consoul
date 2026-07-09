@@ -1,4 +1,6 @@
 using System;
+using System.Globalization;
+using System.IO;
 using ConsoulLibrary.Color;
 using Xunit;
 using SpectreColor = ConsoulLibrary.Color.Color;
@@ -86,6 +88,49 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("/") && write.Color == ConsoleColor.DarkGray);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Breadcrumb style helpers and model selectors preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void Breadcrumb_StyleHelpersAndProjectionSelectorsEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 90, height: 8, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var segments = new[]
+            {
+                new StyledBreadcrumbSegment("Services", RgbColor.FromHex("#112233"), SpectreColor.FromHex("#445566"))
+            };
+
+            var breadcrumb = new Breadcrumb()
+                .Width(88)
+                .Separator(" / ")
+                .ItemColor("italic #778899")
+                .CurrentColor("bold #22c55e")
+                .SeparatorColor("underline #336699")
+                .AddItem("Home")
+                .AddItems(segments, segment => "RGB " + segment.Label, segment => segment.RgbColor)
+                .AddItems(segments, segment => "Color " + segment.Label, segment => segment.SpectreColor)
+                .AddItems(segments, segment => "Style " + segment.Label, segment => "bold #abcdef")
+                .AddItem("Current");
+
+            console.Write(breadcrumb);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[3;38;2;119;136;153mHome", output);
+            Assert.Contains("\u001b[4;38;2;51;102;153m / ", output);
+            Assert.Contains("\u001b[38;2;17;34;51mRGB Services", output);
+            Assert.Contains("\u001b[38;2;68;85;102mColor Services", output);
+            Assert.Contains("\u001b[1;38;2;171;205;239mStyle Services", output);
+            Assert.Contains("\u001b[1;38;2;34;197;94mCurrent", output);
+            Assert.DoesNotContain("[#abcdef", output);
+            Assert.DoesNotContain("[bold", output);
         }
 
         /// <summary>
@@ -190,6 +235,29 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Breadcrumb builders accept quick params labels for small MVC navigation hints.
+        /// </summary>
+        [Fact]
+        public void Breadcrumb_AddItems_AcceptsQuickParamsLabels()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                new Breadcrumb()
+                    .Width(40)
+                    .Separator(" > ")
+                    .AddItems("Home", "[green]Deploy[/]", "Review")
+                    .Render();
+
+                VisualAssert.WroteText(scope.Driver, "Home");
+                VisualAssert.WroteText(scope.Driver, "Deploy");
+                VisualAssert.WroteText(scope.Driver, "Review");
+                Assert.DoesNotContain("[green]", scope.Driver.Text);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy") && write.Color == ConsoleColor.Green);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Breadcrumbs can be built fluently and composed inside captured panels.
         /// </summary>
         [Fact]
@@ -263,6 +331,22 @@ namespace ConsoulLibrary.Tests.Rendering
             }
 
             public string Label { get; private set; }
+        }
+
+        private sealed class StyledBreadcrumbSegment
+        {
+            public StyledBreadcrumbSegment(string label, RgbColor rgbColor, SpectreColor spectreColor)
+            {
+                Label = label;
+                RgbColor = rgbColor;
+                SpectreColor = spectreColor;
+            }
+
+            public string Label { get; }
+
+            public RgbColor RgbColor { get; }
+
+            public SpectreColor SpectreColor { get; }
         }
 
         private sealed class NavigationModel

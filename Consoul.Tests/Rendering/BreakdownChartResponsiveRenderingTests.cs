@@ -229,6 +229,36 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Common Spectre-style chart aliases map to the existing breakdown chart option model.
+        /// </summary>
+        [Fact]
+        public void BreakdownChart_SpectreStyleAliases_MapToExistingOptions()
+        {
+            using (var scope = new ConsoleDriverScope(52))
+            {
+                var chart = new BreakdownChart()
+                    .Width(52)
+                    .Label("Queue mix")
+                    .HideValue()
+                    .ShowValue()
+                    .HidePercentage()
+                    .ShowPercentage()
+                    .UseValueFormatter(value => value.ToString("0", CultureInfo.InvariantCulture) + " jobs")
+                    .UsePercentageFormatter(value => value.ToString("0.0", CultureInfo.InvariantCulture) + " pct")
+                    .AddItem("Passing", 3, ConsoleColor.Green)
+                    .AddItem("Failing", 1, ConsoleColor.Red);
+
+                AnsiConsole.Write(chart);
+
+                VisualAssert.ContainsText(scope.Driver, "Queue mix");
+                VisualAssert.ContainsText(scope.Driver, "Passing");
+                VisualAssert.ContainsText(scope.Driver, "3 jobs 75.0 pct");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("#") && write.Color == ConsoleColor.Green);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Breakdown charts handle zero and negative values without overflowing or throwing.
         /// </summary>
         [Fact]
