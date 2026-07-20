@@ -342,14 +342,26 @@ namespace ConsoulLibrary {
         /// Reads user input from the console.
         /// </summary>
         /// <returns>Response from the user.</returns>
-        public static string Read() => Read("\r\n");
+        public static string Read() => Read(
+            #if OS_WINDOWS
+            "\r\n"
+            #elif OS_LINUX
+            "\n"
+            #endif
+        );
 
         /// <summary>
         /// Waits for user input and reads the user response.
         /// </summary>
         /// <param name="exitCode">Reference to the string that indicates the end of stream.</param>
         /// <returns>Value from the user</returns>
-        public static string Read(string exitCode = "\r\n")
+        public static string Read(
+            #if OS_WINDOWS
+                string exitCode = "\r\n"
+            #elif OS_LINUX
+                string exitCode = "\n"
+            #endif
+        )
         {
             using (var cancelSource = new CancellationTokenSource())
             {
@@ -363,7 +375,14 @@ namespace ConsoulLibrary {
         /// <param name="cancellationToken">Reference to the cancellation token to stop the read operation.</param>
         /// <param name="exitCode">Reference to the string that indicates the end of stream.</param>
         /// <returns>Response from the user.</returns>
-        public static string Read(CancellationToken cancellationToken = default, string exitCode = "\r\n")
+        public static string Read(
+            CancellationToken cancellationToken = default,
+            #if OS_WINDOWS
+                string exitCode = "\r\n"
+            #elif OS_LINUX
+                string exitCode = "\n"
+            #endif
+        )
         {
             RoutineInput input = new RoutineInput();
             if (Routines.HasBuffer())
