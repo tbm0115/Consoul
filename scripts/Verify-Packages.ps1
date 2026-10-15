@@ -42,15 +42,27 @@ foreach ($packageId in $packageFrameworks.Keys) {
         if ($metadata.id -ne $packageId -or $metadata.version -ne $version) {
             throw "$packageId has an unexpected package ID or version."
         }
-        if ($metadata.readme -ne 'README.md' -or $metadata.icon -ne 'Consoul_Small.png' -or
+        if ($metadata.readme -ne 'README.md' -or $metadata.icon -ne 'consoul-icon.png' -or
             $metadata.license.type -ne 'file' -or $metadata.license.InnerText -ne 'LICENSE' -or
             $metadata.repository.url -ne 'https://github.com/tbm0115/Consoul' -or
             $metadata.repository.type -ne 'git') {
             throw "$packageId has incomplete README, icon, license, or repository metadata."
         }
-        foreach ($asset in @('README.md', 'LICENSE', 'Consoul_Small.png')) {
+        foreach ($asset in @('README.md', 'LICENSE', 'consoul-icon.png')) {
             $entry = $archive.GetEntry($asset)
             if ($null -eq $entry -or $entry.Length -eq 0) { throw "$packageId is missing $asset." }
+        }
+        # Check the embedded artwork, not just the metadata or filename.
+        $icon = $archive.GetEntry('consoul-icon.png')
+        $iconStream = $icon.Open()
+        $hash = [Security.Cryptography.SHA256]::Create()
+        try {
+            $actualIconHash = [BitConverter]::ToString($hash.ComputeHash($iconStream)).Replace('-', '')
+        }
+        finally { $iconStream.Dispose(); $hash.Dispose() }
+        $expectedIconHash = (Get-FileHash -LiteralPath (Join-Path $repositoryRoot 'docs/assets/brand/ember-icon-128.png') -Algorithm SHA256).Hash
+        if ($icon.Length -gt 1MB -or $actualIconHash -ne $expectedIconHash) {
+            throw "$packageId must embed the current shared Ember icon (under 1 MB)."
         }
         foreach ($framework in $packageFrameworks[$packageId]) {
             foreach ($extension in @('dll', 'xml')) {

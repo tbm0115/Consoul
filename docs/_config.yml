@@ -1,5 +1,18 @@
 theme: jekyll-theme-slate
 title: .NET Consoul
+description: "A fiery soul for your console. A console UI toolkit for .NET."
+url: "https://consoul.dev"
+baseurl: ""
+logo: /assets/brand/ember-icon-512.png
+defaults:
+  - scope:
+      path: ""
+    values:
+      image:
+        path: /assets/brand/social-preview.png
+        width: 1280
+        height: 640
+        alt: "Consoul — a fiery soul for your console"
 email: tbm0115@hotmail.com
 github_username: tbm0115
 lang: en

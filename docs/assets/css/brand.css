@@ -1,0 +1,20 @@
+---
+---
+/* Slate keeps its own layout; add the shared Ember mark to its project heading. */
+#project_title::before {
+  content: "";
+  display: inline-block;
+  width: 72px;
+  height: 72px;
+  margin-right: 16px;
+  vertical-align: middle;
+  background: url("{{ '/assets/brand/ember.svg' | relative_url }}") center / contain no-repeat;
+}
+
+@media screen and (max-width: 480px) {
+  #project_title::before {
+    width: 48px;
+    height: 48px;
+    margin-right: 10px;
+  }
+}

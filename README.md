@@ -1,6 +1,12 @@
 [![Package](https://github.com/tbm0115/Consoul/actions/workflows/dotnetcore.yml/badge.svg)](https://github.com/tbm0115/Consoul/actions/workflows/dotnetcore.yml)
 
+<p align="center">
+  <img src="docs/assets/brand/ember-icon-256.png" width="128" height="128" alt="Consoul Ember: an orange flame with a terminal prompt face">
+</p>
+
 # Consoul Repository
+
+**A fiery soul for your console.**
 
 This repository contains the Consoul console UI toolkit and its optional integration packages. The repository is organized so the core package stays dependency-light, while integrations that depend on `Microsoft.Extensions.*` or `System.Text.Json` are packaged separately.
 

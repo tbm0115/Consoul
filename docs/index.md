@@ -1,5 +1,7 @@
 # Consoul documentation
 
+<img src="assets/brand/ember-icon-128.png" width="96" height="96" alt="Consoul Ember: an orange flame with a terminal prompt face">
+
 Consoul builds console applications from models, reusable views, prompts, and renderable components. These Markdown guides can be read directly on GitHub; no documentation generator is required.
 
 This branch documents the **3.0.0-preview.1** candidate. Start with [installation and package sources](nuget.md), the [2.x migration guide](migration-3.0.md), and [release notes and known limitations](releases/3.0.0-preview.1.md). Publishing the packages and release tag is a separate step.
@@ -39,5 +41,7 @@ The core package does not require `Microsoft.Extensions.*` or `System.Text.Json`
 | [Consoul.Text.Json](../Consoul.Text.Json/README.md) | JSON rendering and `System.Text.Json` form-value serialization |
 
 ## Preview feedback
+
+The [brand asset guide](branding.md) contains the shared Ember icon, monochrome artwork, and social preview.
 
 Use the [GitHub issue tracker](https://github.com/tbm0115/Consoul/issues) to report problems. Include the Consoul version, target framework, operating system, terminal, whether input/output is redirected, and a small reproducer. For layout reports, include terminal width and the affected text; wide characters and clipped emoji have [known limitations](releases/3.0.0-preview.1.md#known-limitations).

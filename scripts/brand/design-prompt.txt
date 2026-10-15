@@ -1,0 +1,6 @@
+Built-in imagegen reference extraction prompt (not needed for asset regeneration):
+
+Edit target is the supplied Consoul Ember refinements sheet. Extract and faithfully recreate ONLY the flame mark from the LARGE TOP RIGHT tile labeled 02 / Prompt face — Flicker, as a standalone production logo on a genuinely transparent background. Preserve that selected silhouette and proportions: rounded broad golden belly, orange outer flame rising in a sweeping curve to its right-leaning top tip, one small right shoulder flame lobe, golden inner flame, dark navy >_ prompt-only face, gently rounded strokes. It must not have eyes. Use the exact visual geometry of that top right selected mark, not the other three concepts. Remove navy tile, all labels, all previews, page background. Single centered flame occupying 80 percent of square canvas, ample clear margin, no text, no tile, no shadows, no added elements. Clean crisp flat uniform fill colors orange #FF8628, golden yellow #FFD45A, navy #102238. No gradient, texture or glow. This should feel identical to the chosen Flicker concept at small icon size.
+
+The imagegen reference was converted into an editable, flat-color SVG rendition.
+Shipped icons are generated from docs/assets/brand/ember.svg by generate.cjs.

@@ -17,7 +17,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageIcon>Consoul_Small.png</PackageIcon>
+    <PackageIcon>consoul-icon.png</PackageIcon>
     <PackageReleaseNotes>3.0 preview: dependency-light core, optional integrations, typed prompts, CLI commands, and responsive rendering. Breaking changes and preview limitations: https://github.com/tbm0115/Consoul/blob/v$(Version)/docs/releases/$(Version).md</PackageReleaseNotes>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
