@@ -305,7 +305,7 @@ namespace ConsoulLibrary
         /// Displays the prompt and waits for confirmation input.
         /// </summary>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A <see cref="ConfirmResult"/> describing the confirmed value or cancellation state.</returns>
+        /// <returns>A <see cref="ConfirmResult"/> describing the confirmed value, or cancellation when input ends or is canceled.</returns>
         public ConfirmResult Render(CancellationToken cancellationToken = default)
         {
             string[] escapePhrases = new string[]
@@ -325,7 +325,7 @@ namespace ConsoulLibrary
 
                 WritePromptMessage();
                 string input = Consoul.Read(cancellationToken);
-                if (cancellationToken.IsCancellationRequested)
+                if (input == null || cancellationToken.IsCancellationRequested)
                 {
                     return ConfirmResult.Canceled();
                 }

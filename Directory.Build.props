@@ -1,0 +1,25 @@
+<Project>
+  <PropertyGroup>
+    <!-- Change the package version here for the entire release train. -->
+    <Version>3.0.0-preview.1</Version>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <DebugType>portable</DebugType>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <Authors>tbm0115</Authors>
+    <PackageProjectUrl>https://github.com/tbm0115/Consoul</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/tbm0115/Consoul</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageIcon>Consoul_Small.png</PackageIcon>
+    <PackageReleaseNotes>3.0 preview: dependency-light core, optional integrations, typed prompts, CLI commands, and responsive rendering. Breaking changes and preview limitations: https://github.com/tbm0115/Consoul/blob/v$(Version)/docs/releases/$(Version).md</PackageReleaseNotes>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+</Project>

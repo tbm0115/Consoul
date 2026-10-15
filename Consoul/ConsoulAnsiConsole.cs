@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 namespace ConsoulLibrary
 {
     /// <summary>
-    /// Provides a stateless injectable implementation of <see cref="IAnsiConsole"/> over the active Consoul console driver.
+    /// Provides an injectable implementation of <see cref="IAnsiConsole"/> over a Consoul console driver.
     /// </summary>
+    /// <remarks>
+    /// Console operations use shared Consoul driver state. Serialize operations across instances, including awaited prompts.
+    /// </remarks>
     public sealed class ConsoulAnsiConsole : IAnsiConsole
     {
         private static readonly IAnsiConsoleCursor DefaultCursor = new ConsoulAnsiConsoleCursor();

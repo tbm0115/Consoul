@@ -44,6 +44,7 @@ namespace ConsoulLibrary
 
         void SetCursorPosition(int left, int top);
 
+        // A default ConsoleKeyInfo signals that no further input is available.
         ConsoleKeyInfo ReadKey(bool intercept);
 
         Stream OpenStandardInput();

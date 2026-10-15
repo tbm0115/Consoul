@@ -11,7 +11,7 @@ namespace ConsoulLibrary
         /// Reads or maps input into a <see cref="TableCommand"/>.
         /// </summary>
         /// <param name="input">Optional key name to map without reading from the console.</param>
-        /// <returns>The mapped table command.</returns>
+        /// <returns>The mapped table command, or <see cref="TableCommand.Exit"/> when input ends.</returns>
         public TableCommand GetCommand(string input = null)
         {
             if (input != null)
@@ -25,6 +25,11 @@ namespace ConsoulLibrary
             }
 
             var keyInfo = Consoul.ConsoleDriver.ReadKey(true);
+            if (Consoul.IsEndOfInput(keyInfo))
+            {
+                return TableCommand.Exit;
+            }
+
             switch (keyInfo.Key)
             {
                 case ConsoleKey.UpArrow: return TableCommand.MoveUp;

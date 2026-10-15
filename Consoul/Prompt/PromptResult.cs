@@ -17,7 +17,7 @@ namespace ConsoulLibrary
         public int Index { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the prompt interaction was canceled by the user.
+        /// Gets whether the user canceled, the cancellation token was signaled, or input ended before a selection was accepted.
         /// </summary>
         public bool IsCanceled { get; }
 
@@ -41,6 +41,7 @@ namespace ConsoulLibrary
         /// Converts a prompt result to its selected index for Spectre-style assignment snippets.
         /// </summary>
         /// <param name="result">The prompt result to convert.</param>
+        /// <remarks>Check <see cref="HasSelection"/> first; a canceled prompt converts to <c>-1</c>.</remarks>
         public static implicit operator int(PromptResult result)
         {
             return result.Index;

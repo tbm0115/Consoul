@@ -1,5 +1,7 @@
 # Progress
 
+[Documentation index](index.md) · [Install the 3.0 preview](nuget.md) · [Migration guide](migration-3.0.md)
+
 ## When to use this
 Choose the progress APIs when you need to show active work such as downloads, migrations, processing queues, short status updates, or quick busy indicators. Consoul’s spinner, status, and progress helpers work well in environments where full-screen UIs are impractical.
 

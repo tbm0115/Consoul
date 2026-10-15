@@ -688,7 +688,8 @@ namespace ConsoulLibrary.Tests.Compatibility
         {
             using (var scope = new ConsoleDriverScope(80))
             {
-                Routines.InitializeRoutine(new TestRoutine(new[] { "2", "1,2", string.Empty }));
+                // Supply an actual blank response for each default; exhausted input cancels.
+                Routines.InitializeRoutine(new TestRoutine(new[] { "2", "1,2", string.Empty, string.Empty }));
 
                 try
                 {

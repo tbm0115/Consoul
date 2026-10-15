@@ -23,7 +23,7 @@ namespace ConsoulLibrary
         public string RawInput { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the prompt interaction was canceled by the user.
+        /// Gets whether the user canceled, the cancellation token was signaled, or input ended before an answer was accepted.
         /// </summary>
         public bool IsCanceled { get; }
 
@@ -54,6 +54,7 @@ namespace ConsoulLibrary
         /// Converts a confirmation result to its boolean value for Spectre-style conditional snippets.
         /// </summary>
         /// <param name="result">The confirmation result to convert.</param>
+        /// <remarks>Check <see cref="HasValue"/> to distinguish cancellation from a negative answer; both convert to <c>false</c>.</remarks>
         public static implicit operator bool(ConfirmResult result)
         {
             return result.Value;

@@ -837,7 +837,7 @@ namespace ConsoulLibrary
         /// <param name="allowEmpty">Specifies whether the user is allowed to accept an empty selection.</param>
         /// <param name="clearConsole">If <c>true</c>, clears the console before rendering.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A result describing selected row indexes, cancellation, or accepted empty selection.</returns>
+        /// <returns>A result describing selected row indexes, cancellation (including end of input), or accepted empty selection.</returns>
         public TableSelectionResult Select(string message = "", ConsoleColor? color = null, bool allowEmpty = false, bool clearConsole = true, CancellationToken cancellationToken = default)
         {
             if (_tableNavigator == null)
@@ -860,7 +860,7 @@ namespace ConsoulLibrary
                 }
 
                 var keyInfo = Consoul.ConsoleDriver.ReadKey(intercept: true);
-                if (cancellationToken.IsCancellationRequested)
+                if (Consoul.IsEndOfInput(keyInfo) || cancellationToken.IsCancellationRequested)
                 {
                     return TableSelectionResult.Canceled();
                 }

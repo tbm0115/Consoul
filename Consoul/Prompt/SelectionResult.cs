@@ -33,7 +33,7 @@ namespace ConsoulLibrary
         public int Index => Result.Index;
 
         /// <summary>
-        /// Gets a value indicating whether the prompt interaction was canceled by the user.
+        /// Gets whether the user canceled, the cancellation token was signaled, or input ended before a selection was accepted.
         /// </summary>
         public bool IsCanceled => Result.IsCanceled;
 
@@ -46,6 +46,7 @@ namespace ConsoulLibrary
         /// Converts a selection result to its selected item for Spectre-style assignment snippets.
         /// </summary>
         /// <param name="result">The selection result to convert.</param>
+        /// <remarks>Check <see cref="HasSelection"/> first; conversion returns <see cref="SelectedItem"/> without preserving cancellation.</remarks>
         public static implicit operator T(SelectionResult<T> result)
         {
             return result.SelectedItem;

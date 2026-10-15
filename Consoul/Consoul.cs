@@ -307,7 +307,7 @@ namespace ConsoulLibrary {
         /// <param name="backgroundColor">Override the Prompt background color</param>
         /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Can result in <see cref="string.Empty"/> .</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>User response (string)</returns>
+        /// <returns>The user response, or <c>null</c> when input ends or is canceled.</returns>
         public static string Input(string message, ConsoleColor? color = null, ConsoleColor? backgroundColor = null, bool allowEmpty = false, CancellationToken cancellationToken = default)
         {
             string output;
@@ -316,6 +316,10 @@ namespace ConsoulLibrary {
             {
                 Consoul.WriteCore(message, RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor));
                 output = Read(cancellationToken);
+                if (output == null || cancellationToken.IsCancellationRequested)
+                {
+                    return null;
+                }
                 if (allowEmpty)
                 {
                     valid = true;
@@ -337,7 +341,7 @@ namespace ConsoulLibrary {
         /// <param name="backgroundColor">Override the prompt background color</param>
         /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Can result in string.Empty</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
-        /// <returns>User response converted to the expected type</returns>
+        /// <returns>The converted response, or <c>null</c> when input ends or is canceled.</returns>
         public static object Input(string message, Type expectedType, ConsoleColor? color = null, ConsoleColor? backgroundColor = null, bool allowEmpty = false, CancellationToken cancellationToken = default)
         {
             string output = string.Empty;
@@ -347,6 +351,10 @@ namespace ConsoulLibrary {
             {
                 Consoul.WriteCore(message, RenderOptions.GetColorOrDefault(color), backgroundColor: RenderOptions.GetBackgroundColorOrDefault(backgroundColor));
                 output = Read(cancellationToken);
+                if (output == null || cancellationToken.IsCancellationRequested)
+                {
+                    return null;
+                }
                 if (allowEmpty && string.IsNullOrEmpty(output))
                 {
                     valid = true;
@@ -430,10 +438,11 @@ namespace ConsoulLibrary {
         /// <param name="backgroundColor">Override the prompt background color</param>
         /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Can result in string.Empty</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests</param>
-        /// <returns>User response converted to type T</returns>
+        /// <returns>The converted response, or the default value of <typeparamref name="T"/> when input ends or is canceled.</returns>
         public static T Input<T>(string message, ConsoleColor? color = null, ConsoleColor? backgroundColor = null, bool allowEmpty = false, CancellationToken cancellationToken = default)
         {
-            return (T)Input(message, typeof(T), color: color, backgroundColor: backgroundColor, allowEmpty: allowEmpty, cancellationToken: cancellationToken);
+            object result = Input(message, typeof(T), color: color, backgroundColor: backgroundColor, allowEmpty: allowEmpty, cancellationToken: cancellationToken);
+            return result == null ? default(T) : (T)result;
         }
 
         /// <summary>
@@ -887,14 +896,14 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Reads user input from the console.
         /// </summary>
-        /// <returns>Response from the user.</returns>
+        /// <returns>The response, an empty string for a blank line, or <c>null</c> if input ends before any characters are read.</returns>
         public static string Read() => Read(DefaultReadExitCode);
 
         /// <summary>
         /// Waits for user input and reads the user response.
         /// </summary>
         /// <param name="exitCode">Reference to the string that indicates the end of stream.</param>
-        /// <returns>Value from the user</returns>
+        /// <returns>The response, an empty string for a blank line, or <c>null</c> if input ends before any characters are read.</returns>
         public static string Read(string exitCode)
         {
             using (var cancelSource = new CancellationTokenSource())
@@ -904,18 +913,18 @@ namespace ConsoulLibrary {
         }
 
         /// <summary>
-        /// Asynchronously reads any input from the user and allows the operation to be cancelled at any time.
+        /// Synchronously reads user input, checking cancellation between reads and passing the token to the input stream.
         /// </summary>
         /// <param name="cancellationToken">Reference to the cancellation token to stop the read operation.</param>
-        /// <returns>Response from the user.</returns>
+        /// <returns>The response, accumulated text on cancellation, or <c>null</c> if input ends before any characters are read.</returns>
         public static string Read(CancellationToken cancellationToken) => Read(cancellationToken, DefaultReadExitCode);
 
         /// <summary>
-        /// Asynchronously reads any input from the user and allows the operation to be cancelled at any time.
+        /// Synchronously reads user input, checking cancellation between reads and passing the token to the input stream.
         /// </summary>
         /// <param name="cancellationToken">Reference to the cancellation token to stop the read operation.</param>
         /// <param name="exitCode">Reference to the string that indicates the end of stream.</param>
-        /// <returns>Response from the user.</returns>
+        /// <returns>The response, accumulated text on cancellation, or <c>null</c> if input ends before any characters are read.</returns>
         public static string Read(CancellationToken cancellationToken, string exitCode)
         {
             RoutineInput input = new RoutineInput();
@@ -938,7 +947,13 @@ namespace ConsoulLibrary {
             {
                 using (var stream = ConsoleDriver.OpenStandardInput())
                 {
-                    input.Value = ReadFromStream(stream, ConsoleDriver.InputEncoding, cancellationToken, exitCode);
+                    string value = ReadFromStream(stream, ConsoleDriver.InputEncoding, cancellationToken, exitCode);
+                    if (value == null)
+                    {
+                        return null;
+                    }
+
+                    input.Value = value;
                 }
             }
 
@@ -960,33 +975,50 @@ namespace ConsoulLibrary {
             if (exitCode == null)
                 throw new ArgumentNullException(nameof(exitCode));
 
-            string userInput = string.Empty;
+            var userInput = new StringBuilder();
+            Decoder decoder = encoding.GetDecoder();
             byte[] data = new byte[1];
+            char[] characters = new char[encoding.GetMaxCharCount(data.Length)];
+            bool hasInput = false;
             while (!cancellationToken.IsCancellationRequested)
             {
                 int bytesRead;
-                using (var readCanceller = new CancellationTokenSource(TimeSpan.FromMilliseconds(500)))
+                using (var readCanceller = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
+                    readCanceller.CancelAfter(TimeSpan.FromMilliseconds(500));
                     try
                     {
                         bytesRead = stream.ReadAsync(data, 0, data.Length, readCanceller.Token).GetAwaiter().GetResult();
                     }
                     catch (OperationCanceledException)
                     {
-                        break;
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        continue;
                     }
                 }
 
                 if (bytesRead <= 0)
-                    break;
+                {
+                    int finalCharacters = decoder.GetChars(data, 0, 0, characters, 0, flush: true);
+                    userInput.Append(characters, 0, finalCharacters);
+                    return hasInput ? userInput.ToString() : null;
+                }
 
-                userInput += encoding.GetString(data, 0, bytesRead);
+                hasInput = true;
+                int characterCount = decoder.GetChars(data, 0, bytesRead, characters, 0, flush: false);
+                userInput.Append(characters, 0, characterCount);
 
-                if (TryTrimReadExitCode(userInput, exitCode, out userInput))
-                    break;
+                if (characterCount > 0 && TryTrimReadExitCode(userInput.ToString(), exitCode, out string trimmedInput))
+                {
+                    return trimmedInput;
+                }
             }
 
-            return userInput;
+            return userInput.ToString();
         }
 
         private static bool TryTrimReadExitCode(string userInput, string exitCode, out string trimmedInput)
@@ -1017,7 +1049,7 @@ namespace ConsoulLibrary {
         /// <summary>
         /// Method to read password without showing it in the console
         /// </summary>
-        /// <returns>Entered password</returns>
+        /// <returns>The entered password, or <c>null</c> if input ends before any characters are read.</returns>
         public static string ReadPassword(ConsoleColor? color = null, CancellationToken cancellationToken = default)
         {
             return ReadPassword(color, '*', cancellationToken);
@@ -1029,7 +1061,7 @@ namespace ConsoulLibrary {
         /// <param name="color">Optional color for rendered mask characters.</param>
         /// <param name="maskCharacter">Character to render for each typed character. Use <c>'\0'</c> to render no mask characters.</param>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>Entered password.</returns>
+        /// <returns>The entered password, or <c>null</c> if input ends before any characters are read.</returns>
         public static string ReadPassword(ConsoleColor? color, char maskCharacter, CancellationToken cancellationToken = default)
         {
             ConsoleColor resolvedColor = RenderOptions.GetColorOrDefault(color);
@@ -1066,6 +1098,15 @@ namespace ConsoulLibrary {
                 while(!cancellationToken.IsCancellationRequested)
                 {
                     key = ConsoleDriver.ReadKey(true);
+                    if (IsEndOfInput(key))
+                    {
+                        if (password.Length == 0)
+                        {
+                            return null;
+                        }
+
+                        break;
+                    }
 
                     // Ignore any key other than Enter
                     if (key.Key == ConsoleKey.Enter)
@@ -1102,6 +1143,11 @@ namespace ConsoulLibrary {
                 Routines.UserInputs.Push(input);
 
             return resolvedInput;
+        }
+
+        internal static bool IsEndOfInput(ConsoleKeyInfo key)
+        {
+            return key.Key == 0 && key.KeyChar == '\0';
         }
 
         /// <summary>
@@ -3674,7 +3720,7 @@ namespace ConsoulLibrary {
         /// <param name="allowEmpty">Specifies whether the user can provide an empty response. Default is typically the 'No', but can be overriden</param>
         /// <param name="defaultIsNo">Specifies whether the default entry should be 'No'. This only applies if 'allowEmpty' is true.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Boolean of users response relative to 'Yes' or 'No'</returns>
+        /// <returns>Whether the response is affirmative; <c>false</c> when input ends or is canceled.</returns>
         public static bool Ask(string message, bool clear = false, bool allowEmpty = false, bool defaultIsNo = true, CancellationToken cancellationToken = default)
         {
             string input = "";
@@ -3693,7 +3739,13 @@ namespace ConsoulLibrary {
                 }
                 Consoul.WriteCore(message, RenderOptions.PromptScheme);
                 Consoul.WriteCore(optionMessage, RenderOptions.SubnoteScheme);
-                input = NormalizeAskInput(Read(cancellationToken));
+                input = Read(cancellationToken);
+                if (input == null || cancellationToken.IsCancellationRequested)
+                {
+                    return false;
+                }
+
+                input = NormalizeAskInput(input);
                 if (!IsAskInputAccepted(input, allowEmpty) && !string.IsNullOrEmpty(input))
                 {
                     Consoul.WriteCore("Invalid input!", RenderOptions.InvalidScheme);
@@ -4320,13 +4372,19 @@ namespace ConsoulLibrary {
         /// <param name="message">Prompt message to display.</param>
         /// <param name="checkExists">Indicates whether to check the file exists before allowing the user exit the loop.</param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Filepath string</returns>
+        /// <returns>The file path, or <c>null</c> when input ends or is canceled.</returns>
         public static string PromptForFilepath(string message, bool checkExists, CancellationToken cancellationToken = default) {
             string path;
             do
             {
                 Write(message, RenderOptions.PromptScheme);
-                path = NormalizePromptedFilePath(Read(cancellationToken));
+                path = Read(cancellationToken);
+                if (path == null || cancellationToken.IsCancellationRequested)
+                {
+                    return null;
+                }
+
+                path = NormalizePromptedFilePath(path);
             } while (!IsPromptedFilePathAccepted(path, checkExists));
 
             return path;
@@ -4393,7 +4451,7 @@ namespace ConsoulLibrary {
         /// <param name="message">Prompt message to display.</param>
         /// <param name="checkExists"><inheritdoc cref="PromptForFilepath(string, bool, CancellationToken)" path="/param[@name='checkExists']"/></param>
         /// <param name="cancellationToken">Cancellation token.</param>
-        /// <returns>Filepath string</returns>
+        /// <returns>The file path, or <c>null</c> when input ends or is canceled.</returns>
         public static string PromptForFilepath(string defaultPath, string message, bool checkExists, CancellationToken cancellationToken = default) {
             string path = NormalizePromptedFilePath(defaultPath);
             if (!IsPromptedFilePathAccepted(path, checkExists) || !Ask($"Would you like to use the default path:\r\n{path}", defaultIsNo: false, cancellationToken: cancellationToken)) {

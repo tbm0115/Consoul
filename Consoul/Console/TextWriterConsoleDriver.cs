@@ -97,13 +97,13 @@ namespace ConsoulLibrary
         {
             if (_input == null)
             {
-                return new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false);
+                return default;
             }
 
             int value = _input.Read();
             if (value < 0)
             {
-                return new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false);
+                return default;
             }
 
             ConsoleKeyInfo key = ToKeyInfo((char)value);
@@ -267,12 +267,15 @@ namespace ConsoulLibrary
         {
             private readonly TextReader _reader;
             private readonly Encoding _encoding;
+            private readonly Encoder _encoder;
             private readonly Queue<byte> _buffer = new Queue<byte>();
+            private bool _endOfInput;
 
             public TextReaderInputStream(TextReader reader, Encoding encoding)
             {
                 _reader = reader ?? throw new ArgumentNullException(nameof(reader));
                 _encoding = encoding ?? throw new ArgumentNullException(nameof(encoding));
+                _encoder = _encoding.GetEncoder();
             }
 
             public override bool CanRead => true;
@@ -325,7 +328,7 @@ namespace ConsoulLibrary
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    return Task.FromResult(0);
+                    return Task.FromCanceled<int>(cancellationToken);
                 }
 
                 return Task.FromResult(Read(buffer, offset, count));
@@ -348,20 +351,23 @@ namespace ConsoulLibrary
 
             private void EnsureBufferedByte()
             {
-                if (_buffer.Count > 0)
+                if (_buffer.Count > 0 || _endOfInput)
                 {
                     return;
                 }
 
-                int value = _reader.Read();
-                if (value < 0)
+                while (_buffer.Count == 0 && !_endOfInput)
                 {
-                    return;
-                }
+                    int value = _reader.Read();
+                    _endOfInput = value < 0;
+                    char[] characters = _endOfInput ? new char[0] : new[] { (char)value };
+                    byte[] bytes = new byte[_encoding.GetMaxByteCount(characters.Length)];
+                    int byteCount = _encoder.GetBytes(characters, 0, characters.Length, bytes, 0, flush: _endOfInput);
 
-                foreach (byte item in _encoding.GetBytes(new[] { (char)value }))
-                {
-                    _buffer.Enqueue(item);
+                    for (int index = 0; index < byteCount; index++)
+                    {
+                        _buffer.Enqueue(bytes[index]);
+                    }
                 }
             }
         }

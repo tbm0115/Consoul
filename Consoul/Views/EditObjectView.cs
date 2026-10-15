@@ -1213,6 +1213,11 @@ namespace ConsoulLibrary
             {
                 var label = ownerDisplayName + "[" + key + "]";
                 var value = Consoul.Input("Enter new " + label + "\t(" + simpleElementType.Name + ")", simpleElementType, cancellationToken: cancellationToken);
+                if (value == null || cancellationToken.IsCancellationRequested)
+                {
+                    return currentValue;
+                }
+
                 if (elementType != null)
                 {
                     return ConvertIfNeeded(value, elementType);
@@ -1243,6 +1248,11 @@ namespace ConsoulLibrary
 
                     var promptLabel = labelBuilder.ToString();
                     var runtimeValue = Consoul.Input("Enter new " + promptLabel + "\t(" + runtimeSimpleType.Name + ")", runtimeSimpleType, cancellationToken: cancellationToken);
+                    if (runtimeValue == null || cancellationToken.IsCancellationRequested)
+                    {
+                        return currentValue;
+                    }
+
                     return ConvertIfNeeded(runtimeValue, runtimeType);
                 }
             }
@@ -1400,6 +1410,11 @@ namespace ConsoulLibrary
                 if (choice == addChoice)
                 {
                     var newValue = EditObject(property, simpleType, cancellationToken);
+                    if (newValue == null || cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
                     items.Add(ConvertIfNeeded(newValue, simpleType));
                 }
                 else if (choice == finishChoice)
@@ -1409,6 +1424,11 @@ namespace ConsoulLibrary
                 else
                 {
                     var updatedValue = EditObject(property, simpleType, cancellationToken);
+                    if (updatedValue == null || cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
                     items[choice] = ConvertIfNeeded(updatedValue, simpleType);
                 }
 
@@ -1527,6 +1547,10 @@ namespace ConsoulLibrary
                         }
 
                         keyInfo = Consoul.ConsoleDriver.ReadKey(true);
+                        if (Consoul.IsEndOfInput(keyInfo))
+                        {
+                            break;
+                        }
 
                         if (keyInfo.Key == ConsoleKey.DownArrow || keyInfo.Key == ConsoleKey.RightArrow || keyInfo.Key == ConsoleKey.Tab)
                         {

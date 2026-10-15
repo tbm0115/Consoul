@@ -858,7 +858,7 @@ namespace ConsoulLibrary.Views.Editing
             var currentValue = context.Property.GetValue(context.Model);
             var currentText = currentValue != null ? currentValue.ToString() : string.Empty;
             value = Consoul.PromptForFilepath(currentText, "Select " + displayName, checkExists: false, cancellationToken: context.CancellationToken);
-            return true;
+            return value != null && !context.CancellationToken.IsCancellationRequested;
         }
 
         private static string NormalizeWhitespace(string value)

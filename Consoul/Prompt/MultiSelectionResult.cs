@@ -20,7 +20,7 @@ namespace ConsoulLibrary
         public IReadOnlyList<int> Indexes { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the prompt interaction was canceled by the user.
+        /// Gets whether the user canceled, the cancellation token was signaled, or input ended before selections were accepted.
         /// </summary>
         public bool IsCanceled { get; }
 
@@ -62,6 +62,7 @@ namespace ConsoulLibrary
         /// Converts a multi-selection result to a list of selected indexes for Spectre-style assignment snippets.
         /// </summary>
         /// <param name="result">The multi-selection result to convert.</param>
+        /// <remarks>Check <see cref="IsCanceled"/> first; conversion returns the selected indexes without preserving cancellation.</remarks>
         public static implicit operator List<int>(MultiSelectionResult result)
         {
             return new List<int>(result.Indexes);
@@ -119,7 +120,7 @@ namespace ConsoulLibrary
         public IReadOnlyList<int> Indexes => Result.Indexes;
 
         /// <summary>
-        /// Gets a value indicating whether the prompt interaction was canceled by the user.
+        /// Gets whether the user canceled, the cancellation token was signaled, or input ended before selections were accepted.
         /// </summary>
         public bool IsCanceled => Result.IsCanceled;
 
@@ -143,6 +144,7 @@ namespace ConsoulLibrary
         /// Converts a multi-selection result to a list of selected items for Spectre-style assignment snippets.
         /// </summary>
         /// <param name="result">The multi-selection result to convert.</param>
+        /// <remarks>Check <see cref="IsCanceled"/> first; conversion returns <see cref="SelectedItems"/> without preserving cancellation.</remarks>
         public static implicit operator List<T>(MultiSelectionResult<T> result)
         {
             return new List<T>(result.SelectedItems);

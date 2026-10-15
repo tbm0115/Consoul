@@ -121,7 +121,7 @@ namespace ConsoulLibrary
 
         public ConsoleKeyInfo ReadKey(bool intercept)
         {
-            return new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false);
+            return default;
         }
 
         public Stream OpenStandardInput()

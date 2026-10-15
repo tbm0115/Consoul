@@ -1,5 +1,7 @@
 # Routines
 
+[Documentation index](index.md) · [Install the 3.0 preview](nuget.md) · [Migration guide](migration-3.0.md)
+
 ## When to use this
 Routines let you automate console interactions—perfect for demos, scripted smoke tests, or running canned data entry flows. They replay scripted keystrokes without requiring manual input.
 

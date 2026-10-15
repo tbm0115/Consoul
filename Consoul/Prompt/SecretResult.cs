@@ -17,7 +17,7 @@ namespace ConsoulLibrary
         public string Value { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the prompt interaction was canceled.
+        /// Gets whether the user canceled, the cancellation token was signaled, or input ended before a secret was accepted.
         /// </summary>
         public bool IsCanceled { get; }
 
@@ -47,6 +47,7 @@ namespace ConsoulLibrary
         /// Converts a secret result to its captured value for Spectre-style assignment snippets.
         /// </summary>
         /// <param name="result">The secret result to convert.</param>
+        /// <remarks>Check <see cref="HasValue"/> first; a canceled prompt converts to an empty string.</remarks>
         public static implicit operator string(SecretResult result)
         {
             return result.Value;

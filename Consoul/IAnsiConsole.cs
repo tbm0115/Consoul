@@ -9,6 +9,10 @@ namespace ConsoulLibrary
     /// <summary>
     /// Defines an injectable Spectre-style console facade over Consoul's output, prompt, and capture APIs.
     /// </summary>
+    /// <remarks>
+    /// Built-in prompts expose cancellation through their result types, including when input ends.
+    /// Check the result's cancellation or success property before using its value. Custom <see cref="IPrompt{T}"/> implementations define their own result contract.
+    /// </remarks>
     public interface IAnsiConsole
     {
         /// <summary>

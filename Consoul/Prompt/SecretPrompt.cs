@@ -436,7 +436,7 @@ namespace ConsoulLibrary
         /// Displays the prompt and waits for masked input.
         /// </summary>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A <see cref="SecretResult"/> describing the secret value or cancellation state.</returns>
+        /// <returns>A <see cref="SecretResult"/> describing the secret value, or cancellation when input ends or is canceled.</returns>
         public SecretResult Render(CancellationToken cancellationToken = default)
         {
             do
@@ -448,7 +448,7 @@ namespace ConsoulLibrary
 
                 PromptRenderHelpers.WriteMarkupLine(Message, ResolvePromptStyle());
                 string value = Consoul.ReadPassword(ResolveMaskStyle(), MaskCharacter ?? '\0', cancellationToken);
-                if (cancellationToken.IsCancellationRequested)
+                if (value == null || cancellationToken.IsCancellationRequested)
                 {
                     return SecretResult.Canceled();
                 }

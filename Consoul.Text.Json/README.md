@@ -2,19 +2,17 @@
 
 `Consoul.Text.Json` is the optional `System.Text.Json` integration for Consoul's MVC-style object editor and JSON display helpers. It keeps the core `Consoul` package free of `System.Text.Json` while allowing applications to opt into platform JSON serialization, syntax-colored JSON snapshots, and JSON-style value rendering inside the shared form document editor.
 
+For **3.0.0-preview.1**, read the [documentation index](https://github.com/tbm0115/Consoul/blob/develop/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/migration-3.0.md), and [release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/releases/3.0.0-preview.1.md). Versioned documentation links become available when the release tag is published.
+
 ## Installation
 
-Install from NuGet:
+After the preview is published to your configured source:
 
 ```bash
-dotnet add package Consoul.Text.Json
+dotnet add package Consoul.Text.Json --version 3.0.0-preview.1
 ```
 
-Or install from the GitHub package registry:
-
-```bash
-dotnet add package Consoul.Text.Json --source "https://nuget.pkg.github.com/tbm0115/index.json"
-```
+See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/nuget.md) for local builds, NuGet.org, and authenticated GitHub Packages setup. These instructions do not imply that the preview is already published.
 
 This package depends on:
 

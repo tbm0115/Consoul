@@ -2,19 +2,17 @@
 
 `Consoul.Extensions.Configuration` is the optional `Microsoft.Extensions.Configuration` bridge for Consoul routines. It keeps the core `Consoul` package free of `Microsoft.Extensions.*` dependencies while allowing applications with configuration providers to feed routine transforms from configuration.
 
+For **3.0.0-preview.1**, read the [documentation index](https://github.com/tbm0115/Consoul/blob/develop/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/migration-3.0.md), and [release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/releases/3.0.0-preview.1.md). Versioned documentation links become available when the release tag is published.
+
 ## Installation
 
-Install from NuGet:
+After the preview is published to your configured source:
 
 ```bash
-dotnet add package Consoul.Extensions.Configuration
+dotnet add package Consoul.Extensions.Configuration --version 3.0.0-preview.1
 ```
 
-Or install from the GitHub package registry:
-
-```bash
-dotnet add package Consoul.Extensions.Configuration --source "https://nuget.pkg.github.com/tbm0115/index.json"
-```
+See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/nuget.md) for local builds, NuGet.org, and authenticated GitHub Packages setup. These instructions do not imply that the preview is already published.
 
 This package depends on:
 

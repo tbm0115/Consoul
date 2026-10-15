@@ -817,7 +817,7 @@ namespace ConsoulLibrary
         /// Displays the prompt and waits for typed input.
         /// </summary>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A <see cref="TextPromptResult{T}"/> describing the parsed value or cancellation state.</returns>
+        /// <returns>A <see cref="TextPromptResult{T}"/> describing the parsed value, or cancellation when input ends or is canceled.</returns>
         public TextPromptResult<T> Render(CancellationToken cancellationToken = default)
         {
             string[] escapePhrases = new string[]
@@ -840,12 +840,12 @@ namespace ConsoulLibrary
                 int promptBottom = Math.Max(promptTop, Consoul.ConsoleDriver.CursorTop - 1);
                 string rawInput = ReadPromptInput(cancellationToken);
                 int promptBottomAfterInput = Math.Max(promptBottom, Consoul.ConsoleDriver.CursorTop - 1);
-                string input = NormalizeInputText(rawInput);
-                if (cancellationToken.IsCancellationRequested)
+                if (rawInput == null || cancellationToken.IsCancellationRequested)
                 {
                     return TextPromptResult<T>.Canceled();
                 }
 
+                string input = NormalizeInputText(rawInput);
                 if (Array.Exists(escapePhrases, phrase => input.Equals(phrase, StringComparison.OrdinalIgnoreCase)))
                 {
                     return TextPromptResult<T>.Canceled();
@@ -893,6 +893,11 @@ namespace ConsoulLibrary
             while (!cancellationToken.IsCancellationRequested)
             {
                 ConsoleKeyInfo key = Consoul.ConsoleDriver.ReadKey(true);
+                if (Consoul.IsEndOfInput(key))
+                {
+                    return null;
+                }
+
                 if (key.Key == ConsoleKey.Enter)
                 {
                     Consoul.ConsoleDriver.WriteLine(string.Empty);

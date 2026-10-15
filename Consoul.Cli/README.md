@@ -2,16 +2,22 @@
 
 `Consoul.Cli` is the optional command-line entry package for Consoul. It adds a small `CommandApp`-style runner for proof-of-concept tools while keeping the core `Consoul` package focused on dependency-light MVC-style console views and renderables.
 
+For **3.0.0-preview.1**, start with the [documentation index](https://github.com/tbm0115/Consoul/blob/develop/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/migration-3.0.md), and [release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/releases/3.0.0-preview.1.md). Versioned documentation links become available when the release tag is published.
+
 ## Installation
 
+After the preview is published to your configured source:
+
 ```bash
-dotnet add package Consoul.Cli
+dotnet add package Consoul.Cli --version 3.0.0-preview.1
 ```
+
+See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/nuget.md) for local builds and package-source setup. These instructions do not imply that the preview is already published.
 
 Install the core package when you only need views, prompts, renderables, tables, and progress helpers:
 
 ```bash
-dotnet add package Consoul
+dotnet add package Consoul --version 3.0.0-preview.1
 ```
 
 ## Quick Start
@@ -1114,4 +1120,4 @@ Root `--help` includes the default command's usage, arguments, options, descript
 
 ## Package Scope
 
-This package is intentionally dependency-free and focused on POC-friendly command apps that can launch MVC-style console views. It includes the common settings binder path for arguments, options, branch hierarchies, reusable validation, and custom converters without adding dependencies to the core `Consoul` package.
+This package depends on `Consoul` and adds no external command framework dependency. It focuses on POC-friendly command apps that can launch MVC-style console views, with settings binding for arguments, options, branch hierarchies, reusable validation, and custom converters.

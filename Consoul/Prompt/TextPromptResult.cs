@@ -24,7 +24,7 @@ namespace ConsoulLibrary
         public string RawInput { get; }
 
         /// <summary>
-        /// Gets a value indicating whether the prompt interaction was canceled by the user.
+        /// Gets whether the user canceled, the cancellation token was signaled, or input ended before a value was accepted.
         /// </summary>
         public bool IsCanceled { get; }
 
@@ -55,6 +55,7 @@ namespace ConsoulLibrary
         /// Converts a text prompt result to its parsed value for Spectre-style assignment snippets.
         /// </summary>
         /// <param name="result">The text prompt result to convert.</param>
+        /// <remarks>Check <see cref="HasValue"/> first; conversion discards cancellation and returns the default value of <typeparamref name="T"/> for a canceled prompt.</remarks>
         public static implicit operator T(TextPromptResult<T> result)
         {
             return result.Value;

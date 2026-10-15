@@ -26,6 +26,7 @@ namespace ConsoulLibrary
         /// <summary>
         /// Gets or sets the input source for created console instances.
         /// </summary>
+        /// <remarks>When unset, the created console has no input. Set <see cref="System.Console.In"/> for standard input. Built-in prompts treat end-of-input as cancellation; a blank line still participates in validation or default-value selection.</remarks>
         public TextReader In { get; set; }
 
         /// <summary>

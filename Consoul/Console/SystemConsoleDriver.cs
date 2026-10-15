@@ -79,7 +79,7 @@ namespace ConsoulLibrary
             TryWrite(() => Console.SetCursorPosition(targetLeft, targetTop));
         }
 
-        public ConsoleKeyInfo ReadKey(bool intercept) => TryRead(() => Console.ReadKey(intercept), new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false));
+        public ConsoleKeyInfo ReadKey(bool intercept) => TryRead(() => Console.ReadKey(intercept), default(ConsoleKeyInfo));
 
         public Stream OpenStandardInput() => TryRead(() => Console.OpenStandardInput(), Stream.Null);
 

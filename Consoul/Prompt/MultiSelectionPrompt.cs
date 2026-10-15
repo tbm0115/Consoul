@@ -1086,7 +1086,7 @@ namespace ConsoulLibrary
         /// Displays the prompt options to the user and waits for one or more selections.
         /// </summary>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A <see cref="MultiSelectionResult"/> that describes selected indexes or cancellation.</returns>
+        /// <returns>A <see cref="MultiSelectionResult"/> that describes selected indexes, or cancellation when input ends or is canceled.</returns>
         public MultiSelectionResult Render(CancellationToken cancellationToken = default)
         {
             string[] escapePhrases = new string[]
@@ -1116,7 +1116,7 @@ namespace ConsoulLibrary
 
                 Consoul.ConsoleDriver.ForegroundColor = RenderOptions.DefaultColor;
                 string input = Consoul.Read(cancellationToken);
-                if (cancellationToken.IsCancellationRequested)
+                if (input == null || cancellationToken.IsCancellationRequested)
                 {
                     return ResolveCancelResult();
                 }
@@ -1189,7 +1189,7 @@ namespace ConsoulLibrary
                     hasRendered = true;
 
                     ConsoleKeyInfo keyInfo = Consoul.ConsoleDriver.ReadKey(true);
-                    if (cancellationToken.IsCancellationRequested)
+                    if (Consoul.IsEndOfInput(keyInfo) || cancellationToken.IsCancellationRequested)
                     {
                         break;
                     }

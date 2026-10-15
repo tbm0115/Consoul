@@ -2,27 +2,39 @@
 
 `Consoul` is the dependency-light core package for building interactive console applications with prompts, views, tables, progress bars, fixed messages, and scriptable routines.
 
+This README describes **3.0.0-preview.1**, an early-adopter preview with breaking package/configuration changes. Read the [documentation index](https://github.com/tbm0115/Consoul/blob/develop/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/migration-3.0.md), and [preview release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/releases/3.0.0-preview.1.md). Versioned documentation links become available when the release tag is published.
+
 The core package intentionally avoids `Microsoft.Extensions.*` and `System.Text.Json` package dependencies. Optional integration packages are available when you want those ecosystems:
 
 | Package | Purpose |
 | --- | --- |
+| `Consoul.Cli` | Adds typed command-line commands, options, help, and view commands. |
 | `Consoul.Extensions.Logging` | Adds `Microsoft.Extensions.Logging` support. |
 | `Consoul.Extensions.Configuration` | Bridges `Microsoft.Extensions.Configuration` into routine transforms. |
 | `Consoul.Text.Json` | Uses `System.Text.Json` for form/object-editor value rendering and syntax-colored JSON snapshots. |
 
 ## Installation
 
-Install the core package from NuGet:
+After the preview is published to your configured source, install the exact version:
 
 ```bash
-dotnet add package Consoul
+dotnet add package Consoul --version 3.0.0-preview.1
 ```
 
-Or install from the GitHub package registry:
+See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/nuget.md) for local package installation, NuGet.org, and authenticated GitHub Packages setup. This command does not indicate that the preview is already published.
 
-```bash
-dotnet add package Consoul --source "https://nuget.pkg.github.com/tbm0115/index.json"
-```
+## Find an example
+
+| Task | Guide |
+| --- | --- |
+| Build a menu backed by application state | [5-minute POC view](#5-minute-poc-view), [views](#views) |
+| Read input and handle cancellation | [Prompts](#prompts) |
+| Display data and composed layouts | [Tables](#tables), [composing render helpers](#composing-render-helpers) |
+| Show work in progress | [Progress bars and live displays](#progress-bars) |
+| Edit settings or replay input | [Form and object editing](#form-and-object-editing), [routines](#routines) |
+| Port familiar builder syntax | [Spectre-style entry points](#spectre-style-entry-points) |
+
+Preview limitation: layout measurement does not yet account for terminal display-cell widths. Wide characters, combining characters, and clipped emoji can misalign or be truncated incorrectly; UTF-8 input support does not remove this rendering limitation. Prefer simple single-cell labels for predictable preview layouts.
 
 ## Quick Start
 
@@ -2898,15 +2910,16 @@ editor.Render();
 
 ## Optional Integrations
 
-Install only the integrations your application needs:
+After the preview is available on your configured source, install only the integrations your application needs:
 
 ```bash
-dotnet add package Consoul.Extensions.Logging
-dotnet add package Consoul.Extensions.Configuration
-dotnet add package Consoul.Text.Json
+dotnet add package Consoul.Cli --version 3.0.0-preview.1
+dotnet add package Consoul.Extensions.Logging --version 3.0.0-preview.1
+dotnet add package Consoul.Extensions.Configuration --version 3.0.0-preview.1
+dotnet add package Consoul.Text.Json --version 3.0.0-preview.1
 ```
 
-Each optional package depends on `Consoul` and its respective integration library.
+Each optional package depends on `Consoul`; logging, configuration, and JSON packages also reference their respective integration libraries. `Consoul.Cli` adds no external command framework dependency.
 
 ## License
 

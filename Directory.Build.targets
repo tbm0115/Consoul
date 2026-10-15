@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup Condition="'$(IsPackable)' == 'true'">
+    <WarningsAsErrors>$(WarningsAsErrors);CS1591;CS1570;CS1572;CS1573;CS1574;CS1580;CS1581;CS1584;CS1587;CS1711;CS1712</WarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsPackable)' == 'true'">
+    <None Remove="README.md" />
+    <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="" />
+    <None Remove="Consoul_Small.png" />
+    <None Include="$(MSBuildThisFileDirectory)Consoul/Consoul_Small.png" Pack="true" PackagePath="" />
+  </ItemGroup>
+</Project>

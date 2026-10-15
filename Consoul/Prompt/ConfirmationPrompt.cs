@@ -141,7 +141,7 @@ namespace ConsoulLibrary
         /// Displays the prompt and waits for confirmation input.
         /// </summary>
         /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
-        /// <returns>A <see cref="ConfirmResult"/> describing the confirmed value or cancellation state.</returns>
+        /// <returns>A <see cref="ConfirmResult"/> describing the confirmed value, or cancellation when input ends or is canceled.</returns>
         public ConfirmResult Render(CancellationToken cancellationToken = default)
         {
             string[] escapePhrases = new string[]
@@ -156,7 +156,7 @@ namespace ConsoulLibrary
             {
                 WritePromptMessage();
                 string input = ReadInput(cancellationToken);
-                if (cancellationToken.IsCancellationRequested)
+                if (input == null || cancellationToken.IsCancellationRequested)
                 {
                     return ConfirmResult.Canceled();
                 }
@@ -178,12 +178,22 @@ namespace ConsoulLibrary
 
         private string ReadInput(CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return null;
+            }
+
             if (RequireEnter || Routines.HasBuffer())
             {
                 return Consoul.Read(cancellationToken);
             }
 
             ConsoleKeyInfo key = Consoul.ConsoleDriver.ReadKey(true);
+            if (Consoul.IsEndOfInput(key))
+            {
+                return null;
+            }
+
             return key.Key == ConsoleKey.Enter ? string.Empty : key.KeyChar.ToString();
         }
 
