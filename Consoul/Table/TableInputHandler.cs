@@ -2,8 +2,16 @@
 
 namespace ConsoulLibrary
 {
+    /// <summary>
+    /// Converts keyboard input into table navigation commands.
+    /// </summary>
     public class TableInputHandler
     {
+        /// <summary>
+        /// Reads or maps input into a <see cref="TableCommand"/>.
+        /// </summary>
+        /// <param name="input">Optional key name to map without reading from the console.</param>
+        /// <returns>The mapped table command, or <see cref="TableCommand.Exit"/> when input ends.</returns>
         public TableCommand GetCommand(string input = null)
         {
             if (input != null)
@@ -16,7 +24,12 @@ namespace ConsoulLibrary
                 if (input == "Escape") return TableCommand.Exit;
             }
 
-            var keyInfo = Console.ReadKey(true);
+            var keyInfo = Consoul.ConsoleDriver.ReadKey(true);
+            if (Consoul.IsEndOfInput(keyInfo))
+            {
+                return TableCommand.Exit;
+            }
+
             switch (keyInfo.Key)
             {
                 case ConsoleKey.UpArrow: return TableCommand.MoveUp;

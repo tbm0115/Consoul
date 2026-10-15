@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="250" viewBox="0 0 760 250" role="img" aria-labelledby="title desc">
+<title id="title">Service table</title><desc id="desc">Plain-text output captured from Consoul. ╭──────────────────────┬───────────────────────╮ │ Service              │ State                 │ ├──────────────────────┼───────────────────────┤ │ API                  │ Healthy               │ ├──────────────────────┼───────────────────────┤ │ Worker               │ Starting              │ ╰──────────────────────┴───────────────────────╯</desc>
+<rect width="760" height="250" rx="10" fill="#102238"/>
+<circle cx="24" cy="24" r="5" fill="#f48b62"/><circle cx="42" cy="24" r="5" fill="#e8c56a"/><circle cx="60" cy="24" r="5" fill="#86cba6"/>
+<text x="88" y="29" font-family="Consolas,monospace" font-size="12" fill="#a9bed1">Service table · Consoul</text>
+<g font-family="Consolas,'Liberation Mono',monospace" font-size="16" fill="#e1eaf3">
+<text x="24" y="70" style="white-space:pre">╭──────────────────────┬───────────────────────╮</text>
+<text x="24" y="94" style="white-space:pre">│ Service              │ State                 │</text>
+<text x="24" y="118" style="white-space:pre">├──────────────────────┼───────────────────────┤</text>
+<text x="24" y="142" style="white-space:pre">│ API                  │ Healthy               │</text>
+<text x="24" y="166" style="white-space:pre">├──────────────────────┼───────────────────────┤</text>
+<text x="24" y="190" style="white-space:pre">│ Worker               │ Starting              │</text>
+<text x="24" y="214" style="white-space:pre">╰──────────────────────┴───────────────────────╯</text>
+</g></svg>

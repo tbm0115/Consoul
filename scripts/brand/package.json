@@ -1,0 +1,7 @@
+{
+  "name": "consoul-brand-assets",
+  "private": true,
+  "description": "Optional tooling for regenerating the committed Ember icons.",
+  "scripts": { "build": "node generate.cjs" },
+  "dependencies": { "sharp": "0.35.5" }
+}

@@ -13,17 +13,39 @@ namespace ConsoulLibrary
         private readonly int _totalRows;
         private readonly HashSet<int> _selectedRows;
 
+        /// <summary>
+        /// Initializes a new table navigator for a fixed number of rows.
+        /// </summary>
+        /// <param name="totalRows">The total number of navigable rows.</param>
         public TableNavigator(int totalRows)
         {
             _totalRows = totalRows;
             _selectedRows = new HashSet<int>();
         }
 
+        /// <summary>
+        /// Gets the zero-based row currently under the navigation cursor.
+        /// </summary>
         public int HoveredRow => _hoveredRow;
+
+        /// <summary>
+        /// Gets the zero-based row that has been confirmed or selected.
+        /// </summary>
         public int CurrentRow => _currentRow;
+
+        /// <summary>
+        /// Gets the row that was hovered before the latest navigation change.
+        /// </summary>
         public int PreviousRow { get; private set; } = -1;
+
+        /// <summary>
+        /// Gets the selected row indexes.
+        /// </summary>
         public IReadOnlyCollection<int> SelectedRows => _selectedRows;
 
+        /// <summary>
+        /// Moves the hovered row upward within the table bounds.
+        /// </summary>
         public void MoveUp()
         {
             PreviousRow = _hoveredRow;
@@ -43,6 +65,9 @@ namespace ConsoulLibrary
             _hoveredRow--;
         }
 
+        /// <summary>
+        /// Moves the hovered row downward within the table bounds.
+        /// </summary>
         public void MoveDown()
         {
             PreviousRow = _hoveredRow;
@@ -62,6 +87,9 @@ namespace ConsoulLibrary
             _hoveredRow = Math.Min(_totalRows - 1, _hoveredRow + 1);
         }
 
+        /// <summary>
+        /// Toggles selection for the currently hovered row.
+        /// </summary>
         public void ToggleSelection()
         {
             if (_hoveredRow < 0)
@@ -85,6 +113,10 @@ namespace ConsoulLibrary
             }
         }
 
+        /// <summary>
+        /// Sets the current and hovered row explicitly.
+        /// </summary>
+        /// <param name="rowNumber">Zero-based row number to select, or -1 to clear selection.</param>
         public void SetCurrentRow(int rowNumber)
         {
             if (rowNumber < -1 || rowNumber > _totalRows - 1)

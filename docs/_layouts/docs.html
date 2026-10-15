@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="{{ site.lang | default: 'en' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% seo %}
+  {% include head-custom.html %}
+  <script src="{{ '/assets/js/docs.js' | relative_url }}" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="{{ '/' | relative_url }}">
+      <img src="{{ '/assets/brand/ember-icon-128.png' | relative_url }}" width="38" height="38" alt="">
+      <span>Consoul<span class="brand-label"> / docs</span></span>
+    </a>
+    <span class="version">{{ site.docs_version }}</span>
+    <a class="github-link" href="https://github.com/{{ site.repository }}">GitHub <span aria-hidden="true">↗</span></a>
+  </header>
+  <div class="docs-shell">
+    <aside class="sidebar" aria-label="Documentation navigation">
+      <details class="nav-panel" open>
+        <summary>Documentation</summary>
+        <div class="nav-content">
+          <div class="search" hidden>
+            <label for="docs-search">Find a guide</label>
+            <input id="docs-search" type="search" placeholder="Search docs…" autocomplete="off" data-index="{{ '/search.json' | relative_url }}" aria-controls="search-results">
+            <p id="search-status" class="search-status" role="status"></p>
+            <ul id="search-results" hidden></ul>
+          </div>
+          <nav>
+          {% for group in site.data.navigation %}
+            <p class="nav-heading">{{ group.title }}</p>
+            <ul>
+            {% for item in group.items %}
+              <li><a href="{{ item.url | relative_url }}"{% if page.url == item.url %} aria-current="page"{% endif %}>{{ item.title }}</a></li>
+            {% endfor %}
+            </ul>
+          {% endfor %}
+          </nav>
+          <a class="feedback-link" href="https://github.com/{{ site.repository }}/issues">Report an issue ↗</a>
+        </div>
+      </details>
+    </aside>
+    <main id="main-content" tabindex="-1">
+      {% if page.url == '/releases/3.0.0-preview.1.html' %}
+      <div class="version-note"><strong>Historical prerelease notes.</strong> See the current <a href="{{ '/releases/3.0.0.html' | relative_url }}">3.0.0 release notes</a>.</div>
+      {% else %}
+      <div class="version-note"><strong>Consoul {{ site.docs_version }} documentation.</strong> Review the <a href="{{ '/migration-3.0.html' | relative_url }}">2.x migration guide</a> and <a href="{{ '/releases/3.0.0.html' | relative_url }}">release notes</a> before upgrading.</div>
+      {% endif %}
+      <article class="content{% if page.home %} home{% endif %}">
+        {{ content }}
+      </article>
+      <footer class="page-footer">
+        <span>A fiery soul for your console.</span>
+        {% if page.path %}<a href="https://github.com/{{ site.repository }}/blob/{{ site.source_branch }}/docs/{{ page.path }}">View source ↗</a>{% endif %}
+      </footer>
+    </main>
+    <aside class="page-toc" aria-label="On this page" hidden>
+      <p class="nav-heading">On this page</p>
+      <nav><ul id="page-toc-list"></ul></nav>
+    </aside>
+  </div>
+</body>
+</html>

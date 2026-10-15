@@ -1,63 +1,123 @@
-name: Publish to Package Registries
+name: Build, Test, and Package
 
-on: 
-  release:
-    types:
-      - published
+on:
+  push:
+  pull_request:
   workflow_dispatch:
-  
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+env:
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
 
 jobs:
   build:
-    name: Build Package
+    name: Validate release packages
     runs-on: windows-latest
-
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@main
-      with:
-        dotnet-version: '3.1'
-    - name: Build with dotnet
-      run: dotnet build --configuration Release
-      
-    - name: Pack
-      run: dotnet pack Consoul --configuration Release --output ${{ github.workspace }}/artifacts --no-build
-    
-    - name: Publish Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: nupkg
-        path: ${{ github.workspace }}/artifacts
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+          # Existing tests/sample target net8.0 and need this runtime.
+          dotnet-version: '8.0.x'
+      - name: Read package version
+        id: version
+        run: |
+          [xml]$properties = Get-Content -LiteralPath Directory.Build.props -Raw
+          "version=$($properties.Project.PropertyGroup.Version)" >> $env:GITHUB_OUTPUT
+      - name: Validate release identity
+        if: github.event_name == 'release'
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_IS_PRERELEASE: ${{ github.event.release.prerelease }}
+        run: ./scripts/Validate-ReleaseTag.ps1 -Tag $env:RELEASE_TAG -Prerelease:($env:RELEASE_IS_PRERELEASE -eq 'true')
+      - name: Restore, build, test, and verify all five packages
+        run: ./scripts/Verify-Release.ps1
+      - name: Verify compiled documentation examples and output previews
+        run: dotnet run --project scripts/DocsExamples --configuration Release -- docs --check
+      - name: Save test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: artifacts/test-results/*.trx
+          if-no-files-found: warn
+      - name: Save verified packages and symbols
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-packages
+          path: artifacts/packages/${{ steps.version.outputs.version }}/*
+          if-no-files-found: error
 
-  deploy:
+  publish:
+    name: Publish approved release event
+    if: github.event_name == 'release' && github.event.action == 'published'
     needs: build
-    name: Deploy Packages
     runs-on: windows-latest
-    
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
     steps:
-      - name: Setup .NET Core
-        uses: actions/setup-dotnet@main
+      - uses: actions/checkout@v7
         with:
-          dotnet-version: '3.1'
-
-      - name: Download Artifact
-        uses: actions/download-artifact@v4.1.7
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6
         with:
-          name: nupkg
-          path: ${{ github.workspace }}/package
-      
-      - name: Setup NuGet
-        uses: NuGet/setup-nuget@main
+          global-json-file: global.json
+      - uses: actions/download-artifact@v8
         with:
-          nuget-api-key: ${{ secrets.NUGET_API_KEY }}
-          nuget-version: latest
-      
-      - name: Push to NuGet
-        run: dotnet nuget push ${{ github.workspace }}\package\*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://nuget.org
-    
-      - name: Add GitHub Package Registry Source
-        run: nuget sources Add -Name "GPR" -Source ${{ secrets.GPR_URI }} -UserName ${{ secrets.GPR_USERNAME }} -Password ${{ secrets.GITHUB_TOKEN }}
-    
-      - name: Push to GitHub Packages
-        run: nuget push ${{ github.workspace }}\package\*.nupkg -Source "GPR" -SkipDuplicate
+          name: release-packages
+          path: artifacts/publish
+      - name: Recheck release identity and package contents
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_IS_PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          ./scripts/Validate-ReleaseTag.ps1 -Tag $env:RELEASE_TAG -Prerelease:($env:RELEASE_IS_PRERELEASE -eq 'true')
+          ./scripts/Verify-Packages.ps1 -PackageDirectory artifacts/publish
+      - name: Authenticate to NuGet.org with Trusted Publishing
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: tbm0115
+      - name: Publish packages and symbols to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:NUGET_API_KEY)) { throw 'NuGet Trusted Publishing did not return a temporary API key.' }
+          foreach ($package in Get-ChildItem -LiteralPath artifacts/publish -Filter '*.nupkg') {
+            dotnet nuget push $package.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols
+            if ($LASTEXITCODE -ne 0) { throw "NuGet package publication failed: $($package.Name)" }
+          }
+          foreach ($symbols in Get-ChildItem -LiteralPath artifacts/publish -Filter '*.snupkg') {
+            dotnet nuget push $symbols.FullName --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate
+            if ($LASTEXITCODE -ne 0) { throw "NuGet symbol publication failed: $($symbols.Name)" }
+          }
+      - name: Publish packages to GitHub Packages
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGE_OWNER: ${{ github.repository_owner }}
+          NuGetPackageSourceCredentials_github: Username=${{ github.actor }};Password=${{ secrets.GITHUB_TOKEN }};ValidAuthenticationTypes=Basic
+        run: |
+          $source = "https://nuget.pkg.github.com/$env:PACKAGE_OWNER/index.json"
+          $sourceConfig = Join-Path $env:RUNNER_TEMP 'consoul-github-packages.config'
+          '<configuration><packageSources><clear /></packageSources></configuration>' | Set-Content -LiteralPath $sourceConfig
+          dotnet nuget add source $source --name github --configfile $sourceConfig
+          if ($LASTEXITCODE -ne 0) { throw 'Could not configure the GitHub Packages source.' }
+          foreach ($package in Get-ChildItem -LiteralPath artifacts/publish -Filter '*.nupkg') {
+            dotnet nuget push $package.FullName --api-key $env:GITHUB_PACKAGES_TOKEN --source github --configfile $sourceConfig --skip-duplicate --no-symbols
+            if ($LASTEXITCODE -ne 0) { throw "GitHub package publication failed: $($package.Name)" }
+          }

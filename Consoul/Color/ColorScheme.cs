@@ -7,10 +7,14 @@ namespace ConsoulLibrary.Color
     /// </summary>
     public struct ColorScheme
     {
-        /// <see cref="Console.BackgroundColor"/>
+        /// <summary>
+        /// The background color used when writing text.
+        /// </summary>
         public ConsoleColor BackgroundColor;
 
-        /// <see cref="Console.ForegroundColor"/>
+        /// <summary>
+        /// The foreground color used when writing text.
+        /// </summary>
         public ConsoleColor Color;
     }
 }
