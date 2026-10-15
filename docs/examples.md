@@ -114,10 +114,10 @@ This original repository screenshot shows the **Tiny Text Adventures** sample ru
 
 ## Reproduce the previews
 
-The [documentation sample runner](https://github.com/tbm0115/Consoul/tree/tbm0115/v2026-overhaul/scripts/DocsExamples) compiles the C# snippets from this page, captures their actual rendered output, and writes the SVG previews. From the repository root:
+The [documentation sample runner](https://github.com/tbm0115/Consoul/tree/develop/scripts/DocsExamples) compiles the C# snippets from this page, captures their actual rendered output, and writes the SVG previews. From the repository root:
 
 ```shell
 dotnet run --project scripts/DocsExamples -- docs
 ```
 
-The SVG files include selectable text and accessible descriptions. Terminal fonts, width, Unicode support, and color settings can change the appearance of a live app. See the [known limitations](releases/3.0.0-preview.1.md#known-limitations).
+The SVG files include selectable text and accessible descriptions. Terminal fonts, width, Unicode support, and color settings can change the appearance of a live app. See the [known limitations](releases/3.0.0.md#known-limitations).

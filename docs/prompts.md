@@ -5,7 +5,7 @@ searchable: true
 ---
 # Prompts
 
-In the 3.0 preview, end-of-input cancels prompts without accepting a default. A real blank line still follows the configured empty-input/default behavior. Check `IsCanceled`, `HasSelection`, or `HasValue` before using the result; see [redirected-input migration](migration-3.0.md#handle-end-of-input-separately-from-a-blank-line).
+In 3.0, end-of-input cancels prompts without accepting a default. A real blank line still follows the configured empty-input/default behavior. Check `IsCanceled`, `HasSelection`, or `HasValue` before using the result; see [redirected-input migration](migration-3.0.md#handle-end-of-input-separately-from-a-blank-line).
 
 ## When to use this
 Use prompts when you want users to select from a list of discrete options, especially in command menus or configuration flows. Consoul prompts support default selections, per-option colours, and cancelation phrases such as “back” or “exit”.

@@ -5,7 +5,7 @@ searchable: true
 ---
 # Optional packages
 
-The core `Consoul` package provides rendering, prompts, views, tables, and routines. Add an integration when your app needs it, keeping all Consoul package versions aligned at **3.0.0-preview.1**. See [Installation](nuget.md) for local feeds and preview availability.
+The core `Consoul` package provides rendering, prompts, views, tables, and routines. Add an integration when your app needs it, keeping all Consoul package versions aligned at **3.0.0**. See [Installation](nuget.md) for package sources and local builds.
 
 | Package | Use it for |
 | --- | --- |
@@ -36,7 +36,7 @@ return await app.RunAsync(args);
 
 Run `dotnet run -- status` to invoke the command, or `dotnet run -- --help` for help.
 
-[CLI package reference: typed settings, aliases, completion, and view commands](https://github.com/tbm0115/Consoul/blob/tbm0115/v2026-overhaul/Consoul.Cli/README.md)
+[CLI package reference: typed settings, aliases, completion, and view commands](https://github.com/tbm0115/Consoul/blob/develop/Consoul.Cli/README.md)
 
 ## Logging
 
@@ -55,13 +55,13 @@ var logger = provider.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("Application ready");
 ```
 
-[Logging package reference](https://github.com/tbm0115/Consoul/blob/tbm0115/v2026-overhaul/Consoul.Extensions.Logging/README.md)
+[Logging package reference](https://github.com/tbm0115/Consoul/blob/develop/Consoul.Extensions.Logging/README.md)
 
 ## Routine configuration
 
 Use `Consoul.Extensions.Configuration` when your routines read settings through `Microsoft.Extensions.Configuration`. The core package also supports its own dependency-light routine settings model.
 
-Start with [Scripted routines](routines.md), then follow the [configuration integration setup](https://github.com/tbm0115/Consoul/blob/tbm0115/v2026-overhaul/Consoul.Extensions.Configuration/README.md) for configuration providers and transforms.
+Start with [Scripted routines](routines.md), then follow the [configuration integration setup](https://github.com/tbm0115/Consoul/blob/develop/Consoul.Extensions.Configuration/README.md) for configuration providers and transforms.
 
 ## JSON output
 
@@ -78,4 +78,4 @@ ConsoulTextJsonExtensions.JsonValue(new
 });
 ```
 
-[JSON package reference: rendering and form-value serialization](https://github.com/tbm0115/Consoul/blob/tbm0115/v2026-overhaul/Consoul.Text.Json/README.md)
+[JSON package reference: rendering and form-value serialization](https://github.com/tbm0115/Consoul/blob/develop/Consoul.Text.Json/README.md)

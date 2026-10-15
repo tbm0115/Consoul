@@ -2,22 +2,22 @@
 
 `Consoul.Cli` is the optional command-line entry package for Consoul. It adds a small `CommandApp`-style runner for proof-of-concept tools while keeping the core `Consoul` package focused on dependency-light MVC-style console views and renderables.
 
-For **3.0.0-preview.1**, start with the [documentation index](https://github.com/tbm0115/Consoul/blob/develop/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/migration-3.0.md), and [release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/releases/3.0.0-preview.1.md). Versioned documentation links become available when the release tag is published.
+For **3.0.0**, start with the [documentation index](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/migration-3.0.md), and [release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/releases/3.0.0.md). Versioned documentation links become available when the release tag is published.
 
 ## Installation
 
-After the preview is published to your configured source:
+After the package is published to your configured source:
 
 ```bash
-dotnet add package Consoul.Cli --version 3.0.0-preview.1
+dotnet add package Consoul.Cli --version 3.0.0
 ```
 
-See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/nuget.md) for local builds and package-source setup. These instructions do not imply that the preview is already published.
+See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/nuget.md) for local builds and package-source setup. These instructions do not imply that the package is already published.
 
 Install the core package when you only need views, prompts, renderables, tables, and progress helpers:
 
 ```bash
-dotnet add package Consoul --version 3.0.0-preview.1
+dotnet add package Consoul --version 3.0.0
 ```
 
 ## Quick Start

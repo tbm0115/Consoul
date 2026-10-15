@@ -54,4 +54,4 @@ Palette: orange `#FF8628`, gold `#FFD45A`, navy `#102238`, ivory `#FAF7F0`. Keep
 
 ## Design provenance
 
-The concept boards and isolated Flicker reference were created with the built-in imagegen tool. The production master is a simplified vector drawing based on the selected reference; all shipped variants are rendered from that master so their geometry stays consistent. The final reference prompt is saved in [the design notes](https://github.com/tbm0115/Consoul/blob/tbm0115/v2026-overhaul/scripts/brand/design-prompt.txt).
+The concept boards and isolated Flicker reference were created with the built-in imagegen tool. The production master is a simplified vector drawing based on the selected reference; all shipped variants are rendered from that master so their geometry stays consistent. The final reference prompt is saved in [the design notes](https://github.com/tbm0115/Consoul/blob/develop/scripts/brand/design-prompt.txt).

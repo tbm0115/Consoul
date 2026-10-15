@@ -43,7 +43,11 @@
       </details>
     </aside>
     <main id="main-content" tabindex="-1">
-      <div class="preview-note"><strong>3.0 preview documentation.</strong> APIs may change. Read the <a href="{{ '/releases/3.0.0-preview.1.html' | relative_url }}">release notes</a> before upgrading.</div>
+      {% if page.url == '/releases/3.0.0-preview.1.html' %}
+      <div class="version-note"><strong>Historical prerelease notes.</strong> See the current <a href="{{ '/releases/3.0.0.html' | relative_url }}">3.0.0 release notes</a>.</div>
+      {% else %}
+      <div class="version-note"><strong>Consoul {{ site.docs_version }} documentation.</strong> Review the <a href="{{ '/migration-3.0.html' | relative_url }}">2.x migration guide</a> and <a href="{{ '/releases/3.0.0.html' | relative_url }}">release notes</a> before upgrading.</div>
+      {% endif %}
       <article class="content{% if page.home %} home{% endif %}">
         {{ content }}
       </article>

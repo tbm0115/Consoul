@@ -10,7 +10,7 @@
 
 This repository contains the Consoul console UI toolkit and its optional integration packages. The repository is organized so the core package stays dependency-light, while integrations that depend on `Microsoft.Extensions.*` or `System.Text.Json` are packaged separately.
 
-This branch prepares **3.0.0-preview.1** for early adopters. The preview includes breaking package and configuration API changes; it is not a stable 3.0 release. Start with the [documentation index](docs/index.md), [2.x migration guide](docs/migration-3.0.md), [preview release notes](docs/releases/3.0.0-preview.1.md), or [NuGet installation and publishing guide](docs/nuget.md). These instructions describe the planned preview and do not imply that its packages have been published.
+This repository is prepared for **3.0.0**. This major version includes breaking package and configuration API changes. Start with the [documentation index](docs/index.md), [2.x migration guide](docs/migration-3.0.md), [release notes](docs/releases/3.0.0.md), or [NuGet installation and publishing guide](docs/nuget.md). Package and release-tag publication are separate steps; these instructions do not imply that they have been published.
 
 ![Tiny Text Adventures](/Consoul_1.png)
 
@@ -28,16 +28,16 @@ This branch prepares **3.0.0-preview.1** for early adopters. The preview include
 
 Older-targeting applications often have strict dependency graphs. The `Consoul` core project therefore avoids package references to `Microsoft.Extensions.*`, `System.Text.Json`, and similar optional infrastructure libraries. Applications can install only the integration packages they actually need.
 
-After `3.0.0-preview.1` is available on your configured package source, install the core and only the integrations you use. The [NuGet guide](docs/nuget.md) also covers consuming a local package build.
+After `3.0.0` is available on your configured package source, install the core and only the integrations you use. The [NuGet guide](docs/nuget.md) also covers consuming a local package build.
 
 ```bash
-dotnet add package Consoul --version 3.0.0-preview.1
+dotnet add package Consoul --version 3.0.0
 
 # Optional integrations
-dotnet add package Consoul.Cli --version 3.0.0-preview.1
-dotnet add package Consoul.Extensions.Logging --version 3.0.0-preview.1
-dotnet add package Consoul.Extensions.Configuration --version 3.0.0-preview.1
-dotnet add package Consoul.Text.Json --version 3.0.0-preview.1
+dotnet add package Consoul.Cli --version 3.0.0
+dotnet add package Consoul.Extensions.Logging --version 3.0.0
+dotnet add package Consoul.Extensions.Configuration --version 3.0.0
+dotnet add package Consoul.Text.Json --version 3.0.0
 ```
 
 ## Core Package Quick Start
@@ -200,7 +200,7 @@ Use `Consoul.Form(settings).Render()` when a proof-of-concept only needs the gen
 
 ## Documentation
 
-Read the guides directly on GitHub through the [documentation index](docs/index.md). For upgrading or distributing the preview, see [migration](docs/migration-3.0.md), [release notes](docs/releases/3.0.0-preview.1.md), and [NuGet setup](docs/nuget.md). The `/docs` folder also contains component deep dives:
+Read the guides directly on GitHub through the [documentation index](docs/index.md). For upgrading or distributing 3.0.0, see [migration](docs/migration-3.0.md), [release notes](docs/releases/3.0.0.md), and [NuGet setup](docs/nuget.md). The `/docs` folder also contains component deep dives:
 
 1. [Core console APIs](docs/core-console.md)
 2. [Prompts](docs/prompts.md)
@@ -209,7 +209,7 @@ Read the guides directly on GitHub through the [documentation index](docs/index.
 5. [Progress](docs/progress.md)
 6. [Routines](docs/routines.md)
 
-Package-specific NuGet README files live next to each packable project. This preview still measures many layout widths in UTF-16 characters rather than terminal display cells; wide characters, combining characters, and clipped emoji can render incorrectly. See the [known limitations](docs/releases/3.0.0-preview.1.md#known-limitations) before evaluating terminal layouts.
+Package-specific NuGet README files live next to each packable project. Consoul still measures many layout widths in UTF-16 characters rather than terminal display cells; wide characters, combining characters, and clipped emoji can render incorrectly. See the [known limitations](docs/releases/3.0.0.md#known-limitations) before evaluating terminal layouts.
 
 ## Build And Test
 

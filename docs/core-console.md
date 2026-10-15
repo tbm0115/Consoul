@@ -5,7 +5,7 @@ searchable: true
 ---
 # Core console APIs
 
-The preview supports markup and emoji substitution, but layout measurement still uses UTF-16 length in several paths. Wide characters, combining marks, and clipped emoji can misalign or be truncated incorrectly. See the [known limitations](releases/3.0.0-preview.1.md#known-limitations).
+Consoul supports markup and emoji substitution, but layout measurement still uses UTF-16 length in several paths. Wide characters, combining marks, and clipped emoji can misalign or be truncated incorrectly. See the [known limitations](releases/3.0.0.md#known-limitations).
 
 ## When to use this
 Start here whenever you need structured console output or simple input helpers without adopting the view or routine systems. These APIs sit closest to `System.Console` and can be introduced incrementally into existing apps.

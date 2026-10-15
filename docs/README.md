@@ -15,11 +15,13 @@ Open `http://127.0.0.1:4000`. Restart Jekyll after changing `_config.yml`. The e
 
 ## Add or edit a guide
 
-Give every guide YAML front matter with `title`, `description`, and `searchable: true`. The default `docs` layout adds navigation and the preview notice. Keep one H1 and use H2 headings for the generated “On this page” list.
+Give every guide YAML front matter with `title`, `description`, and `searchable: true`. The default `docs` layout adds navigation and the version notice. Keep one H1 and use H2 headings for the generated “On this page” list.
 
 Use ordinary relative Markdown links between guides, for example `[Tables](tables.md)`. `jekyll-relative-links` converts them to published HTML URLs, so links also work when reading source on GitHub. In HTML or Liquid templates, apply `relative_url` to site paths. Files outside `docs` need explicit GitHub source URLs. Update `source_branch` in `_config.yml` and external source links when moving the documentation to another branch.
 
-Add navigation entries to `_data/navigation.yml`. Put short, complete examples before long API lists. State the required package and imports, handle canceled prompt results, and do not imply an unpublished preview is available on NuGet.
+Add navigation entries to `_data/navigation.yml`. Every searchable page needs one navigation entry, including archived release notes, so validation can check its active-page link. Put short, complete examples before long API lists. State the required package and imports, handle canceled prompt results, and do not imply an unpublished version is available on NuGet.
+
+When preparing a release, update `docs_version` in `_config.yml`, current installation examples, release-note links, and the layout's version notice together. Preserve earlier release notes and their archive navigation entries.
 
 ## Output previews
 

@@ -16,13 +16,13 @@ dotnet new console --name HelloConsoul --framework net8.0
 cd HelloConsoul
 ```
 
-This site documents **3.0.0-preview.1**. Once that version is available on your package source, install it explicitly:
+This site documents **3.0.0**. Once that version is available on your package source, install it explicitly:
 
 ```shell
-dotnet add package Consoul --version 3.0.0-preview.1
+dotnet add package Consoul --version 3.0.0
 ```
 
-Before publication, build the packages from this repository and use a local feed as described in [Installation](nuget.md#install-the-preview-in-a-consuming-application). An unversioned install may select a 2.x release with different APIs.
+For local testing before publication, build the packages from this repository and use a local feed as described in [Installation](nuget.md#install-in-a-consuming-application). An unversioned install may select a 2.x release with different APIs.
 
 ## 2. Replace Program.cs
 

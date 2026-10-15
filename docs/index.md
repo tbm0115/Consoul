@@ -22,10 +22,10 @@ home: true
 
 ## Start with a few lines
 
-Once the preview is available on your package source:
+This site documents Consoul 3.0.0. Once that version is available on your package source:
 
 ```shell
-dotnet add package Consoul --version 3.0.0-preview.1
+dotnet add package Consoul --version 3.0.0
 ```
 
 ```csharp
@@ -35,7 +35,7 @@ Consoul.MarkupLine("[cyan]Hello from Consoul![/]");
 Consoul.Panel("Your first console app is ready.", title: "Welcome", width: 48);
 ```
 
-The [getting-started guide](getting-started.md) walks through a complete menu app. If the preview has not been published, follow the [local package instructions](nuget.md#install-the-preview-in-a-consuming-application). This site describes the preview candidate, not a stable 3.0 release.
+The [getting-started guide](getting-started.md) walks through a complete menu app. For local testing before publication, follow the [local package instructions](nuget.md#install-in-a-consuming-application).
 
 ## Pick a building block
 
@@ -63,6 +63,6 @@ Keep the core small and add the integrations you need:
 
 ## Moving to 3.0?
 
-Read the [migration guide](migration-3.0.md) for package and API changes, then check the [release notes](releases/3.0.0-preview.1.md) for known limitations. The core targets .NET Standard 2.0, .NET Core 3.1, and .NET Framework 4.6.1; the quick start uses a modern .NET console app.
+Read the [migration guide](migration-3.0.md) for package and API changes, then check the [release notes](releases/3.0.0.md) for known limitations. The core targets .NET Standard 2.0, .NET Core 3.1, and .NET Framework 4.6.1; the quick start uses a modern .NET console app.
 
 Found a problem? [Open a GitHub issue](https://github.com/tbm0115/Consoul/issues) with your package version, terminal, operating system, and a small reproducer. Include terminal width for layout issues.

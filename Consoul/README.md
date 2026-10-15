@@ -2,7 +2,7 @@
 
 `Consoul` is the dependency-light core package for building interactive console applications with prompts, views, tables, progress bars, fixed messages, and scriptable routines.
 
-This README describes **3.0.0-preview.1**, an early-adopter preview with breaking package/configuration changes. Read the [documentation index](https://github.com/tbm0115/Consoul/blob/develop/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/migration-3.0.md), and [preview release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/releases/3.0.0-preview.1.md). Versioned documentation links become available when the release tag is published.
+This README describes **3.0.0**, including its breaking package and configuration changes. Read the [documentation index](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/migration-3.0.md), and [release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/releases/3.0.0.md). Versioned documentation links become available when the release tag is published.
 
 The core package intentionally avoids `Microsoft.Extensions.*` and `System.Text.Json` package dependencies. Optional integration packages are available when you want those ecosystems:
 
@@ -15,13 +15,13 @@ The core package intentionally avoids `Microsoft.Extensions.*` and `System.Text.
 
 ## Installation
 
-After the preview is published to your configured source, install the exact version:
+After the package is published to your configured source, install the exact version:
 
 ```bash
-dotnet add package Consoul --version 3.0.0-preview.1
+dotnet add package Consoul --version 3.0.0
 ```
 
-See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/nuget.md) for local package installation, NuGet.org, and authenticated GitHub Packages setup. This command does not indicate that the preview is already published.
+See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/nuget.md) for local package installation, NuGet.org, and authenticated GitHub Packages setup. This command does not indicate that the package is already published.
 
 ## Find an example
 
@@ -34,7 +34,7 @@ See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/d
 | Edit settings or replay input | [Form and object editing](#form-and-object-editing), [routines](#routines) |
 | Port familiar builder syntax | [Spectre-style entry points](#spectre-style-entry-points) |
 
-Preview limitation: layout measurement does not yet account for terminal display-cell widths. Wide characters, combining characters, and clipped emoji can misalign or be truncated incorrectly; UTF-8 input support does not remove this rendering limitation. Prefer simple single-cell labels for predictable preview layouts.
+Known limitation: layout measurement does not yet account for terminal display-cell widths. Wide characters, combining characters, and clipped emoji can misalign or be truncated incorrectly; UTF-8 input support does not remove this rendering limitation. Prefer simple single-cell labels for predictable layouts.
 
 ## Quick Start
 
@@ -2910,13 +2910,13 @@ editor.Render();
 
 ## Optional Integrations
 
-After the preview is available on your configured source, install only the integrations your application needs:
+After version 3.0.0 is available on your configured source, install only the integrations your application needs:
 
 ```bash
-dotnet add package Consoul.Cli --version 3.0.0-preview.1
-dotnet add package Consoul.Extensions.Logging --version 3.0.0-preview.1
-dotnet add package Consoul.Extensions.Configuration --version 3.0.0-preview.1
-dotnet add package Consoul.Text.Json --version 3.0.0-preview.1
+dotnet add package Consoul.Cli --version 3.0.0
+dotnet add package Consoul.Extensions.Logging --version 3.0.0
+dotnet add package Consoul.Extensions.Configuration --version 3.0.0
+dotnet add package Consoul.Text.Json --version 3.0.0
 ```
 
 Each optional package depends on `Consoul`; logging, configuration, and JSON packages also reference their respective integration libraries. `Consoul.Cli` adds no external command framework dependency.

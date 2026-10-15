@@ -3,8 +3,8 @@ description: "Build interactive .NET console apps with prompts, views, tables, a
 url: "https://consoul.dev"
 baseurl: ""
 repository: tbm0115/Consoul
-source_branch: tbm0115/v2026-overhaul
-docs_version: 3.0.0-preview.1
+source_branch: develop
+docs_version: 3.0.0
 plugins:
   - jekyll-relative-links
   - jekyll-seo-tag

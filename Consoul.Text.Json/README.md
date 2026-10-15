@@ -2,17 +2,17 @@
 
 `Consoul.Text.Json` is the optional `System.Text.Json` integration for Consoul's MVC-style object editor and JSON display helpers. It keeps the core `Consoul` package free of `System.Text.Json` while allowing applications to opt into platform JSON serialization, syntax-colored JSON snapshots, and JSON-style value rendering inside the shared form document editor.
 
-For **3.0.0-preview.1**, read the [documentation index](https://github.com/tbm0115/Consoul/blob/develop/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/migration-3.0.md), and [release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/releases/3.0.0-preview.1.md). Versioned documentation links become available when the release tag is published.
+For **3.0.0**, read the [documentation index](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/index.md), [migration guide](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/migration-3.0.md), and [release notes](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/releases/3.0.0.md). Versioned documentation links become available when the release tag is published.
 
 ## Installation
 
-After the preview is published to your configured source:
+After the package is published to your configured source:
 
 ```bash
-dotnet add package Consoul.Text.Json --version 3.0.0-preview.1
+dotnet add package Consoul.Text.Json --version 3.0.0
 ```
 
-See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0-preview.1/docs/nuget.md) for local builds, NuGet.org, and authenticated GitHub Packages setup. These instructions do not imply that the preview is already published.
+See the [NuGet guide](https://github.com/tbm0115/Consoul/blob/v3.0.0/docs/nuget.md) for local builds, NuGet.org, and authenticated GitHub Packages setup. These instructions do not imply that the package is already published.
 
 This package depends on:
 

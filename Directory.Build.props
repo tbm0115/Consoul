@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <!-- Change the package version here for the entire release train. -->
-    <Version>3.0.0-preview.1</Version>
+    <Version>3.0.0</Version>
     <AssemblyVersion>3.0.0.0</AssemblyVersion>
     <FileVersion>3.0.0.0</FileVersion>
     <IsPackable>false</IsPackable>
@@ -18,7 +18,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageIcon>consoul-icon.png</PackageIcon>
-    <PackageReleaseNotes>3.0 preview: dependency-light core, optional integrations, typed prompts, CLI commands, and responsive rendering. Breaking changes and preview limitations: https://github.com/tbm0115/Consoul/blob/v$(Version)/docs/releases/$(Version).md</PackageReleaseNotes>
+    <PackageReleaseNotes>3.0: dependency-light core, optional integrations, typed prompts, CLI commands, and responsive rendering. Breaking changes and known limitations: https://github.com/tbm0115/Consoul/blob/v$(Version)/docs/releases/$(Version).md</PackageReleaseNotes>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>

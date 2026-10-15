@@ -28,7 +28,9 @@
   items:
     - title: Upgrade from 2.x
       url: /migration-3.0.html
-    - title: Preview release notes
+    - title: 3.0.0 release notes
+      url: /releases/3.0.0.html
+    - title: Preview notes (archive)
       url: /releases/3.0.0-preview.1.html
     - title: Brand assets
       url: /branding.html
