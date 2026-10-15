@@ -1,9 +1,31 @@
+---
+title: Progress and status
+description: Show ongoing work with task progress, status, spinners, and live displays.
+searchable: true
+---
 # Progress
-
-[Documentation index](index.md) · [Install the 3.0 preview](nuget.md) · [Migration guide](migration-3.0.md)
 
 ## When to use this
 Choose the progress APIs when you need to show active work such as downloads, migrations, processing queues, short status updates, or quick busy indicators. Consoul’s spinner, status, and progress helpers work well in environments where full-screen UIs are impractical.
+
+## Quick start
+
+Use a status message when the amount of work is unknown:
+
+```csharp
+using ConsoulLibrary;
+
+Consoul.Status("Preparing migration", status =>
+{
+    status.Update("Checking schema");
+    // Perform the work here.
+    status.Update("Ready");
+});
+```
+
+For measurable work, use the [complete task-progress recipe](examples.md#task-progress):
+
+![Captured completed Build and Checks progress tasks](assets/screenshots/progress.svg)
 
 ## Key types
 * `SpinnerScope` – Maintains a small in-place spinner for short operations without known progress.

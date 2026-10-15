@@ -1,3 +1,8 @@
+---
+title: Brand assets
+description: Download the Consoul Ember icon, favicons, and social artwork.
+searchable: true
+---
 # Consoul Ember
 
 Ember is the **Prompt Face Flicker** mark: a rounded orange flame, a golden core, and a navy `>_` expression. It represents **a fiery soul for your console**. The same icon identifies Consoul, CLI, Configuration, Logging, and Text.Json.
@@ -49,4 +54,4 @@ Palette: orange `#FF8628`, gold `#FFD45A`, navy `#102238`, ivory `#FAF7F0`. Keep
 
 ## Design provenance
 
-The concept boards and isolated Flicker reference were created with the built-in imagegen tool. The production master is a simplified vector drawing based on the selected reference; all shipped variants are rendered from that master so their geometry stays consistent. The final reference prompt is saved in [the design notes](../scripts/brand/design-prompt.txt).
+The concept boards and isolated Flicker reference were created with the built-in imagegen tool. The production master is a simplified vector drawing based on the selected reference; all shipped variants are rendered from that master so their geometry stays consistent. The final reference prompt is saved in [the design notes](https://github.com/tbm0115/Consoul/blob/tbm0115/v2026-overhaul/scripts/brand/design-prompt.txt).

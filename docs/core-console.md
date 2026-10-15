@@ -1,11 +1,25 @@
+---
+title: Output and styling
+description: Write styled text, compose renderables, and capture console output.
+searchable: true
+---
 # Core console APIs
-
-[Documentation index](index.md) · [Install the 3.0 preview](nuget.md) · [Migration guide](migration-3.0.md)
 
 The preview supports markup and emoji substitution, but layout measurement still uses UTF-16 length in several paths. Wide characters, combining marks, and clipped emoji can misalign or be truncated incorrectly. See the [known limitations](releases/3.0.0-preview.1.md#known-limitations).
 
 ## When to use this
 Start here whenever you need structured console output or simple input helpers without adopting the view or routine systems. These APIs sit closest to `System.Console` and can be introduced incrementally into existing apps.
+
+## Quick start
+
+```csharp
+using ConsoulLibrary;
+
+Consoul.MarkupLine("[cyan]Hello from Consoul![/]");
+Consoul.Panel("Build complete", title: "Summary", width: 48);
+```
+
+See [panels and markup](examples.md#panels-and-markup) for a complete recipe with captured output. Use `MarkupLineInterpolated` when inserting user-provided values into markup.
 
 ## Key types
 * `Consoul.Capture` - Records Consoul render output to plain text using a virtual console width, without writing to the active terminal.

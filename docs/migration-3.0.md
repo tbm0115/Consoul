@@ -1,6 +1,9 @@
+---
+title: Upgrade from 2.x
+description: Migrate package references, configuration, logging, and input handling to 3.0.
+searchable: true
+---
 # Migrating to Consoul 3.0 preview
-
-[Documentation index](index.md) · [NuGet setup](nuget.md) · [Preview release notes](releases/3.0.0-preview.1.md)
 
 `3.0.0-preview.1` is an early-adopter preview. Rebuild and test consuming applications when upgrading from 2.x; the package split and routine configuration signatures change assembly/API contracts. This guide covers the main migration steps, not a guarantee of binary compatibility or a frozen preview API.
 
@@ -138,4 +141,4 @@ For example, table cells are bounded single-line cells, `TableColumn.NoWrap` ret
 
 Exercise your app's initial menu, cancel/back actions, narrow-window layouts, redirected input, and redirected output after upgrading. The preview's layout measurements still use UTF-16 length in several rendering paths. CJK text, combining characters, and emoji can occupy different terminal widths; clipping can split a surrogate pair. UTF-8 input decoding and display-cell measurement are separate concerns. Use simple single-cell labels where exact layout is required until this limitation is resolved.
 
-See the [release notes](releases/3.0.0-preview.1.md) for the preview's scope and the [component guides](index.md#component-guides) for the current API patterns.
+See the [release notes](releases/3.0.0-preview.1.md) for the preview's scope and the [component guides](index.md#pick-a-building-block) for the current API patterns.

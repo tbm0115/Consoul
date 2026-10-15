@@ -1,9 +1,28 @@
+---
+title: Views and menus
+description: Build reusable console screens with actions and model-backed sections.
+searchable: true
+---
 # Views
-
-[Documentation index](index.md) · [Install the 3.0 preview](nuget.md) · [Migration guide](migration-3.0.md)
 
 ## When to use this
 Views are ideal for multi-step workflows—dashboards, menus, or game scenes—where you want to encapsulate options and state per screen. They integrate prompts with lifecycle events so you can build entire applications from composable classes.
+
+## Quick start
+
+```csharp
+using ConsoulLibrary;
+
+Consoul.View("Tools")
+    .Option("Say hello", () =>
+    {
+        Consoul.Write("Hello!");
+        Consoul.Wait();
+    })
+    .Render();
+```
+
+Select an action by number; enter `back` to leave the view. Start with the [complete menu recipe](examples.md#interactive-menus), then use model-backed sections as the app grows.
 
 ## Key types
 * `StaticView` – Presents a fixed set of options defined via attributes or collection initialisation.

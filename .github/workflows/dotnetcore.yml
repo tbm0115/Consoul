@@ -44,6 +44,8 @@ jobs:
         run: ./scripts/Validate-ReleaseTag.ps1 -Tag $env:RELEASE_TAG -Prerelease:($env:RELEASE_IS_PRERELEASE -eq 'true')
       - name: Restore, build, test, and verify all five packages
         run: ./scripts/Verify-Release.ps1
+      - name: Verify compiled documentation examples and output previews
+        run: dotnet run --project scripts/DocsExamples --configuration Release -- docs --check
       - name: Save test results
         if: always()
         uses: actions/upload-artifact@v7

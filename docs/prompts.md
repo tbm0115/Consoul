@@ -1,11 +1,31 @@
+---
+title: Prompts
+description: Collect typed input, validate values, and handle selection and cancellation.
+searchable: true
+---
 # Prompts
-
-[Documentation index](index.md) · [Install the 3.0 preview](nuget.md) · [Migration guide](migration-3.0.md)
 
 In the 3.0 preview, end-of-input cancels prompts without accepting a default. A real blank line still follows the configured empty-input/default behavior. Check `IsCanceled`, `HasSelection`, or `HasValue` before using the result; see [redirected-input migration](migration-3.0.md#handle-end-of-input-separately-from-a-blank-line).
 
 ## When to use this
 Use prompts when you want users to select from a list of discrete options, especially in command menus or configuration flows. Consoul prompts support default selections, per-option colours, and cancelation phrases such as “back” or “exit”.
+
+## Quick start
+
+```csharp
+using ConsoulLibrary;
+
+TextPromptResult<int> retries = Consoul.Text<int>("Retry count")
+    .Range(0, 5)
+    .Render();
+
+if (retries.HasValue)
+{
+    Consoul.Write($"Using {retries.Value} retries.");
+}
+```
+
+Values outside the range are rejected and the prompt repeats. If the user cancels, `HasValue` is false. For a numbered menu, follow [Getting started](getting-started.md).
 
 ## Key types
 * `AnsiConsole.Prompt(...)` - Spectre-style prompt entry point that renders Consoul prompts while preserving result-first outcomes.

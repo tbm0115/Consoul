@@ -1,9 +1,28 @@
+---
+title: Tables
+description: Render structured data with formatting, model binding, and row selection.
+searchable: true
+---
 # Tables
-
-[Documentation index](index.md) · [Install the 3.0 preview](nuget.md) · [Migration guide](migration-3.0.md)
 
 ## When to use this
 Tables help present structured data (logs, metrics, inventories) with aligned columns and optional theming. They are perfect for dashboards and admin tools where readability matters.
+
+## Quick start
+
+```csharp
+using ConsoulLibrary;
+
+var table = new Table().RoundedBorder().Width(48).HideFooter()
+    .AddColumn("Service").AddColumn("State")
+    .AddRow("API", "[green]Healthy[/]")
+    .AddRow("Worker", "[yellow]Starting[/]");
+AnsiConsole.Write(table);
+```
+
+![Captured service table with healthy API and starting Worker](assets/screenshots/table.svg)
+
+See the [complete table recipe](examples.md#tables) for setup and output details.
 
 ## Key types
 * `Table` - Spectre-style fluent builder for manual tables, backed by `TableView`.

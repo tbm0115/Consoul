@@ -1,47 +1,68 @@
-# Consoul documentation
+---
+title: Documentation
+description: Build interactive .NET console apps with prompts, reusable views, tables, and live progress.
+searchable: true
+home: true
+---
+<span class="eyebrow">The .NET console UI toolkit</span>
 
-<img src="assets/brand/ember-icon-128.png" width="96" height="96" alt="Consoul Ember: an orange flame with a terminal prompt face">
+# Give your console a little soul.
 
-Consoul builds console applications from models, reusable views, prompts, and renderable components. These Markdown guides can be read directly on GitHub; no documentation generator is required.
+<p class="lead">Turn command-line tools into interactive apps. Compose readable output, collect validated input, and connect reusable views to your C# models.</p>
 
-This branch documents the **3.0.0-preview.1** candidate. Start with [installation and package sources](nuget.md), the [2.x migration guide](migration-3.0.md), and [release notes and known limitations](releases/3.0.0-preview.1.md). Publishing the packages and release tag is a separate step.
+<div class="actions">
+  <a class="button" href="{{ '/getting-started.html' | relative_url }}">Build your first app →</a>
+  <a class="button secondary" href="{{ '/examples.html' | relative_url }}">Explore examples</a>
+</div>
 
-## Start here
+<figure class="terminal-figure">
+  <img src="{{ '/assets/screenshots/overview.svg' | relative_url }}" width="760" height="394" alt="Captured Consoul dashboard: a service table with API Healthy and Worker Starting, followed by a Build summary panel.">
+  <figcaption>A small dashboard, composed with a table and panel. Captured from the library at a fixed width; terminal colors are omitted.</figcaption>
+</figure>
 
-| Goal | Read |
-| --- | --- |
-| Install or package the preview | [NuGet guide](nuget.md) |
-| Upgrade a 2.x application | [Migration to 3.0](migration-3.0.md) |
-| Build your first menu | [Core package quick start](../Consoul/README.md#quick-start) and [5-minute POC view](../Consoul/README.md#5-minute-poc-view) |
-| Choose an API or copy a focused example | Component guides below |
-| Review changes and remaining limits | [3.0.0-preview.1 release notes](releases/3.0.0-preview.1.md) |
+## Start with a few lines
 
-## Component guides
+Once the preview is available on your package source:
 
-| Guide | Covers |
-| --- | --- |
-| [Core console APIs](core-console.md) | Output, markup, themes, terminal profiles, capture, and composed visuals |
-| [Prompts](prompts.md) | Typed input, selection, validation, cancellation, and secrets |
-| [Views](views.md) | Static and dynamic views, model-backed sections, navigation, and forms |
-| [Tables](tables.md) | Manual and model-backed tables, selection, formatting, and layout |
-| [Progress](progress.md) | Progress bars, task progress, status, spinners, and live displays |
-| [Routines](routines.md) | Scripted input, XML routines, and configuration transforms |
+```shell
+dotnet add package Consoul --version 3.0.0-preview.1
+```
 
-For the complete example catalog, see the [core package README](../Consoul/README.md).
+```csharp
+using ConsoulLibrary;
+
+Consoul.MarkupLine("[cyan]Hello from Consoul![/]");
+Consoul.Panel("Your first console app is ready.", title: "Welcome", width: 48);
+```
+
+The [getting-started guide](getting-started.md) walks through a complete menu app. If the preview has not been published, follow the [local package instructions](nuget.md#install-the-preview-in-a-consuming-application). This site describes the preview candidate, not a stable 3.0 release.
+
+## Pick a building block
+
+<div class="feature-grid">
+  <a class="feature-card" href="{{ '/prompts.html' | relative_url }}"><span class="card-label">01 / INPUT</span><strong>Ask better questions</strong><span>Typed input, validation, selection lists, and explicit cancellation.</span></a>
+  <a class="feature-card" href="{{ '/views.html' | relative_url }}"><span class="card-label">02 / VIEWS</span><strong>Make a menu an app</strong><span>Connect actions and model-backed sections to reusable screens.</span></a>
+  <a class="feature-card" href="{{ '/tables.html' | relative_url }}"><span class="card-label">03 / DATA</span><strong>Give your data structure</strong><span>Readable tables with formatting, model binding, and selection.</span></a>
+  <a class="feature-card" href="{{ '/progress.html' | relative_url }}"><span class="card-label">04 / FEEDBACK</span><strong>Show work as it happens</strong><span>Progress tasks, status messages, spinners, and live displays.</span></a>
+</div>
+
+Use [output and styling](core-console.md) to add markup, themes, and composed visuals. Use [routines](routines.md) to automate repeated console interactions.
 
 ## Optional packages
 
-The core package does not require `Microsoft.Extensions.*` or `System.Text.Json`. Add an integration only when your application needs it, and keep Consoul package versions aligned during the preview.
+Keep the core small and add the integrations you need:
 
-| Package guide | Use it for |
+| Package | Adds |
 | --- | --- |
-| [Consoul.Cli](../Consoul.Cli/README.md) | Command arguments, options, validation, help, completion, and launching views |
-| [Consoul.Extensions.Logging](../Consoul.Extensions.Logging/README.md) | Sending `ILogger` output through Consoul |
-| [Consoul.Extensions.Configuration](../Consoul.Extensions.Configuration/README.md) | Reading routine transforms from `IConfiguration` |
-| [Consoul.Text.Json](../Consoul.Text.Json/README.md) | JSON rendering and `System.Text.Json` form-value serialization |
+| `Consoul.Cli` | Commands, arguments, help, and completion |
+| `Consoul.Extensions.Logging` | `ILogger` output through Consoul |
+| `Consoul.Extensions.Configuration` | Configuration-backed routine transforms |
+| `Consoul.Text.Json` | JSON rendering and form-value serialization |
 
-## Preview feedback
+[Choose an integration and see examples →](integrations.md)
 
-The [brand asset guide](branding.md) contains the shared Ember icon, monochrome artwork, and social preview.
+## Moving to 3.0?
 
-Use the [GitHub issue tracker](https://github.com/tbm0115/Consoul/issues) to report problems. Include the Consoul version, target framework, operating system, terminal, whether input/output is redirected, and a small reproducer. For layout reports, include terminal width and the affected text; wide characters and clipped emoji have [known limitations](releases/3.0.0-preview.1.md#known-limitations).
+Read the [migration guide](migration-3.0.md) for package and API changes, then check the [release notes](releases/3.0.0-preview.1.md) for known limitations. The core targets .NET Standard 2.0, .NET Core 3.1, and .NET Framework 4.6.1; the quick start uses a modern .NET console app.
+
+Found a problem? [Open a GitHub issue](https://github.com/tbm0115/Consoul/issues) with your package version, terminal, operating system, and a small reproducer. Include terminal width for layout issues.

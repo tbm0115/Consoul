@@ -1,20 +1,41 @@
-theme: jekyll-theme-slate
-title: .NET Consoul
-description: "A fiery soul for your console. A console UI toolkit for .NET."
+title: Consoul
+description: "Build interactive .NET console apps with prompts, views, tables, and live progress."
 url: "https://consoul.dev"
 baseurl: ""
+repository: tbm0115/Consoul
+source_branch: tbm0115/v2026-overhaul
+docs_version: 3.0.0-preview.1
+plugins:
+  - jekyll-relative-links
+  - jekyll-seo-tag
+  - jekyll-sitemap
+relative_links:
+  enabled: true
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+strict_front_matter: true
 logo: /assets/brand/ember-icon-512.png
 defaults:
   - scope:
       path: ""
+      type: pages
     values:
+      layout: docs
       image:
         path: /assets/brand/social-preview.png
         width: 1280
         height: 640
         alt: "Consoul — a fiery soul for your console"
-email: tbm0115@hotmail.com
-github_username: tbm0115
 lang: en
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - vendor
+  - .bundle
+  - "*.pdf"
 
 google: true

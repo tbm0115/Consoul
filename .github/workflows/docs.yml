@@ -1,0 +1,34 @@
+name: Documentation site
+
+on:
+  push:
+    paths: ['docs/**', 'scripts/Verify-Site.py', '.github/workflows/docs.yml']
+  pull_request:
+    paths: ['docs/**', 'scripts/Verify-Site.py', '.github/workflows/docs.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: docs
+      - name: Build documentation
+        working-directory: docs
+        run: bundle exec jekyll build --strict_front_matter --trace
+      - name: Check pages, assets, anchors, and search
+        run: python3 scripts/Verify-Site.py docs/_site
+      - name: Verify project-site URLs
+        working-directory: docs
+        run: bundle exec jekyll build --baseurl /Consoul --destination ../artifacts/site-subpath --strict_front_matter
+      - name: Check project-site links
+        run: python3 scripts/Verify-Site.py artifacts/site-subpath --baseurl /Consoul
