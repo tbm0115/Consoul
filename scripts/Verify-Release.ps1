@@ -22,6 +22,7 @@ function Invoke-Dotnet {
 
 Push-Location -LiteralPath $repositoryRoot
 try {
+    & (Join-Path $PSScriptRoot 'Test-DocumentationVerifier.ps1')
     Invoke-Dotnet -Arguments @('restore', 'Consoul.sln', '--configfile', 'NuGet.Config')
     Invoke-Dotnet -Arguments @('build', 'Consoul.sln', '--configuration', $Configuration, '--no-restore')
     Invoke-Dotnet -Arguments @('test', 'Consoul.Tests/Consoul.Tests.csproj', '--configuration', $Configuration,

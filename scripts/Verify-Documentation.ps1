@@ -66,7 +66,8 @@ $linkCount = 0
 foreach ($markdownFile in $markdownFiles) {
     $markdown = Get-Content -LiteralPath $markdownFile.FullName -Raw
     # Ignore fenced examples; brackets in code are not navigation links.
-    $markdown = [regex]::Replace($markdown, '(?ms)^```[^\r\n]*\r?\n.*?^```[^\r\n]*$', '')
+    # Multiline $ stops before LF, so consume CR explicitly for Windows checkouts.
+    $markdown = [regex]::Replace($markdown, '(?ms)^```[^\r\n]*\r?\n.*?^```[^\r\n]*\r?$', '')
     $links = [regex]::Matches($markdown, '\[[^\]\r\n]*\]\((?<target><[^>]+>|[^\s)]+)(?:\s+"[^"]*")?\)')
     foreach ($link in $links) {
         $target = $link.Groups['target'].Value.Trim('<', '>')
