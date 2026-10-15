@@ -121,7 +121,7 @@ namespace ConsoulLibrary.Views.Editing
     /// <summary>
     /// Represents a nested dictionary describing a remote constructor and its parameters.
     /// </summary>
-    [DisableJsonEditor]
+    [DisableFormDocumentEditor]
     internal sealed class RemoteConstructorParameterDictionary
     {
         private Dictionary<string, object> _ctorParameters;
@@ -231,7 +231,7 @@ namespace ConsoulLibrary.Views.Editing
             catch (Exception exception)
             {
                 Consoul.Write("Failed to inspect constructor: " + exception.Message, ConsoleColor.Red);
-                Consoul.Wait();
+                Consoul.Wait(cancellationToken: context.CancellationToken);
                 return false;
             }
 
@@ -246,7 +246,7 @@ namespace ConsoulLibrary.Views.Editing
             }
 
             var view = new EditObjectView(parameters);
-            view.Render();
+            view.RenderAsync(context.CancellationToken).GetAwaiter().GetResult();
 
             var flattened = FlattenParameters(parameters.CtorParameters);
             ApplyResolvedParameters(context, flattened);

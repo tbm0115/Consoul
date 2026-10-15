@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <Description>Optional command-line application helpers for Consoul MVC-style console apps.</Description>
+    <PackageTags>Console;Consoul;Terminal;Cli;CommandLine;</PackageTags>
+    <RootNamespace>ConsoulLibrary</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Consoul\Consoul.csproj" />
+  </ItemGroup>
+
+</Project>

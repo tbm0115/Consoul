@@ -1,0 +1,34 @@
+- title: Start here
+  items:
+    - title: Overview
+      url: /
+    - title: Getting started
+      url: /getting-started.html
+    - title: Examples & screenshots
+      url: /examples.html
+    - title: Installation
+      url: /nuget.html
+- title: Build your app
+  items:
+    - title: Output & styling
+      url: /core-console.html
+    - title: Prompts
+      url: /prompts.html
+    - title: Views & menus
+      url: /views.html
+    - title: Tables
+      url: /tables.html
+    - title: Progress & status
+      url: /progress.html
+    - title: Scripted routines
+      url: /routines.html
+    - title: Optional packages
+      url: /integrations.html
+- title: Reference
+  items:
+    - title: Upgrade from 2.x
+      url: /migration-3.0.html
+    - title: Preview release notes
+      url: /releases/3.0.0-preview.1.html
+    - title: Brand assets
+      url: /branding.html

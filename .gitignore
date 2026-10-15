@@ -18,6 +18,9 @@
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# Keep versioned public release notes alongside the component guides.
+!/docs/releases/
+!/docs/releases/*.md
 x64/
 x86/
 [Aa][Rr][Mm]/
@@ -338,3 +341,10 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+# Local Jekyll builds and Bundler configuration
+docs/_site/
+docs/.jekyll-cache/
+docs/.jekyll-metadata
+docs/.bundle/
+docs/vendor/

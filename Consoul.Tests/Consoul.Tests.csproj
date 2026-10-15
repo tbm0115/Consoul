@@ -19,5 +19,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Consoul\Consoul.csproj" />
+    <ProjectReference Include="..\Consoul.Cli\Consoul.Cli.csproj" />
+    <ProjectReference Include="..\Consoul.Text.Json\Consoul.Text.Json.csproj" />
   </ItemGroup>
 </Project>

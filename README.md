@@ -1,122 +1,206 @@
 [![Package](https://github.com/tbm0115/Consoul/actions/workflows/dotnetcore.yml/badge.svg)](https://github.com/tbm0115/Consoul/actions/workflows/dotnetcore.yml)
 
-# Consoul
-Add some life to your console project with a structured toolkit for prompts, tables, progress bars, and navigable views.
+<p align="center">
+  <img src="docs/assets/brand/ember-icon-256.png" width="128" height="128" alt="Consoul Ember: an orange flame with a terminal prompt face">
+</p>
+
+# Consoul Repository
+
+**A fiery soul for your console.**
+
+This repository contains the Consoul console UI toolkit and its optional integration packages. The repository is organized so the core package stays dependency-light, while integrations that depend on `Microsoft.Extensions.*` or `System.Text.Json` are packaged separately.
+
+This branch prepares **3.0.0-preview.1** for early adopters. The preview includes breaking package and configuration API changes; it is not a stable 3.0 release. Start with the [documentation index](docs/index.md), [2.x migration guide](docs/migration-3.0.md), [preview release notes](docs/releases/3.0.0-preview.1.md), or [NuGet installation and publishing guide](docs/nuget.md). These instructions describe the planned preview and do not imply that its packages have been published.
 
 ![Tiny Text Adventures](/Consoul_1.png)
 
-## Why Consoul?
-Consoul wraps the standard `System.Console` API with higher-level concepts—color aware output, validated input, menu-driven views, progress indicators, and automation routines—so that you can prototype console UX quickly. Compared to competitors such as [Spectre.Console](https://spectreconsole.net/), Consoul emphasises:
+## Packages
 
-* **View orchestration** – Static and dynamic view classes let you model a menu hierarchy while keeping actions encapsulated.
-* **Scriptable routines** – XML/JSON driven automation lets you replay demos or smoke test your flows without manual input.
-* **Drop-in helpers** – Keep working with `Console` while layering in theming, templated output, and input validation as needed.
+| Project | NuGet package | Purpose | README |
+| --- | --- | --- | --- |
+| `Consoul` | `Consoul` | Core MVC-style console UI: typed prompts, validation helpers, tables, views, shortcut bars, progress bars, fixed messages, and routines. | [Consoul README](Consoul/README.md) |
+| `Consoul.Cli` | `Consoul.Cli` | Optional command-line app runner for typed commands, delegate commands, help output, aliases, examples, and MVC view commands. | [CLI README](Consoul.Cli/README.md) |
+| `Consoul.Extensions.Logging` | `Consoul.Extensions.Logging` | Optional `Microsoft.Extensions.Logging` provider for Consoul output. | [Logging README](Consoul.Extensions.Logging/README.md) |
+| `Consoul.Extensions.Configuration` | `Consoul.Extensions.Configuration` | Optional `Microsoft.Extensions.Configuration` bridge for routine transforms. | [Configuration README](Consoul.Extensions.Configuration/README.md) |
+| `Consoul.Text.Json` | `Consoul.Text.Json` | Optional `System.Text.Json` serializer hook and syntax-colored JSON rendering helpers. | [Text.Json README](Consoul.Text.Json/README.md) |
 
-If you need a lightweight console UI with strong navigation support, Consoul gives you everything in one package.
+## Why The Repository Is Split
 
-## Installation
-Install via NuGet or the GitHub package registry:
+Older-targeting applications often have strict dependency graphs. The `Consoul` core project therefore avoids package references to `Microsoft.Extensions.*`, `System.Text.Json`, and similar optional infrastructure libraries. Applications can install only the integration packages they actually need.
+
+After `3.0.0-preview.1` is available on your configured package source, install the core and only the integrations you use. The [NuGet guide](docs/nuget.md) also covers consuming a local package build.
 
 ```bash
-# NuGet
-dotnet add package Consoul
+dotnet add package Consoul --version 3.0.0-preview.1
 
-# GitHub packages
-dotnet add package Consoul --source "https://nuget.pkg.github.com/tbm0115/index.json"
+# Optional integrations
+dotnet add package Consoul.Cli --version 3.0.0-preview.1
+dotnet add package Consoul.Extensions.Logging --version 3.0.0-preview.1
+dotnet add package Consoul.Extensions.Configuration --version 3.0.0-preview.1
+dotnet add package Consoul.Text.Json --version 3.0.0-preview.1
 ```
 
-Alternatively, clone the repository, build the solution, and reference the compiled assembly directly.
+## Core Package Quick Start
 
-## Quick start
 ```csharp
 using ConsoulLibrary;
 
-// Configure basic theming
-Consoul.RenderOptions.PromptColor = ConsoleColor.Yellow;
+Consoul.MarkupLine("[cyan]Welcome to Consoul[/]");
 
-// Output
-Consoul.Write("Welcome to Consoul!", ConsoleColor.Cyan);
+var prompt = new SelectionPrompt("Choose an option");
+prompt.Add("Start", ConsoleColor.Green, isDefault: true);
+prompt.Add("Exit", ConsoleColor.DarkGray);
 
-// Input
-if (Consoul.Ask("Do you want to continue?"))
+PromptResult result = prompt.Render();
+if (result.HasSelection)
 {
-    // Selection prompt with structured result
-    var prompt = new SelectionPrompt("Choose an option");
-    prompt.Add("Start a job", ConsoleColor.Green, isDefault: true);
-    prompt.Add("Show progress", ConsoleColor.Blue);
-    prompt.Add("Exit", ConsoleColor.DarkGray);
-
-    PromptResult choice = prompt.Render();
-    if (choice.HasSelection)
-    {
-        Consoul.Write($"You selected option #{choice.Index + 1}");
-    }
-    else
-    {
-        Consoul.Write("Prompt canceled", ConsoleColor.DarkYellow);
-    }
+    Consoul.Write($"Selected option {result.Index + 1}");
 }
 ```
 
-## Core concepts
-| Scenario | Key types | Summary |
-| --- | --- | --- |
-| **Console output** | `Consoul.Write`, `ColorScheme`, `RenderOptions` | Centralise color choices and fall back to plain text if colors are suppressed. |
-| **Input & validation** | `Consoul.Input`, `Consoul.Ask`, `Consoul.Read` | Prompt for free-form text or yes/no answers with optional empty-response validation. |
-| **Prompts** | `SelectionPrompt`, `PromptResult` | Display numbered options, handle default selections, and detect cancelation without magic constants. |
-| **Views** | `StaticView`, `DynamicView`, `ViewOption` | Model multi-step flows with menus that execute bound methods or dynamically generated entries. |
-| **Tables** | `TableView`, `TableRenderOptions` | Generate padded, column-aware tables that respect console buffer width. |
-| **Progress** | `ProgressBar` | Render textual progress indicators for long running tasks. |
-| **Routines** | `Routines`, `XmlRoutine` | Automate keyboard input or scripted demos for repeatable workflows. |
+For a fast proof-of-concept menu, start with the dynamic view API:
 
-Each concept has dedicated documentation with minimal examples and advanced tips—see the documentation section below.
+```csharp
+Consoul.View("Tools")
+    .Option("Say hello", () => Consoul.Write("Hello"))
+    .DescribeLastOption("Writes a friendly test message.")
+    .ShortcutLastOption("h")
+    .Render();
+```
 
-### Prompt navigation with `PromptResult`
-`SelectionPrompt.Render` now returns a `PromptResult` struct rather than a raw index. This removes the need to check sentinel values like `Consoul.EscapeIndex`. Inspect the result via:
+For teams migrating snippets from Spectre.Console, the core package also includes an `AnsiConsole` facade that delegates to Consoul's dependency-light APIs while keeping prompt cancellation explicit:
 
-* `HasSelection` – whether the user chose an entry.
-* `Index` – the zero-based index when a selection was made.
-* `IsCanceled` – whether the user dismissed the prompt (typing “back”, “exit”, etc.).
+```csharp
+AnsiConsole.MarkupLine("[green]Ready[/]");
+PromptResult result = AnsiConsole.Prompt(prompt);
+TextPromptResult<int> retries = await AnsiConsole.AskAsync("Retries", 3);
+```
 
-### Writing output consistently
-Internal helpers have been renamed to follow .NET conventions. The former `_write` method is now `WriteCore`, and public overloads defer to it after evaluating the configured `RenderOptions.WriteMode`.
+Renderable builder aliases such as `Panel`, `Table`, `Metrics`, `Sparkline`, `Timeline`, and `ShortcutBar` keep fast POC screens composable while still flowing through Consoul's MVC-style view and renderable model. Manual tables, panels, rules, text blocks, trees, badges, breadcrumbs, bullet lists, checklists, metrics, sparklines, timelines, property lists, exception diagnostics, rows, columns, grids, layouts, padding, alignment, shortcut bars, prompt text, prompt helper text, prompt disabled reasons, prompt invalid-selection copy, and scalar prompt validation copy, status/spinner/progress messages, progress task labels, bar charts, and breakdown charts accept Spectre-style markup in common text slots, preserving styling while measuring responsive layout by visible text. Prompt feedback distinguishes disabled choices from malformed input so quick MVC menus can explain unavailable actions.
 
-## Extensibility & advanced features
-Consoul ships with several capabilities that go beyond basic prompts and writes. The sections below outline scenarios that help you
-build production-grade tooling.
+Install `Consoul.Cli` when the console app also needs a command-line entry point with help, aliases, examples, typed settings, arguments, options, and commands that can launch MVC-style Consoul views:
 
-### Custom themes & scoped rendering
-* Override `RenderOptions` globally, or clone `RenderOptions` into a temporary variable, adjust colours, then restore them to
-  create themed sections of your UI.
-* Store reusable `ColorScheme` instances (for example, `SuccessScheme`, `WarningScheme`) and assign them to
-  `RenderOptions.DefaultScheme`, `PromptScheme`, or `OptionScheme` before rendering specialised sections.
-* Switch `RenderOptions.WriteMode` to `WritePlainText` when detecting headless environments, then revert to `WriteAll` once a
-  capable terminal is detected.
+```csharp
+using ConsoulLibrary;
 
-### Logging integration
-* Route `Microsoft.Extensions.Logging` to Consoul by calling `ILoggingBuilder.AddConsoulLogger()` inside your host builder. Adjust the
-  `ConsoulLogger.LogLevelToColorMap` dictionary to ensure each severity uses the colours you expect.
-* Pair logger output with `Consoul.Wait()` or prompts to pause after critical log entries in interactive tools.
+var app = new CommandApp();
+app.Configure(config =>
+{
+    config.SetApplicationName("deploy");
+    config.AddView<DashboardView>("dashboard")
+        .WithDescription("Open the interactive dashboard")
+        .WithAlias("dash");
+});
 
-### Window, buffer, and layout management
-* Subscribe to `Consoul.WindowResized` to refresh dashboards whenever the terminal changes size. Views that render tables or
-  progress bars benefit from recalculating layout after receiving the event.
-* Pass explicit dimensions into table and view renderers when running inside CI systems with narrow buffers.
+return await app.RunAsync(args);
+```
 
-### Automation & scripting
-* Use `XmlRoutine` definitions (or custom `Routine` subclasses) to run end-to-end smoke tests in CI. A single routine can combine menu navigation, table rendering,
-  and long-running jobs.
-* Pair routines with custom prompts via `Routines.RegisterOptions(prompt)` so scripted automation can resolve options by label
-  or index even after the order changes.
+For command-line parameters, typed command settings use familiar annotations such as `CommandArgument`, `CommandOption`, `[Description]`, and `[DefaultValue]`. Repeated values can bind to arrays or common generic collection properties, boolean short aliases can be clustered as `-vf`, and options can read environment-variable fallbacks without pulling in configuration packages, so POC settings can stay close to normal MVC-style view models. Ported Spectre-style command classes can inherit from `Command<TSettings>` or `AsyncCommand<TSettings>`, while interface-based commands remain available:
 
-### Composition with views
-* Views can call into progress bars, tables, and prompts inside option handlers. For example, a `DynamicView` handler can launch
-  a `ProgressBar`, update it asynchronously, and then navigate back to the view when complete.
-* Chain views manually by instantiating the next view within an option handler and calling its `Render()`/`RenderAsync()`
-  method. Share services via constructor parameters or by passing a shared context object between views.
+```csharp
+public sealed class CopyCommand : Command<CopySettings>
+{
+    protected override int Execute(CommandContext context, CopySettings settings, CancellationToken cancellationToken)
+    {
+        context.Console.MarkupLineInterpolated($"Copying [cyan]{settings.Source}[/]");
+        return 0;
+    }
+}
+
+public sealed class CopySettings : CommandSettings
+{
+    [CommandArgument(0, "<source>")]
+    public string Source { get; set; } = string.Empty;
+
+    [CommandOption("-f|--force")]
+    public bool Force { get; set; }
+}
+```
+
+`Consoul.Cli` also supports branch-style command groups for tools that grow beyond a flat command list:
+
+```csharp
+app.Configure(config =>
+{
+    config.AddBranch("service", service =>
+    {
+        service.AddCommand<ListServicesCommand>("list").WithAlias("ls");
+        service.AddCommand<RestartServiceCommand>("restart");
+    });
+});
+```
+
+The same command model can provide completion suggestions for shell adapters or embedded command palettes without executing commands:
+
+```csharp
+IReadOnlyList<CommandCompletionItem> completions =
+    app.GetCompletions(new[] { "service", "" });
+```
+
+For responsive POC screens, query `Consoul.Terminal` instead of `System.Console`:
+
+```csharp
+int width = Consoul.Terminal.ResolveWidth(100, minimumWidth: 40);
+Consoul.Rule("Dashboard", width: width);
+```
+
+For MVC-style POCs, use a model-backed view:
+
+```csharp
+Consoul.View("Counter", new CounterModel())
+    .Section("Summary", model =>
+    {
+        Consoul.PropertyList(list =>
+        {
+            list.Add("Count", model.Count, ConsoleColor.Cyan);
+            list.Add("State", model.Count == 0 ? "Idle" : "Changed", ConsoleColor.Green);
+        });
+    })
+    .Separator("Actions")
+    .Option("Increment", model => model.Count++)
+    .Render();
+```
+
+Use `SectionWhen(...)` for validation, warnings, and detail panels that should appear only when the view model reaches the relevant state.
+Use `PropertyListSection(...)`, `TableSection(...)`, `MetricsSection(...)`, `RowsSection(...)`, `ColumnsSection(...)`, `GridSection(...)`, `LayoutSection(...)`, `TextBlockSection(...)`, `PanelSection(...)`, `CalloutSection(...)`, `ExceptionSection(...)`, `BreadcrumbSection(...)`, `ShortcutBarSection(...)`, `BulletListSection(...)`, `ChecklistSection(...)`, `CalendarSection(...)`, `SparklineSection(...)`, `BarChartSection(...)`, `BreakdownChartSection(...)`, `TreeSection(...)`, `TimelineSection(...)`, and their `...When(...)` counterparts when a model-backed POC view should generate common read-only summaries, collection tables, KPI blocks, composed dashboard rows, columns, grids, pane layouts, wrapped explanatory text, framed details, status callouts, bounded diagnostics, navigation trails, action hints, notes, readiness checks, schedules, trend lines, charts, nested diagnostics, or workflow/history timelines from the model without custom render loops. Use `AddOptions(...)` with `isEnabled` and `disabledReason` selectors when a model-backed POC menu should project a collection of actions while keeping unavailable actions visible.
+Use `ValidationSummarySection(...)` with `OptionWhenValid(...)` when a settings or deployment view should show DataAnnotations-style issues and keep save/apply actions disabled until the model is valid; validation summary palette helpers preserve RGB/hex colors and ANSI decorations on capable terminals.
+When the view model owns the palette, model-backed sections and options can use selectors returning `ConsoleColor`, `Style`, style text, `Color`, or `RgbColor`; rich visual helpers preserve RGB/hex and decoration metadata on ANSI-capable terminals while keeping console-color fallbacks.
+
+See [Consoul/README.md](Consoul/README.md) for complete core usage examples, including model-backed dynamic views, spinner/status/live-display/multi-progress helpers, align/badge/bar-chart/breadcrumb/breakdown-chart/bullet-list/calendar/callout/canvas/checklist/columns/exception/figlet-text/grid/headline/layout/metrics/padding/panel/property-list/rows/rule/shortcut-bar/sparkline/text-block/text-path/timeline/tree view helpers, render capture for logs/tests, typed text prompts, result-first single and multi-selection helpers, tables, prompts, and form/object editing.
+
+Use `ConsoulTheme` presets for fast visual polish across prompts, markup, charts, and view helpers:
+
+```csharp
+using (Consoul.UseTheme(ConsoulTheme.Modern))
+{
+    Consoul.MarkupLine("[prompt]Ready[/] [option]Deploy[/]");
+}
+```
+
+Exploratory settings and plain model objects can be edited from a model-backed `DynamicView<TModel>` by adding the built-in object editor as a view option:
+
+```csharp
+Consoul.View("Settings", settings)
+    .RenderModel(model => new PropertyListEntry().AddModel(model))
+    .EditForm("Edit settings")
+    .Render();
+```
+
+Use `Consoul.Form(settings).Render()` when a proof-of-concept only needs the generated form editor. The form helper uses the same MVC-style object editor stack as `Consoul.EditObject(...)`, so model metadata, validation, and optional JSON value formatting stay consistent.
+
+## Repository Projects
+
+- `Consoul` is the packable core library.
+- `Consoul.Cli` is the packable command-line application helper package.
+- `Consoul.Extensions.Logging` is the packable logging integration.
+- `Consoul.Extensions.Configuration` is the packable configuration integration.
+- `Consoul.Text.Json` is the packable JSON serializer integration for form/object-editor value rendering and syntax-colored JSON snapshots.
+- `Consoul.Tests` contains xUnit coverage for input handling, rendering, prompts, and metadata behavior.
+- `Consoul.Test` is a sample console application used for manual exploration, including small POC menu, badge, breadcrumb, bullet-list, callout, metrics, shortcut bar, timeline, table, and settings object-editor views.
 
 ## Documentation
-The `/docs` folder contains component deep dives:
+
+Read the guides directly on GitHub through the [documentation index](docs/index.md). For upgrading or distributing the preview, see [migration](docs/migration-3.0.md), [release notes](docs/releases/3.0.0-preview.1.md), and [NuGet setup](docs/nuget.md). The `/docs` folder also contains component deep dives:
 
 1. [Core console APIs](docs/core-console.md)
 2. [Prompts](docs/prompts.md)
@@ -125,20 +209,28 @@ The `/docs` folder contains component deep dives:
 5. [Progress](docs/progress.md)
 6. [Routines](docs/routines.md)
 
-Each page covers when to use the feature, the primary types involved, minimal examples, and guidance for advanced scenarios.
+Package-specific NuGet README files live next to each packable project. This preview still measures many layout widths in UTF-16 characters rather than terminal display cells; wide characters, combining characters, and clipped emoji can render incorrectly. See the [known limitations](docs/releases/3.0.0-preview.1.md#known-limitations) before evaluating terminal layouts.
 
-## Recipes
-* Confirmation dialogs with fallbacks for empty responses.
-* Paginated tables driven by dynamic data.
-* Long-running jobs that report progress with cancellation handling.
-* Automated smoke tests using scripted routines.
+## Build And Test
 
-Explore the recipes in the documentation to jumpstart common console patterns.
+Restore packages:
 
-## Troubleshooting
-* **Buffer width issues** – Very small console windows can truncate tables or progress bars. Pass explicit dimensions to rendering helpers or resize the console before rendering.
-* **Color suppression** – Set `RenderOptions.WriteMode` to `WriteAll` to re-enable color output if running in constrained environments (for example, CI logs).
-* **Prompt cancelation** – Check `PromptResult.IsCanceled` instead of comparing indices to detect when the user exits a prompt.
+```bash
+dotnet restore Consoul.sln
+```
+
+Run tests:
+
+```bash
+dotnet test Consoul.Tests/Consoul.Tests.csproj --no-restore -v minimal
+```
+
+Build all projects:
+
+```bash
+dotnet build Consoul.sln --no-restore -v minimal
+```
 
 ## License
-This project is licensed under the GNU Lesser General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
+
+This project is licensed under the GNU Lesser General Public License v3.0. See [LICENSE](LICENSE) for details.

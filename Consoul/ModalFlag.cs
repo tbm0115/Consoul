@@ -37,7 +37,7 @@ namespace ConsoulLibrary
         /// <summary>
         /// Tests the current source model for whether or not to render the prompt.
         /// </summary>
-        /// <param name="source"><see cref="T"/></param>
+        /// <param name="source">The source model passed into <see cref="PromptMessage"/>.</param>
         /// <returns>Flag for wether or not the prompt was rendered.</returns>
         public bool Test(T source)
         {

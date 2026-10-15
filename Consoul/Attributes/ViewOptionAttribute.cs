@@ -19,6 +19,21 @@ namespace ConsoulLibrary
         public ConsoleColor Color { get; set; } = RenderOptions.DefaultColor;
 
         /// <summary>
+        /// Optional helper text rendered under the option.
+        /// </summary>
+        public string Description { get; set; }
+
+        /// <summary>
+        /// Optional shortcut text that can select the option.
+        /// </summary>
+        public string Shortcut { get; set; }
+
+        /// <summary>
+        /// Optional comma- or semicolon-separated search terms that can match prompt filtering.
+        /// </summary>
+        public string SearchTerms { get; set; }
+
+        /// <summary>
         /// Constructs a new instance of the attribute.
         /// </summary>
         /// <param name="message">Message for the option</param>

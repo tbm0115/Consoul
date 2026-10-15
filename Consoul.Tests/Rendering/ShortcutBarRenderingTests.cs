@@ -1,0 +1,335 @@
+using System;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using ConsoulLibrary.Color;
+using Xunit;
+
+namespace ConsoulLibrary.Tests.Rendering
+{
+    /// <summary>
+    /// Responsive rendering tests for shortcut bar view helpers.
+    /// </summary>
+    public class ShortcutBarRenderingTests
+    {
+        /// <summary>
+        /// Shortcut bars wrap available action hints without overflowing.
+        /// </summary>
+        /// <param name="width">The fake terminal width.</param>
+        [Theory]
+        [InlineData(12)]
+        [InlineData(24)]
+        [InlineData(80)]
+        public void ShortcutBar_ManyItems_DoNotOverflow(int width)
+        {
+            using (var scope = new ConsoleDriverScope(width))
+            {
+                Consoul.ShortcutBar(
+                    new ShortcutBarOptions { Width = width },
+                    new ShortcutItem("Enter", "Select current option"),
+                    new ShortcutItem("Esc", "Go back"),
+                    new ShortcutItem("F5", "Refresh preview"),
+                    new ShortcutItem("?", "Help"));
+
+                VisualAssert.WroteText(scope.Driver, "[Enter]");
+                VisualAssert.WroteText(scope.Driver, "[Esc]");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Shortcut bars honor custom colors and disabled item rendering.
+        /// </summary>
+        [Fact]
+        public void ShortcutBar_CustomOptions_ColorizeSegments()
+        {
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                var options = new ShortcutBarOptions
+                {
+                    Width = 60,
+                    ItemSeparator = " | ",
+                    KeyScheme = Scheme(ConsoleColor.Cyan),
+                    DescriptionScheme = Scheme(ConsoleColor.White),
+                    SeparatorScheme = Scheme(ConsoleColor.DarkGray),
+                    DisabledScheme = Scheme(ConsoleColor.DarkGray)
+                };
+
+                Consoul.ShortcutBar(options,
+                    new ShortcutItem("Enter", "Select"),
+                    new ShortcutItem("F5", "Refresh", disabled: true));
+
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[Enter]") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Select") && write.Color == ConsoleColor.White);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("|") && write.Color == ConsoleColor.DarkGray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[F5]") && write.Color == ConsoleColor.DarkGray);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Shortcut bar style helpers preserve RGB and decoration metadata for true-color terminals.
+        /// </summary>
+        [Fact]
+        public void ShortcutBar_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 8, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var shortcuts = new ShortcutBar()
+                .Width(70)
+                .ItemSeparator(" | ")
+                .KeyColor("bold #22c55e")
+                .DescriptionColor("#336699")
+                .SeparatorColor("italic #778899")
+                .AddShortcut("Enter", "Select")
+                .AddShortcutStyled(
+                    "Esc",
+                    "Back",
+                    keyStyle: "underline #112233",
+                    descriptionStyle: "italic #abcdef");
+
+            console.Write(shortcuts);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94m[Enter]", output);
+            Assert.Contains("\u001b[38;2;51;102;153mSelect", output);
+            Assert.Contains("\u001b[3;38;2;119;136;153m | ", output);
+            Assert.Contains("\u001b[4;38;2;17;34;51m[Esc]", output);
+            Assert.Contains("\u001b[3;38;2;171;205;239mBack", output);
+        }
+
+        /// <summary>
+        /// Shortcut bar RGB selector helpers use 256-color SGR when the terminal supports eight-bit color.
+        /// </summary>
+        [Fact]
+        public void ShortcutBar_RgbSelectorsEmitEightBitSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 8, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.EightBit
+            });
+
+            var actions = new[]
+            {
+                new StyledShortcut
+                {
+                    Key = "F5",
+                    Description = "Refresh",
+                    KeyColor = RgbColor.FromHex("#445566"),
+                    DescriptionColor = RgbColor.FromHex("#336699")
+                }
+            };
+
+            var shortcuts = new ShortcutBar()
+                .Width(70)
+                .AddShortcuts(
+                    actions,
+                    item => item.Key,
+                    item => item.Description,
+                    item => item.Disabled,
+                    item => item.KeyColor,
+                    item => item.DescriptionColor);
+
+            console.Write(shortcuts);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;5;239m[F5]", output);
+            Assert.Contains("\u001b[38;5;60mRefresh", output);
+            Assert.DoesNotContain("\u001b[38;2", output);
+        }
+
+        /// <summary>
+        /// Shortcut bars treat raw markup in keys and descriptions as styled visible text.
+        /// </summary>
+        /// <param name="width">The configured shortcut bar width.</param>
+        [Theory]
+        [InlineData(24)]
+        [InlineData(40)]
+        public void ShortcutBar_RawMarkupKeysAndDescriptions_DoNotLeakTagsOrOverflow(int width)
+        {
+            using (var scope = new ConsoleDriverScope(width))
+            {
+                var options = new ShortcutBarOptions
+                {
+                    Width = width,
+                    DisabledScheme = Scheme(ConsoleColor.DarkGray)
+                };
+
+                Consoul.ShortcutBar(options,
+                    new ShortcutItem("[green]Enter[/]", "[white on navy]Select[/] [[prod]]"),
+                    new ShortcutItem("[red]F5[/]", "[green]Refresh[/]", disabled: true));
+
+                VisualAssert.ContainsText(scope.Driver, "[Enter]");
+                VisualAssert.ContainsText(scope.Driver, "Select");
+                VisualAssert.ContainsText(scope.Driver, "[prod]");
+                VisualAssert.ContainsText(scope.Driver, "[F5]");
+                Assert.DoesNotContain("[green]", scope.Driver.Text);
+                Assert.DoesNotContain("[white on navy]", scope.Driver.Text);
+                Assert.DoesNotContain("[red]", scope.Driver.Text);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Enter") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Select") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[prod]"));
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("F5") && write.Color == ConsoleColor.DarkGray);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= width, "Raw markup shortcut bar line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+
+                string text = Consoul.ShortcutBarText(
+                    new[] { new ShortcutItem("[green]Enter[/]", "[white on navy]Select[/] [[prod]]") },
+                    width: width);
+                Assert.Contains("[Enter]", text);
+                Assert.Contains("Select", text);
+                Assert.DoesNotContain("[green]", text);
+                Assert.DoesNotContain("[white on navy]", text);
+            }
+        }
+
+        /// <summary>
+        /// Disabled shortcut items can be hidden for compact views.
+        /// </summary>
+        [Fact]
+        public void ShortcutBar_HideDisabled_OmitsDisabledItems()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Consoul.ShortcutBar(
+                    new ShortcutBarOptions { ShowDisabled = false },
+                    new ShortcutItem("Enter", "Select"),
+                    new ShortcutItem("F5", "Refresh", disabled: true));
+
+                VisualAssert.WroteText(scope.Driver, "[Enter]");
+                Assert.DoesNotContain(scope.Driver.Writes, write => write.Text.Contains("F5"));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Shortcut bar text generation creates bounded text without writing to the console.
+        /// </summary>
+        [Fact]
+        public void ShortcutBarText_ReturnsBoundedPlainText()
+        {
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                string text = Consoul.ShortcutBarText(
+                    new[]
+                    {
+                        new ShortcutItem("Enter", "Select current option"),
+                        new ShortcutItem("Esc", "Go back"),
+                        new ShortcutItem("F5", "Refresh preview")
+                    },
+                    width: 18);
+
+                Assert.All(text.Split(new[] { Environment.NewLine }, StringSplitOptions.None), line => Assert.True(line.Length <= 18, "Shortcut line exceeded requested width: " + line));
+                Assert.Empty(scope.Driver.Writes);
+            }
+        }
+
+        /// <summary>
+        /// Shortcut bars can be built fluently and composed inside captured panels.
+        /// </summary>
+        [Fact]
+        public void ShortcutBar_ComposesInsidePanel()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                Consoul.Panel(
+                    () => Consoul.ShortcutBar(bar =>
+                    {
+                        bar.Add("Enter", "Select");
+                        bar.Add("Esc", "Back");
+                    }, new ShortcutBarOptions { Width = 32 }),
+                    title: "Keys",
+                    width: 40);
+
+                VisualAssert.WroteText(scope.Driver, "Keys");
+                VisualAssert.WroteText(scope.Driver, "[Enter]");
+                VisualAssert.WroteText(scope.Driver, "Back");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Model-backed dynamic views can render shortcut bars as view action hints.
+        /// </summary>
+        [Fact]
+        public void DynamicModelView_CanRenderShortcutBarSections()
+        {
+            using (var scope = new ConsoleDriverScope(44))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "2" }));
+
+                try
+                {
+                    var view = Consoul.View("Deploy", new ShortcutModel { CanRefresh = true })
+                        .RenderModel(model =>
+                        {
+                            Consoul.ShortcutBar(bar =>
+                            {
+                                bar.Add("Enter", "Run selected action");
+                                bar.Add("F5", "Refresh", disabled: !model.CanRefresh);
+                                bar.Add("Esc", "Back");
+                            }, new ShortcutBarOptions { Width = 40 });
+                        })
+                        .Option("Toggle refresh", model => model.CanRefresh = !model.CanRefresh);
+
+                    view.Render();
+
+                    VisualAssert.WroteText(scope.Driver, "[Enter]");
+                    VisualAssert.WroteText(scope.Driver, "[F5]");
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        private static ColorScheme Scheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
+        }
+
+        private sealed class ShortcutModel
+        {
+            public bool CanRefresh { get; set; }
+        }
+
+        private sealed class StyledShortcut
+        {
+            public string Key { get; set; } = string.Empty;
+
+            public string Description { get; set; } = string.Empty;
+
+            public bool Disabled { get; set; }
+
+            public RgbColor KeyColor { get; set; }
+
+            public RgbColor DescriptionColor { get; set; }
+        }
+
+        private sealed class TestRoutine : Routine
+        {
+            public TestRoutine(string[] inputs)
+            {
+                foreach (string input in inputs)
+                {
+                    Enqueue(new RoutineInput { Value = input });
+                }
+            }
+        }
+    }
+}

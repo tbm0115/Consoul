@@ -2,23 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp3.1;net461</TargetFrameworks>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IsPackable>true</IsPackable>
     <Description>A Console UI library for quickly building view-like Console Apps.</Description>
-    <PackageProjectUrl>https://github.com/tbm0115/Consoul</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/tbm0115/Consoul</RepositoryUrl>
     <PackageTags>Console;Consoul;Terminal;</PackageTags>
-    <Authors>tbm0115</Authors>
-    <Company />
-    <Version>2.0.2</Version>
-    <PackageReleaseNotes>Added exception to logging.</PackageReleaseNotes>
-    <AssemblyVersion>2.0.2</AssemblyVersion>
-    <FileVersion>2.0.2</FileVersion>
-    <PackageIcon>Consoul_Small.png</PackageIcon>
-    <PackageIconUrl />
     <RootNamespace>ConsoulLibrary</RootNamespace>
-    <IncludeSymbols>True</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,22 +17,6 @@
 
   <ItemGroup>
     <None Remove="Resources\Windows Ding.wav" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Consoul_Small.png">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
-    <PackageReference Include="System.Text.Json" Version="6.0.9" />
   </ItemGroup>
 
   <ItemGroup>

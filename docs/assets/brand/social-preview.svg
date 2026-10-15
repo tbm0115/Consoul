@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640"><rect width="1280" height="640" fill="#102238"/>
+    <g transform="translate(52 64) scale(.4)"><g transform="translate(64 64) scale(.9)">
+    <path id="flame" fill="#FF8628" d="M768 88C732 68 698 100 713 139C774 297 486 398 325 555C219 658 168 759 168 867C168 1068 325 1188 626 1188C934 1188 1110 1070 1110 871C1110 771 1062 666 1008 607C987 583 956 596 953 626C950 669 936 694 910 671C855 622 924 507 942 425C975 270 883 163 768 88Z"/>
+    <path id="core" fill="#FFD45A" d="M711 442C733 428 751 445 741 471C705 574 716 660 805 732C880 790 949 838 949 940C949 1083 820 1188 626 1188C422 1188 296 1076 296 915C296 740 460 596 711 442Z"/>
+    <path id="prompt" fill="#102238" d="M485 783L614 870C634 883 635 910 615 924L477 1011C441 1035 407 982 444 958L540 895L448 836C412 812 448 758 485 783Z M654 980H797A31 31 0 0 1 797 1042H654A31 31 0 0 1 654 980Z"/>
+  </g></g>
+    <g font-family="DejaVu Sans, Arial, sans-serif" fill="#FAF7F0">
+      <text x="580" y="270" font-size="88" font-weight="700">Consoul</text>
+      <text x="584" y="340" font-size="28">A fiery soul for your console.</text>
+      <text x="584" y="406" font-size="22" fill="#FFD45A">Console UI toolkit for .NET</text>
+    </g></svg>

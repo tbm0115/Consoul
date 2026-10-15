@@ -17,6 +17,12 @@ namespace ConsoulLibrary.Test.Views
             NavigateTo(() => new PickUpStick(Story), replace: true);
             //Story.Progress(typeof(PickUpStick));
         }
+
+        [ViewOption("Try 5-minute POC samples")]
+        public void PocSamples()
+        {
+            NavigateTo<PocMenuView>(replace: false);
+        }
     }
     
 }

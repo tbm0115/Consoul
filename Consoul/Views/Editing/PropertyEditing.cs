@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 
 namespace ConsoulLibrary.Views.Editing
 {
@@ -17,11 +18,25 @@ namespace ConsoulLibrary.Views.Editing
         /// <param name="documentation">Documentation describing the property.</param>
         /// <param name="currentValue">The current value of the property.</param>
         public PropertyEditContext(object model, PropertyInfo property, PropertyDocumentation documentation, object currentValue)
+            : this(model, property, documentation, currentValue, CancellationToken.None)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PropertyEditContext"/> class.
+        /// </summary>
+        /// <param name="model">The model containing the property to edit.</param>
+        /// <param name="property">The property being edited.</param>
+        /// <param name="documentation">Documentation describing the property.</param>
+        /// <param name="currentValue">The current value of the property.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests while editing.</param>
+        public PropertyEditContext(object model, PropertyInfo property, PropertyDocumentation documentation, object currentValue, CancellationToken cancellationToken)
         {
             Model = model ?? throw new ArgumentNullException(nameof(model));
             Property = property ?? throw new ArgumentNullException(nameof(property));
             Documentation = documentation ?? throw new ArgumentNullException(nameof(documentation));
             CurrentValue = currentValue;
+            CancellationToken = cancellationToken;
         }
 
         /// <summary>
@@ -43,6 +58,11 @@ namespace ConsoulLibrary.Views.Editing
         /// Gets or sets the current value of the property.
         /// </summary>
         public object CurrentValue { get; set; }
+
+        /// <summary>
+        /// Gets the token used to cancel the active edit operation.
+        /// </summary>
+        public CancellationToken CancellationToken { get; }
 
         /// <summary>
         /// Applies the provided value to the property on the underlying model and updates the current value snapshot.
@@ -316,10 +336,240 @@ namespace ConsoulLibrary.Views.Editing
     }
 
     /// <summary>
-    /// Indicates that the JSON editor should be suppressed when editing instances of the decorated type.
+    /// Indicates that the form document editor should be suppressed when editing instances of the decorated type.
     /// </summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+    public sealed class DisableFormDocumentEditorAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Indicates that the form document editor should be suppressed when editing instances of the decorated type.
+    /// </summary>
+    /// <remarks>
+    /// This compatibility alias is retained for callers that adopted the original JSON editor terminology.
+    /// Prefer <see cref="DisableFormDocumentEditorAttribute"/> for new MVC-style object editor views.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class DisableJsonEditorAttribute : Attribute
     {
+    }
+
+    internal static class PropertyUiMetadata
+    {
+        public static bool IsIgnored(PropertyInfo property)
+        {
+            if (property == null)
+            {
+                return false;
+            }
+
+            return property.GetCustomAttribute<PropertyEditorIgnoreAttribute>(true) != null ||
+                HasBooleanAttributeValue(property, "System.ComponentModel.BrowsableAttribute", "Browsable", false) ||
+                HasNullableBooleanMethodValue(property, "System.ComponentModel.DataAnnotations.DisplayAttribute", "GetAutoGenerateField", false) ||
+                HasBooleanAttributeValue(property, "System.ComponentModel.DataAnnotations.ScaffoldColumnAttribute", "Scaffold", false);
+        }
+
+        public static bool IsEditable(PropertyInfo property)
+        {
+            if (property == null || !property.CanWrite)
+            {
+                return false;
+            }
+
+            if (HasBooleanAttributeValue(property, "System.ComponentModel.ReadOnlyAttribute", "IsReadOnly", true))
+            {
+                return false;
+            }
+
+            if (HasBooleanAttributeValue(property, "System.ComponentModel.DataAnnotations.EditableAttribute", "AllowEdit", false))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public static int GetOrder(PropertyInfo property)
+        {
+            if (property == null)
+            {
+                return int.MaxValue;
+            }
+
+            foreach (object attribute in property.GetCustomAttributes(true))
+            {
+                if (!string.Equals(
+                    attribute.GetType().FullName,
+                    "System.ComponentModel.DataAnnotations.DisplayAttribute",
+                    StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                MethodInfo method = attribute.GetType().GetMethod("GetOrder", Type.EmptyTypes);
+                if (method == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = method.Invoke(attribute, null);
+                    if (value is int order)
+                    {
+                        return order;
+                    }
+                }
+                catch
+                {
+                    return int.MaxValue;
+                }
+            }
+
+            return int.MaxValue;
+        }
+
+        public static string GetGroupName(PropertyInfo property)
+        {
+            if (property == null)
+            {
+                return null;
+            }
+
+            string displayGroupName = GetStringMethodValue(
+                property,
+                "System.ComponentModel.DataAnnotations.DisplayAttribute",
+                "GetGroupName");
+            if (!string.IsNullOrWhiteSpace(displayGroupName))
+            {
+                return displayGroupName.Trim();
+            }
+
+            string categoryName = GetStringAttributeValue(
+                property,
+                "System.ComponentModel.CategoryAttribute",
+                "Category");
+            return string.IsNullOrWhiteSpace(categoryName) ? null : categoryName.Trim();
+        }
+
+        private static bool HasBooleanAttributeValue(PropertyInfo property, string attributeTypeName, string propertyName, bool expectedValue)
+        {
+            foreach (object attribute in property.GetCustomAttributes(true))
+            {
+                if (!string.Equals(attribute.GetType().FullName, attributeTypeName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                PropertyInfo valueProperty = attribute.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+                if (valueProperty == null || valueProperty.PropertyType != typeof(bool))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if ((bool)valueProperty.GetValue(attribute) == expectedValue)
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
+        private static string GetStringAttributeValue(PropertyInfo property, string attributeTypeName, string propertyName)
+        {
+            foreach (object attribute in property.GetCustomAttributes(true))
+            {
+                if (!string.Equals(attribute.GetType().FullName, attributeTypeName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                PropertyInfo valueProperty = attribute.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+                if (valueProperty == null || valueProperty.PropertyType != typeof(string))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    return valueProperty.GetValue(attribute) as string;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
+        private static string GetStringMethodValue(PropertyInfo property, string attributeTypeName, string methodName)
+        {
+            foreach (object attribute in property.GetCustomAttributes(true))
+            {
+                if (!string.Equals(attribute.GetType().FullName, attributeTypeName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                MethodInfo method = attribute.GetType().GetMethod(methodName, Type.EmptyTypes);
+                if (method == null || method.ReturnType != typeof(string))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    return method.Invoke(attribute, null) as string;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool HasNullableBooleanMethodValue(PropertyInfo property, string attributeTypeName, string methodName, bool expectedValue)
+        {
+            foreach (object attribute in property.GetCustomAttributes(true))
+            {
+                if (!string.Equals(attribute.GetType().FullName, attributeTypeName, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                MethodInfo method = attribute.GetType().GetMethod(methodName, Type.EmptyTypes);
+                if (method == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    object value = method.Invoke(attribute, null);
+                    if (value is bool boolean && boolean == expectedValue)
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
     }
 }
