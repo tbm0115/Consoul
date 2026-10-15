@@ -180,6 +180,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Aligns text to the left side of the text block.
+        /// </summary>
+        /// <returns>The current <see cref="Text"/> instance.</returns>
+        public Text LeftAligned()
+        {
+            return LeftJustified();
+        }
+
+        /// <summary>
         /// Centers text inside the text block.
         /// </summary>
         /// <returns>The current <see cref="Text"/> instance.</returns>
@@ -197,6 +206,15 @@ namespace ConsoulLibrary
         {
             Options.Alignment = TextBlockAlignment.Right;
             return this;
+        }
+
+        /// <summary>
+        /// Aligns text to the right side of the text block.
+        /// </summary>
+        /// <returns>The current <see cref="Text"/> instance.</returns>
+        public Text RightAligned()
+        {
+            return RightJustified();
         }
 
         /// <summary>

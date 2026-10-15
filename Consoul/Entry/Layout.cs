@@ -100,6 +100,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Replaces this layout's content with one plain text pane using a Spectre-style RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout Update(string content, SpectreColor color)
+        {
+            Panes.Clear();
+            Add(content, null, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Replaces this layout's content with one plain text pane using an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout Update(string content, RgbColor color)
+        {
+            Panes.Clear();
+            Add(content, null, color);
+            return this;
+        }
+
+        /// <summary>
         /// Replaces this layout's content with one plain text pane using Spectre-style style text.
         /// </summary>
         /// <param name="content">The pane content.</param>
@@ -177,6 +203,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a pane to the layout using a Spectre-style RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout AddPane(string content, string title, SpectreColor color)
+        {
+            Add(content, title, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a pane to the layout using an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout AddPane(string content, string title, RgbColor color)
+        {
+            Add(content, title, color);
+            return this;
+        }
+
+        /// <summary>
         /// Adds a pane to the layout using Spectre-style style text.
         /// </summary>
         /// <param name="content">The pane content.</param>
@@ -212,6 +264,36 @@ namespace ConsoulLibrary
         /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
         /// <returns>The current <see cref="Layout"/> instance.</returns>
         public Layout AddPane(IConsoulRenderable renderable, string title = null, ConsoleColor? color = null, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(renderable, title, color, captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a pane whose content is captured from a renderable component using a Spectre-style RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for the captured pane content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout AddPane(IConsoulRenderable renderable, string title, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(renderable, title, color, captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a pane whose content is captured from a renderable component using an RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for the captured pane content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout AddPane(IConsoulRenderable renderable, string title, RgbColor color, int? captureWidth = null, int captureHeight = 200)
         {
             Add(renderable, title, color, captureWidth, captureHeight);
             return this;
@@ -637,6 +719,28 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the pane title foreground color from a Spectre-style RGB color.
+        /// </summary>
+        /// <param name="color">The pane title foreground color.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout TitleColor(SpectreColor color)
+        {
+            ApplyTitleStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the pane title foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The pane title foreground color.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout TitleColor(RgbColor color)
+        {
+            ApplyTitleStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
         /// Sets the pane title color from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -669,6 +773,28 @@ namespace ConsoulLibrary
             Options.ContentDecoration = Decoration.None;
             Options.ContentForegroundRgb = null;
             Options.ContentBackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default pane content foreground color from a Spectre-style RGB color.
+        /// </summary>
+        /// <param name="color">The default pane content foreground color.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout ContentColor(SpectreColor color)
+        {
+            ApplyContentStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default pane content foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The default pane content foreground color.</param>
+        /// <returns>The current <see cref="Layout"/> instance.</returns>
+        public Layout ContentColor(RgbColor color)
+        {
+            ApplyContentStyle(new Style(color));
             return this;
         }
 

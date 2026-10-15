@@ -181,7 +181,7 @@ namespace ConsoulLibrary
         /// <returns>The added child node.</returns>
         public TreeNode Add(string text, string style)
         {
-            Style parsed = string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style);
+            Style parsed = string.IsNullOrWhiteSpace(style) ? null : ConsoulLibrary.Style.Parse(style);
             return Add(CreateNode(text, parsed));
         }
 
@@ -805,7 +805,7 @@ namespace ConsoulLibrary
         /// <returns>The added child node.</returns>
         public TreeNode Add(IConsoulRenderable renderable, string style, int? captureWidth = null, int captureHeight = 20)
         {
-            Style parsed = string.IsNullOrWhiteSpace(style) ? null : Style.Parse(style);
+            Style parsed = string.IsNullOrWhiteSpace(style) ? null : ConsoulLibrary.Style.Parse(style);
             return Add(CreateNode(renderable, parsed, captureWidth, captureHeight));
         }
 
@@ -1081,6 +1081,92 @@ namespace ConsoulLibrary
             return Add(child);
         }
 
+        /// <summary>
+        /// Applies a style to this node after it has been created.
+        /// </summary>
+        /// <param name="style">The style to apply, or <c>null</c> to inherit the tree default style.</param>
+        /// <returns>The current <see cref="TreeNode"/> instance.</returns>
+        public TreeNode Style(Style style)
+        {
+            Scheme = style?.ToColorScheme(RenderOptions.DefaultScheme);
+            Decoration = style?.Decoration;
+            ForegroundRgb = style?.ForegroundRgb;
+            BackgroundRgb = style?.BackgroundRgb;
+            return this;
+        }
+
+        /// <summary>
+        /// Applies a Spectre-style text style to this node after it has been created.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>bold #22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="TreeNode"/> instance.</returns>
+        public TreeNode Style(string style)
+        {
+            return Style(string.IsNullOrWhiteSpace(style) ? null : ConsoulLibrary.Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Applies a foreground color to this node after it has been created.
+        /// </summary>
+        /// <param name="color">The foreground color to apply.</param>
+        /// <returns>The current <see cref="TreeNode"/> instance.</returns>
+        public TreeNode Color(ConsoleColor color)
+        {
+            Scheme = CreateScheme(color);
+            Decoration = null;
+            ForegroundRgb = null;
+            BackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Applies a Spectre-style foreground color to this node after it has been created.
+        /// </summary>
+        /// <param name="color">The foreground color to apply.</param>
+        /// <returns>The current <see cref="TreeNode"/> instance.</returns>
+        public TreeNode Color(SpectreColor color)
+        {
+            Scheme = CreateScheme(color);
+            Decoration = null;
+            ForegroundRgb = color.ToRgbColor();
+            BackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Applies an RGB foreground color to this node after it has been created.
+        /// </summary>
+        /// <param name="color">The foreground color to apply.</param>
+        /// <returns>The current <see cref="TreeNode"/> instance.</returns>
+        public TreeNode Color(RgbColor color)
+        {
+            Scheme = CreateScheme(color);
+            Decoration = null;
+            ForegroundRgb = color;
+            BackgroundRgb = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Applies a Spectre-style text style to this node after it has been created.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>bold #22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="TreeNode"/> instance.</returns>
+        public TreeNode Color(string style)
+        {
+            return Style(style);
+        }
+
+        /// <summary>
+        /// Applies a reusable style to this node after it has been created.
+        /// </summary>
+        /// <param name="style">The style to apply, or <c>null</c> to inherit the tree default style.</param>
+        /// <returns>The current <see cref="TreeNode"/> instance.</returns>
+        public TreeNode Color(Style style)
+        {
+            return Style(style);
+        }
+
         private static TreeNode CreateNode(string text, Style style)
         {
             TreeNode node = new TreeNode(text, style?.ToColorScheme(RenderOptions.DefaultScheme));
@@ -1125,6 +1211,15 @@ namespace ConsoulLibrary
             return new ColorScheme
             {
                 Color = color.ToConsoleColor(),
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
+        }
+
+        private static ColorScheme CreateScheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
                 BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
             };
         }

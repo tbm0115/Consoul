@@ -255,6 +255,38 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Direct row palette overloads preserve RGB metadata without requiring wrapper styles.
+        /// </summary>
+        [Fact]
+        public void Rows_DirectPaletteOverloadsEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            var rows = new Rows()
+                .Width(32)
+                .Spacing(0)
+                .ContentColor(RgbColor.FromHex("#112233"))
+                .AddRow("Default RGB")
+                .AddRow("Direct color", SpectreColor.FromHex("#445566"))
+                .AddRow(new Text("Captured RGB"), RgbColor.FromHex("#778899"), captureWidth: 24)
+                .AddRow(RowsItem.Create("Factory color", SpectreColor.FromHex("#aabbcc")));
+
+            console.Write(rows);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;17;34;51mDefault RGB", output);
+            Assert.Contains("\u001b[38;2;68;85;102mDirect color", output);
+            Assert.Contains("\u001b[38;2;119;136;153mCaptured RGB", output);
+            Assert.Contains("\u001b[38;2;170;187;204mFactory color", output);
+        }
+
+        /// <summary>
         /// Model-backed dynamic views can stack render helpers as compact dashboards.
         /// </summary>
         [Fact]

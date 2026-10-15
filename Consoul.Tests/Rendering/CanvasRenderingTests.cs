@@ -130,15 +130,15 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
-        /// Pixel canvas scaling can be disabled to clip to the configured render width instead of resampling.
+        /// Pixel canvas scale aliases can disable sampling and clip to the configured render width.
         /// </summary>
         [Fact]
-        public void Canvas_SetPixel_CanDisableScaling()
+        public void Canvas_SetPixel_ScaleAliasesCanDisableScaling()
         {
             using (var scope = new ConsoleDriverScope(8))
             {
                 var canvas = new Canvas(8, 2)
-                    .Scale(false)
+                    .NoScale()
                     .MaxWidth(4);
 
                 for (int x = 0; x < 8; x++)
@@ -148,6 +148,12 @@ namespace ConsoulLibrary.Tests.Rendering
                 }
 
                 AnsiConsole.Write(canvas);
+
+                Assert.False(canvas.Options.Scale);
+                canvas.Scale();
+                Assert.True(canvas.Options.Scale);
+                canvas.Scale(false);
+                Assert.False(canvas.Options.Scale);
 
                 FakeConsoleWrite[] pixels = scope.Driver.Writes.Where(write => write.Text == "▀").ToArray();
                 Assert.Equal(4, pixels.Length);

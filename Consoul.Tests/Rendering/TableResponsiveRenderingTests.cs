@@ -1353,6 +1353,39 @@ namespace ConsoulLibrary.Tests.Rendering
             }
         }
 
+        /// <summary>
+        /// TableView header and footer cell style setters stay aligned when row numbers are rendered.
+        /// </summary>
+        [Fact]
+        public void TableView_SetHeaderAndFooterStyles_WithRowNumbers_StylesDataCells()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            using (var table = new TableView(new TableRenderOptions
+            {
+                ShowFooterHelp = false,
+                ShowRowNumbers = true
+            }))
+            {
+                table.AddHeaders("Service", "State");
+                table.SetHeaderStyle(0, new Style(ConsoleColor.Cyan));
+                table.SetHeaderStyle(1, new Style(ConsoleColor.Magenta));
+                table.SetColumnFooter(0, "Total");
+                table.SetColumnFooter(1, "2");
+                table.SetColumnFooterStyle(0, new Style(ConsoleColor.Yellow));
+                table.SetColumnFooterStyle(1, new Style(ConsoleColor.Green));
+                table.AddRow(new[] { "Auth", "Ready" });
+
+                table.RenderInline();
+
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Service") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("State") && write.Color == ConsoleColor.Magenta);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Total") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("2") && write.Color == ConsoleColor.Green);
+                VisualAssert.ContainsText(scope.Driver, "Auth");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
         private static ConsoleKeyInfo Key(ConsoleKey key, char keyChar = '\0')
         {
             return new ConsoleKeyInfo(keyChar, key, false, false, false);

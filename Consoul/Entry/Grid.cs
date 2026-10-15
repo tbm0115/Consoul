@@ -60,6 +60,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a grid column with a preferred width.
+        /// </summary>
+        /// <param name="width">The preferred column width.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddColumn(int width)
+        {
+            return AddColumn(new GridColumn().Width(width));
+        }
+
+        /// <summary>
+        /// Adds a grid column with a preferred width and justification.
+        /// </summary>
+        /// <param name="width">The preferred column width.</param>
+        /// <param name="alignment">The cell justification for the column.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddColumn(int width, Justify alignment)
+        {
+            return AddColumn(new GridColumn().Width(width).Justify(alignment));
+        }
+
+        /// <summary>
         /// Adds a configured grid column.
         /// </summary>
         /// <param name="column">The column configuration.</param>
@@ -92,6 +113,46 @@ namespace ConsoulLibrary
             for (int index = 0; index < Math.Max(0, count); index++)
             {
                 AddColumn();
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds multiple grid columns with preferred widths.
+        /// </summary>
+        /// <param name="widths">The preferred column widths.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddColumns(params int[] widths)
+        {
+            if (widths == null)
+            {
+                return this;
+            }
+
+            foreach (int width in widths)
+            {
+                AddColumn(width);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds multiple grid columns with preferred widths.
+        /// </summary>
+        /// <param name="widths">The preferred column widths.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddColumns(IEnumerable<int> widths)
+        {
+            if (widths == null)
+            {
+                return this;
+            }
+
+            foreach (int width in widths)
+            {
+                AddColumn(width);
             }
 
             return this;
@@ -150,6 +211,102 @@ namespace ConsoulLibrary
         public Grid AddCell(object content, string header = null, ConsoleColor? color = null)
         {
             Add(content, header, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a text cell with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(string content, SpectreColor color)
+        {
+            return AddCell(content, null, color);
+        }
+
+        /// <summary>
+        /// Adds a cell with a Spectre-style foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(object content, SpectreColor color)
+        {
+            return AddCell(content, null, color);
+        }
+
+        /// <summary>
+        /// Adds a text cell with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="header">Optional header rendered above the content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(string content, string header, SpectreColor color)
+        {
+            Add(content, header, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a cell with a Spectre-style foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="header">Optional header rendered above the content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(object content, string header, SpectreColor color)
+        {
+            Add(content, header, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a text cell with an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(string content, RgbColor color)
+        {
+            return AddCell(content, null, color);
+        }
+
+        /// <summary>
+        /// Adds a cell with an RGB foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(object content, RgbColor color)
+        {
+            return AddCell(content, null, color);
+        }
+
+        /// <summary>
+        /// Adds a text cell with an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="header">Optional header rendered above the content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(string content, string header, RgbColor color)
+        {
+            Add(content, header, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a cell with an RGB foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="header">Optional header rendered above the content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(object content, string header, RgbColor color)
+        {
+            Add(content, header, new Style(color));
             return this;
         }
 
@@ -217,6 +374,62 @@ namespace ConsoulLibrary
         public Grid AddCell(IConsoulRenderable renderable, string header = null, ConsoleColor? color = null, int? captureWidth = null, int captureHeight = 200)
         {
             Add(renderable, header, color, captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a cell whose content is captured from a renderable component with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce cell content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(IConsoulRenderable renderable, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            return AddCell(renderable, null, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a cell whose content is captured from a renderable component with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce cell content.</param>
+        /// <param name="header">Optional header rendered above the content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(IConsoulRenderable renderable, string header, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(renderable, header, new Style(color), captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a cell whose content is captured from a renderable component with an RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce cell content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(IConsoulRenderable renderable, RgbColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            return AddCell(renderable, null, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a cell whose content is captured from a renderable component with an RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce cell content.</param>
+        /// <param name="header">Optional header rendered above the content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid AddCell(IConsoulRenderable renderable, string header, RgbColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(renderable, header, new Style(color), captureWidth, captureHeight);
             return this;
         }
 
@@ -620,6 +833,28 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the header foreground color from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The header foreground color.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid HeaderColor(SpectreColor color)
+        {
+            ApplyHeaderStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the header foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The header foreground color.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid HeaderColor(RgbColor color)
+        {
+            ApplyHeaderStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
         /// Sets the header color from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -647,6 +882,28 @@ namespace ConsoulLibrary
         /// <param name="color">The default content foreground color.</param>
         /// <returns>The current <see cref="Grid"/> instance.</returns>
         public Grid ContentColor(ConsoleColor color)
+        {
+            ApplyContentStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default content foreground color from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The default content foreground color.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid ContentColor(SpectreColor color)
+        {
+            ApplyContentStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default content foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The default content foreground color.</param>
+        /// <returns>The current <see cref="Grid"/> instance.</returns>
+        public Grid ContentColor(RgbColor color)
         {
             ApplyContentStyle(new Style(color));
             return this;

@@ -483,6 +483,46 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Bar chart Add aliases remain chainable while preserving item and model-projection rendering.
+        /// </summary>
+        [Fact]
+        public void BarChart_FluentBuilder_AddAliasesChainAndProjectModels()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                var jobs = new[]
+                {
+                    new ChartJob("Running", 5, ConsoleColor.Green, "green"),
+                    new ChartJob("Waiting", 3, ConsoleColor.Yellow, "yellow")
+                };
+
+                var chart = new BarChart()
+                    .Width(36)
+                    .LabelWidth(8)
+                    .MaximumValue(10);
+
+                Assert.Same(chart, chart.Add("Queued", 4, ConsoleColor.Cyan));
+                Assert.Same(chart, chart.Add("Failed", 1, "red"));
+                Assert.Same(chart, chart.Add(BarChartItem.Create("Ready", 8, ConsoleColor.Green)));
+                Assert.Same(chart, chart.Add(jobs, job => job.Label, job => job.Value, job => job.StyleText));
+
+                AnsiConsole.Write(chart);
+
+                VisualAssert.ContainsText(scope.Driver, "Queued");
+                VisualAssert.ContainsText(scope.Driver, "Failed");
+                VisualAssert.ContainsText(scope.Driver, "Ready");
+                VisualAssert.ContainsText(scope.Driver, "Running");
+                VisualAssert.ContainsText(scope.Driver, "Waiting");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("#") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("#") && write.Color == ConsoleColor.Red);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("#") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("#") && write.Color == ConsoleColor.Yellow);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 36, "Add-alias bar chart line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Breakdown chart aliases render through the existing responsive breakdown chart renderer.
         /// </summary>
         [Fact]
@@ -578,6 +618,45 @@ namespace ConsoulLibrary.Tests.Compatibility
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.Red);
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 36, "Style-string projected breakdown chart line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Breakdown chart Add aliases remain chainable while preserving item and model-projection rendering.
+        /// </summary>
+        [Fact]
+        public void BreakdownChart_FluentBuilder_AddAliasesChainAndProjectModels()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                var jobs = new[]
+                {
+                    new ChartJob("Running", 5, ConsoleColor.Green, "green"),
+                    new ChartJob("Waiting", 3, ConsoleColor.Yellow, "yellow")
+                };
+
+                var chart = new BreakdownChart()
+                    .Width(36)
+                    .SegmentCharacters('=');
+
+                Assert.Same(chart, chart.Add("Queued", 4, ConsoleColor.Cyan));
+                Assert.Same(chart, chart.Add("Failed", 1, "red"));
+                Assert.Same(chart, chart.Add(BreakdownChartItem.Create("Ready", 8, ConsoleColor.Green)));
+                Assert.Same(chart, chart.Add(jobs, job => job.Label, job => job.Value, job => job.StyleText));
+
+                AnsiConsole.Write(chart);
+
+                VisualAssert.ContainsText(scope.Driver, "Queued");
+                VisualAssert.ContainsText(scope.Driver, "Failed");
+                VisualAssert.ContainsText(scope.Driver, "Ready");
+                VisualAssert.ContainsText(scope.Driver, "Running");
+                VisualAssert.ContainsText(scope.Driver, "Waiting");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.Red);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("=") && write.Color == ConsoleColor.Yellow);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 36, "Add-alias breakdown chart line exceeded configured width: " + line));
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }

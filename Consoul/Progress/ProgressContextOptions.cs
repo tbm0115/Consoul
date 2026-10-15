@@ -86,14 +86,29 @@ namespace ConsoulLibrary
         public ConsoleColor ActiveColor { get; set; } = RenderOptions.SubnoteColor;
 
         /// <summary>
+        /// Gets or sets optional Spectre-style active row foreground/background and decoration metadata.
+        /// </summary>
+        public Style ActiveStyle { get; set; }
+
+        /// <summary>
         /// Gets or sets the color used for completed progress rows.
         /// </summary>
         public ConsoleColor CompleteColor { get; set; } = ConsoleColor.Green;
 
         /// <summary>
+        /// Gets or sets optional Spectre-style completed row foreground/background and decoration metadata.
+        /// </summary>
+        public Style CompleteStyle { get; set; }
+
+        /// <summary>
         /// Gets or sets the color used for failed progress rows.
         /// </summary>
         public ConsoleColor FailedColor { get; set; } = ConsoleColor.Red;
+
+        /// <summary>
+        /// Gets or sets optional Spectre-style failed row foreground/background and decoration metadata.
+        /// </summary>
+        public Style FailedStyle { get; set; }
 
         /// <summary>
         /// Creates a copy of the current progress context options.
@@ -117,8 +132,11 @@ namespace ConsoulLibrary
                 Columns = Columns,
                 RenderHook = RenderHook,
                 ActiveColor = ActiveColor,
+                ActiveStyle = ActiveStyle,
                 CompleteColor = CompleteColor,
-                FailedColor = FailedColor
+                CompleteStyle = CompleteStyle,
+                FailedColor = FailedColor,
+                FailedStyle = FailedStyle
             };
         }
 

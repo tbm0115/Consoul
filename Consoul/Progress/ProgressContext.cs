@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -15,6 +17,7 @@ namespace ConsoulLibrary
     {
         private readonly List<ProgressTask> _tasks = new List<ProgressTask>();
         private readonly ProgressContextOptions _options;
+        private readonly IConsoleDriver _driver;
         private bool _disposed;
 
         /// <summary>
@@ -23,6 +26,7 @@ namespace ConsoulLibrary
         /// <param name="options">Optional rendering options for progress rows.</param>
         public ProgressContext(ProgressContextOptions options = null)
         {
+            _driver = Consoul.ConsoleDriver;
             _options = options != null ? options.Clone() : new ProgressContextOptions();
         }
 
@@ -325,29 +329,32 @@ namespace ConsoulLibrary
 
         private void RenderTaskRows()
         {
-            if (_tasks.Count == 0)
+            using (UseCapturedDriver())
             {
-                return;
-            }
-
-            int baseLeft = ResolveTaskBaseLeft();
-            int baseTop = ResolveTaskBaseTop();
-            foreach (ProgressTask task in _tasks)
-            {
-                if (task.HasFixedPosition)
+                if (_tasks.Count == 0)
                 {
-                    task.Clear(preservePosition: true);
+                    return;
                 }
-            }
 
-            for (int i = 0; i < _tasks.Count; i++)
-            {
-                ProgressTask task = _tasks[i];
-                task.SetFixedPosition(baseLeft, baseTop + i);
-                task.Render();
-            }
+                int baseLeft = ResolveTaskBaseLeft();
+                int baseTop = ResolveTaskBaseTop();
+                foreach (ProgressTask task in _tasks)
+                {
+                    if (task.HasFixedPosition)
+                    {
+                        task.Clear(preservePosition: true);
+                    }
+                }
 
-            MoveCursorBelowTaskRows(baseTop);
+                for (int i = 0; i < _tasks.Count; i++)
+                {
+                    ProgressTask task = _tasks[i];
+                    task.SetFixedPosition(baseLeft, baseTop + i);
+                    task.Render();
+                }
+
+                MoveCursorBelowTaskRows(baseTop);
+            }
         }
 
         private int ResolveTaskBaseLeft()
@@ -382,6 +389,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Enables immediate rendering for task updates.
+        /// </summary>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext AutoRefresh()
+        {
+            return AutoRefresh(true);
+        }
+
+        /// <summary>
         /// Sets whether task updates render immediately or wait for an explicit refresh.
         /// </summary>
         /// <param name="enabled"><c>true</c> to render task updates immediately; otherwise, <c>false</c>.</param>
@@ -391,6 +407,15 @@ namespace ConsoulLibrary
             ThrowIfDisposed();
             _options.AutoRefresh = enabled;
             return this;
+        }
+
+        /// <summary>
+        /// Disables immediate rendering so updates wait for an explicit <see cref="Refresh"/>.
+        /// </summary>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext ManualRefresh()
+        {
+            return AutoRefresh(false);
         }
 
         /// <summary>
@@ -422,6 +447,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Enables clearing completed task rows when the context is disposed.
+        /// </summary>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext AutoClear()
+        {
+            return AutoClear(true);
+        }
+
+        /// <summary>
         /// Sets whether completed task rows are cleared when the context is disposed.
         /// </summary>
         /// <param name="enabled"><c>true</c> to clear rows on dispose; otherwise, <c>false</c>.</param>
@@ -431,6 +465,15 @@ namespace ConsoulLibrary
             ThrowIfDisposed();
             _options.AutoClear = enabled;
             return this;
+        }
+
+        /// <summary>
+        /// Hides completed task rows.
+        /// </summary>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext HideCompleted()
+        {
+            return HideCompleted(true);
         }
 
         /// <summary>
@@ -444,6 +487,15 @@ namespace ConsoulLibrary
             _options.HideCompleted = enabled;
             Refresh();
             return this;
+        }
+
+        /// <summary>
+        /// Shows completed task rows.
+        /// </summary>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext ShowCompleted()
+        {
+            return HideCompleted(false);
         }
 
         /// <summary>
@@ -477,6 +529,295 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the foreground color used for active progress rows.
+        /// </summary>
+        /// <param name="color">The active row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext ActiveColor(ConsoleColor color)
+        {
+            ThrowIfDisposed();
+            _options.ActiveColor = color;
+            _options.ActiveStyle = null;
+            Refresh();
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for active progress rows from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The active row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext ActiveColor(SpectreColor color)
+        {
+            return ActiveStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for active progress rows from an RGB color.
+        /// </summary>
+        /// <param name="color">The active row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext ActiveColor(RgbColor color)
+        {
+            return ActiveStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the style used for active progress rows from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>#22c55e</c>, or <c>bold white on blue</c>.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext ActiveStyle(string style)
+        {
+            return ActiveStyle(Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the style used for active progress rows.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext ActiveStyle(Style style)
+        {
+            if (style == null)
+            {
+                throw new ArgumentNullException(nameof(style));
+            }
+
+            ThrowIfDisposed();
+            _options.ActiveStyle = style;
+            _options.ActiveColor = style.ToForegroundColor(_options.ActiveColor);
+            Refresh();
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for completed progress rows.
+        /// </summary>
+        /// <param name="color">The completed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompleteColor(ConsoleColor color)
+        {
+            ThrowIfDisposed();
+            _options.CompleteColor = color;
+            _options.CompleteStyle = null;
+            Refresh();
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for completed progress rows from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The completed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompleteColor(SpectreColor color)
+        {
+            return CompleteStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for completed progress rows from an RGB color.
+        /// </summary>
+        /// <param name="color">The completed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompleteColor(RgbColor color)
+        {
+            return CompleteStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for completed progress rows.
+        /// </summary>
+        /// <param name="color">The completed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompletedColor(ConsoleColor color)
+        {
+            return CompleteColor(color);
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for completed progress rows from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The completed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompletedColor(SpectreColor color)
+        {
+            return CompleteColor(color);
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for completed progress rows from an RGB color.
+        /// </summary>
+        /// <param name="color">The completed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompletedColor(RgbColor color)
+        {
+            return CompleteColor(color);
+        }
+
+        /// <summary>
+        /// Sets the style used for completed progress rows from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>#22c55e</c>, or <c>bold white on blue</c>.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompleteStyle(string style)
+        {
+            return CompleteStyle(Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the style used for completed progress rows.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompleteStyle(Style style)
+        {
+            if (style == null)
+            {
+                throw new ArgumentNullException(nameof(style));
+            }
+
+            ThrowIfDisposed();
+            _options.CompleteStyle = style;
+            _options.CompleteColor = style.ToForegroundColor(_options.CompleteColor);
+            Refresh();
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for completed progress rows from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>#22c55e</c>, or <c>bold white on blue</c>.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompletedStyle(string style)
+        {
+            return CompleteStyle(style);
+        }
+
+        /// <summary>
+        /// Sets the style used for completed progress rows.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext CompletedStyle(Style style)
+        {
+            return CompleteStyle(style);
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for failed progress rows.
+        /// </summary>
+        /// <param name="color">The failed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailedColor(ConsoleColor color)
+        {
+            ThrowIfDisposed();
+            _options.FailedColor = color;
+            _options.FailedStyle = null;
+            Refresh();
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for failed progress rows from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The failed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailedColor(SpectreColor color)
+        {
+            return FailedStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for failed progress rows from an RGB color.
+        /// </summary>
+        /// <param name="color">The failed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailedColor(RgbColor color)
+        {
+            return FailedStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for failed progress rows.
+        /// </summary>
+        /// <param name="color">The failed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailureColor(ConsoleColor color)
+        {
+            return FailedColor(color);
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for failed progress rows from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The failed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailureColor(SpectreColor color)
+        {
+            return FailedColor(color);
+        }
+
+        /// <summary>
+        /// Sets the foreground color used for failed progress rows from an RGB color.
+        /// </summary>
+        /// <param name="color">The failed row foreground color.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailureColor(RgbColor color)
+        {
+            return FailedColor(color);
+        }
+
+        /// <summary>
+        /// Sets the style used for failed progress rows from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>red</c>, <c>#ef4444</c>, or <c>bold white on red</c>.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailedStyle(string style)
+        {
+            return FailedStyle(Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the style used for failed progress rows.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailedStyle(Style style)
+        {
+            if (style == null)
+            {
+                throw new ArgumentNullException(nameof(style));
+            }
+
+            ThrowIfDisposed();
+            _options.FailedStyle = style;
+            _options.FailedColor = style.ToForegroundColor(_options.FailedColor);
+            Refresh();
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for failed progress rows from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>red</c>, <c>#ef4444</c>, or <c>bold white on red</c>.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailureStyle(string style)
+        {
+            return FailedStyle(style);
+        }
+
+        /// <summary>
+        /// Sets the style used for failed progress rows.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext FailureStyle(Style style)
+        {
+            return FailedStyle(style);
+        }
+
+        /// <summary>
         /// Stores the requested progress columns and maps common columns to the current Consoul row renderer.
         /// </summary>
         /// <param name="columns">The requested progress columns.</param>
@@ -494,6 +835,48 @@ namespace ConsoulLibrary
         public ProgressContext Columns(IEnumerable<ProgressColumn> columns)
         {
             return SetColumns(columns);
+        }
+
+        /// <summary>
+        /// Appends a progress column without replacing columns that were already configured.
+        /// </summary>
+        /// <param name="column">The progress column to append. A <see langword="null"/> column is ignored.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext AddColumn(ProgressColumn column)
+        {
+            return AddColumns(column);
+        }
+
+        /// <summary>
+        /// Appends progress columns without replacing columns that were already configured.
+        /// </summary>
+        /// <param name="columns">The progress columns to append. <see langword="null"/> columns are ignored.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext AddColumns(params ProgressColumn[] columns)
+        {
+            return AddColumns((IEnumerable<ProgressColumn>)columns);
+        }
+
+        /// <summary>
+        /// Appends progress columns without replacing columns that were already configured.
+        /// </summary>
+        /// <param name="columns">The progress columns to append. <see langword="null"/> columns are ignored.</param>
+        /// <returns>The current progress context.</returns>
+        public ProgressContext AddColumns(IEnumerable<ProgressColumn> columns)
+        {
+            ThrowIfDisposed();
+            if (columns == null)
+            {
+                return this;
+            }
+
+            ProgressColumn[] additions = columns.Where(column => column != null).ToArray();
+            if (additions.Length == 0)
+            {
+                return this;
+            }
+
+            return SetColumns(_options.GetColumns().Concat(additions));
         }
 
         private ProgressContext SetColumns(IEnumerable<ProgressColumn> columns)
@@ -694,22 +1077,25 @@ namespace ConsoulLibrary
                 return new[] { new FixedMessageSegment(string.Empty) };
             }
 
-            ColorScheme fallbackScheme = CreateFallbackScheme(fallbackColor);
+            Style fallbackStyle = ResolveStyle(task);
+            ColorScheme fallbackScheme = CreateFallbackScheme(fallbackColor, fallbackStyle);
             IReadOnlyList<ProgressColumn> columns = _options.GetColumns();
             if (columns.Count > 0)
             {
                 return ApplyRenderHook(
-                    FormatColumnRowSegments(task, width, columns, fallbackScheme),
+                    FormatColumnRowSegments(task, width, columns, fallbackScheme, fallbackStyle),
                     width,
-                    fallbackScheme);
+                    fallbackScheme,
+                    fallbackStyle);
             }
 
-            return ApplyRenderHook(FormatDefaultRowSegments(task, width, fallbackScheme), width, fallbackScheme);
+            return ApplyRenderHook(FormatDefaultRowSegments(task, width, fallbackScheme, fallbackStyle), width, fallbackScheme, fallbackStyle);
         }
 
         internal bool UsesSegmentRendering(ProgressTask task)
         {
-            return HasRenderableMarkup(task?.Description) || _options.GetColumns().Any(column =>
+            return ResolveStyle(task) != null ||
+                HasRenderableMarkup(task?.Description) || _options.GetColumns().Any(column =>
                 column is ProgressBarColumn progressBarColumn &&
                 (progressBarColumn.CompletedStyle != null ||
                     progressBarColumn.FinishedStyle != null ||
@@ -735,7 +1121,8 @@ namespace ConsoulLibrary
         private IReadOnlyList<FixedMessageSegment> ApplyRenderHook(
             IReadOnlyList<FixedMessageSegment> row,
             int width,
-            ColorScheme fallbackScheme)
+            ColorScheme fallbackScheme,
+            Style fallbackStyle)
         {
             if (_options.RenderHook == null)
             {
@@ -744,7 +1131,7 @@ namespace ConsoulLibrary
 
             string text = string.Concat((row ?? new[] { new FixedMessageSegment(string.Empty) }).Select(segment => segment.Text));
             string hooked = ApplyRenderHook(text, width);
-            return PadOrTrimSegments(new[] { new FixedMessageSegment(hooked, fallbackScheme) }, width, fallbackScheme);
+            return PadOrTrimSegments(new[] { CreateSegment(hooked, fallbackScheme, fallbackStyle) }, width, fallbackScheme, fallbackStyle);
         }
 
         private string FormatDefaultRow(ProgressTask task, int width)
@@ -776,14 +1163,18 @@ namespace ConsoulLibrary
             return PadOrTrim(row, width);
         }
 
-        private IReadOnlyList<FixedMessageSegment> FormatDefaultRowSegments(ProgressTask task, int width, ColorScheme fallbackScheme)
+        private IReadOnlyList<FixedMessageSegment> FormatDefaultRowSegments(
+            ProgressTask task,
+            int width,
+            ColorScheme fallbackScheme,
+            Style fallbackStyle)
         {
             ProgressLayout layout = ResolveLayout(width);
             var row = new List<FixedMessageSegment>();
             if (layout.LabelWidth > 0)
             {
-                row.AddRange(PadOrTrimMarkupSegments(task.Description, layout.LabelWidth, fallbackScheme));
-                row.Add(new FixedMessageSegment(" "));
+                row.AddRange(PadOrTrimMarkupSegments(task.Description, layout.LabelWidth, fallbackScheme, fallbackStyle));
+                row.Add(CreateSegment(" ", fallbackScheme, fallbackStyle));
             }
 
             int filled = 0;
@@ -793,18 +1184,18 @@ namespace ConsoulLibrary
                 filled = Math.Max(1, Math.Min(layout.BarWidth, filled));
             }
 
-            row.Add(new FixedMessageSegment("["));
-            row.Add(new FixedMessageSegment(new string(_options.CompletedCharacter, filled)));
-            row.Add(new FixedMessageSegment(new string(_options.RemainingCharacter, layout.BarWidth - filled)));
-            row.Add(new FixedMessageSegment("]"));
+            row.Add(CreateSegment("[", fallbackScheme, fallbackStyle));
+            row.Add(CreateSegment(new string(_options.CompletedCharacter, filled), fallbackScheme, fallbackStyle));
+            row.Add(CreateSegment(new string(_options.RemainingCharacter, layout.BarWidth - filled), fallbackScheme, fallbackStyle));
+            row.Add(CreateSegment("]", fallbackScheme, fallbackStyle));
 
             if (layout.ShowPercentage && !task.IsIndeterminateValue)
             {
-                row.Add(new FixedMessageSegment(" "));
-                row.Add(new FixedMessageSegment(PadOrTrim(Math.Round(task.Progress * 100).ToString("0") + "%", layout.PercentageWidth)));
+                row.Add(CreateSegment(" ", fallbackScheme, fallbackStyle));
+                row.Add(CreateSegment(PadOrTrim(Math.Round(task.Progress * 100).ToString("0") + "%", layout.PercentageWidth), fallbackScheme, fallbackStyle));
             }
 
-            return PadOrTrimSegments(row, width, fallbackScheme);
+            return PadOrTrimSegments(row, width, fallbackScheme, fallbackStyle);
         }
 
         private string FormatColumnRow(ProgressTask task, int width, IReadOnlyList<ProgressColumn> columns)
@@ -833,12 +1224,13 @@ namespace ConsoulLibrary
             ProgressTask task,
             int width,
             IReadOnlyList<ProgressColumn> columns,
-            ColorScheme fallbackScheme)
+            ColorScheme fallbackScheme,
+            Style fallbackStyle)
         {
             var segments = new List<ProgressColumnSegment>();
             foreach (ProgressColumn column in columns.Where(column => column != null))
             {
-                ProgressColumnSegment segment = CreateColumnSegment(task, column, width, fallbackScheme);
+                ProgressColumnSegment segment = CreateColumnSegment(task, column, width, fallbackScheme, fallbackStyle);
                 if (segment != null)
                 {
                     segments.Add(segment);
@@ -856,7 +1248,7 @@ namespace ConsoulLibrary
             {
                 if (output.Count > 0)
                 {
-                    output.Add(new FixedMessageSegment(" "));
+                    output.Add(CreateSegment(" ", fallbackScheme, fallbackStyle));
                 }
 
                 output.AddRange(segment.RenderSegments());
@@ -872,10 +1264,20 @@ namespace ConsoulLibrary
 
         private ProgressColumnSegment CreateColumnSegment(ProgressTask task, ProgressColumn column, int width, ColorScheme fallbackScheme)
         {
+            return CreateColumnSegment(task, column, width, fallbackScheme, null);
+        }
+
+        private ProgressColumnSegment CreateColumnSegment(
+            ProgressTask task,
+            ProgressColumn column,
+            int width,
+            ColorScheme fallbackScheme,
+            Style fallbackStyle)
+        {
             if (column is TaskDescriptionColumn)
             {
                 int desiredWidth = Math.Min(_options.ResolveLabelWidth(), Math.Max(0, width));
-                return ProgressColumnSegment.Text(task.Description, desiredWidth, true, fallbackScheme);
+                return ProgressColumnSegment.Text(task.Description, desiredWidth, true, fallbackScheme, fallbackStyle);
             }
 
             if (column is ProgressBarColumn progressBarColumn)
@@ -886,27 +1288,28 @@ namespace ConsoulLibrary
                     : 20;
                 int desiredBarWidth = Math.Max(1, Math.Min(preferredBarWidth, Math.Max(1, width - 2)));
                 int minimumSegmentWidth = Math.Min(minimumBarWidth + 2, desiredBarWidth + 2);
-                return ProgressColumnSegment.Bar(BuildBarSegments(task, desiredBarWidth, progressBarColumn), minimumSegmentWidth);
+                return ProgressColumnSegment.Bar(BuildBarSegments(task, desiredBarWidth, progressBarColumn, fallbackScheme, fallbackStyle), minimumSegmentWidth);
             }
 
             if (column is PercentageColumn)
             {
-                return ProgressColumnSegment.Fixed(FormatPercentage(task));
+                return ProgressColumnSegment.Fixed(FormatPercentage(task), fallbackScheme, fallbackStyle);
             }
 
             if (column is RemainingTimeColumn)
             {
-                return ProgressColumnSegment.Fixed(FormatRemaining(task));
+                return ProgressColumnSegment.Fixed(FormatRemaining(task), fallbackScheme, fallbackStyle);
             }
 
             if (column is ElapsedTimeColumn)
             {
-                return ProgressColumnSegment.Fixed(FormatDuration(task.Elapsed));
+                return ProgressColumnSegment.Fixed(FormatDuration(task.Elapsed), fallbackScheme, fallbackStyle);
             }
 
             if (column is SpinnerColumn spinnerColumn)
             {
-                return ProgressColumnSegment.Fixed(FormatSpinner(task, spinnerColumn), ResolveScheme(spinnerColumn.Style));
+                Style effectiveStyle = spinnerColumn.Style ?? fallbackStyle;
+                return ProgressColumnSegment.Fixed(FormatSpinner(task, spinnerColumn), ResolveScheme(effectiveStyle, fallbackScheme), effectiveStyle);
             }
 
             if (column is TextColumn textColumn)
@@ -915,18 +1318,19 @@ namespace ConsoulLibrary
                 int desiredWidth = textColumn.Width.HasValue
                     ? Math.Max(0, textColumn.Width.Value)
                     : Math.Min(MarkupRenderText.GetPlainText(text).Length, Math.Max(0, width));
-                ColorScheme textFallbackScheme = ResolveScheme(textColumn.Style) ?? fallbackScheme;
-                return ProgressColumnSegment.Text(text, desiredWidth, true, textFallbackScheme);
+                Style effectiveStyle = textColumn.Style ?? fallbackStyle;
+                ColorScheme textFallbackScheme = ResolveScheme(effectiveStyle, fallbackScheme);
+                return ProgressColumnSegment.Text(text, desiredWidth, true, textFallbackScheme, effectiveStyle);
             }
 
             if (column is DownloadedColumn)
             {
-                return ProgressColumnSegment.Fixed(FormatQuantity(task.Value));
+                return ProgressColumnSegment.Fixed(FormatQuantity(task.Value), fallbackScheme, fallbackStyle);
             }
 
             if (column is TransferSpeedColumn)
             {
-                return ProgressColumnSegment.Fixed(FormatTransferSpeed(task));
+                return ProgressColumnSegment.Fixed(FormatTransferSpeed(task), fallbackScheme, fallbackStyle);
             }
 
             return null;
@@ -1058,23 +1462,29 @@ namespace ConsoulLibrary
                 "]";
         }
 
-        private IReadOnlyList<FixedMessageSegment> BuildBarSegments(ProgressTask task, int barWidth, ProgressBarColumn column)
+        private IReadOnlyList<FixedMessageSegment> BuildBarSegments(
+            ProgressTask task,
+            int barWidth,
+            ProgressBarColumn column,
+            ColorScheme fallbackScheme,
+            Style fallbackStyle)
         {
             barWidth = Math.Max(1, barWidth);
             var segments = new List<FixedMessageSegment>
             {
-                new FixedMessageSegment("[")
+                CreateSegment("[", fallbackScheme, fallbackStyle)
             };
 
-            ColorScheme? remainingScheme = ResolveScheme(column.RemainingStyle);
+            Style remainingStyle = column.RemainingStyle ?? fallbackStyle;
+            ColorScheme remainingScheme = ResolveScheme(remainingStyle, fallbackScheme);
             if (task.IsIndeterminateValue)
             {
                 int position = task.RenderCount % barWidth;
-                ColorScheme? indeterminateScheme = ResolveScheme(column.IndeterminateStyle ?? column.CompletedStyle);
-                AddSegment(segments, new string(_options.RemainingCharacter, position), remainingScheme);
-                AddSegment(segments, _options.CompletedCharacter.ToString(), indeterminateScheme);
-                AddSegment(segments, new string(_options.RemainingCharacter, barWidth - position - 1), remainingScheme);
-                segments.Add(new FixedMessageSegment("]"));
+                Style indeterminateStyle = column.IndeterminateStyle ?? column.CompletedStyle ?? fallbackStyle;
+                AddSegment(segments, new string(_options.RemainingCharacter, position), remainingScheme, remainingStyle);
+                AddSegment(segments, _options.CompletedCharacter.ToString(), ResolveScheme(indeterminateStyle, fallbackScheme), indeterminateStyle);
+                AddSegment(segments, new string(_options.RemainingCharacter, barWidth - position - 1), remainingScheme, remainingStyle);
+                segments.Add(CreateSegment("]", fallbackScheme, fallbackStyle));
                 return segments;
             }
 
@@ -1087,26 +1497,26 @@ namespace ConsoulLibrary
 
             Style completedStyle = task.IsCompleted && column.FinishedStyle != null
                 ? column.FinishedStyle
-                : column.CompletedStyle;
-            AddSegment(segments, new string(_options.CompletedCharacter, filled), ResolveScheme(completedStyle));
-            AddSegment(segments, new string(_options.RemainingCharacter, barWidth - filled), remainingScheme);
-            segments.Add(new FixedMessageSegment("]"));
+                : column.CompletedStyle ?? fallbackStyle;
+            AddSegment(segments, new string(_options.CompletedCharacter, filled), ResolveScheme(completedStyle, fallbackScheme), completedStyle);
+            AddSegment(segments, new string(_options.RemainingCharacter, barWidth - filled), remainingScheme, remainingStyle);
+            segments.Add(CreateSegment("]", fallbackScheme, fallbackStyle));
             return segments;
         }
 
-        private static void AddSegment(ICollection<FixedMessageSegment> segments, string text, ColorScheme? scheme)
+        private static void AddSegment(ICollection<FixedMessageSegment> segments, string text, ColorScheme scheme, Style style)
         {
             if (string.IsNullOrEmpty(text))
             {
                 return;
             }
 
-            segments.Add(new FixedMessageSegment(text, scheme));
+            segments.Add(CreateSegment(text, scheme, style));
         }
 
-        private static ColorScheme? ResolveScheme(Style style)
+        private static ColorScheme ResolveScheme(Style style, ColorScheme fallbackScheme)
         {
-            return style == null ? (ColorScheme?)null : style.ToColorScheme(RenderOptions.DefaultScheme);
+            return style == null ? fallbackScheme : style.ToColorScheme(fallbackScheme);
         }
 
         private static string FormatPercentage(ProgressTask task)
@@ -1253,6 +1663,11 @@ namespace ConsoulLibrary
             }
         }
 
+        internal IDisposable UseCapturedDriver()
+        {
+            return Consoul.UseConsoleDriver(_driver);
+        }
+
         private static string PadOrTrim(string text, int width)
         {
             text = text ?? string.Empty;
@@ -1281,18 +1696,38 @@ namespace ConsoulLibrary
             return PadOrTrim(MarkupRenderText.GetPlainText(text), width);
         }
 
-        private static List<FixedMessageSegment> PadOrTrimMarkupSegments(string text, int width, ColorScheme fallbackScheme)
+        private static List<FixedMessageSegment> PadOrTrimMarkupSegments(
+            string text,
+            int width,
+            ColorScheme fallbackScheme,
+            Style fallbackStyle)
         {
-            return PadOrTrimSegments(MarkupRenderText.ParseSegments(text, fallbackScheme), width, fallbackScheme);
+            return PadOrTrimSegments(
+                MarkupRenderText.ParseSegments(
+                    text,
+                    fallbackScheme,
+                    fallbackStyle?.Decoration ?? Decoration.None,
+                    fallbackStyle?.ForegroundRgb,
+                    fallbackStyle?.BackgroundRgb),
+                width,
+                fallbackScheme,
+                fallbackStyle);
         }
 
         private static List<FixedMessageSegment> PadOrTrimSegments(
             IList<FixedMessageSegment> segments,
             int width,
-            ColorScheme paddingScheme)
+            ColorScheme paddingScheme,
+            Style paddingStyle)
         {
             var result = MarkupRenderText.TruncateSegments(segments, width);
-            MarkupRenderText.AddPadding(result, Math.Max(0, width) - MarkupRenderText.GetLength(result), paddingScheme);
+            MarkupRenderText.AddPadding(
+                result,
+                Math.Max(0, width) - MarkupRenderText.GetLength(result),
+                paddingScheme,
+                paddingStyle?.Decoration ?? Decoration.None,
+                paddingStyle?.ForegroundRgb,
+                paddingStyle?.BackgroundRgb);
             return result;
         }
 
@@ -1306,11 +1741,32 @@ namespace ConsoulLibrary
             return !string.Equals(MarkupRenderText.GetPlainText(text), text, StringComparison.Ordinal);
         }
 
-        private static ColorScheme CreateFallbackScheme(ConsoleColor color)
+        private Style ResolveStyle(ProgressTask task)
+        {
+            if (task?.IsFailed == true)
+            {
+                return _options.FailedStyle;
+            }
+
+            return task?.IsCompleted == true ? _options.CompleteStyle : _options.ActiveStyle;
+        }
+
+        private static FixedMessageSegment CreateSegment(string text, ColorScheme scheme, Style style)
+        {
+            return new FixedMessageSegment(
+                text,
+                scheme,
+                style?.Decoration ?? Decoration.None,
+                null,
+                style?.ForegroundRgb,
+                style?.BackgroundRgb);
+        }
+
+        private static ColorScheme CreateFallbackScheme(ConsoleColor color, Style style)
         {
             ColorScheme scheme = RenderOptions.DefaultScheme;
             scheme.Color = color;
-            return scheme;
+            return style == null ? scheme : style.ToColorScheme(scheme);
         }
 
         private sealed class ProgressColumnSegment
@@ -1339,18 +1795,44 @@ namespace ConsoulLibrary
 
             public static ProgressColumnSegment Text(string text, int width, bool flexible)
             {
-                return Text(text, width, flexible, RenderOptions.DefaultScheme);
+                return Text(text, width, flexible, RenderOptions.DefaultScheme, null);
             }
 
             public static ProgressColumnSegment Text(string text, int width, bool flexible, ColorScheme fallbackScheme)
             {
-                return new ProgressColumnSegment(MarkupRenderText.ParseSegments(text, fallbackScheme), width, flexible ? 0 : width, flexible, isBar: false);
+                return Text(text, width, flexible, fallbackScheme, null);
+            }
+
+            public static ProgressColumnSegment Text(string text, int width, bool flexible, ColorScheme fallbackScheme, Style fallbackStyle)
+            {
+                return new ProgressColumnSegment(
+                    MarkupRenderText.ParseSegments(
+                        text,
+                        fallbackScheme,
+                        fallbackStyle?.Decoration ?? Decoration.None,
+                        fallbackStyle?.ForegroundRgb,
+                        fallbackStyle?.BackgroundRgb),
+                    width,
+                    flexible ? 0 : width,
+                    flexible,
+                    isBar: false);
             }
 
             public static ProgressColumnSegment Fixed(string text, ColorScheme? scheme = null)
             {
                 text = text ?? string.Empty;
                 return new ProgressColumnSegment(new[] { new FixedMessageSegment(text, scheme) }, text.Length, text.Length, isFlexibleText: false, isBar: false);
+            }
+
+            public static ProgressColumnSegment Fixed(string text, ColorScheme scheme, Style style)
+            {
+                text = text ?? string.Empty;
+                return new ProgressColumnSegment(
+                    new[] { CreateSegment(text, scheme, style) },
+                    text.Length,
+                    text.Length,
+                    isFlexibleText: false,
+                    isBar: false);
             }
 
             public static ProgressColumnSegment Bar(IReadOnlyList<FixedMessageSegment> segments, int minimumWidth)
@@ -1398,7 +1880,14 @@ namespace ConsoulLibrary
 
                 if (remaining > 0)
                 {
-                    result.Add(new FixedMessageSegment(new string(' ', remaining)));
+                    FixedMessageSegment paddingSource = _segments.LastOrDefault();
+                    result.Add(new FixedMessageSegment(
+                        new string(' ', remaining),
+                        paddingSource.Scheme,
+                        paddingSource.Decoration,
+                        null,
+                        paddingSource.ForegroundRgb,
+                        paddingSource.BackgroundRgb));
                 }
 
                 return result;

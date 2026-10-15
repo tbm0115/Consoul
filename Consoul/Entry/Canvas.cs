@@ -630,6 +630,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Disables pixel canvas scaling so rendering clips to the configured width and height.
+        /// </summary>
+        /// <returns>The current <see cref="Canvas"/> instance.</returns>
+        public Canvas NoScale()
+        {
+            Options.Scale = false;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the character used for empty cells.
         /// </summary>
         /// <param name="character">The empty-cell character.</param>

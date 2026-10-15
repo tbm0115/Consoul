@@ -1635,6 +1635,30 @@ namespace ConsoulLibrary {
         }
 
         /// <summary>
+        /// Renders a responsive horizontal rule for separating sections in a view using Spectre-style alignment vocabulary.
+        /// </summary>
+        /// <param name="title">Optional title rendered within the rule.</param>
+        /// <param name="alignment">Title alignment when a title is supplied.</param>
+        /// <param name="width">Optional requested width. The actual width is clamped to the current terminal width.</param>
+        /// <param name="color">Optional foreground color for the rule.</param>
+        public static void Rule(string title, Justify alignment, int? width = null, ConsoleColor? color = null)
+        {
+            Rule(title, width, color, JustifyMap.ToRuleTitleAlignment(alignment));
+        }
+
+        /// <summary>
+        /// Renders a responsive horizontal rule for separating sections in a view using a foreground color and Spectre-style alignment vocabulary.
+        /// </summary>
+        /// <param name="title">Optional title rendered within the rule.</param>
+        /// <param name="color">Foreground color for the rule.</param>
+        /// <param name="alignment">Title alignment when a title is supplied.</param>
+        /// <param name="width">Optional requested width. The actual width is clamped to the current terminal width.</param>
+        public static void Rule(string title, ConsoleColor color, Justify alignment, int? width = null)
+        {
+            Rule(title, width, color, JustifyMap.ToRuleTitleAlignment(alignment));
+        }
+
+        /// <summary>
         /// Renders a responsive horizontal rule for separating sections in a view.
         /// </summary>
         /// <param name="title">Optional title rendered within the rule.</param>

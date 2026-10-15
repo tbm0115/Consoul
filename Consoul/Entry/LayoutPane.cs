@@ -1,5 +1,7 @@
 using ConsoulLibrary.Color;
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -128,6 +130,28 @@ namespace ConsoulLibrary
             }
 
             return this;
+        }
+
+        /// <summary>
+        /// Replaces the pane content with plain text using a Spectre-style RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>The current <see cref="LayoutPane"/> instance.</returns>
+        public LayoutPane Update(string content, SpectreColor color)
+        {
+            return Update(content, new Style(color));
+        }
+
+        /// <summary>
+        /// Replaces the pane content with plain text using an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>The current <see cref="LayoutPane"/> instance.</returns>
+        public LayoutPane Update(string content, RgbColor color)
+        {
+            return Update(content, new Style(color));
         }
 
         /// <summary>
@@ -283,6 +307,30 @@ namespace ConsoulLibrary
             }
 
             return new LayoutPane(content, title, scheme);
+        }
+
+        /// <summary>
+        /// Creates a pane with a Spectre-style RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>A configured <see cref="LayoutPane"/>.</returns>
+        public static LayoutPane Create(string content, string title, SpectreColor color)
+        {
+            return Create(content, title, new Style(color));
+        }
+
+        /// <summary>
+        /// Creates a pane with an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>A configured <see cref="LayoutPane"/>.</returns>
+        public static LayoutPane Create(string content, string title, RgbColor color)
+        {
+            return Create(content, title, new Style(color));
         }
 
         /// <summary>

@@ -81,6 +81,65 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Reusable title and caption objects accept renderables without leaving the table render path.
+        /// </summary>
+        [Fact]
+        public void Table_FluentBuilder_AcceptsRenderableTitleAndCaptionObjects()
+        {
+            using (var scope = new ConsoleDriverScope(72))
+            {
+                var title = new TableTitle(new Markup("[cyan]Deployments[/]"), Justify.Left);
+                var caption = new TableCaption(new Text("[green]2 jobs[/]"), "white on navy", Justify.Right);
+                IConsoulRenderable capturedCaption = Consoul.Renderable(() => AnsiConsole.Markup("[grey]captured[/]"));
+
+                var objectTable = new Table()
+                    .Width(44)
+                    .AsciiBorder()
+                    .Title(title)
+                    .Caption(caption)
+                    .HideFooter()
+                    .AddColumns("Job", "State")
+                    .AddRow("Build", "Ready");
+
+                var directTable = new Table()
+                    .Width(44)
+                    .AsciiBorder()
+                    .Title(new Text("[magenta]Runtime[/]"), "yellow", Justify.Center)
+                    .Caption(capturedCaption, ConsoleColor.Cyan, Justify.Right)
+                    .HideFooter()
+                    .AddColumns("Service", "State")
+                    .AddRow("API", "Online");
+
+                AnsiConsole.Write(objectTable);
+                AnsiConsole.Write(directTable);
+
+                Assert.Equal("[cyan]Deployments[/]", title.Text);
+                Assert.Equal("[green]2 jobs[/]", caption.Text);
+                Assert.Equal("[cyan]Deployments[/]", objectTable.TableRenderOptions.Title);
+                Assert.Equal("[green]2 jobs[/]", objectTable.TableRenderOptions.Caption);
+                Assert.Equal("[magenta]Runtime[/]", directTable.TableRenderOptions.Title);
+                Assert.Equal("captured", directTable.TableRenderOptions.Caption);
+                Assert.Equal(TextBlockAlignment.Left, objectTable.TableRenderOptions.TitleAlignment);
+                Assert.Equal(TextBlockAlignment.Right, objectTable.TableRenderOptions.CaptionAlignment);
+                Assert.Equal(TextBlockAlignment.Center, directTable.TableRenderOptions.TitleAlignment);
+                Assert.Equal(TextBlockAlignment.Right, directTable.TableRenderOptions.CaptionAlignment);
+                VisualAssert.ContainsText(scope.Driver, "Deployments");
+                VisualAssert.ContainsText(scope.Driver, "2 jobs");
+                VisualAssert.ContainsText(scope.Driver, "Runtime");
+                VisualAssert.ContainsText(scope.Driver, "captured");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deployments") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("2 jobs") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Runtime") && write.Color == ConsoleColor.Magenta);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("captured") && write.Color == ConsoleColor.Cyan);
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                Assert.DoesNotContain("[green]", scope.Driver.Text);
+                Assert.DoesNotContain("[magenta]", scope.Driver.Text);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 44, "Table line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Spectre-shaped title overloads also configure captions through the shared table render options.
         /// </summary>
         [Fact]
@@ -472,6 +531,41 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Table column style helpers configure individual header and footer cells without changing table-wide styles.
+        /// </summary>
+        [Fact]
+        public void Table_TableColumnBuilder_ConfiguresHeaderAndFooterStyles()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                var job = new TableColumn("Job")
+                    .HeaderColor(ConsoleColor.Cyan)
+                    .Footer("Total")
+                    .FooterColor(ConsoleColor.Yellow);
+                var table = new Table()
+                    .Width(38)
+                    .AsciiBorder()
+                    .HideFooter()
+                    .HeaderColor(ConsoleColor.Gray)
+                    .FooterColor(ConsoleColor.DarkGray)
+                    .AddColumn(job)
+                    .AddColumn(new TableColumn("Retries").HeaderColor(Colors.Aqua).Footer("14").FooterColor(Colors.Grey))
+                    .AddRow("Build", 2);
+
+                table.Columns[0].HeaderCellStyle = new Style(ConsoleColor.Magenta);
+
+                AnsiConsole.Write(table);
+
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Job") && write.Color == ConsoleColor.Magenta);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Retries") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Total") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("14") && write.Color == ConsoleColor.Gray);
+                VisualAssert.ContainsText(scope.Driver, "Build");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Table column headers and footers can be captured from reusable renderables.
         /// </summary>
         [Fact]
@@ -501,6 +595,57 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Manual tables can add renderable headers directly without first wrapping them in TableColumn objects.
+        /// </summary>
+        [Fact]
+        public void Table_FluentBuilder_AddColumnAcceptsRenderableHeadersDirectly()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                var table = new Table()
+                    .Width(46)
+                    .AsciiBorder()
+                    .HideFooter()
+                    .AddColumn(new Markup("[cyan]Service[/]"), column => column.Width(16).Footer(new Markup("[green]ready[/]")))
+                    .AddColumn(new Markup("[yellow]State[/]"), Justify.Center)
+                    .AddColumns(new IConsoulRenderable[]
+                    {
+                        new Markup("[white on navy]Owner[/]")
+                    });
+
+                bool addedVisible = table.AddOptionalColumn(new Markup("[magenta]Retries[/]"), new object[] { string.Empty, 3 }, Justify.Right);
+                bool addedEmpty = table.AddOptionalColumn(new Markup("[red]Hidden[/]"), new object[] { string.Empty, string.Empty });
+                table.AddRow("API", "Online", "Platform", 3)
+                    .AddRow("Worker", "Queued", "Batch", 0);
+
+                AnsiConsole.Write(table);
+
+                Assert.True(addedVisible);
+                Assert.False(addedEmpty);
+                Assert.Equal(4, table.Columns.Count);
+                Assert.Equal(TableCellAlignment.Center, table.Columns[1].Alignment);
+                Assert.Equal(TableCellAlignment.Right, table.Columns[3].Alignment);
+                VisualAssert.ContainsText(scope.Driver, "Service");
+                VisualAssert.ContainsText(scope.Driver, "State");
+                VisualAssert.ContainsText(scope.Driver, "Owner");
+                VisualAssert.ContainsText(scope.Driver, "Retries");
+                VisualAssert.ContainsText(scope.Driver, "ready");
+                VisualAssert.ContainsText(scope.Driver, "Platform");
+                Assert.DoesNotContain("Hidden", scope.Driver.Text);
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                Assert.DoesNotContain("[white on navy]", scope.Driver.Text);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Service") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("State") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Owner") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Retries") && write.Color == ConsoleColor.Magenta);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("ready") && write.Color == ConsoleColor.Green);
+                AssertRightAlignedCell(scope.Driver.Lines.First(line => line.Contains("API")), "3");
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 46, "Renderable-header table line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Table aliases accept Spectre-style justification vocabulary.
         /// </summary>
         [Fact]
@@ -518,8 +663,8 @@ namespace ConsoulLibrary.Tests.Compatibility
                     .CaptionAlignment(Justify.Right)
                     .HeaderAlignment(Justify.Center)
                     .ContentAlignment(Justify.Left)
-                    .AddColumn("Job")
-                    .AddColumn(new TableColumn("Retries").Justify(Justify.Right))
+                    .AddColumn("Job", Justify.Left)
+                    .AddColumn("Retries", Justify.Right)
                     .AddRow("Build", 2)
                     .AddRow("Deploy", 12);
 
@@ -527,7 +672,40 @@ namespace ConsoulLibrary.Tests.Compatibility
 
                 Assert.Contains(scope.Driver.Lines, line => line.StartsWith("Jobs", StringComparison.Ordinal));
                 Assert.Contains(scope.Driver.Lines, line => line.EndsWith("2 jobs", StringComparison.Ordinal));
+                Assert.Equal(TableCellAlignment.Left, table.Columns[0].Alignment);
+                Assert.Equal(TableCellAlignment.Right, table.Columns[1].Alignment);
                 AssertRightAlignedCell(scope.Driver.Lines.First(line => line.Contains("Build")), "2");
+                AssertRightAlignedCell(scope.Driver.Lines.First(line => line.Contains("Deploy")), "12");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Optional manual table columns accept Spectre-style justification vocabulary.
+        /// </summary>
+        [Fact]
+        public void Table_FluentBuilder_AddOptionalColumnAcceptsJustifyAlias()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                var table = new Table()
+                    .Width(40)
+                    .AsciiBorder()
+                    .HideFooter()
+                    .AddColumn("Job", Justify.Left);
+                bool addedVisible = table.AddOptionalColumn("Retries", new object?[] { null, 12 }, Justify.Right);
+                bool addedEmpty = table.AddOptionalColumn("Owner", new object?[] { null, string.Empty }, Justify.Center);
+                table.AddRow("Build", 2);
+                table.AddRow("Deploy", 12);
+
+                AnsiConsole.Write(table);
+
+                Assert.True(addedVisible);
+                Assert.False(addedEmpty);
+                Assert.Equal(2, table.Columns.Count);
+                Assert.Equal(TableCellAlignment.Right, table.Columns[1].Alignment);
+                VisualAssert.ContainsText(scope.Driver, "Retries");
+                Assert.DoesNotContain("Owner", scope.Driver.Text);
                 AssertRightAlignedCell(scope.Driver.Lines.First(line => line.Contains("Deploy")), "12");
                 VisualAssert.NoOverflow(scope.Driver);
             }
@@ -597,6 +775,43 @@ namespace ConsoulLibrary.Tests.Compatibility
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("╔") && write.Color == ConsoleColor.Cyan);
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("2") && write.Color == ConsoleColor.Gray);
                 AssertRightAlignedCell(scope.Driver.Lines.First(line => line.Contains("Build")), "2");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Named table border helper methods expose common Spectre-style presets without requiring table border objects.
+        /// </summary>
+        [Fact]
+        public void Table_FluentBuilder_ExposesNamedBorderPresetHelpers()
+        {
+            AssertBorder(new Table().SimpleHeavyBorder(), TableBorderStyle.Heavy, true, true, true, true);
+            AssertBorder(new Table().MinimalBorder(), TableBorderStyle.Simple, false, false, false, false);
+            AssertBorder(new Table().MinimalHeavyHeadBorder(), TableBorderStyle.Heavy, true, false, false, false);
+            AssertBorder(new Table().MinimalDoubleHeadBorder(), TableBorderStyle.Double, true, false, false, false);
+            AssertBorder(new Table().HorizontalBorder(), TableBorderStyle.Simple, true, false, true, false);
+            AssertBorder(new Table().Ascii2Border(), TableBorderStyle.Ascii, true, true, true, true);
+            AssertBorder(new Table().AsciiDoubleHeadBorder(), TableBorderStyle.Ascii, true, true, false, true);
+            AssertBorder(new Table().MarkdownBorder(), TableBorderStyle.Ascii, true, true, false, true);
+            AssertBorder(new Table().HeavyEdgeBorder(), TableBorderStyle.Heavy, true, true, true, true);
+            AssertBorder(new Table().HeavyHeadBorder(), TableBorderStyle.Heavy, true, true, false, true);
+            AssertBorder(new Table().DoubleEdgeBorder(), TableBorderStyle.Double, true, true, true, true);
+            AssertBorder(new Table().SafeBorder(), TableBorderStyle.Ascii, true, true, true, true);
+
+            using (var scope = new ConsoleDriverScope(40))
+            {
+                var table = new Table()
+                    .Width(32)
+                    .SafeBorder()
+                    .HideFooter()
+                    .AddColumns("Job", "State")
+                    .AddRow("Build", "Ready");
+
+                AnsiConsole.Write(table);
+
+                VisualAssert.ContainsText(scope.Driver, "Build");
+                VisualAssert.ContainsText(scope.Driver, "+");
+                Assert.DoesNotContain("╔", scope.Driver.Text);
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }
@@ -960,6 +1175,21 @@ namespace ConsoulLibrary.Tests.Compatibility
         private static string[] SplitLines(string value)
         {
             return (value ?? string.Empty).Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+        }
+
+        private static void AssertBorder(
+            Table table,
+            TableBorderStyle style,
+            bool headerHorizontal,
+            bool headerVertical,
+            bool contentHorizontal,
+            bool contentVertical)
+        {
+            Assert.Equal(style, table.TableRenderOptions.Lines.BorderStyle);
+            Assert.Equal(headerHorizontal, table.TableRenderOptions.Lines.HeaderHorizontal);
+            Assert.Equal(headerVertical, table.TableRenderOptions.Lines.HeaderVertical);
+            Assert.Equal(contentHorizontal, table.TableRenderOptions.Lines.ContentHorizontal);
+            Assert.Equal(contentVertical, table.TableRenderOptions.Lines.ContentVertical);
         }
 
         private sealed class ManualTableJob

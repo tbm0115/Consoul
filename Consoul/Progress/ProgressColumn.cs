@@ -69,6 +69,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the style used for completed bar cells from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">The style text to parse.</param>
+        /// <returns>The current progress bar column.</returns>
+        public ProgressBarColumn Completed(string style)
+        {
+            return Completed(Style.Parse(style));
+        }
+
+        /// <summary>
         /// Sets the foreground color used for completed bar cells.
         /// </summary>
         /// <param name="color">The foreground color.</param>
@@ -104,6 +114,16 @@ namespace ConsoulLibrary
         /// <param name="style">The style to apply.</param>
         /// <returns>The current progress bar column.</returns>
         public ProgressBarColumn Complete(Style style)
+        {
+            return Completed(style);
+        }
+
+        /// <summary>
+        /// Sets the style used for completed bar cells from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">The style text to parse.</param>
+        /// <returns>The current progress bar column.</returns>
+        public ProgressBarColumn Complete(string style)
         {
             return Completed(style);
         }
@@ -150,6 +170,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the style used for finished bar cells from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">The style text to parse.</param>
+        /// <returns>The current progress bar column.</returns>
+        public ProgressBarColumn Finished(string style)
+        {
+            return Finished(Style.Parse(style));
+        }
+
+        /// <summary>
         /// Sets the foreground color used for finished bar cells.
         /// </summary>
         /// <param name="color">The foreground color.</param>
@@ -191,6 +221,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the style used for remaining bar cells from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">The style text to parse.</param>
+        /// <returns>The current progress bar column.</returns>
+        public ProgressBarColumn Remaining(string style)
+        {
+            return Remaining(Style.Parse(style));
+        }
+
+        /// <summary>
         /// Sets the foreground color used for remaining bar cells.
         /// </summary>
         /// <param name="color">The foreground color.</param>
@@ -229,6 +269,16 @@ namespace ConsoulLibrary
         {
             IndeterminateStyle = style;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the style used for indeterminate bar cells from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">The style text to parse.</param>
+        /// <returns>The current progress bar column.</returns>
+        public ProgressBarColumn Indeterminate(string style)
+        {
+            return Indeterminate(Style.Parse(style));
         }
 
         /// <summary>
@@ -310,6 +360,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the style used for the spinner from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">The style text to parse.</param>
+        /// <returns>The current spinner column.</returns>
+        public SpinnerColumn SpinnerStyle(string style)
+        {
+            return SpinnerStyle(Style.Parse(style));
+        }
+
+        /// <summary>
         /// Sets the foreground color used for the spinner.
         /// </summary>
         /// <param name="color">The foreground color.</param>
@@ -375,6 +435,15 @@ namespace ConsoulLibrary
         /// Initializes a new instance of the <see cref="TextColumn"/> class.
         /// </summary>
         /// <param name="text">The literal text or task template to render.</param>
+        /// <param name="style">The default style text used when the text does not contain explicit markup.</param>
+        public TextColumn(string text, string style) : this(text, Style.Parse(style))
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TextColumn"/> class.
+        /// </summary>
+        /// <param name="text">The literal text or task template to render.</param>
         /// <param name="color">The foreground color used when the text does not contain explicit markup.</param>
         public TextColumn(string text, ConsoleColor color) : this(text, new Style(color))
         {
@@ -425,6 +494,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the default style used when the text does not contain explicit markup from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">The style text to parse.</param>
+        /// <returns>The current text column.</returns>
+        public TextColumn TextStyle(string style)
+        {
+            return TextStyle(Style.Parse(style));
+        }
+
+        /// <summary>
         /// Sets the foreground color used when the text does not contain explicit markup.
         /// </summary>
         /// <param name="color">The foreground color.</param>
@@ -452,6 +531,16 @@ namespace ConsoulLibrary
         public TextColumn TextColor(RgbColor color)
         {
             return TextStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the default style used when the text does not contain explicit markup from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">The style text to parse.</param>
+        /// <returns>The current text column.</returns>
+        public TextColumn TextColor(string style)
+        {
+            return TextStyle(style);
         }
     }
 

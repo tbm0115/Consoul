@@ -60,6 +60,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the table title from a renderable component.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Title(IConsoulRenderable title)
+        {
+            return ApplyTitle(TableColumn.Capture(title), null, null);
+        }
+
+        /// <summary>
         /// Sets the table title and alignment.
         /// </summary>
         /// <param name="title">The table title.</param>
@@ -68,6 +78,17 @@ namespace ConsoulLibrary
         public Table Title(string title, Justify justification)
         {
             return ApplyTitle(title, justification, null);
+        }
+
+        /// <summary>
+        /// Sets the table title from a renderable component and alignment.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="justification">The title justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Title(IConsoulRenderable title, Justify justification)
+        {
+            return ApplyTitle(TableColumn.Capture(title), justification, null);
         }
 
         /// <summary>
@@ -83,6 +104,18 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the table title from a renderable component and foreground color.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="color">The title foreground color.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Title(IConsoulRenderable title, ConsoleColor color, Justify? justification = null)
+        {
+            return ApplyTitle(TableColumn.Capture(title), justification, new Style(color));
+        }
+
+        /// <summary>
         /// Sets the table title and foreground color.
         /// </summary>
         /// <param name="title">The table title.</param>
@@ -92,6 +125,18 @@ namespace ConsoulLibrary
         public Table Title(string title, SpectreColor color, Justify? justification = null)
         {
             return ApplyTitle(title, justification, new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the table title from a renderable component and foreground color.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="color">The title foreground color.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Title(IConsoulRenderable title, SpectreColor color, Justify? justification = null)
+        {
+            return ApplyTitle(TableColumn.Capture(title), justification, new Style(color));
         }
 
         /// <summary>
@@ -107,6 +152,18 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the table title from a renderable component and foreground color.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="color">The title foreground color.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Title(IConsoulRenderable title, RgbColor color, Justify? justification = null)
+        {
+            return ApplyTitle(TableColumn.Capture(title), justification, new Style(color));
+        }
+
+        /// <summary>
         /// Sets the table title from a reusable style object.
         /// </summary>
         /// <param name="title">The table title.</param>
@@ -116,6 +173,30 @@ namespace ConsoulLibrary
         public Table Title(string title, Style style, Justify? justification = null)
         {
             return ApplyTitle(title, justification, style);
+        }
+
+        /// <summary>
+        /// Sets the table title from a renderable component and reusable style object.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="style">The title style.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Title(IConsoulRenderable title, Style style, Justify? justification = null)
+        {
+            return ApplyTitle(TableColumn.Capture(title), justification, style);
+        }
+
+        /// <summary>
+        /// Sets the table title from a renderable component and Spectre-style style text.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Title(IConsoulRenderable title, string style, Justify? justification = null)
+        {
+            return ApplyTitle(TableColumn.Capture(title), justification, Style.Parse(style));
         }
 
         /// <summary>
@@ -144,6 +225,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the table caption from a renderable component.
+        /// </summary>
+        /// <param name="caption">Renderable caption captured or adapted for the table caption.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Caption(IConsoulRenderable caption)
+        {
+            return ApplyCaption(TableColumn.Capture(caption), null, null);
+        }
+
+        /// <summary>
         /// Sets the table caption and alignment.
         /// </summary>
         /// <param name="caption">The table caption.</param>
@@ -152,6 +243,17 @@ namespace ConsoulLibrary
         public Table Caption(string caption, Justify justification)
         {
             return ApplyCaption(caption, justification, null);
+        }
+
+        /// <summary>
+        /// Sets the table caption from a renderable component and alignment.
+        /// </summary>
+        /// <param name="caption">Renderable caption captured or adapted for the table caption.</param>
+        /// <param name="justification">The caption justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Caption(IConsoulRenderable caption, Justify justification)
+        {
+            return ApplyCaption(TableColumn.Capture(caption), justification, null);
         }
 
         /// <summary>
@@ -167,6 +269,18 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the table caption from a renderable component and foreground color.
+        /// </summary>
+        /// <param name="caption">Renderable caption captured or adapted for the table caption.</param>
+        /// <param name="color">The caption foreground color.</param>
+        /// <param name="justification">Optional caption justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Caption(IConsoulRenderable caption, ConsoleColor color, Justify? justification = null)
+        {
+            return ApplyCaption(TableColumn.Capture(caption), justification, new Style(color));
+        }
+
+        /// <summary>
         /// Sets the table caption and foreground color.
         /// </summary>
         /// <param name="caption">The table caption.</param>
@@ -176,6 +290,18 @@ namespace ConsoulLibrary
         public Table Caption(string caption, SpectreColor color, Justify? justification = null)
         {
             return ApplyCaption(caption, justification, new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the table caption from a renderable component and foreground color.
+        /// </summary>
+        /// <param name="caption">Renderable caption captured or adapted for the table caption.</param>
+        /// <param name="color">The caption foreground color.</param>
+        /// <param name="justification">Optional caption justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Caption(IConsoulRenderable caption, SpectreColor color, Justify? justification = null)
+        {
+            return ApplyCaption(TableColumn.Capture(caption), justification, new Style(color));
         }
 
         /// <summary>
@@ -191,6 +317,18 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the table caption from a renderable component and foreground color.
+        /// </summary>
+        /// <param name="caption">Renderable caption captured or adapted for the table caption.</param>
+        /// <param name="color">The caption foreground color.</param>
+        /// <param name="justification">Optional caption justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Caption(IConsoulRenderable caption, RgbColor color, Justify? justification = null)
+        {
+            return ApplyCaption(TableColumn.Capture(caption), justification, new Style(color));
+        }
+
+        /// <summary>
         /// Sets the table caption from a reusable style object.
         /// </summary>
         /// <param name="caption">The table caption.</param>
@@ -200,6 +338,30 @@ namespace ConsoulLibrary
         public Table Caption(string caption, Style style, Justify? justification = null)
         {
             return ApplyCaption(caption, justification, style);
+        }
+
+        /// <summary>
+        /// Sets the table caption from a renderable component and reusable style object.
+        /// </summary>
+        /// <param name="caption">Renderable caption captured or adapted for the table caption.</param>
+        /// <param name="style">The caption style.</param>
+        /// <param name="justification">Optional caption justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Caption(IConsoulRenderable caption, Style style, Justify? justification = null)
+        {
+            return ApplyCaption(TableColumn.Capture(caption), justification, style);
+        }
+
+        /// <summary>
+        /// Sets the table caption from a renderable component and Spectre-style style text.
+        /// </summary>
+        /// <param name="caption">Renderable caption captured or adapted for the table caption.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <param name="justification">Optional caption justification.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Caption(IConsoulRenderable caption, string style, Justify? justification = null)
+        {
+            return ApplyCaption(TableColumn.Capture(caption), justification, Style.Parse(style));
         }
 
         /// <summary>
@@ -340,6 +502,114 @@ namespace ConsoulLibrary
         public Table SimpleBorder()
         {
             return Border(TableBorderStyle.Simple);
+        }
+
+        /// <summary>
+        /// Uses the simple heavy border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table SimpleHeavyBorder()
+        {
+            return Border(TableBorder.SimpleHeavy);
+        }
+
+        /// <summary>
+        /// Uses a minimal border preset that hides all border and separator lines.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table MinimalBorder()
+        {
+            return Border(TableBorder.Minimal);
+        }
+
+        /// <summary>
+        /// Uses a minimal border preset with a heavy header separator.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table MinimalHeavyHeadBorder()
+        {
+            return Border(TableBorder.MinimalHeavyHead);
+        }
+
+        /// <summary>
+        /// Uses a minimal border preset with a double header separator.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table MinimalDoubleHeadBorder()
+        {
+            return Border(TableBorder.MinimalDoubleHead);
+        }
+
+        /// <summary>
+        /// Uses a horizontal-line-only border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table HorizontalBorder()
+        {
+            return Border(TableBorder.Horizontal);
+        }
+
+        /// <summary>
+        /// Uses the alternate ASCII border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table Ascii2Border()
+        {
+            return Border(TableBorder.Ascii2);
+        }
+
+        /// <summary>
+        /// Uses an ASCII border preset with an emphasized header separator.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table AsciiDoubleHeadBorder()
+        {
+            return Border(TableBorder.AsciiDoubleHead);
+        }
+
+        /// <summary>
+        /// Uses a markdown-friendly ASCII border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table MarkdownBorder()
+        {
+            return Border(TableBorder.Markdown);
+        }
+
+        /// <summary>
+        /// Uses the heavy border edge preset.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table HeavyEdgeBorder()
+        {
+            return Border(TableBorder.HeavyEdge);
+        }
+
+        /// <summary>
+        /// Uses the heavy border preset with an emphasized header separator.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table HeavyHeadBorder()
+        {
+            return Border(TableBorder.HeavyHead);
+        }
+
+        /// <summary>
+        /// Uses the double-line border edge preset.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table DoubleEdgeBorder()
+        {
+            return Border(TableBorder.DoubleEdge);
+        }
+
+        /// <summary>
+        /// Uses a terminal-safe ASCII border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table SafeBorder()
+        {
+            return Border(TableBorder.Safe);
         }
 
         /// <summary>
@@ -1095,12 +1365,64 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a table column using Spectre-style alignment vocabulary.
+        /// </summary>
+        /// <param name="header">The header text.</param>
+        /// <param name="alignment">Alignment for this column.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table AddColumn(string header, Justify alignment)
+        {
+            return AddColumn(header, JustifyMap.ToTableCellAlignment(alignment));
+        }
+
+        /// <summary>
         /// Adds and configures a table column.
         /// </summary>
         /// <param name="header">The header text.</param>
         /// <param name="configure">Column configuration callback.</param>
         /// <returns>The current <see cref="Table"/> instance.</returns>
         public Table AddColumn(string header, Action<TableColumn> configure)
+        {
+            var column = new TableColumn(header);
+            configure?.Invoke(column);
+            return AddColumn(column);
+        }
+
+        /// <summary>
+        /// Adds a table column from captured renderable header content.
+        /// </summary>
+        /// <param name="header">The renderable component used to produce the header text.</param>
+        /// <param name="alignment">Optional alignment for this column.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table AddColumn(IConsoulRenderable header, TableCellAlignment alignment = TableCellAlignment.Default)
+        {
+            var column = new TableColumn(header);
+            if (alignment != TableCellAlignment.Default)
+            {
+                column.Alignment = alignment;
+            }
+
+            return AddColumn(column);
+        }
+
+        /// <summary>
+        /// Adds a table column from captured renderable header content using Spectre-style alignment vocabulary.
+        /// </summary>
+        /// <param name="header">The renderable component used to produce the header text.</param>
+        /// <param name="alignment">Alignment for this column.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table AddColumn(IConsoulRenderable header, Justify alignment)
+        {
+            return AddColumn(header, JustifyMap.ToTableCellAlignment(alignment));
+        }
+
+        /// <summary>
+        /// Adds and configures a table column from captured renderable header content.
+        /// </summary>
+        /// <param name="header">The renderable component used to produce the header text.</param>
+        /// <param name="configure">Column configuration callback.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table AddColumn(IConsoulRenderable header, Action<TableColumn> configure)
         {
             var column = new TableColumn(header);
             configure?.Invoke(column);
@@ -1147,6 +1469,18 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a table column using Spectre-style alignment vocabulary only when the supplied values contain visible cell content.
+        /// </summary>
+        /// <param name="header">The header text.</param>
+        /// <param name="values">Candidate values used to decide whether the column should be shown.</param>
+        /// <param name="alignment">Alignment for this column.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalColumn(string header, IEnumerable values, Justify alignment)
+        {
+            return AddOptionalColumn(header, values, JustifyMap.ToTableCellAlignment(alignment));
+        }
+
+        /// <summary>
         /// Adds and configures a table column only when the supplied values contain visible cell content.
         /// </summary>
         /// <param name="header">The header text.</param>
@@ -1154,6 +1488,50 @@ namespace ConsoulLibrary
         /// <param name="configure">Column configuration callback.</param>
         /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
         public bool AddOptionalColumn(string header, IEnumerable values, Action<TableColumn> configure)
+        {
+            var column = new TableColumn(header);
+            configure?.Invoke(column);
+            return AddOptionalColumn(column, values);
+        }
+
+        /// <summary>
+        /// Adds a table column from captured renderable header content only when the supplied values contain visible cell content.
+        /// </summary>
+        /// <param name="header">The renderable component used to produce the header text.</param>
+        /// <param name="values">Candidate values used to decide whether the column should be shown.</param>
+        /// <param name="alignment">Optional alignment for this column.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalColumn(IConsoulRenderable header, IEnumerable values, TableCellAlignment alignment = TableCellAlignment.Default)
+        {
+            var column = new TableColumn(header);
+            if (alignment != TableCellAlignment.Default)
+            {
+                column.Alignment = alignment;
+            }
+
+            return AddOptionalColumn(column, values);
+        }
+
+        /// <summary>
+        /// Adds a table column from captured renderable header content using Spectre-style alignment vocabulary only when values are visible.
+        /// </summary>
+        /// <param name="header">The renderable component used to produce the header text.</param>
+        /// <param name="values">Candidate values used to decide whether the column should be shown.</param>
+        /// <param name="alignment">Alignment for this column.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalColumn(IConsoulRenderable header, IEnumerable values, Justify alignment)
+        {
+            return AddOptionalColumn(header, values, JustifyMap.ToTableCellAlignment(alignment));
+        }
+
+        /// <summary>
+        /// Adds and configures a table column from captured renderable header content only when values are visible.
+        /// </summary>
+        /// <param name="header">The renderable component used to produce the header text.</param>
+        /// <param name="values">Candidate values used to decide whether the column should be shown.</param>
+        /// <param name="configure">Column configuration callback.</param>
+        /// <returns><c>true</c> when the column was added; otherwise, <c>false</c>.</returns>
+        public bool AddOptionalColumn(IConsoulRenderable header, IEnumerable values, Action<TableColumn> configure)
         {
             var column = new TableColumn(header);
             configure?.Invoke(column);
@@ -1205,6 +1583,31 @@ namespace ConsoulLibrary
         public Table AddColumns(IEnumerable<string> headers)
         {
             foreach (string header in headers ?? new string[0])
+            {
+                AddColumn(header);
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Adds multiple table columns from captured renderable header content.
+        /// </summary>
+        /// <param name="headers">The renderable components used to produce header text.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table AddColumns(params IConsoulRenderable[] headers)
+        {
+            return AddColumns((IEnumerable<IConsoulRenderable>)headers);
+        }
+
+        /// <summary>
+        /// Adds multiple table columns from captured renderable header content.
+        /// </summary>
+        /// <param name="headers">The renderable components used to produce header text.</param>
+        /// <returns>The current <see cref="Table"/> instance.</returns>
+        public Table AddColumns(IEnumerable<IConsoulRenderable> headers)
+        {
+            foreach (IConsoulRenderable header in headers ?? new IConsoulRenderable[0])
             {
                 AddColumn(header);
             }
@@ -1687,6 +2090,8 @@ namespace ConsoulLibrary
             SetColumnWidth(columnIndex, column.Width);
             SetColumnPadding(columnIndex, column.ResolvePadding());
             SetColumnFooter(columnIndex, column.ResolveFooter());
+            SetHeaderStyle(columnIndex, column.ResolveHeaderCellStyle());
+            SetColumnFooterStyle(columnIndex, column.ResolveFooterCellStyle());
         }
 
         private Table ApplyTitle(string title, Justify? justification, Style style)

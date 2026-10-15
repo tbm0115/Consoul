@@ -65,6 +65,43 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Fluent scale aliases expose the existing clipping mode for small POC thumbnails.
+        /// </summary>
+        [Fact]
+        public void CanvasImage_ScaleAliases_ClipInsteadOfResamplingWhenDisabled()
+        {
+            using (var scope = new ConsoleDriverScope(16))
+            {
+                var pixels = new[,]
+                {
+                    { ConsoleColor.Red, ConsoleColor.Green, ConsoleColor.Blue, ConsoleColor.Yellow, ConsoleColor.DarkYellow, ConsoleColor.DarkRed },
+                    { ConsoleColor.Cyan, ConsoleColor.Magenta, ConsoleColor.White, ConsoleColor.Gray, ConsoleColor.DarkGray, ConsoleColor.Black },
+                    { ConsoleColor.DarkBlue, ConsoleColor.DarkGreen, ConsoleColor.DarkCyan, ConsoleColor.DarkMagenta, ConsoleColor.Red, ConsoleColor.Green },
+                    { ConsoleColor.Blue, ConsoleColor.Yellow, ConsoleColor.Cyan, ConsoleColor.Magenta, ConsoleColor.White, ConsoleColor.Gray }
+                };
+                var image = new CanvasImage(pixels)
+                    .PixelWidth(12)
+                    .MaxWidth(3)
+                    .MaxHeight(1)
+                    .NoScale()
+                    .NearestNeighborResampler();
+
+                AnsiConsole.Write(image);
+
+                Assert.False(image.Options.Scale);
+                image.Scale();
+                Assert.True(image.Options.Scale);
+                image.Scale(false);
+                Assert.False(image.Options.Scale);
+                Assert.Contains(scope.Driver.Lines, line => line.Length == 3);
+                Assert.All(scope.Driver.Lines.Where(line => line.Length > 0), line => Assert.True(line.Length <= 3, "No-scale image line exceeded clipped width: " + line));
+                Assert.DoesNotContain(scope.Driver.Writes, write => write.Color == ConsoleColor.Yellow);
+                Assert.DoesNotContain(scope.Driver.Writes, write => write.BackgroundColor == ConsoleColor.Gray);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Transparent source pixels use upper or lower half-blocks instead of forcing a background color.
         /// </summary>
         [Fact]

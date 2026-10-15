@@ -67,6 +67,34 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a pane to the layout using a Spectre-style RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>The added pane.</returns>
+        public LayoutPane Add(string content, string title, SpectreColor color)
+        {
+            LayoutPane pane = LayoutPane.Create(content, title, color);
+            _panes.Add(pane);
+            return pane;
+        }
+
+        /// <summary>
+        /// Adds a pane to the layout using an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for pane content.</param>
+        /// <returns>The added pane.</returns>
+        public LayoutPane Add(string content, string title, RgbColor color)
+        {
+            LayoutPane pane = LayoutPane.Create(content, title, color);
+            _panes.Add(pane);
+            return pane;
+        }
+
+        /// <summary>
         /// Adds a pane to the layout using Spectre-style style text.
         /// </summary>
         /// <param name="content">The pane content.</param>
@@ -109,6 +137,34 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a pane whose content is captured from a Consoul render action using a Spectre-style RGB foreground color.
+        /// </summary>
+        /// <param name="render">The render action used to produce pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for the captured pane content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the render action.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the render action.</param>
+        /// <returns>The added pane.</returns>
+        public LayoutPane Add(Action render, string title, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            return Add(RenderActionContent.Capture(render, captureWidth ?? _options.Width, captureHeight), title, color);
+        }
+
+        /// <summary>
+        /// Adds a pane whose content is captured from a Consoul render action using an RGB foreground color.
+        /// </summary>
+        /// <param name="render">The render action used to produce pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for the captured pane content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the render action.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the render action.</param>
+        /// <returns>The added pane.</returns>
+        public LayoutPane Add(Action render, string title, RgbColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            return Add(RenderActionContent.Capture(render, captureWidth ?? _options.Width, captureHeight), title, color);
+        }
+
+        /// <summary>
         /// Adds a pane whose content is captured from a Consoul render action using Spectre-style style text.
         /// </summary>
         /// <param name="render">The render action used to produce pane content.</param>
@@ -146,6 +202,34 @@ namespace ConsoulLibrary
         /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
         /// <returns>The added pane.</returns>
         public LayoutPane Add(IConsoulRenderable renderable, string title = null, ConsoleColor? color = null, int? captureWidth = null, int captureHeight = 200)
+        {
+            return Add(RenderActionContent.Capture(renderable, captureWidth ?? _options.Width, captureHeight), title, color);
+        }
+
+        /// <summary>
+        /// Adds a pane whose content is captured from a Consoul renderable component using a Spectre-style RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for the captured pane content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The added pane.</returns>
+        public LayoutPane Add(IConsoulRenderable renderable, string title, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            return Add(RenderActionContent.Capture(renderable, captureWidth ?? _options.Width, captureHeight), title, color);
+        }
+
+        /// <summary>
+        /// Adds a pane whose content is captured from a Consoul renderable component using an RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce pane content.</param>
+        /// <param name="title">Optional title rendered above the pane content.</param>
+        /// <param name="color">The foreground color used for the captured pane content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The added pane.</returns>
+        public LayoutPane Add(IConsoulRenderable renderable, string title, RgbColor color, int? captureWidth = null, int captureHeight = 200)
         {
             return Add(RenderActionContent.Capture(renderable, captureWidth ?? _options.Width, captureHeight), title, color);
         }

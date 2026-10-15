@@ -1,5 +1,6 @@
 using ConsoulLibrary.Color;
 using System;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -84,6 +85,28 @@ namespace ConsoulLibrary
             }
 
             return new RowsItem(content, scheme);
+        }
+
+        /// <summary>
+        /// Creates a row item with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="content">The row content.</param>
+        /// <param name="color">The foreground color used for the row content.</param>
+        /// <returns>A configured <see cref="RowsItem"/>.</returns>
+        public static RowsItem Create(string content, SpectreColor color)
+        {
+            return Create(content, new Style(color));
+        }
+
+        /// <summary>
+        /// Creates a row item with an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The row content.</param>
+        /// <param name="color">The foreground color used for the row content.</param>
+        /// <returns>A configured <see cref="RowsItem"/>.</returns>
+        public static RowsItem Create(string content, RgbColor color)
+        {
+            return Create(content, new Style(color));
         }
 
         /// <summary>

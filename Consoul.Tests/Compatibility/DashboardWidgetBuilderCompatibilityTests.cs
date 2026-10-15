@@ -77,6 +77,81 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Chart Collapse helpers switch from terminal-width charts to measured content width for compact dashboard cards.
+        /// </summary>
+        [Fact]
+        public void Charts_FluentBuilder_CollapseMeasuresContentWidth()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                var bars = new BarChart()
+                    .Width(40)
+                    .Collapse()
+                    .MinimumBarWidth(4)
+                    .HideValue()
+                    .AddItem("OK", 4, "green");
+
+                var breakdown = new BreakdownChart()
+                    .Width(40)
+                    .Collapse()
+                    .HideValue()
+                    .HidePercentage()
+                    .AddItem("Queued", 3, "yellow")
+                    .AddItem("Run", 2, "green");
+
+                AnsiConsole.Write(bars);
+                AnsiConsole.Write(breakdown);
+
+                Assert.Null(bars.Options.Width);
+                Assert.Null(breakdown.Options.Width);
+                Assert.False(bars.Options.Expand);
+                Assert.False(breakdown.Options.Expand);
+                Assert.False(bars.Options.Clone().Expand);
+                Assert.False(breakdown.Options.Clone().Expand);
+                VisualAssert.ContainsText(scope.Driver, "OK");
+                VisualAssert.ContainsText(scope.Driver, "Queued");
+                VisualAssert.ContainsText(scope.Driver, "Run");
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 9, "Collapsed chart line exceeded measured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Chart Expand helpers restore terminal-width rendering after a compact builder chain.
+        /// </summary>
+        [Fact]
+        public void Charts_FluentBuilder_ExpandRestoresTerminalWidth()
+        {
+            using (var scope = new ConsoleDriverScope(32))
+            {
+                var bars = new BarChart()
+                    .Collapse()
+                    .Expand()
+                    .HideValue()
+                    .AddItem("OK", 4, "green");
+
+                var breakdown = new BreakdownChart()
+                    .Collapse()
+                    .Expand()
+                    .HideValue()
+                    .HidePercentage()
+                    .AddItem("Queued", 3, "yellow")
+                    .AddItem("Run", 2, "green");
+
+                AnsiConsole.Write(bars);
+                AnsiConsole.Write(breakdown);
+
+                Assert.True(bars.Options.Expand);
+                Assert.True(breakdown.Options.Expand);
+                Assert.Null(bars.Options.Width);
+                Assert.Null(breakdown.Options.Width);
+                Assert.Contains(scope.Driver.Lines, line => line.Length > 9 && line.Contains("OK"));
+                Assert.Contains(scope.Driver.Lines, line => line.Length > 9 && line.Contains("#"));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Chart builders can project model collections with per-item style strings.
         /// </summary>
         [Fact]
@@ -306,6 +381,69 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Metrics builders expose chainable Add aliases for quick MVC-style dashboard snippets.
+        /// </summary>
+        [Fact]
+        public void Metrics_FluentBuilder_AddAliasesChainAndProjectModels()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                var snapshots = new[]
+                {
+                    new DashboardMetric("Passing", 8, "jobs", "healthy", MetricKind.Success, ConsoleColor.Green, "grey", "white on navy", "darkgray"),
+                    new DashboardMetric("Waiting", 2, "jobs", "approval", MetricKind.Warning, ConsoleColor.Yellow, "grey", "yellow", "aqua")
+                };
+
+                var metrics = new Metrics()
+                    .Width(48)
+                    .ColumnCount(1)
+                    .MinimumColumnWidth(16);
+
+                Assert.Same(metrics, metrics.Add("Passing", 8, "jobs", "healthy", MetricKind.Success, ConsoleColor.Cyan, ConsoleColor.Green, ConsoleColor.DarkGray));
+                Assert.Same(metrics, metrics.Add(
+                    MetricItem.Create(
+                        "Prepared Review",
+                        2,
+                        unit: "jobs",
+                        note: "waiting",
+                        kind: MetricKind.Warning,
+                        labelColor: ConsoleColor.Yellow,
+                        valueColor: ConsoleColor.Yellow,
+                        noteColor: ConsoleColor.Gray)));
+                Assert.Same(metrics, metrics.Add(
+                    snapshots,
+                    snapshot => "Projected " + snapshot.Label,
+                    snapshot => snapshot.Value,
+                    snapshot => snapshot.Unit,
+                    snapshot => snapshot.Note,
+                    snapshot => snapshot.Kind));
+                Assert.Same(metrics, metrics.Add(
+                    snapshots.Take(1),
+                    snapshot => MetricItem.Create(
+                        "Factory " + snapshot.Label,
+                        snapshot.Value,
+                        unit: snapshot.Unit,
+                        note: "factory",
+                        valueColor: ConsoleColor.Magenta,
+                        noteColor: ConsoleColor.DarkGray)));
+
+                AnsiConsole.Write(metrics);
+
+                VisualAssert.ContainsText(scope.Driver, "Passing");
+                VisualAssert.ContainsText(scope.Driver, "Prepared Review");
+                VisualAssert.ContainsText(scope.Driver, "Projected Waiting");
+                VisualAssert.ContainsText(scope.Driver, "Factory Passing");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Passing") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("8 jobs") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("waiting") && write.Color == ConsoleColor.Gray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("factory") && write.Color == ConsoleColor.DarkGray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("8 jobs") && write.Color == ConsoleColor.Magenta);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 48, "Add alias metrics line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Sparkline aliases render through the existing responsive sparkline renderer.
         /// </summary>
         [Fact]
@@ -479,6 +617,65 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Timeline builders expose chainable Add aliases for workflow summaries.
+        /// </summary>
+        [Fact]
+        public void Timeline_FluentBuilder_AddAliasesChainAndProjectModels()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                var steps = new[]
+                {
+                    new DashboardStep("Build", TimelineItemState.Complete, "Artifacts ready", new DateTimeOffset(2026, 6, 30, 9, 0, 0, TimeSpan.Zero), ConsoleColor.Green, "white on navy", "green", "grey"),
+                    new DashboardStep("Review", TimelineItemState.Active, "Waiting for owner approval", new DateTimeOffset(2026, 6, 30, 9, 30, 0, TimeSpan.Zero), ConsoleColor.Cyan, "aqua", "aqua", "darkgray")
+                };
+
+                var timeline = new Timeline()
+                    .Width(44)
+                    .HideTimestamps()
+                    .Markers(complete: "ok", active: "run", warning: "warn")
+                    .Connector("|");
+
+                Assert.Same(timeline, timeline.Add("Queued", TimelineItemState.Warning, "Waiting for capacity", titleColor: ConsoleColor.Yellow, markerColor: ConsoleColor.Yellow, descriptionColor: ConsoleColor.Gray));
+                Assert.Same(timeline, timeline.Add(TimelineItem.Create(
+                    "Prepared Build",
+                    TimelineItemState.Complete,
+                    "ready",
+                    titleColor: ConsoleColor.Green,
+                    markerColor: ConsoleColor.Green,
+                    descriptionColor: ConsoleColor.DarkGray)));
+                Assert.Same(timeline, timeline.Add(
+                    steps,
+                    step => "Projected " + step.Title,
+                    step => step.State,
+                    step => step.Description,
+                    step => (DateTimeOffset?)null));
+                Assert.Same(timeline, timeline.Add(
+                    steps.Take(1),
+                    step => TimelineItem.Create(
+                        "Factory " + step.Title,
+                        step.State,
+                        "factory",
+                        titleColor: step.Color,
+                        markerColor: step.Color,
+                        descriptionColor: ConsoleColor.DarkGray)));
+
+                AnsiConsole.Write(timeline);
+
+                VisualAssert.ContainsText(scope.Driver, "Queued");
+                VisualAssert.ContainsText(scope.Driver, "Prepared Build");
+                VisualAssert.ContainsText(scope.Driver, "Projected Review");
+                VisualAssert.ContainsText(scope.Driver, "Factory Build");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Queued") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Prepared Build") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Waiting for owner approval"));
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("factory") && write.Color == ConsoleColor.DarkGray);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 44, "Add alias timeline line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Shortcut bar aliases render through the existing responsive shortcut bar renderer.
         /// </summary>
         [Fact]
@@ -585,6 +782,67 @@ namespace ConsoulLibrary.Tests.Compatibility
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("<DEnter>") && write.Color == ConsoleColor.Cyan);
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Help for Select") && write.Color == ConsoleColor.DarkGray);
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 44, "Projected shortcut bar line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Shortcut bars expose chainable Add aliases for compact view action hints.
+        /// </summary>
+        [Fact]
+        public void ShortcutBar_FluentBuilder_AddAliasesChainAndProjectModels()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                var actions = new[]
+                {
+                    new DashboardShortcut("Enter", "Select", false, ConsoleColor.Cyan, "aqua", "white"),
+                    new DashboardShortcut("Esc", "Back", false, ConsoleColor.Yellow, "white on navy", "grey"),
+                    new DashboardShortcut("F5", "Refresh preview", true, ConsoleColor.Red, "red", "grey")
+                };
+
+                var shortcuts = new ShortcutBar()
+                    .Width(52)
+                    .KeyEdges("[", "]")
+                    .ItemSeparator(" | ");
+
+                Assert.Same(shortcuts, shortcuts.Add("Enter", "Select", keyColor: ConsoleColor.Cyan, descriptionColor: ConsoleColor.White));
+                Assert.Same(shortcuts, shortcuts.Add(ShortcutItem.Create("Esc", "Back", keyColor: ConsoleColor.Yellow, descriptionColor: ConsoleColor.Gray)));
+                Assert.Same(shortcuts, shortcuts.Add(
+                    actions,
+                    action => "P" + action.Key,
+                    action => "Projected " + action.Description,
+                    action => action.Disabled,
+                    action => (ConsoleColor?)action.Color,
+                    action => (ConsoleColor?)ConsoleColor.White));
+                Assert.Same(shortcuts, shortcuts.Add(
+                    actions.Take(2),
+                    action => "S" + action.Key,
+                    action => "Styled " + action.Description,
+                    action => action.KeyStyle,
+                    action => action.DescriptionStyle));
+                Assert.Same(shortcuts, shortcuts.Add(
+                    actions.Take(1),
+                    action => ShortcutItem.Create(
+                        "?" + action.Key,
+                        "Help for " + action.Description,
+                        keyColor: ConsoleColor.Magenta,
+                        descriptionColor: ConsoleColor.DarkGray)));
+
+                AnsiConsole.Write(shortcuts);
+
+                VisualAssert.ContainsText(scope.Driver, "[Enter]");
+                VisualAssert.ContainsText(scope.Driver, "[Esc]");
+                VisualAssert.ContainsText(scope.Driver, "[PF5]");
+                VisualAssert.ContainsText(scope.Driver, "[SEsc]");
+                VisualAssert.ContainsText(scope.Driver, "[?Enter]");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[Enter]") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[Esc]") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[PEnter]") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Projected Refresh preview") && write.Color == RenderOptions.SubnoteScheme.Color);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("[SEsc]") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Help for Select") && write.Color == ConsoleColor.DarkGray);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 52, "Add alias shortcut bar line exceeded configured width: " + line));
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }

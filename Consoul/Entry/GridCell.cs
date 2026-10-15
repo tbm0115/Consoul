@@ -1,5 +1,6 @@
 using ConsoulLibrary.Color;
 using System;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -94,6 +95,30 @@ namespace ConsoulLibrary
             }
 
             return new GridCell(content, header, scheme);
+        }
+
+        /// <summary>
+        /// Creates a grid cell with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="header">Optional header rendered above the content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>A configured <see cref="GridCell"/>.</returns>
+        public static GridCell Create(string content, string header, SpectreColor color)
+        {
+            return Create(content, header, new Style(color));
+        }
+
+        /// <summary>
+        /// Creates a grid cell with an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The cell content.</param>
+        /// <param name="header">Optional header rendered above the content.</param>
+        /// <param name="color">The foreground color used for the content.</param>
+        /// <returns>A configured <see cref="GridCell"/>.</returns>
+        public static GridCell Create(string content, string header, RgbColor color)
+        {
+            return Create(content, header, new Style(color));
         }
 
         /// <summary>

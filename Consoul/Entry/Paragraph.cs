@@ -338,6 +338,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Aligns paragraph text to the left.
+        /// </summary>
+        /// <returns>The current <see cref="Paragraph"/> instance.</returns>
+        public Paragraph LeftAligned()
+        {
+            return LeftJustified();
+        }
+
+        /// <summary>
         /// Centers paragraph text.
         /// </summary>
         /// <returns>The current <see cref="Paragraph"/> instance.</returns>
@@ -355,6 +364,15 @@ namespace ConsoulLibrary
         {
             _options.Alignment = TextBlockAlignment.Right;
             return this;
+        }
+
+        /// <summary>
+        /// Aligns paragraph text to the right.
+        /// </summary>
+        /// <returns>The current <see cref="Paragraph"/> instance.</returns>
+        public Paragraph RightAligned()
+        {
+            return RightJustified();
         }
 
         /// <summary>

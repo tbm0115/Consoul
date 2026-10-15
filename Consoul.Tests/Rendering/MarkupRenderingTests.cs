@@ -523,6 +523,41 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Per-column table header and footer styles preserve RGB and decoration metadata.
+        /// </summary>
+        [Fact]
+        public void TableColumnStylesEmitSgrWhenAnsiIsSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var table = new Table()
+                .Width(42)
+                .AsciiBorder()
+                .HideFooter()
+                .HeaderColor("grey")
+                .FooterColor("grey")
+                .AddColumns(
+                    new TableColumn("Service").HeaderStyle("bold #112233").Footer("Total").FooterStyle("underline #445566"),
+                    new TableColumn("State").HeaderColor(RgbColor.FromHex("#778899")).Footer("2").FooterColor(RgbColor.FromHex("#aabbcc")))
+                .AddRow("Build", "Ready");
+
+            console.Write(table);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;17;34;51m", output);
+            Assert.Contains("\u001b[4;38;2;68;85;102m", output);
+            Assert.Contains("\u001b[38;2;119;136;153m", output);
+            Assert.Contains("\u001b[38;2;170;187;204m", output);
+            Assert.Contains("Service", output);
+            Assert.Contains("Total", output);
+        }
+
+        /// <summary>
         /// The lower-level table renderer preserves configured row and line style metadata.
         /// </summary>
         [Fact]

@@ -118,13 +118,13 @@ namespace ConsoulLibrary
                 return;
             }
 
-            int width = PanelEntry.ResolveWidth(_options.Width);
+            double total = _items.Select(item => Math.Max(0, item.Value)).Sum();
+            int width = ResolveWidth(total);
             if (width <= 0)
             {
                 return;
             }
 
-            double total = _items.Select(item => Math.Max(0, item.Value)).Sum();
             RenderLabel(width);
             if (_options.ShowBar)
             {
@@ -145,6 +145,44 @@ namespace ConsoulLibrary
         public static void Render(IEnumerable<BreakdownChartItem> items, BreakdownChartOptions options = null)
         {
             new BreakdownChartEntry(items, options).Render();
+        }
+
+        private int ResolveWidth(double total)
+        {
+            if (_options.Width.HasValue || _options.Expand)
+            {
+                return PanelEntry.ResolveWidth(_options.Width);
+            }
+
+            int terminalWidth = PanelEntry.ResolveWidth((int?)null);
+            int requestedWidth = MeasureCollapsedWidth(total);
+            return Math.Max(1, Math.Min(requestedWidth, terminalWidth));
+        }
+
+        private int MeasureCollapsedWidth(double total)
+        {
+            int width = string.IsNullOrEmpty(_options.Label)
+                ? 0
+                : MarkupRenderText.GetPlainText(NormalizeInline(_options.Label)).Length;
+
+            if (_options.ShowBar)
+            {
+                width = Math.Max(width, Math.Max(1, _items.Count));
+            }
+
+            if (_options.ShowLegend)
+            {
+                foreach (BreakdownChartItem item in _items)
+                {
+                    string valueText = BuildValueText(item, total);
+                    int labelWidth = MarkupRenderText.GetPlainText(NormalizeInline(item.Label)).Length;
+                    int valueWidth = valueText.Length;
+                    int rowWidth = 3 + labelWidth + (valueWidth > 0 ? 1 + valueWidth : 0);
+                    width = Math.Max(width, rowWidth);
+                }
+            }
+
+            return Math.Max(1, width);
         }
 
         private void RenderLabel(int width)

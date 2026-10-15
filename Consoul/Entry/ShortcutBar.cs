@@ -36,6 +36,310 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a shortcut item and returns the current shortcut bar builder for fluent snippets.
+        /// </summary>
+        /// <param name="key">The key or command token.</param>
+        /// <param name="description">The action description.</param>
+        /// <param name="disabled">A value indicating whether the shortcut should render as disabled.</param>
+        /// <param name="keyColor">Optional foreground color for the key token.</param>
+        /// <param name="descriptionColor">Optional foreground color for the action description.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public new ShortcutBar Add(
+            string key,
+            string description,
+            bool disabled = false,
+            ConsoleColor? keyColor = null,
+            ConsoleColor? descriptionColor = null)
+        {
+            base.Add(key, description, disabled, keyColor, descriptionColor);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a shortcut item using Spectre-style color facades and returns the current shortcut bar builder.
+        /// </summary>
+        /// <param name="key">The key or command token.</param>
+        /// <param name="description">The action description.</param>
+        /// <param name="keyColor">Foreground color used for the key token.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the action description.</param>
+        /// <param name="disabled">A value indicating whether the shortcut should render as disabled.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public new ShortcutBar Add(
+            string key,
+            string description,
+            SpectreColor keyColor,
+            SpectreColor? descriptionColor = null,
+            bool disabled = false)
+        {
+            base.Add(key, description, keyColor, descriptionColor, disabled);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a shortcut item using RGB foreground colors and returns the current shortcut bar builder.
+        /// </summary>
+        /// <param name="key">The key or command token.</param>
+        /// <param name="description">The action description.</param>
+        /// <param name="keyColor">Foreground color used for the key token.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the action description.</param>
+        /// <param name="disabled">A value indicating whether the shortcut should render as disabled.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public new ShortcutBar Add(
+            string key,
+            string description,
+            RgbColor keyColor,
+            RgbColor? descriptionColor = null,
+            bool disabled = false)
+        {
+            base.Add(key, description, keyColor, descriptionColor, disabled);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a shortcut item using reusable style objects and returns the current shortcut bar builder.
+        /// </summary>
+        /// <param name="key">The key or command token.</param>
+        /// <param name="description">The action description.</param>
+        /// <param name="keyStyle">Optional style for the key token.</param>
+        /// <param name="descriptionStyle">Optional style for the action description.</param>
+        /// <param name="disabled">A value indicating whether the shortcut should render as disabled.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public new ShortcutBar Add(
+            string key,
+            string description,
+            Style keyStyle,
+            Style descriptionStyle = null,
+            bool disabled = false)
+        {
+            base.Add(key, description, keyStyle, descriptionStyle, disabled);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a shortcut item using Spectre-style style text and returns the current shortcut bar builder.
+        /// </summary>
+        /// <param name="key">The key or command token.</param>
+        /// <param name="description">The action description.</param>
+        /// <param name="keyStyle">Optional style for the key token, such as <c>green</c> or <c>white on blue</c>.</param>
+        /// <param name="descriptionStyle">Optional style for the action description, such as <c>grey</c>.</param>
+        /// <param name="disabled">A value indicating whether the shortcut should render as disabled.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public new ShortcutBar Add(
+            string key,
+            string description,
+            string keyStyle,
+            string descriptionStyle = null,
+            bool disabled = false)
+        {
+            base.Add(key, description, keyStyle, descriptionStyle, disabled);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an existing shortcut item and returns the current shortcut bar builder.
+        /// </summary>
+        /// <param name="item">The item to add.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public new ShortcutBar Add(ShortcutItem item)
+        {
+            base.Add(item);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds existing shortcut items and returns the current shortcut bar builder.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add(IEnumerable<ShortcutItem> items)
+        {
+            return AddShortcuts(items);
+        }
+
+        /// <summary>
+        /// Adds existing shortcut items and returns the current shortcut bar builder.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add(ShortcutItem firstItem, params ShortcutItem[] additionalItems)
+        {
+            return AddShortcuts(firstItem, additionalItems);
+        }
+
+        /// <summary>
+        /// Adds shortcuts projected from a model collection using Spectre-style style text.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into shortcuts.</param>
+        /// <param name="keySelector">Selects the shortcut key or command token.</param>
+        /// <param name="descriptionSelector">Selects the shortcut action description.</param>
+        /// <param name="disabledSelector">Optionally selects whether the shortcut should render as disabled.</param>
+        /// <param name="keyStyleSelector">Optionally selects style text for the key token.</param>
+        /// <param name="descriptionStyleSelector">Optionally selects style text for the action description.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> keySelector,
+            Func<T, string> descriptionSelector,
+            Func<T, bool> disabledSelector,
+            Func<T, string> keyStyleSelector,
+            Func<T, string> descriptionStyleSelector = null)
+        {
+            return AddShortcuts(items, keySelector, descriptionSelector, disabledSelector, keyStyleSelector, descriptionStyleSelector);
+        }
+
+        /// <summary>
+        /// Adds shortcuts projected from a model collection using Spectre-style style text.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into shortcuts.</param>
+        /// <param name="keySelector">Selects the shortcut key or command token.</param>
+        /// <param name="descriptionSelector">Selects the shortcut action description.</param>
+        /// <param name="keyStyleSelector">Optionally selects style text for the key token.</param>
+        /// <param name="descriptionStyleSelector">Optionally selects style text for the action description.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> keySelector,
+            Func<T, string> descriptionSelector,
+            Func<T, string> keyStyleSelector,
+            Func<T, string> descriptionStyleSelector = null)
+        {
+            return AddShortcuts(items, keySelector, descriptionSelector, keyStyleSelector, descriptionStyleSelector);
+        }
+
+        /// <summary>
+        /// Adds shortcuts projected from a model collection and returns the current shortcut bar builder.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into shortcuts.</param>
+        /// <param name="keySelector">Selects the shortcut key or command token.</param>
+        /// <param name="descriptionSelector">Selects the shortcut action description.</param>
+        /// <param name="disabledSelector">Optionally selects whether the shortcut should render as disabled.</param>
+        /// <param name="keyColorSelector">Optionally selects the key token foreground color.</param>
+        /// <param name="descriptionColorSelector">Optionally selects the action description foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> keySelector,
+            Func<T, string> descriptionSelector,
+            Func<T, bool> disabledSelector = null,
+            Func<T, ConsoleColor?> keyColorSelector = null,
+            Func<T, ConsoleColor?> descriptionColorSelector = null)
+        {
+            return AddShortcuts(items, keySelector, descriptionSelector, disabledSelector, keyColorSelector, descriptionColorSelector);
+        }
+
+        /// <summary>
+        /// Adds shortcuts projected from a model collection with Spectre-style key and description colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into shortcuts.</param>
+        /// <param name="keySelector">Selects the shortcut key or command token.</param>
+        /// <param name="descriptionSelector">Selects the shortcut action description.</param>
+        /// <param name="disabledSelector">Optionally selects whether the shortcut should render as disabled.</param>
+        /// <param name="keyColorSelector">Selects the key token foreground color.</param>
+        /// <param name="descriptionColorSelector">Optionally selects the action description foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> keySelector,
+            Func<T, string> descriptionSelector,
+            Func<T, bool> disabledSelector,
+            Func<T, SpectreColor> keyColorSelector,
+            Func<T, SpectreColor> descriptionColorSelector = null)
+        {
+            return AddShortcuts(
+                items,
+                keySelector,
+                descriptionSelector,
+                disabledSelector,
+                keyColorSelector,
+                descriptionColorSelector);
+        }
+
+        /// <summary>
+        /// Adds shortcuts projected from a model collection with Spectre-style key and description colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into shortcuts.</param>
+        /// <param name="keySelector">Selects the shortcut key or command token.</param>
+        /// <param name="descriptionSelector">Selects the shortcut action description.</param>
+        /// <param name="keyColorSelector">Selects the key token foreground color.</param>
+        /// <param name="descriptionColorSelector">Optionally selects the action description foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> keySelector,
+            Func<T, string> descriptionSelector,
+            Func<T, SpectreColor> keyColorSelector,
+            Func<T, SpectreColor> descriptionColorSelector = null)
+        {
+            return AddShortcuts(items, keySelector, descriptionSelector, keyColorSelector, descriptionColorSelector);
+        }
+
+        /// <summary>
+        /// Adds shortcuts projected from a model collection with RGB key and description colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into shortcuts.</param>
+        /// <param name="keySelector">Selects the shortcut key or command token.</param>
+        /// <param name="descriptionSelector">Selects the shortcut action description.</param>
+        /// <param name="disabledSelector">Optionally selects whether the shortcut should render as disabled.</param>
+        /// <param name="keyColorSelector">Selects the key token foreground color.</param>
+        /// <param name="descriptionColorSelector">Optionally selects the action description foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> keySelector,
+            Func<T, string> descriptionSelector,
+            Func<T, bool> disabledSelector,
+            Func<T, RgbColor> keyColorSelector,
+            Func<T, RgbColor> descriptionColorSelector = null)
+        {
+            return AddShortcuts(
+                items,
+                keySelector,
+                descriptionSelector,
+                disabledSelector,
+                keyColorSelector,
+                descriptionColorSelector);
+        }
+
+        /// <summary>
+        /// Adds shortcuts projected from a model collection with RGB key and description colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into shortcuts.</param>
+        /// <param name="keySelector">Selects the shortcut key or command token.</param>
+        /// <param name="descriptionSelector">Selects the shortcut action description.</param>
+        /// <param name="keyColorSelector">Selects the key token foreground color.</param>
+        /// <param name="descriptionColorSelector">Optionally selects the action description foreground color.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> keySelector,
+            Func<T, string> descriptionSelector,
+            Func<T, RgbColor> keyColorSelector,
+            Func<T, RgbColor> descriptionColorSelector = null)
+        {
+            return AddShortcuts(items, keySelector, descriptionSelector, keyColorSelector, descriptionColorSelector);
+        }
+
+        /// <summary>
+        /// Adds shortcuts projected from a model collection and returns the current shortcut bar builder.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into shortcuts.</param>
+        /// <param name="itemSelector">Selects the shortcut item to add for each model item.</param>
+        /// <returns>The current <see cref="ShortcutBar"/> instance.</returns>
+        public ShortcutBar Add<T>(IEnumerable<T> items, Func<T, ShortcutItem> itemSelector)
+        {
+            return AddShortcuts(items, itemSelector);
+        }
+
+        /// <summary>
         /// Adds a shortcut item.
         /// </summary>
         /// <param name="key">The key or command token.</param>

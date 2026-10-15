@@ -1,7 +1,10 @@
 using System;
+using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using ConsoulLibrary.Tests.Rendering;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Rendering
@@ -89,6 +92,75 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Live display style helpers apply title and completion palettes through the virtual console.
+        /// </summary>
+        [Fact]
+        public void LiveDisplay_StyleHelpers_ApplyTitleAndCompletionColors()
+        {
+            using (var scope = new ConsoleDriverScope(56, 10))
+            {
+                AnsiConsole.Live(new Text("Ready"), new LiveDisplayOptions
+                {
+                    ClearBeforeRender = false,
+                    RenderTitleRule = false
+                })
+                .Title("Deploy")
+                .TitleStyle("white on navy")
+                .SuccessStyle(new Style(ConsoleColor.Cyan))
+                .Start(live =>
+                {
+                    live.Refresh();
+                    live.Succeed("Finished");
+                });
+
+                Assert.Contains(
+                    scope.Driver.Writes,
+                    write => write.Text.Contains("Deploy") &&
+                        write.Color == ConsoleColor.White &&
+                        write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(
+                    scope.Driver.Writes,
+                    write => write.Text.Contains("Finished") &&
+                        write.Color == ConsoleColor.Cyan);
+                VisualAssert.WroteText(scope.Driver, "Ready");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Live display style helpers preserve RGB and decoration metadata for ANSI true-color terminals.
+        /// </summary>
+        [Fact]
+        public void LiveDisplay_StyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Live(new Text("Ready"), new LiveDisplayOptions
+            {
+                ClearBeforeRender = false,
+                RenderTitleRule = false
+            })
+            .Title("Deploy")
+            .TitleStyle("bold #22c55e")
+            .SuccessColor(RgbColor.FromHex("#336699"))
+            .Start(live =>
+            {
+                live.Refresh();
+                live.Succeed("Done");
+            });
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;34;197;94mDeploy", output);
+            Assert.Contains("\u001b[38;2;51;102;153mDone", output);
+        }
+
+        /// <summary>
         /// Async live helpers pass the supplied cancellation token to the operation.
         /// </summary>
         [Fact]
@@ -123,7 +195,9 @@ namespace ConsoulLibrary.Tests.Rendering
                 var target = new Text("Starting");
 
                 int refreshes = AnsiConsole.Live(target, new LiveDisplayOptions { ClearBeforeRender = false })
-                    .AutoClear(true)
+                    .AutoClear()
+                    .NoAutoClear()
+                    .ClearOnDispose()
                     .Start(live =>
                     {
                         Assert.Same(target, live.Target);

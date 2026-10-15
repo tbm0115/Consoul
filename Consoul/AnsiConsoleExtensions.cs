@@ -1,7 +1,12 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Globalization;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using ConsoulLibrary.Color;
 
 namespace ConsoulLibrary
 {
@@ -40,6 +45,627 @@ namespace ConsoulLibrary
         {
             IAnsiConsole target = EnsureConsole(console);
             return new AlternateScreenScope(target, target.Profile.Capabilities.Ansi);
+        }
+
+        /// <summary>
+        /// Renders a horizontal rule using Spectre-style alignment vocabulary without expanding the console facade contract.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="title">Optional rule title.</param>
+        /// <param name="alignment">Title alignment when a title is supplied.</param>
+        /// <param name="width">Optional requested width. The actual width is clamped to the current terminal width.</param>
+        /// <param name="color">Optional foreground color for the rule.</param>
+        public static void Rule(this IAnsiConsole console, string title, Justify alignment, int? width = null, ConsoleColor? color = null)
+        {
+            EnsureConsole(console).Rule(title, CreateRuleOptions(alignment, width, color));
+        }
+
+        /// <summary>
+        /// Renders a horizontal rule using a foreground color and Spectre-style alignment vocabulary without expanding the console facade contract.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="title">Optional rule title.</param>
+        /// <param name="color">Foreground color for the rule.</param>
+        /// <param name="alignment">Title alignment when a title is supplied.</param>
+        /// <param name="width">Optional requested width. The actual width is clamped to the current terminal width.</param>
+        public static void Rule(this IAnsiConsole console, string title, ConsoleColor color, Justify alignment, int? width = null)
+        {
+            Rule(console, title, alignment, width, color);
+        }
+
+        /// <summary>
+        /// Renders content inside a responsive bordered panel using the quick Consoul panel options.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="content">The panel content to render.</param>
+        /// <param name="title">Optional title rendered in the top border.</param>
+        /// <param name="width">Optional requested width. The actual width is clamped to the current terminal width.</param>
+        /// <param name="color">Optional foreground color for content text.</param>
+        /// <param name="borderColor">Optional foreground color for the panel border.</param>
+        public static void Panel(this IAnsiConsole console, string content, string title = null, int? width = null, ConsoleColor? color = null, ConsoleColor? borderColor = null)
+        {
+            EnsureConsole(console).Panel(content, CreatePanelOptions(title, width, color, borderColor));
+        }
+
+        /// <summary>
+        /// Captures and renders an action inside a responsive bordered panel using the quick Consoul panel options.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="render">The render action used to produce panel content.</param>
+        /// <param name="title">Optional title rendered in the top border.</param>
+        /// <param name="width">Optional requested width. The actual width is clamped to the current terminal width.</param>
+        /// <param name="color">Optional foreground color for captured content text.</param>
+        /// <param name="borderColor">Optional foreground color for the panel border.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the render action.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the render action.</param>
+        public static void Panel(
+            this IAnsiConsole console,
+            Action render,
+            string title = null,
+            int? width = null,
+            ConsoleColor? color = null,
+            ConsoleColor? borderColor = null,
+            int? captureWidth = null,
+            int captureHeight = 200)
+        {
+            if (render == null)
+            {
+                throw new ArgumentNullException(nameof(render));
+            }
+
+            EnsureConsole(console).Panel(render, CreatePanelOptions(title, width, color, borderColor), captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Captures and renders a renderable inside a responsive bordered panel using the quick Consoul panel options.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="renderable">The renderable component used to produce panel content.</param>
+        /// <param name="title">Optional title rendered in the top border.</param>
+        /// <param name="width">Optional requested width. The actual width is clamped to the current terminal width.</param>
+        /// <param name="color">Optional foreground color for captured content text.</param>
+        /// <param name="borderColor">Optional foreground color for the panel border.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        public static void Panel(
+            this IAnsiConsole console,
+            IConsoulRenderable renderable,
+            string title = null,
+            int? width = null,
+            ConsoleColor? color = null,
+            ConsoleColor? borderColor = null,
+            int? captureWidth = null,
+            int captureHeight = 200)
+        {
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            EnsureConsole(console).Panel(renderable, CreatePanelOptions(title, width, color, borderColor), captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Renders a file path prompt through the console facade and returns the explicit prompt result.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="mustExist">Whether the entered path must reference an existing file.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The file path prompt result.</returns>
+        public static TextPromptResult<string> FilePath(this IAnsiConsole console, string message, bool clear = false, bool mustExist = false, CancellationToken cancellationToken = default)
+        {
+            return EnsureConsole(console).Prompt(Consoul.FilePath(message, clear, mustExist), cancellationToken);
+        }
+
+        /// <summary>
+        /// Renders a directory path prompt through the console facade and returns the explicit prompt result.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="mustExist">Whether the entered path must reference an existing directory.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The directory path prompt result.</returns>
+        public static TextPromptResult<string> DirectoryPath(this IAnsiConsole console, string message, bool clear = false, bool mustExist = false, CancellationToken cancellationToken = default)
+        {
+            return EnsureConsole(console).Prompt(Consoul.DirectoryPath(message, clear, mustExist), cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a simple list of choices and returns the full prompt result.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(this IAnsiConsole console, string message, bool clear = false, params string[] options)
+        {
+            return Select(console, message, clear, CancellationToken.None, options);
+        }
+
+        /// <summary>
+        /// Prompts with a simple list of choices and returns the full prompt result.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(this IAnsiConsole console, string message, bool clear = false, CancellationToken cancellationToken = default, params string[] options)
+        {
+            return EnsureConsole(console).Prompt(new SelectionPrompt(message, clear, options ?? Array.Empty<string>()), cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a complex list of choices and returns the full prompt result.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Complex options to present.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(this IAnsiConsole console, string message, SelectOption[] options, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            return EnsureConsole(console).Prompt(new SelectionPrompt(message, clear, options), cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a list of choices, marks a default option, and returns the full prompt result.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <param name="defaultOption">Optional option label selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(this IAnsiConsole console, string message, IEnumerable<string> options, string defaultOption = null, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            var prompt = new SelectionPrompt(message, clear);
+            foreach (string option in options)
+            {
+                bool isDefault = defaultOption != null && string.Equals(option, defaultOption, StringComparison.Ordinal);
+                prompt.Add(option, isDefault: isDefault);
+            }
+
+            return EnsureConsole(console).Prompt(prompt, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(this IAnsiConsole console, string message, Func<T, string> labelSelector, bool clear = false, params T[] options)
+        {
+            return Select(console, message, labelSelector, clear, CancellationToken.None, options);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(this IAnsiConsole console, string message, Func<T, string> labelSelector, bool clear = false, CancellationToken cancellationToken = default, params T[] options)
+        {
+            if (labelSelector == null)
+            {
+                throw new ArgumentNullException(nameof(labelSelector));
+            }
+
+            return Select(console, message, options ?? Array.Empty<T>(), labelSelector, clear, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(this IAnsiConsole console, string message, IEnumerable<T> options, Func<T, string> labelSelector, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            return Select(console, message, options, labelSelector, (Func<T, bool>)null, clear, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices, marks a default item, and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="defaultItem">Optional item selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(this IAnsiConsole console, string message, IEnumerable<T> options, Func<T, string> labelSelector, T defaultItem, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            return Select(console, message, options, labelSelector, item => EqualityComparer<T>.Default.Equals(item, defaultItem), clear, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices, marks items matching a default predicate, and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="isDefault">Optional predicate used to mark a default option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(this IAnsiConsole console, string message, IEnumerable<T> options, Func<T, string> labelSelector, Func<T, bool> isDefault, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (labelSelector == null)
+            {
+                throw new ArgumentNullException(nameof(labelSelector));
+            }
+
+            var prompt = new SelectionPrompt<T>(message, clear, labelSelector);
+            foreach (T option in options)
+            {
+                bool defaultOption = isDefault != null && isDefault(option);
+                prompt.Add(option, isDefault: defaultOption);
+            }
+
+            return EnsureConsole(console).Prompt(prompt, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a simple list of choices and returns all selected indexes.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The multi-selection result describing selected indexes or cancellation state.</returns>
+        public static MultiSelectionResult MultiSelect(this IAnsiConsole console, string message, bool clear = false, params string[] options)
+        {
+            return MultiSelect(console, message, clear, false, CancellationToken.None, options);
+        }
+
+        /// <summary>
+        /// Prompts with a simple list of choices and returns all selected indexes.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The multi-selection result describing selected indexes or cancellation state.</returns>
+        public static MultiSelectionResult MultiSelect(this IAnsiConsole console, string message, bool clear = false, bool allowEmpty = false, params string[] options)
+        {
+            return MultiSelect(console, message, clear, allowEmpty, CancellationToken.None, options);
+        }
+
+        /// <summary>
+        /// Prompts with a simple list of choices and returns all selected indexes.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The multi-selection result describing selected indexes or cancellation state.</returns>
+        public static MultiSelectionResult MultiSelect(this IAnsiConsole console, string message, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default, params string[] options)
+        {
+            return EnsureConsole(console).Prompt(new MultiSelectionPrompt(message, clear, allowEmpty, options ?? Array.Empty<string>()), cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a list of choices, marks default options, and returns all selected indexes.
+        /// </summary>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <param name="defaultOptions">Optional option labels selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The multi-selection result describing selected indexes or cancellation state.</returns>
+        public static MultiSelectionResult MultiSelect(this IAnsiConsole console, string message, IEnumerable<string> options, IEnumerable<string> defaultOptions = null, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            var defaults = new HashSet<string>(defaultOptions ?? Array.Empty<string>(), StringComparer.Ordinal);
+            var prompt = new MultiSelectionPrompt(message, clear, allowEmpty);
+            foreach (string option in options)
+            {
+                prompt.Add(option, isDefault: defaults.Contains(option));
+            }
+
+            return EnsureConsole(console).Prompt(prompt, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(this IAnsiConsole console, string message, Func<T, string> labelSelector, bool clear = false, params T[] options)
+        {
+            return MultiSelect(console, message, labelSelector, clear, false, CancellationToken.None, options);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(this IAnsiConsole console, string message, Func<T, string> labelSelector, bool clear = false, bool allowEmpty = false, params T[] options)
+        {
+            return MultiSelect(console, message, labelSelector, clear, allowEmpty, CancellationToken.None, options);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(this IAnsiConsole console, string message, Func<T, string> labelSelector, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default, params T[] options)
+        {
+            if (labelSelector == null)
+            {
+                throw new ArgumentNullException(nameof(labelSelector));
+            }
+
+            return MultiSelect(console, message, options ?? Array.Empty<T>(), labelSelector, (Func<T, bool>)null, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(this IAnsiConsole console, string message, IEnumerable<T> options, Func<T, string> labelSelector, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            return MultiSelect(console, message, options, labelSelector, (Func<T, bool>)null, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices, marks default items, and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="defaultItems">Optional items selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(this IAnsiConsole console, string message, IEnumerable<T> options, Func<T, string> labelSelector, IEnumerable<T> defaultItems, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            var defaults = new HashSet<T>(defaultItems ?? Array.Empty<T>());
+            return MultiSelect(console, message, options, labelSelector, item => defaults.Contains(item), clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices, marks items matching a default predicate, and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="isDefault">Optional predicate used to mark default options.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(this IAnsiConsole console, string message, IEnumerable<T> options, Func<T, string> labelSelector, Func<T, bool> isDefault, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (labelSelector == null)
+            {
+                throw new ArgumentNullException(nameof(labelSelector));
+            }
+
+            var prompt = new MultiSelectionPrompt<T>(message, clear, allowEmpty, labelSelector);
+            foreach (T option in options)
+            {
+                bool defaultOption = isDefault != null && isDefault(option);
+                prompt.Add(option, isDefault: defaultOption);
+            }
+
+            return EnsureConsole(console).Prompt(prompt, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with enum values and returns both the prompt result and selected enum value.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="defaultValue">Optional default value selected when the user presses Enter.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum selection result.</returns>
+        public static SelectionResult<TEnum> SelectEnum<TEnum>(this IAnsiConsole console, string message, bool clear = false, TEnum? defaultValue = null, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return SelectEnum(console, message, EnumValues<TEnum>(), null, clear, defaultValue, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with enum values and custom labels.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each enum value.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="defaultValue">Optional default value selected when the user presses Enter.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum selection result.</returns>
+        public static SelectionResult<TEnum> SelectEnum<TEnum>(this IAnsiConsole console, string message, Func<TEnum, string> labelSelector, bool clear = false, TEnum? defaultValue = null, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return SelectEnum(console, message, EnumValues<TEnum>(), labelSelector, clear, defaultValue, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a filtered set of enum values.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="values">Enum values to present.</param>
+        /// <param name="labelSelector">Optional function that creates a display label for each enum value.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="defaultValue">Optional default value selected when the user presses Enter.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum selection result.</returns>
+        public static SelectionResult<TEnum> SelectEnum<TEnum>(this IAnsiConsole console, string message, IEnumerable<TEnum> values, Func<TEnum, string> labelSelector = null, bool clear = false, TEnum? defaultValue = null, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            EnsureEnumType<TEnum>();
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
+
+            return Select(
+                console,
+                message,
+                values,
+                labelSelector ?? FormatEnumValue,
+                value => defaultValue.HasValue && EqualityComparer<TEnum>.Default.Equals(value, defaultValue.Value),
+                clear,
+                cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with enum values and returns selected enum values.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum multi-selection result.</returns>
+        public static MultiSelectionResult<TEnum> MultiSelectEnum<TEnum>(this IAnsiConsole console, string message, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return MultiSelectEnum(console, message, EnumValues<TEnum>(), null, null, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with enum values and custom labels.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each enum value.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum multi-selection result.</returns>
+        public static MultiSelectionResult<TEnum> MultiSelectEnum<TEnum>(this IAnsiConsole console, string message, Func<TEnum, string> labelSelector, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return MultiSelectEnum(console, message, EnumValues<TEnum>(), labelSelector, null, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a filtered set of enum values and returns selected enum values.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="console">The console facade to use.</param>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="values">Enum values to present.</param>
+        /// <param name="labelSelector">Optional function that creates a display label for each enum value.</param>
+        /// <param name="defaultValues">Optional enum values selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum multi-selection result.</returns>
+        public static MultiSelectionResult<TEnum> MultiSelectEnum<TEnum>(this IAnsiConsole console, string message, IEnumerable<TEnum> values, Func<TEnum, string> labelSelector = null, IEnumerable<TEnum> defaultValues = null, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            EnsureEnumType<TEnum>();
+            if (values == null)
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
+
+            var defaults = new HashSet<TEnum>(defaultValues ?? Array.Empty<TEnum>());
+            return MultiSelect(
+                console,
+                message,
+                values,
+                labelSelector ?? FormatEnumValue,
+                value => defaults.Contains(value),
+                clear,
+                allowEmpty,
+                cancellationToken);
         }
 
         /// <summary>
@@ -1144,6 +1770,142 @@ namespace ConsoulLibrary
             }
 
             return console;
+        }
+
+        private static IEnumerable<TEnum> EnumValues<TEnum>() where TEnum : struct
+        {
+            EnsureEnumType<TEnum>();
+            foreach (object value in Enum.GetValues(typeof(TEnum)))
+            {
+                yield return (TEnum)value;
+            }
+        }
+
+        private static void EnsureEnumType<TEnum>() where TEnum : struct
+        {
+            if (!typeof(TEnum).IsEnum)
+            {
+                throw new ArgumentException("TEnum must be an enum type.");
+            }
+        }
+
+        private static string FormatEnumValue<TEnum>(TEnum value) where TEnum : struct
+        {
+            string name = Enum.GetName(typeof(TEnum), value);
+            if (string.IsNullOrEmpty(name))
+            {
+                return value.ToString();
+            }
+
+            FieldInfo field = typeof(TEnum).GetField(name);
+            string label = ResolveEnumDisplayName(field);
+            return !string.IsNullOrWhiteSpace(label) ? label : SplitPascalCase(name);
+        }
+
+        private static string ResolveEnumDisplayName(FieldInfo field)
+        {
+            if (field == null)
+            {
+                return null;
+            }
+
+            object displayAttribute = null;
+            foreach (object attribute in field.GetCustomAttributes(true))
+            {
+                if (string.Equals(
+                    attribute.GetType().FullName,
+                    "System.ComponentModel.DataAnnotations.DisplayAttribute",
+                    StringComparison.Ordinal))
+                {
+                    displayAttribute = attribute;
+                    break;
+                }
+            }
+
+            if (displayAttribute != null)
+            {
+                string displayName = InvokeStringMethod(displayAttribute, "GetName");
+                if (!string.IsNullOrWhiteSpace(displayName))
+                {
+                    return displayName;
+                }
+            }
+
+            var displayNameAttribute = field.GetCustomAttribute<DisplayNameAttribute>(true);
+            if (displayNameAttribute != null && !string.IsNullOrWhiteSpace(displayNameAttribute.DisplayName))
+            {
+                return displayNameAttribute.DisplayName;
+            }
+
+            var descriptionAttribute = field.GetCustomAttribute<DescriptionAttribute>(true);
+            if (descriptionAttribute != null && !string.IsNullOrWhiteSpace(descriptionAttribute.Description))
+            {
+                return descriptionAttribute.Description;
+            }
+
+            return null;
+        }
+
+        private static string InvokeStringMethod(object target, string methodName)
+        {
+            var method = target.GetType().GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
+            return method?.Invoke(target, null) as string;
+        }
+
+        private static string SplitPascalCase(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            return Regex.Replace(value, "([a-z0-9])([A-Z])", "$1 $2");
+        }
+
+        private static PanelOptions CreatePanelOptions(string title, int? width, ConsoleColor? color, ConsoleColor? borderColor)
+        {
+            var options = new PanelOptions
+            {
+                Title = title,
+                Width = width
+            };
+
+            if (color.HasValue)
+            {
+                options.ContentScheme = CreateColorScheme(color.Value);
+            }
+
+            if (borderColor.HasValue)
+            {
+                options.BorderScheme = CreateColorScheme(borderColor.Value);
+            }
+
+            return options;
+        }
+
+        private static RuleOptions CreateRuleOptions(Justify alignment, int? width, ConsoleColor? color)
+        {
+            var options = new RuleOptions
+            {
+                Width = width,
+                Alignment = JustifyMap.ToRuleTitleAlignment(alignment)
+            };
+
+            if (color.HasValue)
+            {
+                options.RuleScheme = CreateColorScheme(color.Value);
+            }
+
+            return options;
+        }
+
+        private static ColorScheme CreateColorScheme(ConsoleColor color)
+        {
+            return new ColorScheme
+            {
+                Color = color,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            };
         }
     }
 }

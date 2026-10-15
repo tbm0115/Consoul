@@ -36,6 +36,186 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a timeline step and returns the current timeline builder for fluent snippets.
+        /// </summary>
+        /// <param name="title">The primary step text.</param>
+        /// <param name="state">The rendered step state.</param>
+        /// <param name="description">Optional descriptive text rendered below the title.</param>
+        /// <param name="timestamp">Optional timestamp rendered before the title.</param>
+        /// <param name="titleColor">Optional foreground color used for the title.</param>
+        /// <param name="markerColor">Optional foreground color used for the marker.</param>
+        /// <param name="descriptionColor">Optional foreground color used for the description.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public new Timeline Add(
+            string title,
+            TimelineItemState state = TimelineItemState.Pending,
+            string description = null,
+            DateTimeOffset? timestamp = null,
+            ConsoleColor? titleColor = null,
+            ConsoleColor? markerColor = null,
+            ConsoleColor? descriptionColor = null)
+        {
+            base.Add(title, state, description, timestamp, titleColor, markerColor, descriptionColor);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a timeline step using reusable style objects and returns the current timeline builder.
+        /// </summary>
+        /// <param name="title">The primary step text.</param>
+        /// <param name="titleStyle">Optional style used for the title.</param>
+        /// <param name="markerStyle">Optional style used for the marker.</param>
+        /// <param name="descriptionStyle">Optional style used for the description.</param>
+        /// <param name="state">The rendered step state.</param>
+        /// <param name="description">Optional descriptive text rendered below the title.</param>
+        /// <param name="timestamp">Optional timestamp rendered before the title.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public new Timeline Add(
+            string title,
+            Style titleStyle,
+            Style markerStyle = null,
+            Style descriptionStyle = null,
+            TimelineItemState state = TimelineItemState.Pending,
+            string description = null,
+            DateTimeOffset? timestamp = null)
+        {
+            base.Add(title, titleStyle, markerStyle, descriptionStyle, state, description, timestamp);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an existing timeline item and returns the current timeline builder.
+        /// </summary>
+        /// <param name="item">The item to add.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public new Timeline Add(TimelineItem item)
+        {
+            base.Add(item);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds existing timeline items and returns the current timeline builder.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline Add(IEnumerable<TimelineItem> items)
+        {
+            return AddSteps(items);
+        }
+
+        /// <summary>
+        /// Adds existing timeline items and returns the current timeline builder.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline Add(TimelineItem firstItem, params TimelineItem[] additionalItems)
+        {
+            return AddSteps(firstItem, additionalItems);
+        }
+
+        /// <summary>
+        /// Adds timeline steps projected from a model collection and returns the current timeline builder.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into timeline steps.</param>
+        /// <param name="titleSelector">Selects the step title.</param>
+        /// <param name="stateSelector">Optionally selects the step state. Steps default to <see cref="TimelineItemState.Pending"/>.</param>
+        /// <param name="descriptionSelector">Optionally selects the step description.</param>
+        /// <param name="timestampSelector">Optionally selects the step timestamp.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> titleSelector,
+            Func<T, TimelineItemState> stateSelector = null,
+            Func<T, string> descriptionSelector = null,
+            Func<T, DateTimeOffset?> timestampSelector = null)
+        {
+            return AddSteps(items, titleSelector, stateSelector, descriptionSelector, timestampSelector);
+        }
+
+        /// <summary>
+        /// Adds timeline steps projected from a model collection using Spectre-style colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into timeline steps.</param>
+        /// <param name="titleSelector">Selects the step title.</param>
+        /// <param name="titleColorSelector">Selects a Spectre-style color for the step title.</param>
+        /// <param name="markerColorSelector">Optionally selects a Spectre-style color for the step marker.</param>
+        /// <param name="descriptionColorSelector">Optionally selects a Spectre-style color for the step description.</param>
+        /// <param name="stateSelector">Optionally selects the step state. Steps default to <see cref="TimelineItemState.Pending"/>.</param>
+        /// <param name="descriptionSelector">Optionally selects the step description.</param>
+        /// <param name="timestampSelector">Optionally selects the step timestamp.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> titleSelector,
+            Func<T, SpectreColor> titleColorSelector,
+            Func<T, SpectreColor> markerColorSelector = null,
+            Func<T, SpectreColor> descriptionColorSelector = null,
+            Func<T, TimelineItemState> stateSelector = null,
+            Func<T, string> descriptionSelector = null,
+            Func<T, DateTimeOffset?> timestampSelector = null)
+        {
+            return AddSteps(
+                items,
+                titleSelector,
+                titleColorSelector,
+                markerColorSelector,
+                descriptionColorSelector,
+                stateSelector,
+                descriptionSelector,
+                timestampSelector);
+        }
+
+        /// <summary>
+        /// Adds timeline steps projected from a model collection using RGB colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into timeline steps.</param>
+        /// <param name="titleSelector">Selects the step title.</param>
+        /// <param name="titleColorSelector">Selects an RGB color for the step title.</param>
+        /// <param name="markerColorSelector">Optionally selects an RGB color for the step marker.</param>
+        /// <param name="descriptionColorSelector">Optionally selects an RGB color for the step description.</param>
+        /// <param name="stateSelector">Optionally selects the step state. Steps default to <see cref="TimelineItemState.Pending"/>.</param>
+        /// <param name="descriptionSelector">Optionally selects the step description.</param>
+        /// <param name="timestampSelector">Optionally selects the step timestamp.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> titleSelector,
+            Func<T, RgbColor> titleColorSelector,
+            Func<T, RgbColor> markerColorSelector = null,
+            Func<T, RgbColor> descriptionColorSelector = null,
+            Func<T, TimelineItemState> stateSelector = null,
+            Func<T, string> descriptionSelector = null,
+            Func<T, DateTimeOffset?> timestampSelector = null)
+        {
+            return AddSteps(
+                items,
+                titleSelector,
+                titleColorSelector,
+                markerColorSelector,
+                descriptionColorSelector,
+                stateSelector,
+                descriptionSelector,
+                timestampSelector);
+        }
+
+        /// <summary>
+        /// Adds timeline steps projected from a model collection and returns the current timeline builder.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into timeline steps.</param>
+        /// <param name="itemSelector">Selects the timeline item to add for each model item.</param>
+        /// <returns>The current <see cref="Timeline"/> instance.</returns>
+        public Timeline Add<T>(IEnumerable<T> items, Func<T, TimelineItem> itemSelector)
+        {
+            return AddSteps(items, itemSelector);
+        }
+
+        /// <summary>
         /// Adds a timeline step.
         /// </summary>
         /// <param name="title">The primary step text.</param>

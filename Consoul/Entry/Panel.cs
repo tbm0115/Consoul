@@ -161,6 +161,18 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the panel title/header and style rendered in the top border from Spectre-style style text.
+        /// </summary>
+        /// <param name="header">The title/header text.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <param name="alignment">Optional title/header justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Header(string header, string style, Justify? alignment = null)
+        {
+            return ApplyHeader(header, alignment, Style.Parse(style));
+        }
+
+        /// <summary>
         /// Sets the panel title/header and alignment rendered in the top border.
         /// </summary>
         /// <param name="header">The title/header text.</param>
@@ -189,6 +201,40 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the panel title/header from captured renderable content.
+        /// </summary>
+        /// <param name="header">The renderable component used to produce the title/header text.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Header(IConsoulRenderable header)
+        {
+            return ApplyHeader(FormatHeaderFooter(header), null, null);
+        }
+
+        /// <summary>
+        /// Sets the panel title/header from captured renderable content and alignment.
+        /// </summary>
+        /// <param name="header">The renderable component used to produce the title/header text.</param>
+        /// <param name="alignment">The title/header justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Header(IConsoulRenderable header, Justify alignment)
+        {
+            return ApplyHeader(FormatHeaderFooter(header), alignment, null);
+        }
+
+        /// <summary>
+        /// Sets the panel title/header from captured renderable content and alignment.
+        /// </summary>
+        /// <param name="header">The renderable component used to produce the title/header text.</param>
+        /// <param name="alignment">The title/header alignment.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Header(IConsoulRenderable header, TextBlockAlignment alignment)
+        {
+            Options.Title = FormatHeaderFooter(header);
+            Options.TitleAlignment = alignment;
+            return this;
+        }
+
+        /// <summary>
         /// Sets the panel title rendered in the top border.
         /// </summary>
         /// <param name="title">The title text.</param>
@@ -205,6 +251,109 @@ namespace ConsoulLibrary
         /// <param name="alignment">The title justification.</param>
         /// <returns>The current <see cref="Panel"/> instance.</returns>
         public Panel Title(string title, Justify alignment)
+        {
+            return Header(title, alignment);
+        }
+
+        /// <summary>
+        /// Sets the panel title and alignment rendered in the top border.
+        /// </summary>
+        /// <param name="title">The title text.</param>
+        /// <param name="alignment">The title alignment.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Title(string title, TextBlockAlignment alignment)
+        {
+            return Header(title, alignment);
+        }
+
+        /// <summary>
+        /// Sets the panel title and foreground color rendered in the top border.
+        /// </summary>
+        /// <param name="title">The title text.</param>
+        /// <param name="color">The title foreground color.</param>
+        /// <param name="alignment">Optional title justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Title(string title, ConsoleColor color, Justify? alignment = null)
+        {
+            return Header(title, color, alignment);
+        }
+
+        /// <summary>
+        /// Sets the panel title and foreground color rendered in the top border from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="title">The title text.</param>
+        /// <param name="color">The title foreground color.</param>
+        /// <param name="alignment">Optional title justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Title(string title, SpectreColor color, Justify? alignment = null)
+        {
+            return Header(title, color, alignment);
+        }
+
+        /// <summary>
+        /// Sets the panel title and foreground color rendered in the top border from an RGB value mapped to Consoul's console palette.
+        /// </summary>
+        /// <param name="title">The title text.</param>
+        /// <param name="color">The title foreground color.</param>
+        /// <param name="alignment">Optional title justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Title(string title, RgbColor color, Justify? alignment = null)
+        {
+            return Header(title, color, alignment);
+        }
+
+        /// <summary>
+        /// Sets the panel title and style rendered in the top border from Spectre-style style text.
+        /// </summary>
+        /// <param name="title">The title text.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <param name="alignment">Optional title justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Title(string title, string style, Justify? alignment = null)
+        {
+            return Header(title, style, alignment);
+        }
+
+        /// <summary>
+        /// Sets the panel title and style rendered in the top border.
+        /// </summary>
+        /// <param name="title">The title text.</param>
+        /// <param name="style">The title style.</param>
+        /// <param name="alignment">Optional title justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Title(string title, Style style, Justify? alignment = null)
+        {
+            return Header(title, style, alignment);
+        }
+
+        /// <summary>
+        /// Sets the panel title from captured renderable content.
+        /// </summary>
+        /// <param name="title">The renderable component used to produce the title text.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Title(IConsoulRenderable title)
+        {
+            return Header(title);
+        }
+
+        /// <summary>
+        /// Sets the panel title from captured renderable content and alignment.
+        /// </summary>
+        /// <param name="title">The renderable component used to produce the title text.</param>
+        /// <param name="alignment">The title justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Title(IConsoulRenderable title, Justify alignment)
+        {
+            return Header(title, alignment);
+        }
+
+        /// <summary>
+        /// Sets the panel title from captured renderable content and alignment.
+        /// </summary>
+        /// <param name="title">The renderable component used to produce the title text.</param>
+        /// <param name="alignment">The title alignment.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Title(IConsoulRenderable title, TextBlockAlignment alignment)
         {
             return Header(title, alignment);
         }
@@ -228,6 +377,19 @@ namespace ConsoulLibrary
         public Panel Footer(string footer, Justify alignment)
         {
             return ApplyFooter(footer, alignment, null);
+        }
+
+        /// <summary>
+        /// Sets the panel footer and alignment rendered in the bottom border.
+        /// </summary>
+        /// <param name="footer">The footer text.</param>
+        /// <param name="alignment">The footer alignment.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Footer(string footer, TextBlockAlignment alignment)
+        {
+            Options.Footer = footer;
+            Options.FooterAlignment = alignment;
+            return this;
         }
 
         /// <summary>
@@ -279,6 +441,18 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the panel footer and style rendered in the bottom border from Spectre-style style text.
+        /// </summary>
+        /// <param name="footer">The footer text.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <param name="alignment">Optional footer justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Footer(string footer, string style, Justify? alignment = null)
+        {
+            return ApplyFooter(footer, alignment, Style.Parse(style));
+        }
+
+        /// <summary>
         /// Sets the panel footer from reusable header/footer metadata.
         /// </summary>
         /// <param name="footer">The footer metadata.</param>
@@ -291,6 +465,40 @@ namespace ConsoulLibrary
             }
 
             return ApplyFooter(footer.Text, footer.Justification, null);
+        }
+
+        /// <summary>
+        /// Sets the panel footer from captured renderable content.
+        /// </summary>
+        /// <param name="footer">The renderable component used to produce the footer text.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Footer(IConsoulRenderable footer)
+        {
+            return ApplyFooter(FormatHeaderFooter(footer), null, null);
+        }
+
+        /// <summary>
+        /// Sets the panel footer from captured renderable content and alignment.
+        /// </summary>
+        /// <param name="footer">The renderable component used to produce the footer text.</param>
+        /// <param name="alignment">The footer justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Footer(IConsoulRenderable footer, Justify alignment)
+        {
+            return ApplyFooter(FormatHeaderFooter(footer), alignment, null);
+        }
+
+        /// <summary>
+        /// Sets the panel footer from captured renderable content and alignment.
+        /// </summary>
+        /// <param name="footer">The renderable component used to produce the footer text.</param>
+        /// <param name="alignment">The footer alignment.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Footer(IConsoulRenderable footer, TextBlockAlignment alignment)
+        {
+            Options.Footer = FormatHeaderFooter(footer);
+            Options.FooterAlignment = alignment;
+            return this;
         }
 
         /// <summary>
@@ -495,6 +703,114 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Uses the simple heavy border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel SimpleHeavyBorder()
+        {
+            return Border(BoxBorder.SimpleHeavy);
+        }
+
+        /// <summary>
+        /// Uses a minimal border preset with no visible frame.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel MinimalBorder()
+        {
+            return Border(BoxBorder.Minimal);
+        }
+
+        /// <summary>
+        /// Uses the closest available minimal heavy-header border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel MinimalHeavyHeadBorder()
+        {
+            return Border(BoxBorder.MinimalHeavyHead);
+        }
+
+        /// <summary>
+        /// Uses the closest available minimal double-header border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel MinimalDoubleHeadBorder()
+        {
+            return Border(BoxBorder.MinimalDoubleHead);
+        }
+
+        /// <summary>
+        /// Uses the closest available horizontal border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel HorizontalBorder()
+        {
+            return Border(BoxBorder.Horizontal);
+        }
+
+        /// <summary>
+        /// Uses the alternate ASCII border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel Ascii2Border()
+        {
+            return Border(BoxBorder.Ascii2);
+        }
+
+        /// <summary>
+        /// Uses the closest available ASCII double-header border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel AsciiDoubleHeadBorder()
+        {
+            return Border(BoxBorder.AsciiDoubleHead);
+        }
+
+        /// <summary>
+        /// Uses the markdown-friendly ASCII border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel MarkdownBorder()
+        {
+            return Border(BoxBorder.Markdown);
+        }
+
+        /// <summary>
+        /// Uses the closest available heavy edge border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel HeavyEdgeBorder()
+        {
+            return Border(BoxBorder.HeavyEdge);
+        }
+
+        /// <summary>
+        /// Uses the closest available heavy-header border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel HeavyHeadBorder()
+        {
+            return Border(BoxBorder.HeavyHead);
+        }
+
+        /// <summary>
+        /// Uses the closest available double edge border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel DoubleEdgeBorder()
+        {
+            return Border(BoxBorder.DoubleEdge);
+        }
+
+        /// <summary>
+        /// Uses a terminal-safe ASCII border preset.
+        /// </summary>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel SafeBorder()
+        {
+            return Border(BoxBorder.Safe);
+        }
+
+        /// <summary>
         /// Sets custom border characters.
         /// </summary>
         /// <param name="topLeft">The top-left corner character.</param>
@@ -536,6 +852,26 @@ namespace ConsoulLibrary
         {
             Options.TitleAlignment = JustifyMap.ToTextBlockAlignment(justify);
             return this;
+        }
+
+        /// <summary>
+        /// Sets the title alignment.
+        /// </summary>
+        /// <param name="alignment">The title alignment.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel TitleAlignment(TextBlockAlignment alignment)
+        {
+            return HeaderAlignment(alignment);
+        }
+
+        /// <summary>
+        /// Sets the title alignment using Spectre-style builder vocabulary.
+        /// </summary>
+        /// <param name="justify">The title justification.</param>
+        /// <returns>The current <see cref="Panel"/> instance.</returns>
+        public Panel TitleAlignment(Justify justify)
+        {
+            return HeaderAlignment(justify);
         }
 
         /// <summary>
@@ -824,6 +1160,28 @@ namespace ConsoulLibrary
             }
 
             return renderable.Render;
+        }
+
+        private static string FormatHeaderFooter(IConsoulRenderable renderable)
+        {
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            var markup = renderable as MarkupEntry;
+            if (markup != null)
+            {
+                return markup.Markup ?? string.Empty;
+            }
+
+            var textBlock = renderable as TextBlockEntry;
+            if (textBlock != null)
+            {
+                return textBlock.Content ?? string.Empty;
+            }
+
+            return RenderActionContent.Capture(renderable, 80, 20).Trim();
         }
 
         private static int ResolveCaptureWidth(PanelOptions options)

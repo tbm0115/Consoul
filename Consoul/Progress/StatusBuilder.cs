@@ -25,6 +25,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Enables immediate rendering for status changes.
+        /// </summary>
+        /// <returns>The current builder.</returns>
+        public StatusBuilder AutoRefresh()
+        {
+            return AutoRefresh(true);
+        }
+
+        /// <summary>
         /// Sets whether status changes render immediately or wait for an explicit refresh.
         /// </summary>
         /// <param name="enabled"><c>true</c> to render changes immediately; otherwise, <c>false</c>.</param>
@@ -33,6 +42,15 @@ namespace ConsoulLibrary
         {
             _options.AutoRefresh = enabled;
             return this;
+        }
+
+        /// <summary>
+        /// Disables immediate rendering so status changes wait for an explicit refresh.
+        /// </summary>
+        /// <returns>The current builder.</returns>
+        public StatusBuilder ManualRefresh()
+        {
+            return AutoRefresh(false);
         }
 
         /// <summary>

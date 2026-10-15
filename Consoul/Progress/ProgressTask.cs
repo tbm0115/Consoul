@@ -385,22 +385,25 @@ namespace ConsoulLibrary
 
         internal void Render()
         {
-            if (_context.ShouldHide(this))
+            using (_context.UseCapturedDriver())
             {
-                Clear(preservePosition: true);
-                return;
-            }
+                if (_context.ShouldHide(this))
+                {
+                    Clear(preservePosition: true);
+                    return;
+                }
 
-            _renderCount++;
-            ConsoleColor color = _context.ResolveColor(this);
-            if (_context.UsesSegmentRendering(this))
-            {
-                IReadOnlyList<FixedMessageSegment> row = _context.FormatRowSegments(this, color);
-                _message.RenderSegments(row, color);
-                return;
-            }
+                _renderCount++;
+                ConsoleColor color = _context.ResolveColor(this);
+                if (_context.UsesSegmentRendering(this))
+                {
+                    IReadOnlyList<FixedMessageSegment> row = _context.FormatRowSegments(this, color);
+                    _message.RenderSegments(row, color);
+                    return;
+                }
 
-            _message.Render(_context.FormatRow(this), color);
+                _message.Render(_context.FormatRow(this), color);
+            }
         }
 
         internal void SetRefreshRate(int milliseconds)
@@ -415,13 +418,16 @@ namespace ConsoulLibrary
 
         internal void Clear(bool preservePosition)
         {
-            int left = _message.FixedLeft;
-            int top = _message.FixedTop;
-            bool hadPosition = _message.HasFixedPosition;
-            _message.Reset();
-            if (preservePosition && hadPosition)
+            using (_context.UseCapturedDriver())
             {
-                _message.SetFixedPosition(left, top);
+                int left = _message.FixedLeft;
+                int top = _message.FixedTop;
+                bool hadPosition = _message.HasFixedPosition;
+                _message.Reset();
+                if (preservePosition && hadPosition)
+                {
+                    _message.SetFixedPosition(left, top);
+                }
             }
         }
 

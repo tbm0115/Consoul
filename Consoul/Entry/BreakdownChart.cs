@@ -27,6 +27,193 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds an item to the chart and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <param name="label">The item label.</param>
+        /// <param name="value">The item value.</param>
+        /// <param name="color">Optional foreground color used for the item segment.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public new BreakdownChart Add(string label, double value, ConsoleColor? color = null)
+        {
+            base.Add(label, value, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an item to the chart with a Spectre-style color facade and returns the current chart.
+        /// </summary>
+        /// <param name="label">The item label.</param>
+        /// <param name="value">The item value.</param>
+        /// <param name="color">The foreground color used for the item segment.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Add(string label, double value, SpectreColor color)
+        {
+            AddItem(label, value, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an item to the chart with an RGB color and returns the current chart.
+        /// </summary>
+        /// <param name="label">The item label.</param>
+        /// <param name="value">The item value.</param>
+        /// <param name="color">The foreground color used for the item segment.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Add(string label, double value, RgbColor color)
+        {
+            AddItem(label, value, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an item to the chart with segment color parsed from Spectre-style style text and returns the current chart.
+        /// </summary>
+        /// <param name="label">The item label.</param>
+        /// <param name="value">The item value.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public new BreakdownChart Add(string label, double value, string style)
+        {
+            AddItem(label, value, style);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an item to the chart with segment color resolved from a reusable style and returns the current chart.
+        /// </summary>
+        /// <param name="label">The item label.</param>
+        /// <param name="value">The item value.</param>
+        /// <param name="style">Optional style used for the item segment.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public new BreakdownChart Add(string label, double value, Style style)
+        {
+            AddItem(label, value, style);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an existing item to the chart and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <param name="item">The item to add.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public new BreakdownChart Add(BreakdownChartItem item)
+        {
+            base.Add(item);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds existing items to the chart and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Add(IEnumerable<BreakdownChartItem> items)
+        {
+            return AddItems(items);
+        }
+
+        /// <summary>
+        /// Adds existing items to the chart and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Add(BreakdownChartItem firstItem, params BreakdownChartItem[] additionalItems)
+        {
+            return AddItems(firstItem, additionalItems);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the item label.</param>
+        /// <param name="valueSelector">Selects the item value.</param>
+        /// <param name="colorSelector">Optionally selects the foreground color used for each item segment.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, ConsoleColor?> colorSelector = null)
+        {
+            return AddItems(items, labelSelector, valueSelector, colorSelector);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection with reusable per-item styles.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the item label.</param>
+        /// <param name="valueSelector">Selects the item value.</param>
+        /// <param name="styleSelector">Selects the style used for each item segment.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, Style> styleSelector)
+        {
+            return AddItems(items, labelSelector, valueSelector, styleSelector);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection with Spectre-style per-item colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the item label.</param>
+        /// <param name="valueSelector">Selects the item value.</param>
+        /// <param name="colorSelector">Selects the foreground color used for each item segment.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, SpectreColor> colorSelector)
+        {
+            return AddItems(items, labelSelector, valueSelector, colorSelector);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection with RGB per-item colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the item label.</param>
+        /// <param name="valueSelector">Selects the item value.</param>
+        /// <param name="colorSelector">Selects the foreground color used for each item segment.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, RgbColor> colorSelector)
+        {
+            return AddItems(items, labelSelector, valueSelector, colorSelector);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection with per-item colors parsed from Spectre-style style text.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the item label.</param>
+        /// <param name="valueSelector">Selects the item value.</param>
+        /// <param name="styleSelector">Selects style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, string> styleSelector)
+        {
+            return AddItems(items, labelSelector, valueSelector, styleSelector);
+        }
+
+        /// <summary>
         /// Adds an item to the chart.
         /// </summary>
         /// <param name="label">The item label.</param>
@@ -35,7 +222,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
         public BreakdownChart AddItem(string label, double value, ConsoleColor? color = null)
         {
-            Add(label, value, color);
+            base.Add(label, value, color);
             return this;
         }
 
@@ -389,6 +576,18 @@ namespace ConsoulLibrary
         public BreakdownChart Expand()
         {
             Options.Width = null;
+            Options.Expand = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Collapses the chart to a measured content width when no explicit width is set.
+        /// </summary>
+        /// <returns>The current <see cref="BreakdownChart"/> instance.</returns>
+        public BreakdownChart Collapse()
+        {
+            Options.Width = null;
+            Options.Expand = false;
             return this;
         }
 

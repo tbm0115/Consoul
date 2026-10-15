@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
+using SpectreColor = ConsoulLibrary.Color.Color;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Rendering
@@ -538,6 +539,35 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Direct text prompt palette overloads preserve RGB metadata instead of falling back through ConsoleColor conversions.
+        /// </summary>
+        [Fact]
+        public void TextPrompt_DirectPaletteStyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("qa\nprod\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            TextPromptResult<string> result = console.Prompt(
+                new TextPrompt<string>("Deploy environment")
+                    .PromptStyle(SpectreColor.FromHex("#112233"))
+                    .InvalidStyle(RgbColor.FromHex("#445566"))
+                    .AddChoices("dev", "prod"));
+
+            Assert.True(result.HasValue);
+            Assert.Equal("prod", result.Value);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;17;34;51mDeploy environment", output);
+            Assert.Contains("\u001b[38;2;68;85;102mValue must be one of", output);
+        }
+
+        /// <summary>
         /// Secret text prompt mask styling preserves RGB and decoration metadata for true-color terminals.
         /// </summary>
         [Fact]
@@ -566,6 +596,43 @@ namespace ConsoulLibrary.Tests.Rendering
 
                 string output = writer.ToString();
                 Assert.Contains("\u001b[1;38;2;17;34;51m***********", output);
+                Assert.DoesNotContain("token-value", output);
+            }
+            finally
+            {
+                Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+            }
+        }
+
+        /// <summary>
+        /// Direct text prompt mask palette overloads preserve RGB metadata instead of falling back through ConsoleColor conversions.
+        /// </summary>
+        [Fact]
+        public void TextPrompt_DirectPaletteMaskStyleHelperEmitsTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader(string.Empty),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            Routines.InitializeRoutine(new TestRoutine(new[] { "token-value" }));
+
+            try
+            {
+                TextPromptResult<string> result = console.Prompt(
+                    new TextPrompt<string>("API token")
+                        .Secret()
+                        .Mask('*')
+                        .MaskStyle(RgbColor.FromHex("#112233")));
+
+                Assert.True(result.HasValue);
+                Assert.Equal("token-value", result.Value);
+
+                string output = writer.ToString();
+                Assert.Contains("\u001b[38;2;17;34;51m***********", output);
                 Assert.DoesNotContain("token-value", output);
             }
             finally
@@ -612,6 +679,46 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Direct secret prompt palette overloads preserve RGB metadata instead of falling back through ConsoleColor conversions.
+        /// </summary>
+        [Fact]
+        public void SecretPrompt_DirectPaletteStyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader(string.Empty),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            Routines.InitializeRoutine(new TestRoutine(new[] { string.Empty, "secret-value" }));
+
+            try
+            {
+                SecretResult result = console.Prompt(
+                    new SecretPrompt("Secret value")
+                        .PromptStyle(SpectreColor.FromHex("#112233"))
+                        .Mask('#')
+                        .MaskStyle(RgbColor.FromHex("#445566"))
+                        .InvalidStyle(RgbColor.FromHex("#778899")));
+
+                Assert.True(result.HasValue);
+                Assert.Equal("secret-value", result.Value);
+
+                string output = writer.ToString();
+                Assert.Contains("\u001b[38;2;17;34;51mSecret value", output);
+                Assert.Contains("\u001b[38;2;119;136;153mA value is required.", output);
+                Assert.Contains("\u001b[38;2;68;85;102m############", output);
+                Assert.DoesNotContain("secret-value", output);
+            }
+            finally
+            {
+                Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+            }
+        }
+
+        /// <summary>
         /// Confirmation prompt title, choices, default value, and invalid styles preserve RGB and decorations.
         /// </summary>
         [Fact]
@@ -641,6 +748,34 @@ namespace ConsoulLibrary.Tests.Rendering
             Assert.Contains("\u001b[4;38;2;119;136;153mY", output);
             Assert.Contains("\u001b[3;38;2;68;85;102mn", output);
             Assert.Contains("\u001b[1;38;2;171;205;239mPlease select one of the available options.", output);
+        }
+
+        /// <summary>
+        /// Direct confirmation prompt palette overloads preserve RGB metadata instead of falling back through ConsoleColor conversions.
+        /// </summary>
+        [Fact]
+        public void ConfirmPrompt_DirectPaletteStyleHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                In = new StringReader("maybe\nyes\n"),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            ConfirmResult result = console.Prompt(
+                new ConfirmPrompt("Deploy?")
+                    .PromptStyle(SpectreColor.FromHex("#223344"))
+                    .InvalidStyle(RgbColor.FromHex("#abcdef")));
+
+            Assert.True(result.HasValue);
+            Assert.True(result.Value);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;34;51;68mDeploy?", output);
+            Assert.Contains("\u001b[38;2;171;205;239mPlease answer yes or no.", output);
         }
 
         /// <summary>

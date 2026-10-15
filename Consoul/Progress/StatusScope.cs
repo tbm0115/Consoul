@@ -319,6 +319,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Enables immediate rendering after status changes.
+        /// </summary>
+        /// <returns>The current status scope.</returns>
+        public StatusScope AutoRefresh()
+        {
+            return AutoRefresh(true);
+        }
+
+        /// <summary>
         /// Enables or disables immediate rendering after status changes.
         /// </summary>
         /// <param name="enabled"><c>true</c> to render changes immediately; otherwise, <c>false</c>.</param>
@@ -328,6 +337,15 @@ namespace ConsoulLibrary
             ThrowIfDisposed();
             _options.AutoRefresh = enabled;
             return this;
+        }
+
+        /// <summary>
+        /// Disables immediate rendering so status changes wait for an explicit refresh.
+        /// </summary>
+        /// <returns>The current status scope.</returns>
+        public StatusScope ManualRefresh()
+        {
+            return AutoRefresh(false);
         }
 
         /// <summary>

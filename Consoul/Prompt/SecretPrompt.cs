@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -147,6 +149,26 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the color used for the prompt message from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
+        public SecretPrompt PromptStyle(SpectreColor color)
+        {
+            return PromptStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from an RGB value.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
+        public SecretPrompt PromptStyle(RgbColor color)
+        {
+            return PromptStyle(new Style(color));
+        }
+
+        /// <summary>
         /// Sets the color used for the prompt message from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -174,6 +196,26 @@ namespace ConsoulLibrary
         /// <param name="color">The prompt message color.</param>
         /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
         public SecretPrompt Style(ConsoleColor color)
+        {
+            return PromptStyle(color);
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
+        public SecretPrompt Style(SpectreColor color)
+        {
+            return PromptStyle(color);
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from an RGB value.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
+        public SecretPrompt Style(RgbColor color)
         {
             return PromptStyle(color);
         }
@@ -221,6 +263,26 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the color used for rendered mask characters from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The mask character color.</param>
+        /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
+        public SecretPrompt MaskStyle(SpectreColor color)
+        {
+            return MaskStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the color used for rendered mask characters from an RGB value.
+        /// </summary>
+        /// <param name="color">The mask character color.</param>
+        /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
+        public SecretPrompt MaskStyle(RgbColor color)
+        {
+            return MaskStyle(new Style(color));
+        }
+
+        /// <summary>
         /// Sets the color used for rendered mask characters from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -251,6 +313,26 @@ namespace ConsoulLibrary
         {
             InvalidColor = color;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for invalid input messages from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The invalid input message color.</param>
+        /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
+        public SecretPrompt InvalidStyle(SpectreColor color)
+        {
+            return InvalidStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the color used for invalid input messages from an RGB value.
+        /// </summary>
+        /// <param name="color">The invalid input message color.</param>
+        /// <returns>The current <see cref="SecretPrompt"/> instance.</returns>
+        public SecretPrompt InvalidStyle(RgbColor color)
+        {
+            return InvalidStyle(new Style(color));
         }
 
         /// <summary>

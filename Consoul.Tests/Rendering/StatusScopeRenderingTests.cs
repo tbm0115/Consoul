@@ -436,6 +436,72 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// No-argument auto/manual refresh aliases keep status and spinner POC flows consistent with progress contexts.
+        /// </summary>
+        [Fact]
+        public void StatusAndSpinner_ManualRefreshAliases_DeferActiveWritesUntilRefresh()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                AnsiConsole.Status()
+                    .AutoRefresh()
+                    .ManualRefresh()
+                    .Start("Status builder", status =>
+                    {
+                        int writesBeforeUpdate = scope.Driver.Writes.Count;
+                        status.Status("Status builder waiting");
+
+                        Assert.Equal(writesBeforeUpdate, scope.Driver.Writes.Count);
+
+                        status.Refresh();
+
+                        Assert.True(scope.Driver.Writes.Count > writesBeforeUpdate);
+                    });
+
+                using (StatusScope status = Consoul.Status("Status scope").AutoRefresh().ManualRefresh())
+                {
+                    int writesBeforeUpdate = scope.Driver.Writes.Count;
+                    status.Status("Status scope waiting");
+
+                    Assert.Equal(writesBeforeUpdate, scope.Driver.Writes.Count);
+
+                    status.Refresh();
+                    status.Succeed("Status scope done");
+                }
+
+                AnsiConsole.Spinner()
+                    .AutoRefresh()
+                    .ManualRefresh()
+                    .Start("Spinner builder", spinner =>
+                    {
+                        int writesBeforeTick = scope.Driver.Writes.Count;
+                        spinner.Tick("Spinner builder waiting");
+
+                        Assert.Equal(writesBeforeTick, scope.Driver.Writes.Count);
+
+                        spinner.Refresh();
+                    });
+
+                using (SpinnerScope spinner = Consoul.Spinner("Spinner scope").AutoRefresh().ManualRefresh())
+                {
+                    int writesBeforeTick = scope.Driver.Writes.Count;
+                    spinner.Tick("Spinner scope waiting");
+
+                    Assert.Equal(writesBeforeTick, scope.Driver.Writes.Count);
+
+                    spinner.Refresh();
+                    spinner.Succeed("Spinner scope done");
+                }
+
+                VisualAssert.WroteText(scope.Driver, "Status builder waiting");
+                VisualAssert.WroteText(scope.Driver, "Status scope waiting");
+                VisualAssert.WroteText(scope.Driver, "Spinner builder waiting");
+                VisualAssert.WroteText(scope.Driver, "Spinner scope waiting");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Spectre-style status context builders preserve success lifecycle behavior for synchronous and asynchronous POC flows.
         /// </summary>
         [Fact]

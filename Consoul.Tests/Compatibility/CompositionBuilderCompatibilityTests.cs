@@ -133,6 +133,42 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Rows aliases can add empty rows and rule separators without leaving the rows composition builder.
+        /// </summary>
+        [Fact]
+        public void Rows_FluentBuilder_AddsEmptyRowsAndRuleSeparators()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                var rows = new Rows()
+                    .Width(32)
+                    .Spacing(0)
+                    .AddRow("Build")
+                    .AddEmptyRow()
+                    .AddRule("[cyan]Checks[/]", "grey", Justify.Left)
+                    .AddRow("Deploy")
+                    .AddSeparator("Release", SpectreColor.Aqua, Justify.Right, width: 28)
+                    .AddRow("Done");
+
+                AnsiConsole.Write(rows);
+
+                Assert.Equal(6, rows.Rows.Count);
+                VisualAssert.ContainsText(scope.Driver, "Build");
+                VisualAssert.ContainsText(scope.Driver, "Checks");
+                VisualAssert.ContainsText(scope.Driver, "Deploy");
+                VisualAssert.ContainsText(scope.Driver, "Release");
+                VisualAssert.ContainsText(scope.Driver, "Done");
+                Assert.Contains(scope.Driver.Lines, line => line.Contains("Checks") && line.IndexOf("Checks", StringComparison.Ordinal) <= 4);
+                Assert.Contains(scope.Driver.Lines, line => line.Contains("Release") && line.IndexOf("Release", StringComparison.Ordinal) >= 16);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Checks") && write.Color == ConsoleColor.Gray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Release") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Lines, string.IsNullOrWhiteSpace);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 32, "Rows rule separator line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Direct row options can request compact layout without using the fluent wrapper.
         /// </summary>
         [Fact]
@@ -315,6 +351,41 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Columns aliases can add an empty slot without leaving the fluent composition builder.
+        /// </summary>
+        [Fact]
+        public void Columns_FluentBuilder_AddsEmptyColumnSlot()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                var columns = new Columns()
+                    .Width(42)
+                    .ColumnCount(3)
+                    .MinimumColumnWidth(6)
+                    .Gutter(1)
+                    .ContentColor("white")
+                    .AddColumn("Left")
+                    .AddEmptyColumn("Spacer")
+                    .AddColumn("Right");
+
+                AnsiConsole.Write(columns);
+
+                Assert.Equal(3, columns.Columns.Count);
+                Assert.Equal(string.Empty, columns.Columns[1].Content);
+                Assert.Equal("Spacer", columns.Columns[1].Header);
+                VisualAssert.ContainsText(scope.Driver, "Left");
+                VisualAssert.ContainsText(scope.Driver, "Spacer");
+                VisualAssert.ContainsText(scope.Driver, "Right");
+                Assert.Contains(scope.Driver.Lines, line =>
+                    line.Contains("Left") &&
+                    line.Contains("Right") &&
+                    line.IndexOf("Right", StringComparison.Ordinal) > line.IndexOf("Left", StringComparison.Ordinal));
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 42, "Empty-column layout line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Direct column options can request compact layout without using the fluent wrapper.
         /// </summary>
         [Fact]
@@ -475,6 +546,47 @@ namespace ConsoulLibrary.Tests.Compatibility
                     line.Contains("12") &&
                     line.IndexOf("12", StringComparison.Ordinal) > line.IndexOf("Queue", StringComparison.Ordinal));
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 36, "Generated grid column line exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Grid aliases accept concise preferred-width column definitions for quick dashboard snippets.
+        /// </summary>
+        [Fact]
+        public void Grid_FluentBuilder_AcceptsPreferredWidthColumns()
+        {
+            using (var scope = new ConsoleDriverScope(64))
+            {
+                IEnumerable<int> generatedWidths = new[] { 8, 10 };
+                var grid = new Grid()
+                    .Width(44)
+                    .MinimumColumnWidth(4)
+                    .Gutter(1)
+                    .AddColumn(12, Justify.Right)
+                    .AddColumns(generatedWidths)
+                    .AddRow("Service", "State", "Age")
+                    .AddRow("API", "Ready", "7");
+
+                var counted = new Grid().AddColumns(3);
+
+                AnsiConsole.Write(grid);
+
+                Assert.Equal(3, grid.Columns.Count);
+                Assert.Equal(3, grid.Options.Columns);
+                Assert.Equal(12, grid.Columns[0].Width);
+                Assert.Equal(8, grid.Columns[1].Width);
+                Assert.Equal(10, grid.Columns[2].Width);
+                Assert.Equal(Justify.Right, grid.Columns[0].Alignment);
+                Assert.Equal(3, counted.Columns.Count);
+                VisualAssert.ContainsText(scope.Driver, "Service");
+                VisualAssert.ContainsText(scope.Driver, "Ready");
+                Assert.Contains(scope.Driver.Lines, line =>
+                    line.Contains("API") &&
+                    line.Contains("Ready") &&
+                    line.Contains("7") &&
+                    line.IndexOf("API", StringComparison.Ordinal) < line.IndexOf("Ready", StringComparison.Ordinal));
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 44, "Preferred-width grid line exceeded configured width: " + line));
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }
@@ -789,6 +901,40 @@ namespace ConsoulLibrary.Tests.Compatibility
                 VisualAssert.ContainsText(scope.Driver, "Alpha");
                 VisualAssert.ContainsText(scope.Driver, "Beta");
                 Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 12, "Aligned row exceeded configured width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Align static factories accept common Spectre-style text, renderable, action, and row snippets.
+        /// </summary>
+        [Fact]
+        public void Align_StaticFactories_CreateAlignedRenderables()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                Align leftText = Align.Left("Left factory").Width(18);
+                Align centeredRenderable = Align.Center(new Panel("Ready").Header("Status").Width(18)).Width(36);
+                Align rightAction = Align.Right(() => Consoul.MarkupLine("[green]Action factory[/]")).Width(28);
+                Align centeredRows = Align.Center(new[] { "Alpha", "Beta" }).Width(16);
+
+                AnsiConsole.Write(leftText);
+                AnsiConsole.Write(centeredRenderable);
+                AnsiConsole.Write(rightAction);
+                AnsiConsole.Write(centeredRows);
+
+                Assert.Equal(TextBlockAlignment.Left, leftText.Options.Alignment);
+                Assert.Equal(TextBlockAlignment.Center, centeredRenderable.Options.Alignment);
+                Assert.Equal(TextBlockAlignment.Right, rightAction.Options.Alignment);
+                Assert.Equal(TextBlockAlignment.Center, centeredRows.Options.Alignment);
+                VisualAssert.ContainsText(scope.Driver, "Left factory");
+                VisualAssert.ContainsText(scope.Driver, "Status");
+                VisualAssert.ContainsText(scope.Driver, "Ready");
+                VisualAssert.ContainsText(scope.Driver, "Action factory");
+                VisualAssert.ContainsText(scope.Driver, "Alpha");
+                VisualAssert.ContainsText(scope.Driver, "Beta");
+                Assert.Contains(scope.Driver.Lines, line => line.StartsWith("         ") && line.Contains("Status"));
+                Assert.Contains(scope.Driver.Lines, line => line.EndsWith("Action factory", StringComparison.Ordinal) && line.Length <= 28);
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }

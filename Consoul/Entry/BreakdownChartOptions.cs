@@ -25,6 +25,11 @@ namespace ConsoulLibrary
         public int? Width { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the chart should expand to the active terminal width when no explicit <see cref="Width"/> is set.
+        /// </summary>
+        public bool Expand { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets a value indicating whether the stacked bar should render.
         /// </summary>
         public bool ShowBar { get; set; } = true;
@@ -135,6 +140,7 @@ namespace ConsoulLibrary
                 Label = Label,
                 LabelAlignment = LabelAlignment,
                 Width = Width,
+                Expand = Expand,
                 ShowBar = ShowBar,
                 ShowLegend = ShowLegend,
                 ShowValues = ShowValues,

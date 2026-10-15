@@ -1,6 +1,8 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -122,6 +124,26 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the color used for the prompt message from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
+        public ConfirmPrompt PromptStyle(SpectreColor color)
+        {
+            return PromptStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from an RGB value.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
+        public ConfirmPrompt PromptStyle(RgbColor color)
+        {
+            return PromptStyle(new Style(color));
+        }
+
+        /// <summary>
         /// Sets the color used for the prompt message from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -149,6 +171,26 @@ namespace ConsoulLibrary
         /// <param name="color">The prompt message color.</param>
         /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
         public ConfirmPrompt Style(ConsoleColor color)
+        {
+            return PromptStyle(color);
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
+        public ConfirmPrompt Style(SpectreColor color)
+        {
+            return PromptStyle(color);
+        }
+
+        /// <summary>
+        /// Sets the color used for the prompt message from an RGB value.
+        /// </summary>
+        /// <param name="color">The prompt message color.</param>
+        /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
+        public ConfirmPrompt Style(RgbColor color)
         {
             return PromptStyle(color);
         }
@@ -182,6 +224,26 @@ namespace ConsoulLibrary
         {
             InvalidColor = color;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for invalid input messages from a Spectre-style color facade.
+        /// </summary>
+        /// <param name="color">The invalid input message color.</param>
+        /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
+        public ConfirmPrompt InvalidStyle(SpectreColor color)
+        {
+            return InvalidStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the color used for invalid input messages from an RGB value.
+        /// </summary>
+        /// <param name="color">The invalid input message color.</param>
+        /// <returns>The current <see cref="ConfirmPrompt"/> instance.</returns>
+        public ConfirmPrompt InvalidStyle(RgbColor color)
+        {
+            return InvalidStyle(new Style(color));
         }
 
         /// <summary>

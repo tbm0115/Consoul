@@ -25,6 +25,16 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="TableTitle"/> class from a renderable component.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="justification">Optional title justification.</param>
+        public TableTitle(IConsoulRenderable title, Justify? justification = null)
+            : this(TableColumn.Capture(title), justification)
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TableTitle"/> class with a console foreground color.
         /// </summary>
         /// <param name="text">The title text.</param>
@@ -32,6 +42,17 @@ namespace ConsoulLibrary
         /// <param name="justification">Optional title justification.</param>
         public TableTitle(string text, ConsoleColor color, Justify? justification = null)
             : this(text, new Style(color), justification)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TableTitle"/> class from a renderable component with a console foreground color.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="color">The title foreground color.</param>
+        /// <param name="justification">Optional title justification.</param>
+        public TableTitle(IConsoulRenderable title, ConsoleColor color, Justify? justification = null)
+            : this(title, new Style(color), justification)
         {
         }
 
@@ -47,6 +68,17 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="TableTitle"/> class from a renderable component.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="color">The title foreground color.</param>
+        /// <param name="justification">Optional title justification.</param>
+        public TableTitle(IConsoulRenderable title, SpectreColor color, Justify? justification = null)
+            : this(title, new Style(color), justification)
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TableTitle"/> class.
         /// </summary>
         /// <param name="text">The title text.</param>
@@ -54,6 +86,17 @@ namespace ConsoulLibrary
         /// <param name="justification">Optional title justification.</param>
         public TableTitle(string text, RgbColor color, Justify? justification = null)
             : this(text, new Style(color), justification)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TableTitle"/> class from a renderable component.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="color">The title foreground color.</param>
+        /// <param name="justification">Optional title justification.</param>
+        public TableTitle(IConsoulRenderable title, RgbColor color, Justify? justification = null)
+            : this(title, new Style(color), justification)
         {
         }
 
@@ -69,6 +112,17 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="TableTitle"/> class from a renderable component with Spectre-style style text.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <param name="justification">Optional title justification.</param>
+        public TableTitle(IConsoulRenderable title, string style, Justify? justification = null)
+            : this(title, ConsoulLibrary.Style.Parse(style), justification)
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TableTitle"/> class with a reusable style object.
         /// </summary>
         /// <param name="text">The title text.</param>
@@ -76,6 +130,18 @@ namespace ConsoulLibrary
         /// <param name="justification">Optional title justification.</param>
         public TableTitle(string text, Style style, Justify? justification = null)
             : this(text, justification)
+        {
+            Style = style;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TableTitle"/> class from a renderable component with a reusable style object.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the table title.</param>
+        /// <param name="style">The title style.</param>
+        /// <param name="justification">Optional title justification.</param>
+        public TableTitle(IConsoulRenderable title, Style style, Justify? justification = null)
+            : this(title, justification)
         {
             Style = style;
         }

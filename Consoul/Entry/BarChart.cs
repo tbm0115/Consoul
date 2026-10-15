@@ -27,6 +27,193 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds an item to the chart and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <param name="label">The label rendered before the bar.</param>
+        /// <param name="value">The numeric value represented by the bar.</param>
+        /// <param name="color">Optional foreground color used for the bar.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public new BarChart Add(string label, double value, ConsoleColor? color = null)
+        {
+            base.Add(label, value, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an item to the chart with a Spectre-style color facade and returns the current chart.
+        /// </summary>
+        /// <param name="label">The label rendered before the bar.</param>
+        /// <param name="value">The numeric value represented by the bar.</param>
+        /// <param name="color">The foreground color used for the bar.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Add(string label, double value, SpectreColor color)
+        {
+            AddItem(label, value, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an item to the chart with an RGB color and returns the current chart.
+        /// </summary>
+        /// <param name="label">The label rendered before the bar.</param>
+        /// <param name="value">The numeric value represented by the bar.</param>
+        /// <param name="color">The foreground color used for the bar.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Add(string label, double value, RgbColor color)
+        {
+            AddItem(label, value, color);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an item to the chart with bar color parsed from Spectre-style style text and returns the current chart.
+        /// </summary>
+        /// <param name="label">The label rendered before the bar.</param>
+        /// <param name="value">The numeric value represented by the bar.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public new BarChart Add(string label, double value, string style)
+        {
+            AddItem(label, value, style);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an item to the chart with bar color resolved from a reusable style and returns the current chart.
+        /// </summary>
+        /// <param name="label">The label rendered before the bar.</param>
+        /// <param name="value">The numeric value represented by the bar.</param>
+        /// <param name="style">Optional style used for the bar.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public new BarChart Add(string label, double value, Style style)
+        {
+            AddItem(label, value, style);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an existing item to the chart and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <param name="item">The item to add.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public new BarChart Add(BarChartItem item)
+        {
+            base.Add(item);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds existing items to the chart and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Add(IEnumerable<BarChartItem> items)
+        {
+            return AddItems(items);
+        }
+
+        /// <summary>
+        /// Adds existing items to the chart and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Add(BarChartItem firstItem, params BarChartItem[] additionalItems)
+        {
+            return AddItems(firstItem, additionalItems);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection and returns the current chart for fluent builder snippets.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the label rendered before each bar.</param>
+        /// <param name="valueSelector">Selects the numeric value represented by each bar.</param>
+        /// <param name="colorSelector">Optionally selects the foreground color used for each bar.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, ConsoleColor?> colorSelector = null)
+        {
+            return AddItems(items, labelSelector, valueSelector, colorSelector);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection with reusable per-item styles.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the label rendered before each bar.</param>
+        /// <param name="valueSelector">Selects the numeric value represented by each bar.</param>
+        /// <param name="styleSelector">Selects the style used for each bar.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, Style> styleSelector)
+        {
+            return AddItems(items, labelSelector, valueSelector, styleSelector);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection with Spectre-style per-item colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the label rendered before each bar.</param>
+        /// <param name="valueSelector">Selects the numeric value represented by each bar.</param>
+        /// <param name="colorSelector">Selects the foreground color used for each bar.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, SpectreColor> colorSelector)
+        {
+            return AddItems(items, labelSelector, valueSelector, colorSelector);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection with RGB per-item colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the label rendered before each bar.</param>
+        /// <param name="valueSelector">Selects the numeric value represented by each bar.</param>
+        /// <param name="colorSelector">Selects the foreground color used for each bar.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, RgbColor> colorSelector)
+        {
+            return AddItems(items, labelSelector, valueSelector, colorSelector);
+        }
+
+        /// <summary>
+        /// Adds items projected from a model collection with per-item colors parsed from Spectre-style style text.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into chart rows.</param>
+        /// <param name="labelSelector">Selects the label rendered before each bar.</param>
+        /// <param name="valueSelector">Selects the numeric value represented by each bar.</param>
+        /// <param name="styleSelector">Selects style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, double> valueSelector,
+            Func<T, string> styleSelector)
+        {
+            return AddItems(items, labelSelector, valueSelector, styleSelector);
+        }
+
+        /// <summary>
         /// Adds an item to the chart.
         /// </summary>
         /// <param name="label">The label rendered before the bar.</param>
@@ -35,7 +222,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="BarChart"/> instance.</returns>
         public BarChart AddItem(string label, double value, ConsoleColor? color = null)
         {
-            Add(label, value, color);
+            base.Add(label, value, color);
             return this;
         }
 
@@ -389,6 +576,18 @@ namespace ConsoulLibrary
         public BarChart Expand()
         {
             Options.Width = null;
+            Options.Expand = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Collapses the chart to a measured content width when no explicit width is set.
+        /// </summary>
+        /// <returns>The current <see cref="BarChart"/> instance.</returns>
+        public BarChart Collapse()
+        {
+            Options.Width = null;
+            Options.Expand = false;
             return this;
         }
 

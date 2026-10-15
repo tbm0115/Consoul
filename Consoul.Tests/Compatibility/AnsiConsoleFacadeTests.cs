@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ConsoulLibrary;
 using ConsoulLibrary.Tests.Rendering;
 using Xunit;
 
@@ -482,6 +483,252 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Injected Select helpers preserve Consoul's result-first selection model.
+        /// </summary>
+        [Fact]
+        public void ConsoleExtensions_Select_ReturnResultFirstSelectionsThroughInjectedFacade()
+        {
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "2", string.Empty }));
+
+                try
+                {
+                    IAnsiConsole console = AnsiConsole.Console;
+                    var jobs = new[]
+                    {
+                        new Job("Build", "Ready"),
+                        new Job("Deploy", "Waiting")
+                    };
+
+                    PromptResult action = console.Select("Pick action", false, "Build", "Deploy");
+                    SelectionResult<Job> selectedJob = console.Select("Pick job", jobs, job => job.Name, jobs[0]);
+
+                    Assert.True(action.HasSelection);
+                    Assert.Equal(1, action.Index);
+                    Assert.True(selectedJob.HasSelection);
+                    Assert.Equal("Build", selectedJob.SelectedItem.Name);
+                    VisualAssert.ContainsText(scope.Driver, "Pick action");
+                    VisualAssert.ContainsText(scope.Driver, "Pick job");
+                    VisualAssert.ContainsText(scope.Driver, "Deploy");
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Injected MultiSelect helpers preserve Consoul's result-first multi-selection model.
+        /// </summary>
+        [Fact]
+        public void ConsoleExtensions_MultiSelect_ReturnResultFirstSelectionsThroughInjectedFacade()
+        {
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "1,2", string.Empty }));
+
+                try
+                {
+                    IAnsiConsole console = AnsiConsole.Console;
+                    var jobs = new[]
+                    {
+                        new Job("Build", "Ready"),
+                        new Job("Deploy", "Waiting")
+                    };
+
+                    MultiSelectionResult checks = console.MultiSelect("Pick checks", false, "Build", "Deploy");
+                    MultiSelectionResult<Job> selectedJobs = console.MultiSelect("Pick jobs", jobs, job => job.Name, new[] { jobs[1] });
+
+                    Assert.True(checks.HasSelection);
+                    Assert.Equal(new[] { 0, 1 }, checks.Indexes.ToArray());
+                    Assert.True(selectedJobs.HasSelection);
+                    Assert.Equal(new[] { "Deploy" }, selectedJobs.SelectedItems.Select(job => job.Name).ToArray());
+                    VisualAssert.ContainsText(scope.Driver, "Pick checks");
+                    VisualAssert.ContainsText(scope.Driver, "Pick jobs");
+                    VisualAssert.ContainsText(scope.Driver, "Build");
+                    VisualAssert.ContainsText(scope.Driver, "Deploy");
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Injected enum selection helpers use display labels and keep result-first return values.
+        /// </summary>
+        [Fact]
+        public void ConsoleExtensions_EnumSelections_ReturnResultFirstSelectionsThroughInjectedFacade()
+        {
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "2", string.Empty }));
+
+                try
+                {
+                    IAnsiConsole console = AnsiConsole.Console;
+
+                    SelectionResult<DeploymentStage> stage = console.SelectEnum<DeploymentStage>("Pick stage");
+                    MultiSelectionResult<DeploymentStage> stages = console.MultiSelectEnum(
+                        "Pick stages",
+                        new[] { DeploymentStage.Build, DeploymentStage.ApprovalGate, DeploymentStage.Deploy },
+                        defaultValues: new[] { DeploymentStage.Build, DeploymentStage.Deploy });
+
+                    Assert.True(stage.HasSelection);
+                    Assert.Equal(DeploymentStage.ApprovalGate, stage.SelectedItem);
+                    Assert.True(stages.HasSelection);
+                    Assert.Equal(new[] { DeploymentStage.Build, DeploymentStage.Deploy }, stages.SelectedItems.ToArray());
+                    VisualAssert.ContainsText(scope.Driver, "Pick stage");
+                    VisualAssert.ContainsText(scope.Driver, "Pick stages");
+                    VisualAssert.ContainsText(scope.Driver, "Approval Gate");
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Injected path helpers render through the facade and keep result-first file and directory prompt behavior.
+        /// </summary>
+        [Fact]
+        public void ConsoleExtensions_PathPrompts_ReturnResultFirstValuesThroughInjectedFacade()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "Consoul.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string existingPath = Path.Combine(directory, "deploy script.ps1");
+            string missingPath = Path.Combine(directory, "missing.ps1");
+            File.WriteAllText(existingPath, "Write-Host 'deploy'");
+
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[]
+                {
+                    missingPath,
+                    "\"" + existingPath + "\"",
+                    "\"" + directory + "\""
+                }));
+
+                try
+                {
+                    IAnsiConsole console = AnsiConsole.Console;
+
+                    TextPromptResult<string> script = console.FilePath("Script path", mustExist: true);
+                    TextPromptResult<string> artifacts = console.DirectoryPath("Artifact directory", mustExist: true);
+
+                    Assert.True(script.HasValue);
+                    Assert.Equal(existingPath, script.Value);
+                    Assert.True(artifacts.HasValue);
+                    Assert.Equal(directory, artifacts.Value);
+                    VisualAssert.ContainsText(scope.Driver, "Script path");
+                    VisualAssert.ContainsText(scope.Driver, "Artifact directory");
+                    VisualAssert.WroteText(scope.Driver, "File does not exist.");
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                    Directory.Delete(directory, recursive: true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Static path helpers share the same result-first behavior as injected facade helpers.
+        /// </summary>
+        [Fact]
+        public void StaticPathHelpers_ReturnResultFirstValuesThroughFacade()
+        {
+            string directory = Path.Combine(Path.GetTempPath(), "Consoul.Tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            string existingPath = Path.Combine(directory, "settings.json");
+            File.WriteAllText(existingPath, "{}");
+
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[]
+                {
+                    "  \"" + existingPath + "\"  ",
+                    "\"" + directory + "\""
+                }));
+
+                try
+                {
+                    TextPromptResult<string> settings = AnsiConsole.FilePath("Settings file", mustExist: true);
+                    TextPromptResult<string> output = AnsiConsole.DirectoryPath("Output directory", mustExist: true);
+
+                    Assert.True(settings.HasValue);
+                    Assert.Equal(existingPath, settings.Value);
+                    Assert.True(output.HasValue);
+                    Assert.Equal(directory, output.Value);
+                    VisualAssert.ContainsText(scope.Driver, "Settings file");
+                    VisualAssert.ContainsText(scope.Driver, "Output directory");
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                    Directory.Delete(directory, recursive: true);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Static selection helpers share the same result-first behavior as injected facade helpers.
+        /// </summary>
+        [Fact]
+        public void StaticSelectionHelpers_ReturnResultFirstSelectionsThroughFacade()
+        {
+            using (var scope = new ConsoleDriverScope(80))
+            {
+                Routines.InitializeRoutine(new TestRoutine(new[] { "2", "1,2", string.Empty }));
+
+                try
+                {
+                    var jobs = new[]
+                    {
+                        new Job("Build", "Ready"),
+                        new Job("Deploy", "Waiting")
+                    };
+
+                    PromptResult action = AnsiConsole.Select("Pick action", false, "Build", "Deploy");
+                    MultiSelectionResult checks = AnsiConsole.MultiSelect("Pick checks", false, "Build", "Deploy");
+                    MultiSelectionResult<DeploymentStage> stages = AnsiConsole.MultiSelectEnum(
+                        "Pick stages",
+                        new[] { DeploymentStage.Build, DeploymentStage.ApprovalGate, DeploymentStage.Deploy },
+                        defaultValues: new[] { DeploymentStage.Build, DeploymentStage.Deploy });
+                    SelectionResult<Job> selectedJob = AnsiConsole.Select("Pick job", jobs, job => job.Name, jobs[0]);
+
+                    Assert.True(action.HasSelection);
+                    Assert.Equal(1, action.Index);
+                    Assert.True(checks.HasSelection);
+                    Assert.Equal(new[] { 0, 1 }, checks.Indexes.ToArray());
+                    Assert.True(stages.HasSelection);
+                    Assert.Equal(new[] { DeploymentStage.Build, DeploymentStage.Deploy }, stages.SelectedItems.ToArray());
+                    Assert.True(selectedJob.HasSelection);
+                    Assert.Equal("Build", selectedJob.SelectedItem.Name);
+                    VisualAssert.ContainsText(scope.Driver, "Pick action");
+                    VisualAssert.ContainsText(scope.Driver, "Pick checks");
+                    VisualAssert.ContainsText(scope.Driver, "Pick stages");
+                    VisualAssert.ContainsText(scope.Driver, "Pick job");
+                    VisualAssert.ContainsText(scope.Driver, "Approval Gate");
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    Routines.InitializeRoutine(new TestRoutine(Array.Empty<string>()));
+                }
+            }
+        }
+
+        /// <summary>
         /// Typed text prompt wrappers return explicit typed prompt results.
         /// </summary>
         [Fact]
@@ -566,6 +813,73 @@ namespace ConsoulLibrary.Tests.Compatibility
                 VisualAssert.ContainsText(scope.Driver, "Migration");
                 VisualAssert.ContainsText(scope.Driver, "AnsiConsole");
                 VisualAssert.ContainsText(scope.Driver, "Build");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Rule facade helpers accept Spectre-style Justify aliases without leaving the procedural render path.
+        /// </summary>
+        [Fact]
+        public void RuleWrappers_AcceptJustifyAliases()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                IAnsiConsole console = AnsiConsole.Console;
+
+                Consoul.Rule("Consoul Left", Justify.Left, width: 32, color: ConsoleColor.DarkGray);
+                AnsiConsole.Rule("Ansi Right", Justify.Right, width: 32, color: ConsoleColor.Cyan);
+                AnsiConsole.Rule("Color Alias", ConsoleColor.Green, Justify.Left, width: 32);
+                console.Rule("Facade Center", Justify.Center, width: 32, color: ConsoleColor.Yellow);
+
+                VisualAssert.ContainsText(scope.Driver, "Consoul Left");
+                VisualAssert.ContainsText(scope.Driver, "Ansi Right");
+                VisualAssert.ContainsText(scope.Driver, "Color Alias");
+                VisualAssert.ContainsText(scope.Driver, "Facade Center");
+                Assert.Contains(scope.Driver.Lines, line => line.Contains("Consoul Left") && line.IndexOf("Consoul Left", StringComparison.Ordinal) < 8);
+                Assert.Contains(scope.Driver.Lines, line => line.Contains("Ansi Right") && line.IndexOf("Ansi Right", StringComparison.Ordinal) > 16);
+                Assert.Contains(scope.Driver.Lines, line => line.Contains("Color Alias") && line.IndexOf("Color Alias", StringComparison.Ordinal) < 8);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Consoul Left") && write.Color == ConsoleColor.DarkGray);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Ansi Right") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Color Alias") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Facade Center") && write.Color == ConsoleColor.Yellow);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Injected facade panel helpers accept the same quick options as Consoul's static MVC-style helper.
+        /// </summary>
+        [Fact]
+        public void PanelWrappers_AcceptQuickOptionsThroughInjectedFacade()
+        {
+            using (var scope = new ConsoleDriverScope(52))
+            {
+                IAnsiConsole console = AnsiConsole.Console;
+
+                console.Panel("Injected body", title: "Injected", width: 36, color: ConsoleColor.Green, borderColor: ConsoleColor.Cyan);
+                console.Panel(
+                    (Action)(() => AnsiConsole.Markup("[yellow]Captured action[/]")),
+                    title: "Action",
+                    width: 34,
+                    color: ConsoleColor.Magenta,
+                    borderColor: ConsoleColor.DarkCyan,
+                    captureWidth: 26);
+                console.Panel(
+                    (IConsoulRenderable)new Markup("[green]Renderable body[/]"),
+                    title: "Renderable",
+                    width: 38,
+                    color: ConsoleColor.White,
+                    borderColor: ConsoleColor.DarkYellow,
+                    captureWidth: 28);
+
+                VisualAssert.ContainsText(scope.Driver, "Injected");
+                VisualAssert.ContainsText(scope.Driver, "Injected body");
+                VisualAssert.ContainsText(scope.Driver, "Captured action");
+                VisualAssert.ContainsText(scope.Driver, "Renderable body");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Injected") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Injected body") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Captured action") && write.Color == ConsoleColor.Magenta);
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }
@@ -1329,6 +1643,7 @@ namespace ConsoulLibrary.Tests.Compatibility
                 string escaped = AnsiConsole.EscapeMarkup("Owner [prod]");
                 string stripped = AnsiConsole.RemoveMarkup("[green]Owner[/]");
                 AnsiConsole.Rule("Injected rule");
+                AnsiConsole.Rule("Injected aligned", Justify.Right, width: 24, color: ConsoleColor.Cyan);
                 AnsiConsole.Panel("Injected panel");
                 AnsiConsole.Columns("One", "Two");
                 AnsiConsole.Columns("Service", new Markup("[green]Ready[/]"), 2);
@@ -1352,6 +1667,16 @@ namespace ConsoulLibrary.Tests.Compatibility
                 Assert.Contains(recorder.Calls, call => call.Name == nameof(IAnsiConsole.EscapeMarkup));
                 Assert.Contains(recorder.Calls, call => call.Name == nameof(IAnsiConsole.RemoveMarkup));
                 Assert.Contains(recorder.Calls, call => call.Name == nameof(IAnsiConsole.Rule) && call.FirstArgumentEquals("Injected rule"));
+                Assert.Contains(
+                    recorder.Calls,
+                    call => call.Name == nameof(IAnsiConsole.Rule)
+                        && call.FirstArgumentEquals("Injected aligned")
+                        && call.Arguments.Length > 1
+                        && call.Arguments[1] is RuleOptions options
+                        && options.Alignment == RuleTitleAlignment.Right
+                        && options.Width == 24
+                        && options.RuleScheme.HasValue
+                        && options.RuleScheme.Value.Color == ConsoleColor.Cyan);
                 Assert.Contains(recorder.Calls, call => call.Name == nameof(IAnsiConsole.Panel) && call.FirstArgumentEquals("Injected panel"));
                 Assert.Contains(recorder.Calls, call => call.Name == nameof(IAnsiConsole.Columns));
                 Assert.Contains(recorder.Calls, call => call.Name == nameof(IAnsiConsole.Columns) && call.Arguments.Length > 0 && call.Arguments[0] is object[] columns && columns.Length == 3 && Equals(columns[2], 2));
@@ -1528,6 +1853,284 @@ namespace ConsoulLibrary.Tests.Compatibility
             Assert.True(
                 recorder.Calls.Count(call => call.Name == nameof(IAnsiConsole.WriteLine) && call.Arguments.Length == 0) >= 2,
                 "Expected renderable WriteLine overloads to append blank line calls.");
+        }
+
+        /// <summary>
+        /// IAnsiConsole quick panel overloads build panel options without expanding the interface contract.
+        /// </summary>
+        [Fact]
+        public void ConsoleExtensions_PanelQuickOverloads_CreateOptionsThroughFacade()
+        {
+            IAnsiConsole proxyConsole;
+            RecordingAnsiConsoleProxy recorder = RecordingAnsiConsoleProxy.Create(out proxyConsole);
+            Action render = () => { };
+            IConsoulRenderable renderable = new Text("Renderable body");
+
+            proxyConsole.Panel("Injected body", title: "Quick", width: 30, color: ConsoleColor.Green, borderColor: ConsoleColor.Cyan);
+            proxyConsole.Panel(render, title: "Action", width: 32, color: ConsoleColor.Magenta, borderColor: ConsoleColor.DarkCyan, captureWidth: 22, captureHeight: 7);
+            proxyConsole.Panel(renderable, title: "Renderable", width: 34, color: ConsoleColor.White, borderColor: ConsoleColor.DarkYellow, captureWidth: 24, captureHeight: 8);
+
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Panel)
+                    && call.FirstArgumentEquals("Injected body")
+                    && call.Arguments.Length > 1
+                    && call.Arguments[1] is PanelOptions options
+                    && options.Title == "Quick"
+                    && options.Width == 30
+                    && options.ContentScheme.HasValue
+                    && options.ContentScheme.Value.Color == ConsoleColor.Green
+                    && options.BorderScheme.HasValue
+                    && options.BorderScheme.Value.Color == ConsoleColor.Cyan);
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Panel)
+                    && call.Arguments.Length > 3
+                    && ReferenceEquals(call.Arguments[0], render)
+                    && call.Arguments[1] is PanelOptions options
+                    && options.Title == "Action"
+                    && options.Width == 32
+                    && options.ContentScheme.HasValue
+                    && options.ContentScheme.Value.Color == ConsoleColor.Magenta
+                    && options.BorderScheme.HasValue
+                    && options.BorderScheme.Value.Color == ConsoleColor.DarkCyan
+                    && Equals(call.Arguments[2], 22)
+                    && Equals(call.Arguments[3], 7));
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Panel)
+                    && call.Arguments.Length > 3
+                    && ReferenceEquals(call.Arguments[0], renderable)
+                    && call.Arguments[1] is PanelOptions options
+                    && options.Title == "Renderable"
+                    && options.Width == 34
+                    && options.ContentScheme.HasValue
+                    && options.ContentScheme.Value.Color == ConsoleColor.White
+                    && options.BorderScheme.HasValue
+                    && options.BorderScheme.Value.Color == ConsoleColor.DarkYellow
+                    && Equals(call.Arguments[2], 24)
+                    && Equals(call.Arguments[3], 8));
+        }
+
+        /// <summary>
+        /// IAnsiConsole Select overloads build selection prompts and dispatch through the facade.
+        /// </summary>
+        [Fact]
+        public void ConsoleExtensions_SelectQuickOverloads_DispatchThroughPromptFacade()
+        {
+            IAnsiConsole proxyConsole;
+            RecordingAnsiConsoleProxy recorder = RecordingAnsiConsoleProxy.Create(out proxyConsole);
+            var jobs = new[]
+            {
+                new Job("Build", "Ready"),
+                new Job("Deploy", "Waiting")
+            };
+
+            proxyConsole.Select("Pick action", false, "Build", "Deploy");
+            proxyConsole.Select("Pick default", new[] { "Build", "Deploy" }, defaultOption: "Deploy");
+            proxyConsole.Select("Pick job", jobs, job => job.Name, jobs[1]);
+
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is SelectionPrompt prompt
+                    && prompt.Message == "Pick action"
+                    && prompt.Options.Count() == 2);
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is SelectionPrompt prompt
+                    && prompt.Message == "Pick default"
+                    && prompt.Options.Any(option => option.Label == "Deploy" && option.IsDefault));
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is SelectionPrompt<Job> prompt
+                    && prompt.Message == "Pick job"
+                    && prompt.Options.Any(option => option.Label == "Deploy" && option.IsDefault));
+        }
+
+        /// <summary>
+        /// IAnsiConsole MultiSelect overloads build multi-selection prompts and dispatch through the facade.
+        /// </summary>
+        [Fact]
+        public void ConsoleExtensions_MultiSelectQuickOverloads_DispatchThroughPromptFacade()
+        {
+            IAnsiConsole proxyConsole;
+            RecordingAnsiConsoleProxy recorder = RecordingAnsiConsoleProxy.Create(out proxyConsole);
+            var jobs = new[]
+            {
+                new Job("Build", "Ready"),
+                new Job("Deploy", "Waiting")
+            };
+
+            proxyConsole.MultiSelect("Pick checks", false, true, "Build", "Deploy");
+            proxyConsole.MultiSelect("Pick defaults", new[] { "Build", "Deploy" }, defaultOptions: new[] { "Deploy" }, allowEmpty: true);
+            proxyConsole.MultiSelect("Pick jobs", jobs, job => job.Name, new[] { jobs[1] }, allowEmpty: true);
+
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is MultiSelectionPrompt prompt
+                    && prompt.Message == "Pick checks"
+                    && prompt.AllowEmpty
+                    && prompt.Options.Count() == 2);
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is MultiSelectionPrompt prompt
+                    && prompt.Message == "Pick defaults"
+                    && prompt.AllowEmpty
+                    && prompt.Options.Any(option => option.Label == "Deploy" && option.IsDefault));
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is MultiSelectionPrompt<Job> prompt
+                    && prompt.Message == "Pick jobs"
+                    && prompt.AllowEmpty
+                    && prompt.Options.Any(option => option.Label == "Deploy" && option.IsDefault));
+        }
+
+        /// <summary>
+        /// IAnsiConsole enum selection overloads build typed prompts and dispatch through the facade.
+        /// </summary>
+        [Fact]
+        public void ConsoleExtensions_EnumSelectionQuickOverloads_DispatchThroughPromptFacade()
+        {
+            IAnsiConsole proxyConsole;
+            RecordingAnsiConsoleProxy recorder = RecordingAnsiConsoleProxy.Create(out proxyConsole);
+
+            proxyConsole.SelectEnum<DeploymentStage>("Pick stage", defaultValue: DeploymentStage.ApprovalGate);
+            proxyConsole.MultiSelectEnum(
+                "Pick stages",
+                new[] { DeploymentStage.Build, DeploymentStage.ApprovalGate, DeploymentStage.Deploy },
+                defaultValues: new[] { DeploymentStage.Deploy },
+                allowEmpty: true);
+
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is SelectionPrompt<DeploymentStage> prompt
+                    && prompt.Message == "Pick stage"
+                    && prompt.Options.Any(option => option.Label == "Approval Gate" && option.IsDefault));
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is MultiSelectionPrompt<DeploymentStage> prompt
+                    && prompt.Message == "Pick stages"
+                        && prompt.AllowEmpty
+                        && prompt.Options.Any(option => option.Label == "Deploy" && option.IsDefault));
+        }
+
+        /// <summary>
+        /// IAnsiConsole path prompt helpers build typed text prompts and dispatch through the facade.
+        /// </summary>
+        [Fact]
+        public void ConsoleExtensions_PathPromptQuickOverloads_DispatchThroughPromptFacade()
+        {
+            IAnsiConsole proxyConsole;
+            RecordingAnsiConsoleProxy recorder = RecordingAnsiConsoleProxy.Create(out proxyConsole);
+
+            proxyConsole.FilePath("Script path", clear: true, mustExist: true);
+            proxyConsole.DirectoryPath("Artifact directory", clear: true, mustExist: true);
+
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is TextPrompt<string> prompt
+                    && prompt.Message == "Script path"
+                    && prompt.ClearConsole);
+            Assert.Contains(
+                recorder.Calls,
+                call => call.Name == nameof(IAnsiConsole.Prompt)
+                    && call.Arguments.Length > 0
+                    && call.Arguments[0] is TextPrompt<string> prompt
+                    && prompt.Message == "Artifact directory"
+                    && prompt.ClearConsole);
+        }
+
+        /// <summary>
+        /// Static selection convenience helpers route through the assigned facade.
+        /// </summary>
+        [Fact]
+        public void ConsoleProperty_AssignedFacadeReceivesStaticSelectionConvenienceCalls()
+        {
+            IAnsiConsole previous = AnsiConsole.Console;
+            IAnsiConsole proxyConsole;
+            RecordingAnsiConsoleProxy recorder = RecordingAnsiConsoleProxy.Create(out proxyConsole);
+
+            try
+            {
+                AnsiConsole.Console = proxyConsole;
+
+                AnsiConsole.Select("Pick action", false, "Build", "Deploy");
+                AnsiConsole.MultiSelect("Pick checks", false, true, "Build", "Deploy");
+                AnsiConsole.SelectEnum<DeploymentStage>("Pick stage", defaultValue: DeploymentStage.ApprovalGate);
+                AnsiConsole.MultiSelectEnum(
+                    "Pick stages",
+                    new[] { DeploymentStage.Build, DeploymentStage.ApprovalGate, DeploymentStage.Deploy },
+                    defaultValues: new[] { DeploymentStage.Deploy },
+                    allowEmpty: true);
+                AnsiConsole.FilePath("Script path", clear: true, mustExist: true);
+                AnsiConsole.DirectoryPath("Artifact directory", clear: true, mustExist: true);
+
+                Assert.Contains(
+                    recorder.Calls,
+                    call => call.Name == nameof(IAnsiConsole.Prompt)
+                        && call.Arguments.Length > 0
+                        && call.Arguments[0] is SelectionPrompt prompt
+                        && prompt.Message == "Pick action"
+                        && prompt.Options.Count() == 2);
+                Assert.Contains(
+                    recorder.Calls,
+                    call => call.Name == nameof(IAnsiConsole.Prompt)
+                        && call.Arguments.Length > 0
+                        && call.Arguments[0] is MultiSelectionPrompt prompt
+                        && prompt.Message == "Pick checks"
+                        && prompt.AllowEmpty);
+                Assert.Contains(
+                    recorder.Calls,
+                    call => call.Name == nameof(IAnsiConsole.Prompt)
+                        && call.Arguments.Length > 0
+                        && call.Arguments[0] is SelectionPrompt<DeploymentStage> prompt
+                        && prompt.Message == "Pick stage"
+                        && prompt.Options.Any(option => option.Label == "Approval Gate" && option.IsDefault));
+                Assert.Contains(
+                    recorder.Calls,
+                    call => call.Name == nameof(IAnsiConsole.Prompt)
+                        && call.Arguments.Length > 0
+                        && call.Arguments[0] is MultiSelectionPrompt<DeploymentStage> prompt
+                        && prompt.Message == "Pick stages"
+                        && prompt.AllowEmpty
+                        && prompt.Options.Any(option => option.Label == "Deploy" && option.IsDefault));
+                Assert.Contains(
+                    recorder.Calls,
+                    call => call.Name == nameof(IAnsiConsole.Prompt)
+                        && call.Arguments.Length > 0
+                        && call.Arguments[0] is TextPrompt<string> prompt
+                        && prompt.Message == "Script path"
+                        && prompt.ClearConsole);
+                Assert.Contains(
+                    recorder.Calls,
+                    call => call.Name == nameof(IAnsiConsole.Prompt)
+                        && call.Arguments.Length > 0
+                        && call.Arguments[0] is TextPrompt<string> prompt
+                        && prompt.Message == "Artifact directory"
+                        && prompt.ClearConsole);
+            }
+            finally
+            {
+                AnsiConsole.Console = previous;
+            }
         }
 
         /// <summary>
@@ -1833,6 +2436,16 @@ namespace ConsoulLibrary.Tests.Compatibility
             public string Name { get; }
 
             public string State { get; }
+        }
+
+        private enum DeploymentStage
+        {
+            Build,
+
+            [Display(Name = "Approval Gate")]
+            ApprovalGate,
+
+            Deploy
         }
 
         private sealed class OutputLabel

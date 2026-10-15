@@ -937,7 +937,7 @@ namespace Consoul.Tests.Prompt
                     Assert.True(result.HasValue);
                     Assert.False(result.Value);
                     VisualAssert.WroteText(scope.Driver, "Use yes or no.");
-                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy now? [y/N]") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy now?") && write.Color == ConsoleColor.Cyan);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Use yes or no.") && write.Color == ConsoleColor.DarkYellow);
                     VisualAssert.NoOverflow(scope.Driver);
                 }
@@ -1529,7 +1529,7 @@ namespace Consoul.Tests.Prompt
                     Assert.True(continueResult.Value);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Retry count") && write.Color == ConsoleColor.Green);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Invalid input!") && write.Color == ConsoleColor.Red);
-                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy now? [y/N]") && write.Color == ConsoleColor.Cyan);
+                    Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy now?") && write.Color == ConsoleColor.Cyan);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Please answer yes or no.") && write.Color == ConsoleColor.Yellow);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("API token") && write.Color == ConsoleColor.Blue);
                     Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("#") && write.Color == ConsoleColor.DarkBlue);

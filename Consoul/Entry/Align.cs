@@ -111,6 +111,156 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Creates a left-aligned text block using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="content">The text content to align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Left(string content)
+        {
+            return new Align(content, HorizontalAlignment.Left);
+        }
+
+        /// <summary>
+        /// Creates a centered text block using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="content">The text content to align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Center(string content)
+        {
+            return new Align(content, HorizontalAlignment.Center);
+        }
+
+        /// <summary>
+        /// Creates a right-aligned text block using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="content">The text content to align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Right(string content)
+        {
+            return new Align(content, HorizontalAlignment.Right);
+        }
+
+        /// <summary>
+        /// Creates a left-aligned reusable component using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="renderable">The renderable content to capture and align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Left(IConsoulRenderable renderable)
+        {
+            return new Align(renderable, HorizontalAlignment.Left);
+        }
+
+        /// <summary>
+        /// Creates a centered reusable component using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="renderable">The renderable content to capture and align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Center(IConsoulRenderable renderable)
+        {
+            return new Align(renderable, HorizontalAlignment.Center);
+        }
+
+        /// <summary>
+        /// Creates a right-aligned reusable component using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="renderable">The renderable content to capture and align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Right(IConsoulRenderable renderable)
+        {
+            return new Align(renderable, HorizontalAlignment.Right);
+        }
+
+        /// <summary>
+        /// Creates a left-aligned render action using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="render">The render action to capture and align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Left(Action render)
+        {
+            return new Align(render, HorizontalAlignment.Left);
+        }
+
+        /// <summary>
+        /// Creates a centered render action using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="render">The render action to capture and align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Center(Action render)
+        {
+            return new Align(render, HorizontalAlignment.Center);
+        }
+
+        /// <summary>
+        /// Creates a right-aligned render action using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="render">The render action to capture and align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Right(Action render)
+        {
+            return new Align(render, HorizontalAlignment.Right);
+        }
+
+        /// <summary>
+        /// Creates left-aligned text rows using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="rows">The text rows to align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Left(IEnumerable<string> rows)
+        {
+            return new Align(rows, HorizontalAlignment.Left);
+        }
+
+        /// <summary>
+        /// Creates centered text rows using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="rows">The text rows to align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Center(IEnumerable<string> rows)
+        {
+            return new Align(rows, HorizontalAlignment.Center);
+        }
+
+        /// <summary>
+        /// Creates right-aligned text rows using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="rows">The text rows to align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Right(IEnumerable<string> rows)
+        {
+            return new Align(rows, HorizontalAlignment.Right);
+        }
+
+        /// <summary>
+        /// Creates left-aligned renderable rows using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="renderables">The renderable rows to capture and align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Left(IEnumerable<IConsoulRenderable> renderables)
+        {
+            return new Align(renderables, HorizontalAlignment.Left);
+        }
+
+        /// <summary>
+        /// Creates centered renderable rows using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="renderables">The renderable rows to capture and align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Center(IEnumerable<IConsoulRenderable> renderables)
+        {
+            return new Align(renderables, HorizontalAlignment.Center);
+        }
+
+        /// <summary>
+        /// Creates right-aligned renderable rows using Spectre-style factory vocabulary.
+        /// </summary>
+        /// <param name="renderables">The renderable rows to capture and align.</param>
+        /// <returns>A configured <see cref="Align"/> instance.</returns>
+        public static Align Right(IEnumerable<IConsoulRenderable> renderables)
+        {
+            return new Align(renderables, HorizontalAlignment.Right);
+        }
+
+        /// <summary>
         /// Gets the options used to render the aligned block.
         /// </summary>
         public AlignOptions Options { get; }

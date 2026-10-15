@@ -4,6 +4,7 @@ using System.IO;
 using ConsoulLibrary.Color;
 using ConsoulLibrary.Tests.Rendering;
 using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Rendering
@@ -102,6 +103,42 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Tree and node style aliases can style existing hierarchy nodes without rebuilding the tree.
+        /// </summary>
+        [Fact]
+        public void Tree_FluentStyleAliases_CanStyleExistingNodes()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                var tree = new Tree("Deployment")
+                    .AsciiGuide()
+                    .Width(42)
+                    .Style("white on navy")
+                    .BranchColor("grey");
+
+                TreeNode queued = tree.AddNode("Queued").Style("bold yellow");
+                queued.AddNode("Approval").Color(ConsoleColor.Cyan);
+                tree.AddNode("Running").Color(SpectreColor.Green);
+                tree.AddNode("Failed").Color(RgbColor.Red);
+                tree.AddNode("Inherited");
+
+                AnsiConsole.Write(tree);
+
+                VisualAssert.ContainsText(scope.Driver, "Deployment");
+                VisualAssert.ContainsText(scope.Driver, "Queued");
+                VisualAssert.ContainsText(scope.Driver, "Approval");
+                VisualAssert.ContainsText(scope.Driver, "Inherited");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deployment") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Queued") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Approval") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Running") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Failed") && write.Color == ConsoleColor.Red);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Inherited") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Tree style helpers preserve RGB and decoration metadata for true-color terminals.
         /// </summary>
         [Fact]
@@ -118,11 +155,11 @@ namespace ConsoulLibrary.Tests.Rendering
             var tree = new Tree("Root")
                 .AsciiGuide()
                 .Width(60)
-                .TextColor("bold #22c55e")
+                .Style("bold #22c55e")
                 .BranchColor("#445566");
-            tree.AddNode("API", "#336699");
-            tree.AddNode("Worker", Style.Parse("underline #778899"));
-            tree.AddNode("Captured", RgbColor.FromHex("#112233"));
+            tree.AddNode("API").Color("#336699");
+            tree.AddNode("Worker").Style("underline #778899");
+            tree.AddNode("Captured").Color(RgbColor.FromHex("#112233"));
 
             console.Write(tree);
 

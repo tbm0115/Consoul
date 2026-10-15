@@ -25,6 +25,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Enables immediate rendering for spinner changes.
+        /// </summary>
+        /// <returns>The current builder.</returns>
+        public SpinnerBuilder AutoRefresh()
+        {
+            return AutoRefresh(true);
+        }
+
+        /// <summary>
         /// Sets whether spinner changes render immediately or wait for an explicit refresh.
         /// </summary>
         /// <param name="enabled"><c>true</c> to render changes immediately; otherwise, <c>false</c>.</param>
@@ -33,6 +42,15 @@ namespace ConsoulLibrary
         {
             _options.AutoRefresh = enabled;
             return this;
+        }
+
+        /// <summary>
+        /// Disables immediate rendering so spinner changes wait for an explicit refresh.
+        /// </summary>
+        /// <returns>The current builder.</returns>
+        public SpinnerBuilder ManualRefresh()
+        {
+            return AutoRefresh(false);
         }
 
         /// <summary>

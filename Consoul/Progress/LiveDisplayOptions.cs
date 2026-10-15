@@ -18,6 +18,11 @@ namespace ConsoulLibrary
         public ConsoleColor TitleColor { get; set; } = RenderOptions.PromptColor;
 
         /// <summary>
+        /// Gets or sets optional Spectre-style title foreground/background and decoration metadata.
+        /// </summary>
+        public Style TitleStyle { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether the console should be cleared before each refresh.
         /// </summary>
         public bool ClearBeforeRender { get; set; } = true;
@@ -48,9 +53,19 @@ namespace ConsoulLibrary
         public ConsoleColor SuccessColor { get; set; } = ConsoleColor.Green;
 
         /// <summary>
+        /// Gets or sets optional Spectre-style success foreground/background and decoration metadata.
+        /// </summary>
+        public Style SuccessStyle { get; set; }
+
+        /// <summary>
         /// Gets or sets the color used for failure completion messages.
         /// </summary>
         public ConsoleColor FailureColor { get; set; } = RenderOptions.InvalidColor;
+
+        /// <summary>
+        /// Gets or sets optional Spectre-style failure foreground/background and decoration metadata.
+        /// </summary>
+        public Style FailureStyle { get; set; }
 
         /// <summary>
         /// Creates a copy of the current live display options.
@@ -62,14 +77,32 @@ namespace ConsoulLibrary
             {
                 Title = Title,
                 TitleColor = TitleColor,
+                TitleStyle = TitleStyle,
                 ClearBeforeRender = ClearBeforeRender,
                 RenderTitleRule = RenderTitleRule,
                 ClearOnDispose = ClearOnDispose,
                 Overflow = Overflow,
                 Cropping = Cropping,
                 SuccessColor = SuccessColor,
-                FailureColor = FailureColor
+                SuccessStyle = SuccessStyle,
+                FailureColor = FailureColor,
+                FailureStyle = FailureStyle
             };
+        }
+
+        internal Style ResolveTitleStyle()
+        {
+            return TitleStyle ?? new Style(TitleColor);
+        }
+
+        internal Style ResolveSuccessStyle()
+        {
+            return SuccessStyle ?? new Style(SuccessColor);
+        }
+
+        internal Style ResolveFailureStyle()
+        {
+            return FailureStyle ?? new Style(FailureColor);
         }
     }
 }

@@ -293,6 +293,41 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Direct grid palette overloads preserve RGB metadata without requiring wrapper styles.
+        /// </summary>
+        [Fact]
+        public void Grid_DirectPaletteOverloadsEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 12, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+            var grid = new Grid()
+                .Width(56)
+                .ColumnCount(2)
+                .MinimumColumnWidth(12)
+                .Gutter(1)
+                .HeaderColor(SpectreColor.FromHex("#112233"))
+                .ContentColor(RgbColor.FromHex("#445566"));
+            grid.AddCell("Default content", "Default header");
+            grid.AddCell("Direct color", "Color header", SpectreColor.FromHex("#778899"));
+            grid.AddCell(new Text("Direct RGB"), "RGB header", RgbColor.FromHex("#aabbcc"), captureWidth: 20);
+            grid.AddCell(GridCell.Create("Factory RGB", "Factory", RgbColor.FromHex("#123456")));
+
+            console.Write(grid);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;17;34;51mDefault header", output);
+            Assert.Contains("\u001b[38;2;68;85;102mDefault content", output);
+            Assert.Contains("\u001b[38;2;119;136;153mDirect color", output);
+            Assert.Contains("\u001b[38;2;170;187;204mDirect RGB", output);
+            Assert.Contains("\u001b[38;2;18;52;86mFactory RGB", output);
+        }
+
+        /// <summary>
         /// Model-backed dynamic views can render grids as model-summary sections.
         /// </summary>
         [Fact]

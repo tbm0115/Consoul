@@ -118,7 +118,7 @@ namespace ConsoulLibrary
                 return;
             }
 
-            int width = PanelEntry.ResolveWidth(_options.Width);
+            int width = ResolveWidth();
             if (width <= 0)
             {
                 return;
@@ -141,6 +141,37 @@ namespace ConsoulLibrary
         public static void Render(IEnumerable<BarChartItem> items, BarChartOptions options = null)
         {
             new BarChartEntry(items, options).Render();
+        }
+
+        private int ResolveWidth()
+        {
+            if (_options.Width.HasValue || _options.Expand)
+            {
+                return PanelEntry.ResolveWidth(_options.Width);
+            }
+
+            int terminalWidth = PanelEntry.ResolveWidth((int?)null);
+            int requestedWidth = MeasureCollapsedWidth();
+            return Math.Max(1, Math.Min(requestedWidth, terminalWidth));
+        }
+
+        private int MeasureCollapsedWidth()
+        {
+            int titleWidth = string.IsNullOrEmpty(_options.Label)
+                ? 0
+                : MarkupRenderText.GetPlainText(NormalizeInline(_options.Label)).Length;
+            int longestLabel = _items
+                .Select(item => MarkupRenderText.GetPlainText(NormalizeInline(item.Label)).Length)
+                .DefaultIfEmpty(0)
+                .Max();
+            int labelWidth = _options.LabelWidth ?? longestLabel;
+            int valueWidth = _options.ShowValues
+                ? _items.Select(item => _options.FormatValue(item.Value).Length).DefaultIfEmpty(0).Max()
+                : 0;
+            int barWidth = _options.ResolveMinimumBarWidth();
+            int rowWidth = labelWidth + (labelWidth > 0 ? 1 : 0) + barWidth + (valueWidth > 0 ? 1 + valueWidth : 0);
+
+            return Math.Max(1, Math.Max(titleWidth, rowWidth));
         }
 
         private double ResolveMaximumValue()

@@ -267,6 +267,63 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Direct layout palette overloads preserve RGB metadata without requiring wrapper style objects.
+        /// </summary>
+        [Fact]
+        public void Layout_DirectPaletteOverloadsEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 100, height: 24, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            LayoutPane createdPane = LayoutPane.Create("Created rgb direct", "Created", RgbColor.FromHex("#112233"));
+            createdPane.Update("Created color updated", SpectreColor.FromHex("#223344"));
+
+            var entry = new LayoutEntry(new LayoutOptions
+            {
+                Width = 72,
+                Columns = 2,
+                MinimumPaneWidth = 12,
+                Gutter = 1
+            });
+            entry.Add(createdPane);
+            entry.Add("Entry color direct", "Entry Color", SpectreColor.FromHex("#334455"));
+            entry.Add("Entry rgb direct", "Entry RGB", RgbColor.FromHex("#445566"));
+            entry.Add(new Text("Entry renderable direct"), "Entry Renderable", RgbColor.FromHex("#556677"), captureWidth: 24);
+
+            var layout = new Layout("Dashboard")
+                .Width(72)
+                .ColumnCount(2)
+                .MinimumPaneWidth(12)
+                .Gutter(1)
+                .TitleColor(RgbColor.FromHex("#010203"))
+                .ContentColor(SpectreColor.FromHex("#040506"))
+                .AddPane("Inherited direct", "Inherited")
+                .AddPane("Pane color direct", "Pane Color", SpectreColor.FromHex("#667788"))
+                .AddPane("Pane rgb direct", "Pane RGB", RgbColor.FromHex("#778899"))
+                .AddPane(new Text("Renderable direct"), "Renderable", RgbColor.FromHex("#8899aa"), captureWidth: 24);
+            layout["Pane RGB"].Update("Pane update direct", SpectreColor.FromHex("#99aabb"));
+
+            console.Write(layout);
+            console.Write(entry);
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;1;2;3mInherited", output);
+            Assert.Contains("\u001b[38;2;4;5;6mInherited direct", output);
+            Assert.Contains("\u001b[38;2;102;119;136mPane color direct", output);
+            Assert.Contains("\u001b[38;2;153;170;187mPane update direct", output);
+            Assert.Contains("\u001b[38;2;136;153;170mRenderable direct", output);
+            Assert.Contains("\u001b[38;2;34;51;68mCreated color updated", output);
+            Assert.Contains("\u001b[38;2;51;68;85mEntry color direct", output);
+            Assert.Contains("\u001b[38;2;68;85;102mEntry rgb direct", output);
+            Assert.Contains("\u001b[38;2;85;102;119mEntry renderable direct", output);
+        }
+
+        /// <summary>
         /// Row-oriented layouts honor configured width and color schemes.
         /// </summary>
         [Fact]

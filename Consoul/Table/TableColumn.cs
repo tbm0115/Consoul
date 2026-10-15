@@ -1,4 +1,6 @@
 using System;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -13,6 +15,8 @@ namespace ConsoulLibrary
         private Padding _padding;
         private bool _noWrap;
         private TableCellAlignment? _alignment;
+        private Style _headerStyle;
+        private Style _footerStyle;
         private Action<TableColumn> _changed;
 
         /// <summary>
@@ -55,6 +59,32 @@ namespace ConsoulLibrary
             set
             {
                 _footer = value ?? TableColumnFooter.Empty;
+                OnChanged();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets an optional style applied to this column's header cell.
+        /// </summary>
+        public Style HeaderCellStyle
+        {
+            get => _headerStyle;
+            set
+            {
+                _headerStyle = value;
+                OnChanged();
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets an optional style applied to this column's footer cell.
+        /// </summary>
+        public Style FooterCellStyle
+        {
+            get => _footerStyle;
+            set
+            {
+                _footerStyle = value;
                 OnChanged();
             }
         }
@@ -134,6 +164,16 @@ namespace ConsoulLibrary
             return Footer?.Text ?? string.Empty;
         }
 
+        internal Style ResolveHeaderCellStyle()
+        {
+            return HeaderCellStyle;
+        }
+
+        internal Style ResolveFooterCellStyle()
+        {
+            return FooterCellStyle;
+        }
+
         private void OnChanged()
         {
             _changed?.Invoke(this);
@@ -150,6 +190,12 @@ namespace ConsoulLibrary
             if (markup != null)
             {
                 return Table.FormatCellValue(markup);
+            }
+
+            var textBlock = renderable as TextBlockEntry;
+            if (textBlock != null)
+            {
+                return Table.FormatCellValue(textBlock);
             }
 
             return RenderActionContent.Capture(renderable, width, height).Trim();
@@ -226,6 +272,172 @@ namespace ConsoulLibrary
             }
 
             column.Footer = TableColumnFooter.FromRenderable(footer);
+            return column;
+        }
+
+        /// <summary>
+        /// Sets the header cell foreground color.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="color">The header foreground color.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn HeaderColor(this TableColumn column, ConsoleColor color)
+        {
+            return HeaderStyle(column, new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the header cell foreground color.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="color">The header foreground color.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn HeaderColor(this TableColumn column, SpectreColor color)
+        {
+            return HeaderStyle(column, new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the header cell foreground color.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="color">The header foreground color.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn HeaderColor(this TableColumn column, RgbColor color)
+        {
+            return HeaderStyle(column, new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the header cell color from Spectre-style style text.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn HeaderColor(this TableColumn column, string style)
+        {
+            return HeaderStyle(column, Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the header cell color from a reusable style object.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn HeaderColor(this TableColumn column, Style style)
+        {
+            return HeaderStyle(column, style);
+        }
+
+        /// <summary>
+        /// Sets the header cell style from Spectre-style style text.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="style">Style text such as <c>bold yellow</c> or <c>#22c55e on navy</c>.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn HeaderStyle(this TableColumn column, string style)
+        {
+            return HeaderStyle(column, Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the header cell style.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn HeaderStyle(this TableColumn column, Style style)
+        {
+            if (column == null)
+            {
+                throw new ArgumentNullException(nameof(column));
+            }
+
+            column.HeaderCellStyle = style;
+            return column;
+        }
+
+        /// <summary>
+        /// Sets the footer cell foreground color.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="color">The footer foreground color.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn FooterColor(this TableColumn column, ConsoleColor color)
+        {
+            return FooterStyle(column, new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the footer cell foreground color.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="color">The footer foreground color.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn FooterColor(this TableColumn column, SpectreColor color)
+        {
+            return FooterStyle(column, new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the footer cell foreground color.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="color">The footer foreground color.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn FooterColor(this TableColumn column, RgbColor color)
+        {
+            return FooterStyle(column, new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the footer cell color from Spectre-style style text.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="style">Style text such as <c>green</c>, <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn FooterColor(this TableColumn column, string style)
+        {
+            return FooterStyle(column, Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the footer cell color from a reusable style object.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn FooterColor(this TableColumn column, Style style)
+        {
+            return FooterStyle(column, style);
+        }
+
+        /// <summary>
+        /// Sets the footer cell style from Spectre-style style text.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="style">Style text such as <c>dim grey</c> or <c>#22c55e on navy</c>.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn FooterStyle(this TableColumn column, string style)
+        {
+            return FooterStyle(column, Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the footer cell style.
+        /// </summary>
+        /// <param name="column">The column to configure.</param>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The configured <see cref="TableColumn"/> instance.</returns>
+        public static TableColumn FooterStyle(this TableColumn column, Style style)
+        {
+            if (column == null)
+            {
+                throw new ArgumentNullException(nameof(column));
+            }
+
+            column.FooterCellStyle = style;
             return column;
         }
 

@@ -649,7 +649,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Tree"/> instance.</returns>
         public Tree TextColor(string style)
         {
-            ApplyTextStyle(Style.Parse(style));
+            ApplyTextStyle(ConsoulLibrary.Style.Parse(style));
             return this;
         }
 
@@ -662,6 +662,76 @@ namespace ConsoulLibrary
         {
             ApplyTextStyle(style);
             return this;
+        }
+
+        /// <summary>
+        /// Sets the default node text style using Spectre-style fluent vocabulary.
+        /// </summary>
+        /// <param name="style">The style to apply to node text.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree Style(Style style)
+        {
+            return TextColor(style);
+        }
+
+        /// <summary>
+        /// Sets the default node text style from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>bold #22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree Style(string style)
+        {
+            return TextColor(style);
+        }
+
+        /// <summary>
+        /// Sets the default node text foreground color using Consoul's shared palette vocabulary.
+        /// </summary>
+        /// <param name="color">The default node text foreground color.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree Color(ConsoleColor color)
+        {
+            return TextColor(color);
+        }
+
+        /// <summary>
+        /// Sets the default node text foreground color using Spectre-style color vocabulary.
+        /// </summary>
+        /// <param name="color">The default node text foreground color.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree Color(SpectreColor color)
+        {
+            return TextColor(color);
+        }
+
+        /// <summary>
+        /// Sets the default node text foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The default node text foreground color.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree Color(RgbColor color)
+        {
+            return TextColor(color);
+        }
+
+        /// <summary>
+        /// Sets the default node text style from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>bold #22c55e</c>, or <c>white on blue</c>.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree Color(string style)
+        {
+            return TextColor(style);
+        }
+
+        /// <summary>
+        /// Sets the default node text style from a reusable style object.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current <see cref="Tree"/> instance.</returns>
+        public Tree Color(Style style)
+        {
+            return TextColor(style);
         }
 
         /// <summary>
@@ -713,7 +783,7 @@ namespace ConsoulLibrary
         /// <returns>The current <see cref="Tree"/> instance.</returns>
         public Tree BranchColor(string style)
         {
-            ApplyBranchStyle(Style.Parse(style));
+            ApplyBranchStyle(ConsoulLibrary.Style.Parse(style));
             return this;
         }
 
@@ -765,7 +835,7 @@ namespace ConsoulLibrary
 
         private static ColorScheme Scheme(Style style, ColorScheme fallback)
         {
-            return (style ?? Style.Plain).ToColorScheme(fallback);
+            return (style ?? ConsoulLibrary.Style.Plain).ToColorScheme(fallback);
         }
     }
 }

@@ -105,6 +105,102 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a text column with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="content">The column content.</param>
+        /// <param name="color">The foreground color used for the column content.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(string content, SpectreColor color)
+        {
+            return AddColumn(content, null, color);
+        }
+
+        /// <summary>
+        /// Adds a column with a Spectre-style foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The column content.</param>
+        /// <param name="color">The foreground color used for the column content.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(object content, SpectreColor color)
+        {
+            return AddColumn(content, null, color);
+        }
+
+        /// <summary>
+        /// Adds a text column with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="content">The column content.</param>
+        /// <param name="header">Optional header rendered above the column content.</param>
+        /// <param name="color">The foreground color used for the column content.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(string content, string header, SpectreColor color)
+        {
+            Add(content, header, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a column with a Spectre-style foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The column content.</param>
+        /// <param name="header">Optional header rendered above the column content.</param>
+        /// <param name="color">The foreground color used for the column content.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(object content, string header, SpectreColor color)
+        {
+            Add(content, header, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a text column with an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The column content.</param>
+        /// <param name="color">The foreground color used for the column content.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(string content, RgbColor color)
+        {
+            return AddColumn(content, null, color);
+        }
+
+        /// <summary>
+        /// Adds a column with an RGB foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The column content.</param>
+        /// <param name="color">The foreground color used for the column content.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(object content, RgbColor color)
+        {
+            return AddColumn(content, null, color);
+        }
+
+        /// <summary>
+        /// Adds a text column with an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The column content.</param>
+        /// <param name="header">Optional header rendered above the column content.</param>
+        /// <param name="color">The foreground color used for the column content.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(string content, string header, RgbColor color)
+        {
+            Add(content, header, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a column with an RGB foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The column content.</param>
+        /// <param name="header">Optional header rendered above the column content.</param>
+        /// <param name="color">The foreground color used for the column content.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(object content, string header, RgbColor color)
+        {
+            Add(content, header, new Style(color));
+            return this;
+        }
+
+        /// <summary>
         /// Adds a text column using Spectre-style style text.
         /// </summary>
         /// <param name="content">The column content.</param>
@@ -172,6 +268,62 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a column whose content is captured from a render action with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="render">The render action used to produce column content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the render action.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the render action.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(Action render, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            return AddColumn(render, null, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a column whose content is captured from a render action with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="render">The render action used to produce column content.</param>
+        /// <param name="header">Optional header rendered above the column content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the render action.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the render action.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(Action render, string header, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(render, header, new Style(color), captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a column whose content is captured from a render action with an RGB foreground color.
+        /// </summary>
+        /// <param name="render">The render action used to produce column content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the render action.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the render action.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(Action render, RgbColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            return AddColumn(render, null, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a column whose content is captured from a render action with an RGB foreground color.
+        /// </summary>
+        /// <param name="render">The render action used to produce column content.</param>
+        /// <param name="header">Optional header rendered above the column content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the render action.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the render action.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(Action render, string header, RgbColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(render, header, new Style(color), captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
         /// Adds a column whose content is captured from a render action using Spectre-style style text.
         /// </summary>
         /// <param name="render">The render action used to produce column content.</param>
@@ -213,6 +365,62 @@ namespace ConsoulLibrary
         public Columns AddColumn(IConsoulRenderable renderable, string header = null, ConsoleColor? color = null, int? captureWidth = null, int captureHeight = 200)
         {
             Add(renderable, header, color, captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a column whose content is captured from a renderable component with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce column content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(IConsoulRenderable renderable, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            return AddColumn(renderable, null, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a column whose content is captured from a renderable component with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce column content.</param>
+        /// <param name="header">Optional header rendered above the column content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(IConsoulRenderable renderable, string header, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(renderable, header, new Style(color), captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a column whose content is captured from a renderable component with an RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce column content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(IConsoulRenderable renderable, RgbColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            return AddColumn(renderable, null, color, captureWidth, captureHeight);
+        }
+
+        /// <summary>
+        /// Adds a column whose content is captured from a renderable component with an RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce column content.</param>
+        /// <param name="header">Optional header rendered above the column content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddColumn(IConsoulRenderable renderable, string header, RgbColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(renderable, header, new Style(color), captureWidth, captureHeight);
             return this;
         }
 
@@ -334,6 +542,16 @@ namespace ConsoulLibrary
         public Columns AddColumns(params object[] columns)
         {
             return AddColumns((IEnumerable<object>)columns);
+        }
+
+        /// <summary>
+        /// Adds an empty column slot to the layout.
+        /// </summary>
+        /// <param name="header">Optional header rendered above the empty column.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns AddEmptyColumn(string header = null)
+        {
+            return AddColumn(string.Empty, header);
         }
 
         /// <summary>
@@ -573,6 +791,28 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the header foreground color from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The header foreground color.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns HeaderColor(SpectreColor color)
+        {
+            ApplyHeaderStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the header foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The header foreground color.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns HeaderColor(RgbColor color)
+        {
+            ApplyHeaderStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
         /// Sets the header color from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -600,6 +840,28 @@ namespace ConsoulLibrary
         /// <param name="color">The default content foreground color.</param>
         /// <returns>The current <see cref="Columns"/> instance.</returns>
         public Columns ContentColor(ConsoleColor color)
+        {
+            ApplyContentStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default content foreground color from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The default content foreground color.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns ContentColor(SpectreColor color)
+        {
+            ApplyContentStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default content foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The default content foreground color.</param>
+        /// <returns>The current <see cref="Columns"/> instance.</returns>
+        public Columns ContentColor(RgbColor color)
         {
             ApplyContentStyle(new Style(color));
             return this;

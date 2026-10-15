@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using ConsoulLibrary.Tests.Rendering;
@@ -115,6 +117,72 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy failed") && write.Color == ConsoleColor.Magenta);
                 VisualAssert.NoOverflow(scope.Driver);
             }
+        }
+
+        /// <summary>
+        /// Progress row palette helpers preserve RGB and decoration metadata for ANSI true-color terminals.
+        /// </summary>
+        [Fact]
+        public void ProgressContext_RowPaletteHelpersEmitTrueColorSgrWhenSupported()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Progress(new ProgressContextOptions { Width = 56, LabelWidth = 16 })
+                .ActiveStyle("bold #112233")
+                .CompleteColor(RgbColor.FromHex("#22c55e"))
+                .FailureColor(SpectreColor.FromHex("#ef4444"))
+                .Start(progress =>
+                {
+                    ProgressTask build = progress.AddTask("Build package", 2);
+                    build.Update(1);
+                    build.Complete("Build ready");
+
+                    ProgressTask deploy = progress.AddTask("Deploy package", 1);
+                    deploy.Fail("Deploy failed");
+                });
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[1;38;2;17;34;51mBuild package", output);
+            Assert.Contains("\u001b[38;2;34;197;94mBuild ready", output);
+            Assert.Contains("\u001b[38;2;239;68;68mDeploy failed", output);
+        }
+
+        /// <summary>
+        /// Column-mode progress rows inherit row styles while explicit column styles can override them.
+        /// </summary>
+        [Fact]
+        public void ProgressContext_ColumnRowsInheritRowPaletteUntilColumnOverrides()
+        {
+            var writer = new StringWriter(CultureInfo.InvariantCulture);
+            IAnsiConsole console = AnsiConsole.Create(new AnsiConsoleSettings
+            {
+                Out = new AnsiConsoleOutput(writer, width: 80, height: 16, isTerminal: true),
+                Ansi = AnsiSupport.Yes,
+                ColorSystem = ColorSystemSupport.TrueColor
+            });
+
+            console.Progress(new ProgressContextOptions { Width = 64, LabelWidth = 18 })
+                .ActiveColor(RgbColor.FromHex("#445566"))
+                .Columns(
+                    new TaskDescriptionColumn(),
+                    new TextColumn("{task.Percentage}") { Width = 4 },
+                    new TextColumn("override").TextColor(RgbColor.FromHex("#abcdef")))
+                .Start(progress =>
+                {
+                    ProgressTask task = progress.AddTask("Column package", 4);
+                    task.Update(2);
+                });
+
+            string output = writer.ToString();
+            Assert.Contains("\u001b[38;2;68;85;102mColumn package", output);
+            Assert.Contains("\u001b[38;2;68;85;102m50%", output);
+            Assert.Contains("\u001b[38;2;171;205;239moverride", output);
         }
 
         /// <summary>
@@ -704,6 +772,52 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// No-argument toggles and append-only column helpers make quick progress views readable without replacing prior configuration.
+        /// </summary>
+        [Fact]
+        public void ProgressContext_TogglesAndAddColumns_UpdateOptionsAndRenderBoundedRows()
+        {
+            using (var scope = new ConsoleDriverScope(72))
+            {
+                using (ProgressContext progress = AnsiConsole.Progress(new ProgressContextOptions { Width = 64, LabelWidth = 18 })
+                    .Columns(new TaskDescriptionColumn())
+                    .AddColumn(new TextColumn("[grey]{task.Tag}[/]"))
+                    .AddColumns(new ProgressColumn[] { null!, new PercentageColumn() })
+                    .AutoRefresh()
+                    .ManualRefresh()
+                    .AutoClear()
+                    .HideCompleted()
+                    .ShowCompleted())
+                {
+                    IReadOnlyList<ProgressColumn> columns = progress.Options.GetColumns();
+
+                    Assert.False(progress.Options.AutoRefresh);
+                    Assert.True(progress.Options.AutoClear);
+                    Assert.False(progress.Options.HideCompleted);
+                    Assert.Collection(
+                        columns,
+                        column => Assert.IsType<TaskDescriptionColumn>(column),
+                        column => Assert.IsType<TextColumn>(column),
+                        column => Assert.IsType<PercentageColumn>(column));
+
+                    ProgressTask task = progress.AddTask("Package artifacts", maxValue: 4)
+                        .Tag("release");
+
+                    task.Update(2);
+                    progress.Refresh();
+                    task.Complete("Package ready");
+                    progress.Refresh();
+                }
+
+                VisualAssert.WroteText(scope.Driver, "Package artifacts");
+                VisualAssert.WroteText(scope.Driver, "release");
+                VisualAssert.WroteText(scope.Driver, "50%");
+                VisualAssert.WroteText(scope.Driver, "100%");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Progress render hooks can replace generated rows while the fixed row renderer keeps output bounded.
         /// </summary>
         [Fact]
@@ -971,6 +1085,64 @@ namespace ConsoulLibrary.Tests.Rendering
                 Assert.Contains(scope.Driver.Writes, write =>
                     write.Text.Contains("=>") &&
                     write.Color == ConsoleColor.Cyan);
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Progress column palette helpers accept Spectre-style style strings for quick POC column wiring.
+        /// </summary>
+        [Fact]
+        public void ProgressContext_ColumnPaletteHelpers_AcceptStyleStrings()
+        {
+            using (var scope = new ConsoleDriverScope(72))
+            {
+                var spinner = new Spinner("Test", "A", "B");
+                ProgressBarColumn bar = new ProgressBarColumn { Width = 6 }
+                    .Complete("green")
+                    .Finished("white on blue")
+                    .Remaining("grey")
+                    .Indeterminate("yellow");
+                SpinnerColumn spinnerColumn = new SpinnerColumn { Spinner = spinner }
+                    .SpinnerStyle("magenta");
+                TextColumn textColumn = new TextColumn("=>", "red")
+                    .TextColor("white on blue");
+
+                Assert.Equal(ConsoleColor.Green, bar.CompletedStyle.Foreground);
+                Assert.Equal(ConsoleColor.White, bar.FinishedStyle.Foreground);
+                Assert.Equal(ConsoleColor.Blue, bar.FinishedStyle.Background);
+                Assert.Equal(ConsoleColor.Gray, bar.RemainingStyle.Foreground);
+                Assert.Equal(ConsoleColor.Yellow, bar.IndeterminateStyle.Foreground);
+                Assert.Equal(ConsoleColor.Magenta, spinnerColumn.Style.Foreground);
+                Assert.Equal(ConsoleColor.White, textColumn.Style.Foreground);
+                Assert.Equal(ConsoleColor.Blue, textColumn.Style.Background);
+
+                using (ProgressContext progress = AnsiConsole.Progress(new ProgressContextOptions { Width = 60, LabelWidth = 10 })
+                    .Columns(spinnerColumn, new TaskDescriptionColumn(), bar, textColumn, new PercentageColumn()))
+                {
+                    ProgressTask task = progress.AddTask("Package", 10);
+                    task.Update(5);
+                    progress.Refresh();
+                    task.Update(10);
+                }
+
+                Assert.Contains(scope.Driver.Writes, write =>
+                    write.Text.TrimStart().StartsWith("A", StringComparison.Ordinal) &&
+                    write.Color == ConsoleColor.Magenta);
+                Assert.Contains(scope.Driver.Writes, write =>
+                    write.Text.Contains("###") &&
+                    write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write =>
+                    write.Text.Contains("---") &&
+                    write.Color == ConsoleColor.Gray);
+                Assert.Contains(scope.Driver.Writes, write =>
+                    write.Text.Contains("######") &&
+                    write.Color == ConsoleColor.White &&
+                    write.BackgroundColor == ConsoleColor.Blue);
+                Assert.Contains(scope.Driver.Writes, write =>
+                    write.Text.Contains("=>") &&
+                    write.Color == ConsoleColor.White &&
+                    write.BackgroundColor == ConsoleColor.Blue);
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }

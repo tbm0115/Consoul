@@ -1,6 +1,7 @@
 using System;
 using ConsoulLibrary.Tests.Rendering;
 using ConsoulLibrary.Color;
+using SpectreColor = ConsoulLibrary.Color.Color;
 using Xunit;
 
 namespace ConsoulLibrary.Tests.Compatibility
@@ -140,9 +141,21 @@ namespace ConsoulLibrary.Tests.Compatibility
                     .AsciiBorder()
                     .HeaderAlignment(Justify.Center)
                     .FooterAlignment(Justify.Right);
+                var inlineNativeAlignment = new Panel("Ready")
+                    .Title("Native", TextBlockAlignment.Right)
+                    .Footer("left", TextBlockAlignment.Left);
+                var titleAlignmentAlias = new Panel("Ready")
+                    .Title("Alias")
+                    .TitleAlignment(Justify.Center);
+                var nativeTitleAlignmentAlias = new Panel("Ready")
+                    .TitleAlignment(TextBlockAlignment.Right);
 
                 AnsiConsole.Write(panel);
 
+                Assert.Equal(TextBlockAlignment.Right, inlineNativeAlignment.Options.TitleAlignment);
+                Assert.Equal(TextBlockAlignment.Left, inlineNativeAlignment.Options.FooterAlignment);
+                Assert.Equal(TextBlockAlignment.Center, titleAlignmentAlias.Options.TitleAlignment);
+                Assert.Equal(TextBlockAlignment.Right, nativeTitleAlignmentAlias.Options.TitleAlignment);
                 VisualAssert.ContainsText(scope.Driver, "Status");
                 VisualAssert.ContainsText(scope.Driver, "prod");
                 Assert.Contains(scope.Driver.Lines, line => line.Contains("Status") && line.IndexOf("Status", StringComparison.Ordinal) > 10);
@@ -177,6 +190,50 @@ namespace ConsoulLibrary.Tests.Compatibility
         }
 
         /// <summary>
+        /// Panel headers, titles, and footers can be supplied as reusable renderables without wrapper metadata.
+        /// </summary>
+        [Fact]
+        public void Panel_FluentBuilder_AcceptsRenderableHeaderTitleAndFooter()
+        {
+            using (var scope = new ConsoleDriverScope(56))
+            {
+                var renderedFooter = Consoul.Renderable(() => AnsiConsole.Markup("[grey]Esc[/]"));
+                var panel = new Panel("[green]Ready[/] for deployment")
+                    .Header(new Markup("[cyan]Deploy[/]"), Justify.Center)
+                    .Footer(renderedFooter, Justify.Right)
+                    .Width(38)
+                    .AsciiBorder()
+                    .ContentColor(ConsoleColor.White);
+                var titled = new Panel("Queued")
+                    .Title(new Text("Snapshot", ConsoleColor.Yellow), TextBlockAlignment.Right)
+                    .Footer(new Markup("[white on navy]done[/]"));
+
+                AnsiConsole.Write(panel);
+                AnsiConsole.Write(titled);
+
+                Assert.Equal("[cyan]Deploy[/]", panel.Options.Title);
+                Assert.Equal(TextBlockAlignment.Center, panel.Options.TitleAlignment);
+                Assert.Equal("Esc", panel.Options.Footer);
+                Assert.Equal(TextBlockAlignment.Right, panel.Options.FooterAlignment);
+                Assert.Equal("Snapshot", titled.Options.Title);
+                Assert.Equal(TextBlockAlignment.Right, titled.Options.TitleAlignment);
+                Assert.Equal("[white on navy]done[/]", titled.Options.Footer);
+                VisualAssert.ContainsText(scope.Driver, "Deploy");
+                VisualAssert.ContainsText(scope.Driver, "Ready for deployment");
+                VisualAssert.ContainsText(scope.Driver, "Esc");
+                VisualAssert.ContainsText(scope.Driver, "Snapshot");
+                VisualAssert.ContainsText(scope.Driver, "done");
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy") && write.Color == ConsoleColor.Cyan);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Ready") && write.Color == ConsoleColor.Green);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("done") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
+                Assert.DoesNotContain("[cyan]", scope.Driver.Text);
+                Assert.DoesNotContain("[white on navy]", scope.Driver.Text);
+                Assert.All(scope.Driver.Lines, line => Assert.True(line.Length <= 56, "Renderable-header panel line exceeded terminal width: " + line));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Panel header/footer adapters support reusable metadata and inline style overloads.
         /// </summary>
         [Fact]
@@ -185,14 +242,19 @@ namespace ConsoulLibrary.Tests.Compatibility
             using (var scope = new ConsoleDriverScope(48))
             {
                 var panel = new Panel("Build ready")
-                    .Header("Deploy", new Style(ConsoleColor.Cyan), Justify.Center)
-                    .Footer(new PanelHeader("done", Justify.Right))
-                    .FooterColor(ConsoleColor.Yellow)
+                    .Header("Deploy", "aqua", Justify.Center)
+                    .Footer("done", "white on navy", Justify.Right)
                     .Width(34)
                     .AsciiBorder();
 
                 var inlineFooter = new Panel("Ready")
                     .Footer("hint", new Style(ConsoleColor.DarkGray), Justify.Center);
+                var inlineTitle = new Panel("Ready")
+                    .Title("Inline", "bold yellow", Justify.Left);
+                var colorTitle = new Panel("Ready")
+                    .Title("Color", SpectreColor.Aqua, Justify.Center);
+                var rgbTitle = new Panel("Ready")
+                    .Title("Rgb", RgbColor.Yellow, Justify.Right);
 
                 AnsiConsole.Write(panel);
 
@@ -200,11 +262,23 @@ namespace ConsoulLibrary.Tests.Compatibility
                 Assert.Equal(TextBlockAlignment.Center, panel.Options.TitleAlignment);
                 Assert.Equal("done", panel.Options.Footer);
                 Assert.Equal(TextBlockAlignment.Right, panel.Options.FooterAlignment);
+                Assert.Equal(ConsoleColor.Cyan, panel.Options.TitleScheme.GetValueOrDefault().Color);
+                Assert.Equal(ConsoleColor.White, panel.Options.FooterScheme.GetValueOrDefault().Color);
+                Assert.Equal(ConsoleColor.DarkBlue, panel.Options.FooterScheme.GetValueOrDefault().BackgroundColor);
                 Assert.Equal(TextBlockAlignment.Center, inlineFooter.Options.FooterAlignment);
                 Assert.True(inlineFooter.Options.FooterScheme.HasValue);
                 Assert.Equal(ConsoleColor.DarkGray, inlineFooter.Options.FooterScheme.GetValueOrDefault().Color);
+                Assert.Equal(TextBlockAlignment.Left, inlineTitle.Options.TitleAlignment);
+                Assert.Equal(Decoration.Bold, inlineTitle.Options.TitleDecoration);
+                Assert.Equal(ConsoleColor.Yellow, inlineTitle.Options.TitleScheme.GetValueOrDefault().Color);
+                Assert.Equal(TextBlockAlignment.Center, colorTitle.Options.TitleAlignment);
+                Assert.Equal(ConsoleColor.Cyan, colorTitle.Options.TitleScheme.GetValueOrDefault().Color);
+                Assert.Equal(RgbColor.Aqua, colorTitle.Options.TitleForegroundRgb);
+                Assert.Equal(TextBlockAlignment.Right, rgbTitle.Options.TitleAlignment);
+                Assert.Equal(ConsoleColor.Yellow, rgbTitle.Options.TitleScheme.GetValueOrDefault().Color);
+                Assert.Equal(RgbColor.Yellow, rgbTitle.Options.TitleForegroundRgb);
                 Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("Deploy") && write.Color == ConsoleColor.Cyan);
-                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("done") && write.Color == ConsoleColor.Yellow);
+                Assert.Contains(scope.Driver.Writes, write => write.Text.Contains("done") && write.Color == ConsoleColor.White && write.BackgroundColor == ConsoleColor.DarkBlue);
                 VisualAssert.NoOverflow(scope.Driver);
             }
         }
@@ -414,19 +488,32 @@ namespace ConsoulLibrary.Tests.Compatibility
                 Assert.Equal(PanelBorderStyle.Double, (PanelBorderStyle)BoxBorder.MinimalDoubleHead);
                 Assert.Equal(PanelBorderStyle.None, (PanelBorderStyle)BoxBorder.Minimal);
 
+                AssertBorder(new Panel("Simple").SimpleHeavyBorder(), PanelBorderStyle.Heavy);
+                AssertBorder(new Panel("Minimal").MinimalBorder(), PanelBorderStyle.None);
+                AssertBorder(new Panel("Minimal heavy").MinimalHeavyHeadBorder(), PanelBorderStyle.Heavy);
+                AssertBorder(new Panel("Minimal double").MinimalDoubleHeadBorder(), PanelBorderStyle.Double);
+                AssertBorder(new Panel("Horizontal").HorizontalBorder(), PanelBorderStyle.Square);
+                AssertBorder(new Panel("Ascii2").Ascii2Border(), PanelBorderStyle.Ascii);
+                AssertBorder(new Panel("Ascii double").AsciiDoubleHeadBorder(), PanelBorderStyle.Ascii);
+                AssertBorder(new Panel("Markdown").MarkdownBorder(), PanelBorderStyle.Ascii);
+                AssertBorder(new Panel("Heavy edge").HeavyEdgeBorder(), PanelBorderStyle.Heavy);
+                AssertBorder(new Panel("Heavy head").HeavyHeadBorder(), PanelBorderStyle.Heavy);
+                AssertBorder(new Panel("Double edge").DoubleEdgeBorder(), PanelBorderStyle.Double);
+                AssertBorder(new Panel("Safe").SafeBorder(), PanelBorderStyle.Ascii);
+
                 var safePanel = new Panel("Safe border")
                     .Header("Safe")
                     .Width(24)
-                    .Border(BoxBorder.Safe);
+                    .SafeBorder();
                 var heavyPanel = new Panel("Heavy border")
                     .Width(24)
-                    .Border(BoxBorder.MinimalHeavyHead);
+                    .MinimalHeavyHeadBorder();
                 var borderlessPanel = new Panel("No frame")
                     .Width(24)
-                    .Border(BoxBorder.Minimal);
+                    .MinimalBorder();
                 var doublePanel = new Panel("Double")
                     .Width(24)
-                    .Border(BoxBorder.MinimalDoubleHead);
+                    .MinimalDoubleHeadBorder();
 
                 AnsiConsole.Write(safePanel);
                 AnsiConsole.Write(heavyPanel);
@@ -615,6 +702,11 @@ namespace ConsoulLibrary.Tests.Compatibility
             }
 
             return count;
+        }
+
+        private static void AssertBorder(Panel panel, PanelBorderStyle style)
+        {
+            Assert.Equal(style, panel.Options.BorderStyle);
         }
 
         private static void AssertNoPanelBorderCharacters(System.Collections.Generic.IEnumerable<string> lines)

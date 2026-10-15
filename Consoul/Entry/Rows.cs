@@ -103,6 +103,54 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a text row with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="content">The row content.</param>
+        /// <param name="color">The foreground color used for the row content.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRow(string content, SpectreColor color)
+        {
+            Add(content, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a row with a Spectre-style foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The row content.</param>
+        /// <param name="color">The foreground color used for the row content.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRow(object content, SpectreColor color)
+        {
+            Add(content, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a text row with an RGB foreground color.
+        /// </summary>
+        /// <param name="content">The row content.</param>
+        /// <param name="color">The foreground color used for the row content.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRow(string content, RgbColor color)
+        {
+            Add(content, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a row with an RGB foreground color, formatting plain object values with the current culture and capturing renderable values.
+        /// </summary>
+        /// <param name="content">The row content.</param>
+        /// <param name="color">The foreground color used for the row content.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRow(object content, RgbColor color)
+        {
+            Add(content, new Style(color));
+            return this;
+        }
+
+        /// <summary>
         /// Adds a text row using Spectre-style style text.
         /// </summary>
         /// <param name="content">The row content.</param>
@@ -165,6 +213,34 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a row whose content is captured from a render action with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="render">The render action used to produce row content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the render action.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the render action.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRow(Action render, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(render, new Style(color), captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a row whose content is captured from a render action with an RGB foreground color.
+        /// </summary>
+        /// <param name="render">The render action used to produce row content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the render action.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the render action.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRow(Action render, RgbColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(render, new Style(color), captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
         /// Adds a row whose content is captured from a render action using Spectre-style style text.
         /// </summary>
         /// <param name="render">The render action used to produce row content.</param>
@@ -203,6 +279,34 @@ namespace ConsoulLibrary
         public Rows AddRow(IConsoulRenderable renderable, ConsoleColor? color = null, int? captureWidth = null, int captureHeight = 200)
         {
             Add(renderable, color, captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a row whose content is captured from a renderable component with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce row content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRow(IConsoulRenderable renderable, SpectreColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(renderable, new Style(color), captureWidth, captureHeight);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a row whose content is captured from a renderable component with an RGB foreground color.
+        /// </summary>
+        /// <param name="renderable">The renderable component used to produce row content.</param>
+        /// <param name="color">The foreground color used for the captured content.</param>
+        /// <param name="captureWidth">Optional virtual console width used while capturing the renderable component.</param>
+        /// <param name="captureHeight">Virtual console height used while capturing the renderable component.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRow(IConsoulRenderable renderable, RgbColor color, int? captureWidth = null, int captureHeight = 200)
+        {
+            Add(renderable, new Style(color), captureWidth, captureHeight);
             return this;
         }
 
@@ -322,6 +426,169 @@ namespace ConsoulLibrary
         public Rows AddRows(params object[] rows)
         {
             return AddRows((IEnumerable<object>)rows);
+        }
+
+        /// <summary>
+        /// Adds an empty row to the stack.
+        /// </summary>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddEmptyRow()
+        {
+            return AddRow(string.Empty);
+        }
+
+        /// <summary>
+        /// Adds a horizontal rule row for separating sections in composed console views.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the rule.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested rule width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRule(string title = null, Justify? justification = null, int? width = null)
+        {
+            return AddRuleCore(new Rule(title), justification, width);
+        }
+
+        /// <summary>
+        /// Adds a horizontal rule row with a console foreground color.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the rule.</param>
+        /// <param name="color">The foreground color used for the rule and its title.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested rule width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRule(string title, ConsoleColor color, Justify? justification = null, int? width = null)
+        {
+            return AddRuleCore(new Rule(title).RuleColor(color).TitleColor(color), justification, width, new Style(color));
+        }
+
+        /// <summary>
+        /// Adds a horizontal rule row with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the rule.</param>
+        /// <param name="color">The foreground color used for the rule and its title.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested rule width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRule(string title, SpectreColor color, Justify? justification = null, int? width = null)
+        {
+            return AddRuleCore(new Rule(title).RuleColor(color).TitleColor(color), justification, width, new Style(color));
+        }
+
+        /// <summary>
+        /// Adds a horizontal rule row with an RGB foreground color.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the rule.</param>
+        /// <param name="color">The foreground color used for the rule and its title.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested rule width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRule(string title, RgbColor color, Justify? justification = null, int? width = null)
+        {
+            return AddRuleCore(new Rule(title).RuleColor(color).TitleColor(color), justification, width, new Style(color));
+        }
+
+        /// <summary>
+        /// Adds a horizontal rule row with Spectre-style style text.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the rule.</param>
+        /// <param name="style">Style text such as <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested rule width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRule(string title, string style, Justify? justification = null, int? width = null)
+        {
+            return AddRule(title, Style.Parse(style), justification, width);
+        }
+
+        /// <summary>
+        /// Adds a horizontal rule row with a reusable style.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the rule.</param>
+        /// <param name="style">The foreground/background style used for the rule and its title.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested rule width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddRule(string title, Style style, Justify? justification = null, int? width = null)
+        {
+            return AddRuleCore(new Rule(title).RuleStyle(style).TitleStyle(style), justification, width, style);
+        }
+
+        /// <summary>
+        /// Adds a horizontal separator row for grouping related content.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the separator.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested separator width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddSeparator(string title = null, Justify? justification = null, int? width = null)
+        {
+            return AddRule(title, justification, width);
+        }
+
+        /// <summary>
+        /// Adds a horizontal separator row with a console foreground color.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the separator.</param>
+        /// <param name="color">The foreground color used for the separator and its title.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested separator width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddSeparator(string title, ConsoleColor color, Justify? justification = null, int? width = null)
+        {
+            return AddRule(title, color, justification, width);
+        }
+
+        /// <summary>
+        /// Adds a horizontal separator row with a Spectre-style foreground color.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the separator.</param>
+        /// <param name="color">The foreground color used for the separator and its title.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested separator width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddSeparator(string title, SpectreColor color, Justify? justification = null, int? width = null)
+        {
+            return AddRule(title, color, justification, width);
+        }
+
+        /// <summary>
+        /// Adds a horizontal separator row with an RGB foreground color.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the separator.</param>
+        /// <param name="color">The foreground color used for the separator and its title.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested separator width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddSeparator(string title, RgbColor color, Justify? justification = null, int? width = null)
+        {
+            return AddRule(title, color, justification, width);
+        }
+
+        /// <summary>
+        /// Adds a horizontal separator row with Spectre-style style text.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the separator.</param>
+        /// <param name="style">Style text such as <c>grey</c>, <c>#22c55e</c>, or <c>white on blue</c>.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested separator width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddSeparator(string title, string style, Justify? justification = null, int? width = null)
+        {
+            return AddRule(title, style, justification, width);
+        }
+
+        /// <summary>
+        /// Adds a horizontal separator row with a reusable style.
+        /// </summary>
+        /// <param name="title">Optional title rendered inside the separator.</param>
+        /// <param name="style">The foreground/background style used for the separator and its title.</param>
+        /// <param name="justification">Optional title justification.</param>
+        /// <param name="width">Optional requested separator width. The current row width is used when omitted and explicitly configured.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows AddSeparator(string title, Style style, Justify? justification = null, int? width = null)
+        {
+            return AddRule(title, style, justification, width);
         }
 
         /// <summary>
@@ -522,6 +789,28 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the default row foreground color from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The default row foreground color.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows ContentColor(SpectreColor color)
+        {
+            ApplyContentStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the default row foreground color from an RGB color.
+        /// </summary>
+        /// <param name="color">The default row foreground color.</param>
+        /// <returns>The current <see cref="Rows"/> instance.</returns>
+        public Rows ContentColor(RgbColor color)
+        {
+            ApplyContentStyle(new Style(color));
+            return this;
+        }
+
+        /// <summary>
         /// Sets the default row color from a reusable style object.
         /// </summary>
         /// <param name="style">The style to apply.</param>
@@ -549,6 +838,31 @@ namespace ConsoulLibrary
             Options.ContentDecoration = style?.Decoration ?? Decoration.None;
             Options.ContentForegroundRgb = style?.ForegroundRgb;
             Options.ContentBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private Rows AddRuleCore(Rule rule, Justify? justification, int? width, Style rowStyle = null)
+        {
+            if (justification.HasValue)
+            {
+                rule.Justify(justification.Value);
+            }
+
+            int? resolvedWidth = width ?? Options.Width;
+            if (resolvedWidth.HasValue)
+            {
+                rule.Width(resolvedWidth);
+            }
+
+            if (rowStyle != null)
+            {
+                AddRow(rule, rowStyle, captureWidth: resolvedWidth, captureHeight: 4);
+            }
+            else
+            {
+                AddRow(rule, captureWidth: resolvedWidth, captureHeight: 4);
+            }
+
+            return this;
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

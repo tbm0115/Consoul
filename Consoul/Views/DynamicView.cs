@@ -809,6 +809,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a named model section using a Spectre-style title color.
+        /// </summary>
+        /// <param name="title">Section title rendered in a rule above the section content.</param>
+        /// <param name="renderer">Action that writes section content from the current model state.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> Section(string title, Action<T> renderer, SpectreColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return SectionStyled(model => title, renderer, RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
+        /// Adds a named model section using an RGB title color.
+        /// </summary>
+        /// <param name="title">Section title rendered in a rule above the section content.</param>
+        /// <param name="renderer">Action that writes section content from the current model state.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> Section(string title, Action<T> renderer, RgbColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return SectionStyled(model => title, renderer, RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
         /// Adds a named model section with a title evaluated from the current model state.
         /// </summary>
         /// <param name="title">Function that creates the section title from the current model state.</param>
@@ -939,6 +965,42 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a named section that renders a reusable component using a Spectre-style title color.
+        /// </summary>
+        /// <param name="title">Section title rendered as a horizontal rule.</param>
+        /// <param name="renderable">Renderable component written each time the view renders.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> Section(string title, IConsoulRenderable renderable, SpectreColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            return SectionStyled(model => title, model => Consoul.Render(renderable), RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
+        /// Adds a named section that renders a reusable component using an RGB title color.
+        /// </summary>
+        /// <param name="title">Section title rendered as a horizontal rule.</param>
+        /// <param name="renderable">Renderable component written each time the view renders.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> Section(string title, IConsoulRenderable renderable, RgbColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            return SectionStyled(model => title, model => Consoul.Render(renderable), RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
         /// Adds a named model section that renders a reusable component from the current model state.
         /// </summary>
         /// <param name="title">Section title rendered as a horizontal rule.</param>
@@ -975,6 +1037,32 @@ namespace ConsoulLibrary
         public DynamicView<T> Section(string title, Func<T, IConsoulRenderable> renderer, Style titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
             return SectionRenderableStyled(model => title, renderer, RuleTitleStyle(model => titleStyle), alignment);
+        }
+
+        /// <summary>
+        /// Adds a named model section that renders a reusable component using a Spectre-style title color.
+        /// </summary>
+        /// <param name="title">Section title rendered in a rule above the component.</param>
+        /// <param name="renderer">Function that creates a renderable component from the current model state.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> Section(string title, Func<T, IConsoulRenderable> renderer, SpectreColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return SectionRenderableStyled(model => title, renderer, RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
+        /// Adds a named model section that renders a reusable component using an RGB title color.
+        /// </summary>
+        /// <param name="title">Section title rendered in a rule above the component.</param>
+        /// <param name="renderer">Function that creates a renderable component from the current model state.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> Section(string title, Func<T, IConsoulRenderable> renderer, RgbColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return SectionRenderableStyled(model => title, renderer, RuleTitleStyle(model => titleColor), alignment);
         }
 
         /// <summary>
@@ -1094,6 +1182,34 @@ namespace ConsoulLibrary
         public DynamicView<T> SectionWhen(string title, Action<T> renderer, Func<T, bool> isVisible, Style titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
             return SectionWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleStyle), alignment);
+        }
+
+        /// <summary>
+        /// Adds a named model section that renders only while visible using a Spectre-style title color.
+        /// </summary>
+        /// <param name="title">Section title rendered in a rule above the section content.</param>
+        /// <param name="renderer">Action that writes section content from the current model state.</param>
+        /// <param name="isVisible">Predicate that returns <c>true</c> when the section should render.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> SectionWhen(string title, Action<T> renderer, Func<T, bool> isVisible, SpectreColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return SectionWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
+        /// Adds a named model section that renders only while visible using an RGB title color.
+        /// </summary>
+        /// <param name="title">Section title rendered in a rule above the section content.</param>
+        /// <param name="renderer">Action that writes section content from the current model state.</param>
+        /// <param name="isVisible">Predicate that returns <c>true</c> when the section should render.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> SectionWhen(string title, Action<T> renderer, Func<T, bool> isVisible, RgbColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return SectionWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleColor), alignment);
         }
 
         /// <summary>
@@ -1240,6 +1356,44 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a named section that renders a reusable component only while visible using a Spectre-style title color.
+        /// </summary>
+        /// <param name="title">Section title rendered as a horizontal rule.</param>
+        /// <param name="renderable">Renderable component written each time the section is visible.</param>
+        /// <param name="isVisible">Predicate that returns <c>true</c> when the section should render.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> SectionWhen(string title, IConsoulRenderable renderable, Func<T, bool> isVisible, SpectreColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            return SectionWhenStyled(model => title, model => Consoul.Render(renderable), isVisible, RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
+        /// Adds a named section that renders a reusable component only while visible using an RGB title color.
+        /// </summary>
+        /// <param name="title">Section title rendered as a horizontal rule.</param>
+        /// <param name="renderable">Renderable component written each time the section is visible.</param>
+        /// <param name="isVisible">Predicate that returns <c>true</c> when the section should render.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> SectionWhen(string title, IConsoulRenderable renderable, Func<T, bool> isVisible, RgbColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            if (renderable == null)
+            {
+                throw new ArgumentNullException(nameof(renderable));
+            }
+
+            return SectionWhenStyled(model => title, model => Consoul.Render(renderable), isVisible, RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
         /// Adds a named model section that renders a reusable component only while the current model satisfies a predicate.
         /// </summary>
         /// <param name="title">Section title rendered as a horizontal rule.</param>
@@ -1279,6 +1433,34 @@ namespace ConsoulLibrary
         public DynamicView<T> SectionWhen(string title, Func<T, IConsoulRenderable> renderer, Func<T, bool> isVisible, Style titleStyle, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
         {
             return SectionRenderableWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleStyle), alignment);
+        }
+
+        /// <summary>
+        /// Adds a named model section that renders a reusable component only while visible using a Spectre-style title color.
+        /// </summary>
+        /// <param name="title">Section title rendered in a rule above the component.</param>
+        /// <param name="renderer">Function that creates a renderable component from the current model state.</param>
+        /// <param name="isVisible">Predicate that returns <c>true</c> when the section should render.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> SectionWhen(string title, Func<T, IConsoulRenderable> renderer, Func<T, bool> isVisible, SpectreColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return SectionRenderableWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleColor), alignment);
+        }
+
+        /// <summary>
+        /// Adds a named model section that renders a reusable component only while visible using an RGB title color.
+        /// </summary>
+        /// <param name="title">Section title rendered in a rule above the component.</param>
+        /// <param name="renderer">Function that creates a renderable component from the current model state.</param>
+        /// <param name="isVisible">Predicate that returns <c>true</c> when the section should render.</param>
+        /// <param name="titleColor">Foreground color for the section rule title.</param>
+        /// <param name="alignment">Alignment used for the section rule title.</param>
+        /// <returns>The current <see cref="DynamicView{T}"/> instance.</returns>
+        public DynamicView<T> SectionWhen(string title, Func<T, IConsoulRenderable> renderer, Func<T, bool> isVisible, RgbColor titleColor, RuleTitleAlignment alignment = RuleTitleAlignment.Left)
+        {
+            return SectionRenderableWhenStyled(model => title, renderer, isVisible, RuleTitleStyle(model => titleColor), alignment);
         }
 
         /// <summary>

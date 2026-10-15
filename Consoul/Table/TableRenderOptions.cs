@@ -29,6 +29,20 @@ namespace ConsoulLibrary
         {
             return new TableRenderStyle(scheme);
         }
+
+        public TableRenderStyle Apply(Style style)
+        {
+            if (style == null)
+            {
+                return this;
+            }
+
+            return new TableRenderStyle(
+                style.ToColorScheme(Scheme),
+                style.Decoration,
+                style.ForegroundRgb,
+                style.BackgroundRgb);
+        }
     }
 
     internal static class TableRenderStyleWriter

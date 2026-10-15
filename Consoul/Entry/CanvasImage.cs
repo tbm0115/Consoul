@@ -127,6 +127,27 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets whether the image should be resampled to fit the requested size.
+        /// </summary>
+        /// <param name="enabled">A value indicating whether scaling is enabled.</param>
+        /// <returns>The current <see cref="CanvasImage"/> instance.</returns>
+        public CanvasImage Scale(bool enabled = true)
+        {
+            Options.Scale = enabled;
+            return this;
+        }
+
+        /// <summary>
+        /// Disables image scaling so rendering clips the top-left source pixels to the configured bounds.
+        /// </summary>
+        /// <returns>The current <see cref="CanvasImage"/> instance.</returns>
+        public CanvasImage NoScale()
+        {
+            Options.Scale = false;
+            return this;
+        }
+
+        /// <summary>
         /// Uses nearest-neighbor sampling when scaling.
         /// </summary>
         /// <returns>The current <see cref="CanvasImage"/> instance.</returns>

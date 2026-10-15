@@ -22,6 +22,7 @@ namespace ConsoulLibrary
         private readonly TableRenderOptions _renderOptions;
         private IReadOnlyList<TableCellAlignment> _columnAlignments = Array.Empty<TableCellAlignment>();
         private IReadOnlyList<Padding> _columnPaddings = Array.Empty<Padding>();
+        private IReadOnlyList<Style> _columnStyles = Array.Empty<Style>();
 
         /// <summary>
         /// Gets the number of cells in the row.
@@ -133,7 +134,7 @@ namespace ConsoulLibrary
                 int renderWidth = Math.Min(Math.Max(0, cell.CellWidth), availableWidth);
 
                 Consoul.ConsoleDriver.SetCursorPosition(startLeft, rowTop);
-                cell.Render(renderWidth, contentStyle, ResolveCellAlignment(i, isHeader), ResolveCellPadding(i));
+                cell.Render(renderWidth, ResolveCellStyle(i, contentStyle), ResolveCellAlignment(i, isHeader), ResolveCellPadding(i));
 
                 currentLeft = startLeft + renderWidth;
                 if (currentLeft >= Consoul.ConsoleBufferWidth)
@@ -252,6 +253,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Applies per-column cell styles to this row.
+        /// </summary>
+        /// <param name="columnStyles">Column styles indexed by cell position.</param>
+        public void ApplyColumnStyles(IReadOnlyList<Style> columnStyles)
+        {
+            _columnStyles = columnStyles ?? Array.Empty<Style>();
+        }
+
+        /// <summary>
         /// Gets the length of the cell content at the specified index.
         /// </summary>
         /// <param name="index">Zero-based cell index.</param>
@@ -309,6 +319,16 @@ namespace ConsoulLibrary
             return new Padding(1, 0, 0, 0);
         }
 
+        private TableRenderStyle ResolveCellStyle(int index, TableRenderStyle fallback)
+        {
+            if (_columnStyles != null && index >= 0 && index < _columnStyles.Count && _columnStyles[index] != null)
+            {
+                return fallback.Apply(_columnStyles[index]);
+            }
+
+            return fallback;
+        }
+
         private int ResolveVerticalPadding(bool top)
         {
             int padding = 0;
@@ -342,7 +362,7 @@ namespace ConsoulLibrary
                 Consoul.ConsoleDriver.SetCursorPosition(startLeft, rowTop);
                 if (renderWidth > 0)
                 {
-                    TableRenderStyleWriter.Write(new string(' ', renderWidth), contentStyle, writeLine: false);
+                    TableRenderStyleWriter.Write(new string(' ', renderWidth), ResolveCellStyle(index, contentStyle), writeLine: false);
                 }
 
                 currentLeft = startLeft + renderWidth;
@@ -715,6 +735,8 @@ namespace ConsoulLibrary
         private readonly List<TableCellAlignment> _columnAlignments = new List<TableCellAlignment>();
         private readonly List<int?> _columnPreferredWidths = new List<int?>();
         private readonly List<Padding> _columnPaddings = new List<Padding>();
+        private readonly List<Style> _headerColumnStyles = new List<Style>();
+        private readonly List<Style> _footerColumnStyles = new List<Style>();
 
         /// <summary>
         /// Occurs when a table query yields no matching rows.
@@ -946,6 +968,7 @@ namespace ConsoulLibrary
                 ApplyColumnAlignments();
             }
             ApplyColumnPaddings();
+            ApplyColumnStyles();
             //TableRenderOptions.Normalize(Contents);
         }
 
@@ -977,6 +1000,7 @@ namespace ConsoulLibrary
             _header.UpdateCell(columnIndex, label ?? string.Empty);
             _header.ApplyColumnAlignments(_columnAlignments);
             _header.ApplyColumnPaddings(_columnPaddings);
+            _header.ApplyColumnStyles(_headerColumnStyles);
             _columnWidths.Clear();
         }
 
@@ -1210,7 +1234,50 @@ namespace ConsoulLibrary
             _footer.UpdateCell(columnIndex, footer ?? string.Empty);
             _footer.ApplyColumnAlignments(_columnAlignments);
             _footer.ApplyColumnPaddings(_columnPaddings);
+            _footer.ApplyColumnStyles(_footerColumnStyles);
             _columnWidths.Clear();
+        }
+
+        /// <summary>
+        /// Sets a style override for one header cell.
+        /// </summary>
+        /// <param name="columnIndex">Zero-based column index.</param>
+        /// <param name="style">Style applied to the header cell, or <see langword="null"/> to use the table default.</param>
+        public void SetHeaderStyle(int columnIndex, Style style)
+        {
+            if (columnIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(columnIndex));
+            }
+
+            while (_headerColumnStyles.Count <= columnIndex)
+            {
+                _headerColumnStyles.Add(null);
+            }
+
+            _headerColumnStyles[columnIndex] = style;
+            _header?.ApplyColumnStyles(_headerColumnStyles);
+        }
+
+        /// <summary>
+        /// Sets a style override for one configured column footer cell.
+        /// </summary>
+        /// <param name="columnIndex">Zero-based column index.</param>
+        /// <param name="style">Style applied to the footer cell, or <see langword="null"/> to use the table default.</param>
+        public void SetColumnFooterStyle(int columnIndex, Style style)
+        {
+            if (columnIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(columnIndex));
+            }
+
+            while (_footerColumnStyles.Count <= columnIndex)
+            {
+                _footerColumnStyles.Add(null);
+            }
+
+            _footerColumnStyles[columnIndex] = style;
+            _footer?.ApplyColumnStyles(_footerColumnStyles);
         }
 
         /// <summary>
@@ -1343,6 +1410,7 @@ namespace ConsoulLibrary
 
             ApplyColumnAlignments();
             ApplyColumnPaddings();
+            ApplyColumnStyles();
         }
 
         private void ApplyColumnAlignments()
@@ -1363,6 +1431,12 @@ namespace ConsoulLibrary
             {
                 row.ApplyColumnPaddings(_columnPaddings);
             }
+        }
+
+        private void ApplyColumnStyles()
+        {
+            _header?.ApplyColumnStyles(_headerColumnStyles);
+            _footer?.ApplyColumnStyles(_footerColumnStyles);
         }
 
         private bool ShouldRenderRowNumbers(int dataColumnCount)
@@ -1401,9 +1475,26 @@ namespace ConsoulLibrary
             return paddings;
         }
 
+        private IReadOnlyList<Style> GetRenderColumnStyles(IReadOnlyList<Style> columnStyles)
+        {
+            int dataColumnCount = Math.Max(
+                Math.Max(_header?.CellCount ?? 0, _rows.Count == 0 ? 0 : _rows.Max(r => r.CellCount)),
+                TableRenderOptions.ShowFooters ? _footer?.CellCount ?? 0 : 0);
+            if (!ShouldRenderRowNumbers(dataColumnCount))
+            {
+                return columnStyles;
+            }
+
+            var styles = new List<Style> { null };
+            styles.AddRange(columnStyles ?? Array.Empty<Style>());
+            return styles;
+        }
+
         private TableRow CreateNumberedHeaderRow()
         {
-            return CreateNumberedRow(GetRowNumberHeader(), _header);
+            TableRow row = CreateNumberedRow(GetRowNumberHeader(), _header);
+            row.ApplyColumnStyles(GetRenderColumnStyles(_headerColumnStyles));
+            return row;
         }
 
         private TableRow CreateNumberedContentRow(int rowIndex)
@@ -1414,7 +1505,9 @@ namespace ConsoulLibrary
 
         private TableRow CreateNumberedFooterRow()
         {
-            return CreateNumberedRow(string.Empty, _footer);
+            TableRow row = CreateNumberedRow(string.Empty, _footer);
+            row.ApplyColumnStyles(GetRenderColumnStyles(_footerColumnStyles));
+            return row;
         }
 
         private TableRow CreateNumberedRow(string firstCell, TableRow sourceRow)

@@ -60,6 +60,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Aligns rendered glyph lines to the left.
+        /// </summary>
+        /// <returns>The current <see cref="FigletText"/> instance.</returns>
+        public FigletText LeftAligned()
+        {
+            return LeftJustified();
+        }
+
+        /// <summary>
         /// Centers rendered glyph lines.
         /// </summary>
         /// <returns>The current <see cref="FigletText"/> instance.</returns>
@@ -77,6 +86,15 @@ namespace ConsoulLibrary
         {
             Options.Alignment = TextBlockAlignment.Right;
             return this;
+        }
+
+        /// <summary>
+        /// Aligns rendered glyph lines to the right.
+        /// </summary>
+        /// <returns>The current <see cref="FigletText"/> instance.</returns>
+        public FigletText RightAligned()
+        {
+            return RightJustified();
         }
 
         /// <summary>

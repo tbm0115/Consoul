@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using ConsoulLibrary.Color;
 
 namespace ConsoulLibrary
 {
@@ -1215,6 +1216,400 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Prompts with a simple list of choices and returns the full prompt result.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(string message, bool clear = false, params string[] options)
+        {
+            return AnsiConsoleExtensions.Select(Console, message, clear, options);
+        }
+
+        /// <summary>
+        /// Prompts with a simple list of choices and returns the full prompt result.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(string message, bool clear = false, CancellationToken cancellationToken = default, params string[] options)
+        {
+            return AnsiConsoleExtensions.Select(Console, message, clear, cancellationToken, options);
+        }
+
+        /// <summary>
+        /// Prompts with a complex list of choices and returns the full prompt result.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Complex options to present.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(string message, SelectOption[] options, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.Select(Console, message, options, clear, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a list of choices, marks a default option, and returns the full prompt result.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <param name="defaultOption">Optional option label selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The prompt result describing the selected option or cancellation state.</returns>
+        public static PromptResult Select(string message, IEnumerable<string> options, string defaultOption = null, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.Select(Console, message, options, defaultOption, clear, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(string message, Func<T, string> labelSelector, bool clear = false, params T[] options)
+        {
+            return AnsiConsoleExtensions.Select(Console, message, labelSelector, clear, options);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(string message, Func<T, string> labelSelector, bool clear = false, CancellationToken cancellationToken = default, params T[] options)
+        {
+            return AnsiConsoleExtensions.Select(Console, message, labelSelector, clear, cancellationToken, options);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(string message, IEnumerable<T> options, Func<T, string> labelSelector, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.Select(Console, message, options, labelSelector, clear, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices, marks a default item, and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="defaultItem">Optional item selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(string message, IEnumerable<T> options, Func<T, string> labelSelector, T defaultItem, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.Select(Console, message, options, labelSelector, defaultItem, clear, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices, marks items matching a default predicate, and returns both the prompt result and selected item.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="isDefault">Optional predicate used to mark a default option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed selection result.</returns>
+        public static SelectionResult<T> Select<T>(string message, IEnumerable<T> options, Func<T, string> labelSelector, Func<T, bool> isDefault, bool clear = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.Select(Console, message, options, labelSelector, isDefault, clear, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with enum values and returns both the prompt result and selected enum value.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="defaultValue">Optional default value selected when the user presses Enter.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum selection result.</returns>
+        public static SelectionResult<TEnum> SelectEnum<TEnum>(string message, bool clear = false, TEnum? defaultValue = null, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return AnsiConsoleExtensions.SelectEnum(Console, message, clear, defaultValue, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with enum values and custom labels.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each enum value.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="defaultValue">Optional default value selected when the user presses Enter.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum selection result.</returns>
+        public static SelectionResult<TEnum> SelectEnum<TEnum>(string message, Func<TEnum, string> labelSelector, bool clear = false, TEnum? defaultValue = null, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return AnsiConsoleExtensions.SelectEnum(Console, message, labelSelector, clear, defaultValue, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a filtered set of enum values.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="values">Enum values to present.</param>
+        /// <param name="labelSelector">Optional function that creates a display label for each enum value.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="defaultValue">Optional default value selected when the user presses Enter.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum selection result.</returns>
+        public static SelectionResult<TEnum> SelectEnum<TEnum>(string message, IEnumerable<TEnum> values, Func<TEnum, string> labelSelector = null, bool clear = false, TEnum? defaultValue = null, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return AnsiConsoleExtensions.SelectEnum(Console, message, values, labelSelector, clear, defaultValue, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a simple list of choices and returns all selected indexes.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The multi-selection result describing selected indexes or cancellation state.</returns>
+        public static MultiSelectionResult MultiSelect(string message, bool clear = false, params string[] options)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, clear, options);
+        }
+
+        /// <summary>
+        /// Prompts with a simple list of choices and returns all selected indexes.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The multi-selection result describing selected indexes or cancellation state.</returns>
+        public static MultiSelectionResult MultiSelect(string message, bool clear = false, bool allowEmpty = false, params string[] options)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, clear, allowEmpty, options);
+        }
+
+        /// <summary>
+        /// Prompts with a simple list of choices and returns all selected indexes.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <returns>The multi-selection result describing selected indexes or cancellation state.</returns>
+        public static MultiSelectionResult MultiSelect(string message, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default, params string[] options)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, clear, allowEmpty, cancellationToken, options);
+        }
+
+        /// <summary>
+        /// Prompts with a list of choices, marks default options, and returns all selected indexes.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Simple list of options.</param>
+        /// <param name="defaultOptions">Optional option labels selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The multi-selection result describing selected indexes or cancellation state.</returns>
+        public static MultiSelectionResult MultiSelect(string message, IEnumerable<string> options, IEnumerable<string> defaultOptions = null, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, options, defaultOptions, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(string message, Func<T, string> labelSelector, bool clear = false, params T[] options)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, labelSelector, clear, options);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(string message, Func<T, string> labelSelector, bool clear = false, bool allowEmpty = false, params T[] options)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, labelSelector, clear, allowEmpty, options);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(string message, Func<T, string> labelSelector, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default, params T[] options)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, labelSelector, clear, allowEmpty, cancellationToken, options);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(string message, IEnumerable<T> options, Func<T, string> labelSelector, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, options, labelSelector, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices, marks default items, and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="defaultItems">Optional items selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(string message, IEnumerable<T> options, Func<T, string> labelSelector, IEnumerable<T> defaultItems, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, options, labelSelector, defaultItems, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with typed choices, marks items matching a default predicate, and returns both selected indexes and selected items.
+        /// </summary>
+        /// <typeparam name="T">The type of object presented as an option.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="options">Typed options to present.</param>
+        /// <param name="labelSelector">A function that creates a display label for each option.</param>
+        /// <param name="isDefault">Optional predicate used to mark default options.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed multi-selection result.</returns>
+        public static MultiSelectionResult<T> MultiSelect<T>(string message, IEnumerable<T> options, Func<T, string> labelSelector, Func<T, bool> isDefault, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.MultiSelect(Console, message, options, labelSelector, isDefault, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with enum values and returns selected enum values.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum multi-selection result.</returns>
+        public static MultiSelectionResult<TEnum> MultiSelectEnum<TEnum>(string message, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return AnsiConsoleExtensions.MultiSelectEnum<TEnum>(Console, message, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with enum values and custom labels.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="labelSelector">A function that creates a display label for each enum value.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum multi-selection result.</returns>
+        public static MultiSelectionResult<TEnum> MultiSelectEnum<TEnum>(string message, Func<TEnum, string> labelSelector, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return AnsiConsoleExtensions.MultiSelectEnum<TEnum>(Console, message, labelSelector, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Prompts with a filtered set of enum values and returns selected enum values.
+        /// </summary>
+        /// <typeparam name="TEnum">The enum type presented as options.</typeparam>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="values">Enum values to present.</param>
+        /// <param name="labelSelector">Optional function that creates a display label for each enum value.</param>
+        /// <param name="defaultValues">Optional enum values selected when the user presses Enter.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="allowEmpty">Whether no selected options is a valid result.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The typed enum multi-selection result.</returns>
+        public static MultiSelectionResult<TEnum> MultiSelectEnum<TEnum>(string message, IEnumerable<TEnum> values, Func<TEnum, string> labelSelector = null, IEnumerable<TEnum> defaultValues = null, bool clear = false, bool allowEmpty = false, CancellationToken cancellationToken = default) where TEnum : struct
+        {
+            return AnsiConsoleExtensions.MultiSelectEnum<TEnum>(Console, message, values, labelSelector, defaultValues, clear, allowEmpty, cancellationToken);
+        }
+
+        /// <summary>
+        /// Renders a file path prompt and returns the explicit prompt result.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="mustExist">Whether the entered path must reference an existing file.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The file path prompt result.</returns>
+        public static TextPromptResult<string> FilePath(string message, bool clear = false, bool mustExist = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.FilePath(Console, message, clear, mustExist, cancellationToken);
+        }
+
+        /// <summary>
+        /// Renders a directory path prompt and returns the explicit prompt result.
+        /// </summary>
+        /// <param name="message">Prompt message to display.</param>
+        /// <param name="clear">Whether to clear the console before rendering the prompt.</param>
+        /// <param name="mustExist">Whether the entered path must reference an existing directory.</param>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <returns>The directory path prompt result.</returns>
+        public static TextPromptResult<string> DirectoryPath(string message, bool clear = false, bool mustExist = false, CancellationToken cancellationToken = default)
+        {
+            return AnsiConsoleExtensions.DirectoryPath(Console, message, clear, mustExist, cancellationToken);
+        }
+
+        /// <summary>
         /// Creates and renders a typed text prompt.
         /// </summary>
         /// <typeparam name="T">The parsed value type.</typeparam>
@@ -1383,6 +1778,36 @@ namespace ConsoulLibrary
             }
 
             Consoul.Rule(title, options ?? new RuleOptions());
+        }
+
+        /// <summary>
+        /// Renders a horizontal rule using Spectre-style alignment vocabulary.
+        /// </summary>
+        /// <param name="title">Optional rule title.</param>
+        /// <param name="alignment">Title alignment when a title is supplied.</param>
+        /// <param name="width">Optional requested width. The actual width is clamped to the current terminal width.</param>
+        /// <param name="color">Optional foreground color for the rule.</param>
+        public static void Rule(string title, Justify alignment, int? width = null, ConsoleColor? color = null)
+        {
+            RuleOptions options = CreateRuleOptions(alignment, width, color);
+            if (TryDispatch(console => console.Rule(title, options)))
+            {
+                return;
+            }
+
+            Consoul.Rule(title, alignment, width, color);
+        }
+
+        /// <summary>
+        /// Renders a horizontal rule using a foreground color and Spectre-style alignment vocabulary.
+        /// </summary>
+        /// <param name="title">Optional rule title.</param>
+        /// <param name="color">Foreground color for the rule.</param>
+        /// <param name="alignment">Title alignment when a title is supplied.</param>
+        /// <param name="width">Optional requested width. The actual width is clamped to the current terminal width.</param>
+        public static void Rule(string title, ConsoleColor color, Justify alignment, int? width = null)
+        {
+            Rule(title, alignment, width, color);
         }
 
         /// <summary>
@@ -1630,6 +2055,26 @@ namespace ConsoulLibrary
 
             result = action(console);
             return true;
+        }
+
+        private static RuleOptions CreateRuleOptions(Justify alignment, int? width, ConsoleColor? color)
+        {
+            var options = new RuleOptions
+            {
+                Width = width,
+                Alignment = JustifyMap.ToRuleTitleAlignment(alignment)
+            };
+
+            if (color.HasValue)
+            {
+                options.RuleScheme = new ColorScheme
+                {
+                    Color = color.Value,
+                    BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+                };
+            }
+
+            return options;
         }
 
         private static RecordingConsoleDriver GetRecordingDriver()

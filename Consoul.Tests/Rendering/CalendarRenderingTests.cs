@@ -231,6 +231,71 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Calendar display aliases map to the existing option model and render localized labels.
+        /// </summary>
+        [Fact]
+        public void Calendar_FluentDisplayAliases_RenderLocalizedCalendar()
+        {
+            using (var scope = new ConsoleDriverScope(48))
+            {
+                var calendar = new Calendar(2026, 1)
+                    .Width(36)
+                    .UseCulture("fr-FR")
+                    .FirstDayOfWeek(DayOfWeek.Monday)
+                    .ShowTitle()
+                    .ShowWeekdays()
+                    .ShowAdjacentDays()
+                    .HideToday();
+
+                AnsiConsole.Write(calendar);
+
+                Assert.Equal("fr-FR", calendar.Options.Culture.Name);
+                Assert.Equal(DayOfWeek.Monday, calendar.Options.FirstDayOfWeek);
+                Assert.True(calendar.Options.ShowHeader);
+                Assert.True(calendar.Options.ShowWeekdayHeader);
+                Assert.True(calendar.Options.ShowAdjacentDays);
+                Assert.False(calendar.Options.HighlightToday);
+                VisualAssert.ContainsText(scope.Driver, "janvier 2026");
+                Assert.Contains(scope.Driver.Lines, line => line.Contains("lun", StringComparison.OrdinalIgnoreCase) && line.Contains("dim", StringComparison.OrdinalIgnoreCase));
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
+        /// Calendar hide aliases keep compact POC schedule widgets terse without boolean arguments.
+        /// </summary>
+        [Fact]
+        public void Calendar_FluentHideAliases_SuppressOptionalChrome()
+        {
+            using (var scope = new ConsoleDriverScope(40))
+            {
+                var calendar = new Calendar(2026, 1)
+                    .Width(32)
+                    .UseCulture(CultureInfo.InvariantCulture)
+                    .ShowTitle()
+                    .HideTitle()
+                    .ShowWeekdays()
+                    .HideWeekdays()
+                    .ShowAdjacentDays()
+                    .HideAdjacentDays()
+                    .ShowToday()
+                    .HideToday();
+
+                AnsiConsole.Write(calendar);
+
+                Assert.False(calendar.Options.ShowHeader);
+                Assert.False(calendar.Options.ShowWeekdayHeader);
+                Assert.False(calendar.Options.ShowAdjacentDays);
+                Assert.False(calendar.Options.HighlightToday);
+                Assert.DoesNotContain("January 2026", scope.Driver.Text);
+                Assert.DoesNotContain("Sun", scope.Driver.Text);
+                Assert.DoesNotContain("Mon", scope.Driver.Text);
+                VisualAssert.ContainsText(scope.Driver, "1");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Model-backed dynamic views can render calendars as schedule sections.
         /// </summary>
         [Fact]

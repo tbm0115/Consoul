@@ -52,6 +52,27 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Text and paragraph builders accept aligned aliases alongside justified aliases.
+        /// </summary>
+        [Fact]
+        public void TextAndParagraph_AlignedAliases_MapToExpectedJustification()
+        {
+            using (var scope = new ConsoleDriverScope(40))
+            {
+                AnsiConsole.Write(new Text("Left").Width(10).LeftAligned());
+                AnsiConsole.Write(new Text("Right").Width(10).RightAligned());
+                AnsiConsole.Write(new Paragraph("PLeft").Width(10).LeftAligned());
+                AnsiConsole.Write(new Paragraph("PRight").Width(10).RightAligned());
+
+                Assert.Contains(scope.Driver.Lines, line => line == "Left      ");
+                Assert.Contains(scope.Driver.Lines, line => line == "     Right");
+                Assert.Contains(scope.Driver.Lines, line => line == "PLeft");
+                Assert.Contains(scope.Driver.Lines, line => line == "    PRight");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Text blocks honor padding, configured width, and colors.
         /// </summary>
         [Fact]

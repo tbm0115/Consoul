@@ -211,6 +211,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Enables immediate rendering after spinner changes.
+        /// </summary>
+        /// <returns>The current spinner scope.</returns>
+        public SpinnerScope AutoRefresh()
+        {
+            return AutoRefresh(true);
+        }
+
+        /// <summary>
         /// Enables or disables immediate rendering after spinner changes.
         /// </summary>
         /// <param name="enabled"><c>true</c> to render changes immediately; otherwise, <c>false</c>.</param>
@@ -220,6 +229,15 @@ namespace ConsoulLibrary
             ThrowIfDisposed();
             _options.AutoRefresh = enabled;
             return this;
+        }
+
+        /// <summary>
+        /// Disables immediate rendering so spinner changes wait for an explicit refresh.
+        /// </summary>
+        /// <returns>The current spinner scope.</returns>
+        public SpinnerScope ManualRefresh()
+        {
+            return AutoRefresh(false);
         }
 
         /// <summary>

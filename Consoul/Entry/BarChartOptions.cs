@@ -25,6 +25,11 @@ namespace ConsoulLibrary
         public int? Width { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the chart should expand to the active terminal width when no explicit <see cref="Width"/> is set.
+        /// </summary>
+        public bool Expand { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the requested label column width. The renderer may shrink it when the terminal is narrow.
         /// </summary>
         public int? LabelWidth { get; set; }
@@ -130,6 +135,7 @@ namespace ConsoulLibrary
                 Label = Label,
                 LabelAlignment = LabelAlignment,
                 Width = Width,
+                Expand = Expand,
                 LabelWidth = LabelWidth,
                 MaximumValue = MaximumValue,
                 ShowValues = ShowValues,

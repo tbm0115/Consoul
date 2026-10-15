@@ -36,6 +36,198 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Adds a metric item and returns the current metrics builder for fluent snippets.
+        /// </summary>
+        /// <param name="label">The metric label.</param>
+        /// <param name="value">The metric value.</param>
+        /// <param name="unit">Optional unit text rendered after the value.</param>
+        /// <param name="note">Optional note rendered below the value.</param>
+        /// <param name="kind">The visual intent used for the value.</param>
+        /// <param name="labelColor">Optional foreground color used for the label.</param>
+        /// <param name="valueColor">Optional foreground color used for the value.</param>
+        /// <param name="noteColor">Optional foreground color used for the note.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public new Metrics Add(
+            string label,
+            object value,
+            string unit = null,
+            string note = null,
+            MetricKind kind = MetricKind.Default,
+            ConsoleColor? labelColor = null,
+            ConsoleColor? valueColor = null,
+            ConsoleColor? noteColor = null)
+        {
+            base.Add(label, value, unit, note, kind, labelColor, valueColor, noteColor);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a metric item using reusable style objects and returns the current metrics builder.
+        /// </summary>
+        /// <param name="label">The metric label.</param>
+        /// <param name="value">The metric value.</param>
+        /// <param name="labelStyle">Optional style used for the label.</param>
+        /// <param name="valueStyle">Optional style used for the value.</param>
+        /// <param name="noteStyle">Optional style used for the note.</param>
+        /// <param name="unit">Optional unit text rendered after the value.</param>
+        /// <param name="note">Optional note rendered below the value.</param>
+        /// <param name="kind">The visual intent used for the value.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public new Metrics Add(
+            string label,
+            object value,
+            Style labelStyle,
+            Style valueStyle = null,
+            Style noteStyle = null,
+            string unit = null,
+            string note = null,
+            MetricKind kind = MetricKind.Default)
+        {
+            base.Add(label, value, labelStyle, valueStyle, noteStyle, unit, note, kind);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds an existing metric item and returns the current metrics builder.
+        /// </summary>
+        /// <param name="item">The item to add.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public new Metrics Add(MetricItem item)
+        {
+            base.Add(item);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds existing metric items and returns the current metrics builder.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public Metrics Add(IEnumerable<MetricItem> items)
+        {
+            return AddMetrics(items);
+        }
+
+        /// <summary>
+        /// Adds existing metric items and returns the current metrics builder.
+        /// </summary>
+        /// <param name="firstItem">The first item to add.</param>
+        /// <param name="additionalItems">Additional items to add.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public Metrics Add(MetricItem firstItem, params MetricItem[] additionalItems)
+        {
+            return AddMetrics(firstItem, additionalItems);
+        }
+
+        /// <summary>
+        /// Adds metric items projected from a model collection and returns the current metrics builder.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into metrics.</param>
+        /// <param name="labelSelector">Selects the metric label.</param>
+        /// <param name="valueSelector">Selects the metric value.</param>
+        /// <param name="unitSelector">Optionally selects the unit text rendered after the value.</param>
+        /// <param name="noteSelector">Optionally selects the note rendered below the value.</param>
+        /// <param name="kindSelector">Optionally selects the visual intent for the metric value.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public Metrics Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, object> valueSelector,
+            Func<T, string> unitSelector = null,
+            Func<T, string> noteSelector = null,
+            Func<T, MetricKind> kindSelector = null)
+        {
+            return AddMetrics(items, labelSelector, valueSelector, unitSelector, noteSelector, kindSelector);
+        }
+
+        /// <summary>
+        /// Adds metric items projected from a model collection using Spectre-style colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into metrics.</param>
+        /// <param name="labelSelector">Selects the metric label.</param>
+        /// <param name="valueSelector">Selects the metric value.</param>
+        /// <param name="labelColorSelector">Selects a Spectre-style color for the metric label.</param>
+        /// <param name="valueColorSelector">Optionally selects a Spectre-style color for the metric value.</param>
+        /// <param name="noteColorSelector">Optionally selects a Spectre-style color for the metric note.</param>
+        /// <param name="unitSelector">Optionally selects the unit text rendered after the value.</param>
+        /// <param name="noteSelector">Optionally selects the note rendered below the value.</param>
+        /// <param name="kindSelector">Optionally selects the visual intent for the metric value.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public Metrics Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, object> valueSelector,
+            Func<T, SpectreColor> labelColorSelector,
+            Func<T, SpectreColor> valueColorSelector = null,
+            Func<T, SpectreColor> noteColorSelector = null,
+            Func<T, string> unitSelector = null,
+            Func<T, string> noteSelector = null,
+            Func<T, MetricKind> kindSelector = null)
+        {
+            return AddMetrics(
+                items,
+                labelSelector,
+                valueSelector,
+                labelColorSelector,
+                valueColorSelector,
+                noteColorSelector,
+                unitSelector,
+                noteSelector,
+                kindSelector);
+        }
+
+        /// <summary>
+        /// Adds metric items projected from a model collection using RGB colors.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into metrics.</param>
+        /// <param name="labelSelector">Selects the metric label.</param>
+        /// <param name="valueSelector">Selects the metric value.</param>
+        /// <param name="labelColorSelector">Selects an RGB color for the metric label.</param>
+        /// <param name="valueColorSelector">Optionally selects an RGB color for the metric value.</param>
+        /// <param name="noteColorSelector">Optionally selects an RGB color for the metric note.</param>
+        /// <param name="unitSelector">Optionally selects the unit text rendered after the value.</param>
+        /// <param name="noteSelector">Optionally selects the note rendered below the value.</param>
+        /// <param name="kindSelector">Optionally selects the visual intent for the metric value.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public Metrics Add<T>(
+            IEnumerable<T> items,
+            Func<T, string> labelSelector,
+            Func<T, object> valueSelector,
+            Func<T, RgbColor> labelColorSelector,
+            Func<T, RgbColor> valueColorSelector = null,
+            Func<T, RgbColor> noteColorSelector = null,
+            Func<T, string> unitSelector = null,
+            Func<T, string> noteSelector = null,
+            Func<T, MetricKind> kindSelector = null)
+        {
+            return AddMetrics(
+                items,
+                labelSelector,
+                valueSelector,
+                labelColorSelector,
+                valueColorSelector,
+                noteColorSelector,
+                unitSelector,
+                noteSelector,
+                kindSelector);
+        }
+
+        /// <summary>
+        /// Adds metric items projected from a model collection and returns the current metrics builder.
+        /// </summary>
+        /// <typeparam name="T">The model item type.</typeparam>
+        /// <param name="items">The model items to project into metrics.</param>
+        /// <param name="itemSelector">Selects the metric item to add for each model item.</param>
+        /// <returns>The current <see cref="Metrics"/> instance.</returns>
+        public Metrics Add<T>(IEnumerable<T> items, Func<T, MetricItem> itemSelector)
+        {
+            return AddMetrics(items, itemSelector);
+        }
+
+        /// <summary>
         /// Adds a metric item.
         /// </summary>
         /// <param name="label">The metric label.</param>

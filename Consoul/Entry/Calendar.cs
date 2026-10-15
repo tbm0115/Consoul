@@ -557,6 +557,24 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Shows the month title.
+        /// </summary>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar ShowTitle()
+        {
+            return ShowHeader(true);
+        }
+
+        /// <summary>
+        /// Hides the month title using Spectre-style fluent vocabulary.
+        /// </summary>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar HideTitle()
+        {
+            return HideHeader();
+        }
+
+        /// <summary>
         /// Shows or hides weekday labels.
         /// </summary>
         /// <param name="show">Whether weekday labels should render.</param>
@@ -565,6 +583,33 @@ namespace ConsoulLibrary
         {
             Options.ShowWeekdayHeader = show;
             return this;
+        }
+
+        /// <summary>
+        /// Hides weekday labels.
+        /// </summary>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar HideWeekdayHeader()
+        {
+            return ShowWeekdayHeader(false);
+        }
+
+        /// <summary>
+        /// Shows weekday labels using concise fluent vocabulary.
+        /// </summary>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar ShowWeekdays()
+        {
+            return ShowWeekdayHeader(true);
+        }
+
+        /// <summary>
+        /// Hides weekday labels using concise fluent vocabulary.
+        /// </summary>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar HideWeekdays()
+        {
+            return HideWeekdayHeader();
         }
 
         /// <summary>
@@ -579,6 +624,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Hides adjacent-month days.
+        /// </summary>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar HideAdjacentDays()
+        {
+            return ShowAdjacentDays(false);
+        }
+
+        /// <summary>
         /// Shows or hides today's date highlight.
         /// </summary>
         /// <param name="show">Whether today's date should be highlighted.</param>
@@ -587,6 +641,24 @@ namespace ConsoulLibrary
         {
             Options.HighlightToday = show;
             return this;
+        }
+
+        /// <summary>
+        /// Shows today's date highlight.
+        /// </summary>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar ShowToday()
+        {
+            return HighlightToday(true);
+        }
+
+        /// <summary>
+        /// Hides today's date highlight.
+        /// </summary>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar HideToday()
+        {
+            return HighlightToday(false);
         }
 
         /// <summary>
@@ -609,6 +681,28 @@ namespace ConsoulLibrary
         {
             Options.Culture = culture ?? CultureInfo.CurrentCulture;
             return this;
+        }
+
+        /// <summary>
+        /// Sets the culture used for month and weekday labels using Spectre-style fluent vocabulary.
+        /// </summary>
+        /// <param name="culture">The culture used for labels.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar UseCulture(CultureInfo culture)
+        {
+            return Culture(culture);
+        }
+
+        /// <summary>
+        /// Sets the culture used for month and weekday labels by culture name.
+        /// </summary>
+        /// <param name="cultureName">The culture name, such as <c>en-US</c> or <c>fr-FR</c>.</param>
+        /// <returns>The current <see cref="Calendar"/> instance.</returns>
+        public Calendar UseCulture(string cultureName)
+        {
+            return Culture(string.IsNullOrWhiteSpace(cultureName)
+                ? CultureInfo.CurrentCulture
+                : CultureInfo.GetCultureInfo(cultureName));
         }
 
         /// <summary>

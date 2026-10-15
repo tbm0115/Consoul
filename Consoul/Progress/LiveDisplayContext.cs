@@ -2,6 +2,9 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ConsoulLibrary.Color;
+using RgbColor = ConsoulLibrary.Color.RgbColor;
+using SpectreColor = ConsoulLibrary.Color.Color;
 
 namespace ConsoulLibrary
 {
@@ -11,6 +14,7 @@ namespace ConsoulLibrary
     public class LiveDisplayContext : IDisposable
     {
         private readonly LiveDisplayOptions _options;
+        private readonly IConsoleDriver _driver;
         private IConsoulRenderable _target;
         private bool _disposed;
 
@@ -20,6 +24,7 @@ namespace ConsoulLibrary
         /// <param name="options">Optional rendering options for the live display.</param>
         public LiveDisplayContext(LiveDisplayOptions options = null)
         {
+            _driver = Consoul.ConsoleDriver;
             _options = options != null ? options.Clone() : new LiveDisplayOptions();
         }
 
@@ -61,21 +66,24 @@ namespace ConsoulLibrary
         /// <returns>The current live display context.</returns>
         public LiveDisplayContext Refresh(Action render)
         {
-            ThrowIfDisposed();
-            if (render == null)
+            using (UseCapturedDriver())
             {
-                throw new ArgumentNullException(nameof(render));
-            }
+                ThrowIfDisposed();
+                if (render == null)
+                {
+                    throw new ArgumentNullException(nameof(render));
+                }
 
-            if (_options.ClearBeforeRender)
-            {
-                Consoul.ConsoleDriver.Clear();
-            }
+                if (_options.ClearBeforeRender)
+                {
+                    Consoul.ConsoleDriver.Clear();
+                }
 
-            RenderTitle();
-            RenderContent(render);
-            RefreshCount++;
-            return this;
+                RenderTitle();
+                RenderContent(render);
+                RefreshCount++;
+                return this;
+            }
         }
 
         /// <summary>
@@ -136,6 +144,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Clears the live display when the context is disposed.
+        /// </summary>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext AutoClear()
+        {
+            return AutoClear(true);
+        }
+
+        /// <summary>
         /// Sets whether the live display is cleared when the context is disposed.
         /// </summary>
         /// <param name="enabled"><c>true</c> to clear on dispose; otherwise, <c>false</c>.</param>
@@ -145,6 +162,25 @@ namespace ConsoulLibrary
             ThrowIfDisposed();
             _options.ClearOnDispose = enabled;
             return this;
+        }
+
+        /// <summary>
+        /// Sets whether the live display is cleared when the context is disposed.
+        /// </summary>
+        /// <param name="enabled"><c>true</c> to clear on dispose; otherwise, <c>false</c>.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext ClearOnDispose(bool enabled = true)
+        {
+            return AutoClear(enabled);
+        }
+
+        /// <summary>
+        /// Keeps the last live display render visible when the context is disposed.
+        /// </summary>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext NoAutoClear()
+        {
+            return AutoClear(false);
         }
 
         /// <summary>
@@ -168,6 +204,198 @@ namespace ConsoulLibrary
         {
             ThrowIfDisposed();
             _options.Cropping = cropping;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the title rendered before each live display refresh.
+        /// </summary>
+        /// <param name="title">The title to render.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext Title(string title)
+        {
+            ThrowIfDisposed();
+            _options.Title = title;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the title color used before each live display refresh.
+        /// </summary>
+        /// <param name="color">The title foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext TitleColor(ConsoleColor color)
+        {
+            ThrowIfDisposed();
+            _options.TitleColor = color;
+            _options.TitleStyle = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the title color used before each live display refresh from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The title foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext TitleColor(SpectreColor color)
+        {
+            return TitleStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the title color used before each live display refresh from an RGB color.
+        /// </summary>
+        /// <param name="color">The RGB title foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext TitleColor(RgbColor color)
+        {
+            return TitleStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the title style used before each live display refresh from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>#22c55e</c>, or <c>bold white on blue</c>.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext TitleStyle(string style)
+        {
+            return TitleStyle(Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the title style used before each live display refresh.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext TitleStyle(Style style)
+        {
+            ThrowIfDisposed();
+            _options.TitleStyle = style;
+            if (style?.Foreground != null)
+            {
+                _options.TitleColor = style.Foreground.Value;
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for successful completion messages.
+        /// </summary>
+        /// <param name="color">The success foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext SuccessColor(ConsoleColor color)
+        {
+            ThrowIfDisposed();
+            _options.SuccessColor = color;
+            _options.SuccessStyle = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for successful completion messages from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The success foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext SuccessColor(SpectreColor color)
+        {
+            return SuccessStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the color used for successful completion messages from an RGB color.
+        /// </summary>
+        /// <param name="color">The RGB success foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext SuccessColor(RgbColor color)
+        {
+            return SuccessStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the style used for successful completion messages from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>green</c>, <c>#22c55e</c>, or <c>bold white on blue</c>.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext SuccessStyle(string style)
+        {
+            return SuccessStyle(Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the style used for successful completion messages.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext SuccessStyle(Style style)
+        {
+            ThrowIfDisposed();
+            _options.SuccessStyle = style;
+            if (style?.Foreground != null)
+            {
+                _options.SuccessColor = style.Foreground.Value;
+            }
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for failure completion messages.
+        /// </summary>
+        /// <param name="color">The failure foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext FailureColor(ConsoleColor color)
+        {
+            ThrowIfDisposed();
+            _options.FailureColor = color;
+            _options.FailureStyle = null;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the color used for failure completion messages from a Spectre-style color.
+        /// </summary>
+        /// <param name="color">The failure foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext FailureColor(SpectreColor color)
+        {
+            return FailureStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the color used for failure completion messages from an RGB color.
+        /// </summary>
+        /// <param name="color">The RGB failure foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext FailureColor(RgbColor color)
+        {
+            return FailureStyle(new Style(color));
+        }
+
+        /// <summary>
+        /// Sets the style used for failure completion messages from Spectre-style style text.
+        /// </summary>
+        /// <param name="style">Style text such as <c>red</c>, <c>#ef4444</c>, or <c>bold white on red</c>.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext FailureStyle(string style)
+        {
+            return FailureStyle(Style.Parse(style));
+        }
+
+        /// <summary>
+        /// Sets the style used for failure completion messages.
+        /// </summary>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext FailureStyle(Style style)
+        {
+            ThrowIfDisposed();
+            _options.FailureStyle = style;
+            if (style?.Foreground != null)
+            {
+                _options.FailureColor = style.Foreground.Value;
+            }
+
             return this;
         }
 
@@ -288,7 +516,55 @@ namespace ConsoulLibrary
         /// <returns>The current live display context.</returns>
         public LiveDisplayContext Succeed(string message = null)
         {
-            Complete(message, _options.SuccessColor);
+            Complete(message, _options.ResolveSuccessStyle());
+            return this;
+        }
+
+        /// <summary>
+        /// Marks the live display as successful and writes a final message with the supplied color.
+        /// </summary>
+        /// <param name="message">Final message to render.</param>
+        /// <param name="color">The message foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext Succeed(string message, ConsoleColor color)
+        {
+            Complete(message, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Marks the live display as successful and writes a final message with the supplied Spectre-style color.
+        /// </summary>
+        /// <param name="message">Final message to render.</param>
+        /// <param name="color">The message foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext Succeed(string message, SpectreColor color)
+        {
+            Complete(message, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Marks the live display as successful and writes a final message with the supplied RGB color.
+        /// </summary>
+        /// <param name="message">Final message to render.</param>
+        /// <param name="color">The RGB message foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext Succeed(string message, RgbColor color)
+        {
+            Complete(message, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Marks the live display as successful and writes a final message with the supplied style.
+        /// </summary>
+        /// <param name="message">Final message to render.</param>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext Succeed(string message, Style style)
+        {
+            Complete(message, style);
             return this;
         }
 
@@ -299,7 +575,55 @@ namespace ConsoulLibrary
         /// <returns>The current live display context.</returns>
         public LiveDisplayContext Fail(string message = null)
         {
-            Complete(message, _options.FailureColor);
+            Complete(message, _options.ResolveFailureStyle());
+            return this;
+        }
+
+        /// <summary>
+        /// Marks the live display as failed and writes a final message with the supplied color.
+        /// </summary>
+        /// <param name="message">Final message to render.</param>
+        /// <param name="color">The message foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext Fail(string message, ConsoleColor color)
+        {
+            Complete(message, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Marks the live display as failed and writes a final message with the supplied Spectre-style color.
+        /// </summary>
+        /// <param name="message">Final message to render.</param>
+        /// <param name="color">The message foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext Fail(string message, SpectreColor color)
+        {
+            Complete(message, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Marks the live display as failed and writes a final message with the supplied RGB color.
+        /// </summary>
+        /// <param name="message">Final message to render.</param>
+        /// <param name="color">The RGB message foreground color.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext Fail(string message, RgbColor color)
+        {
+            Complete(message, new Style(color));
+            return this;
+        }
+
+        /// <summary>
+        /// Marks the live display as failed and writes a final message with the supplied style.
+        /// </summary>
+        /// <param name="message">Final message to render.</param>
+        /// <param name="style">The style to apply.</param>
+        /// <returns>The current live display context.</returns>
+        public LiveDisplayContext Fail(string message, Style style)
+        {
+            Complete(message, style);
             return this;
         }
 
@@ -314,19 +638,25 @@ namespace ConsoulLibrary
             }
 
             _disposed = true;
-            if (_options.ClearOnDispose)
+            using (UseCapturedDriver())
             {
-                Consoul.ConsoleDriver.Clear();
+                if (_options.ClearOnDispose)
+                {
+                    Consoul.ConsoleDriver.Clear();
+                }
             }
         }
 
-        private void Complete(string message, ConsoleColor color)
+        private void Complete(string message, Style style)
         {
-            ThrowIfDisposed();
-            IsCompleted = true;
-            if (!string.IsNullOrEmpty(message))
+            using (UseCapturedDriver())
             {
-                Consoul.Write(message, color);
+                ThrowIfDisposed();
+                IsCompleted = true;
+                if (!string.IsNullOrEmpty(message))
+                {
+                    new Text(message, style ?? Style.Plain).Render();
+                }
             }
         }
 
@@ -421,11 +751,34 @@ namespace ConsoulLibrary
 
             if (_options.RenderTitleRule)
             {
-                Consoul.Rule(_options.Title, color: _options.TitleColor, alignment: RuleTitleAlignment.Left);
+                new Rule(_options.Title, CreateTitleRuleOptions()).Render();
                 return;
             }
 
-            Consoul.Write(_options.Title, _options.TitleColor);
+            new Text(_options.Title, _options.ResolveTitleStyle()).Render();
+        }
+
+        private RuleOptions CreateTitleRuleOptions()
+        {
+            Style style = _options.ResolveTitleStyle();
+            ColorScheme scheme = style.ToColorScheme(new ColorScheme
+            {
+                Color = _options.TitleColor,
+                BackgroundColor = RenderOptions.DefaultScheme.BackgroundColor
+            });
+
+            return new RuleOptions
+            {
+                Alignment = RuleTitleAlignment.Left,
+                RuleScheme = scheme,
+                RuleDecoration = style.Decoration,
+                RuleForegroundRgb = style.ForegroundRgb,
+                RuleBackgroundRgb = style.BackgroundRgb,
+                TitleScheme = scheme,
+                TitleDecoration = style.Decoration,
+                TitleForegroundRgb = style.ForegroundRgb,
+                TitleBackgroundRgb = style.BackgroundRgb
+            };
         }
 
         private void ThrowIfDisposed()
@@ -434,6 +787,11 @@ namespace ConsoulLibrary
             {
                 throw new ObjectDisposedException(nameof(LiveDisplayContext));
             }
+        }
+
+        private IDisposable UseCapturedDriver()
+        {
+            return Consoul.UseConsoleDriver(_driver);
         }
     }
 }

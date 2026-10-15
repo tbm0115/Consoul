@@ -78,6 +78,23 @@ namespace ConsoulLibrary.Tests.Rendering
         }
 
         /// <summary>
+        /// Figlet text builders accept aligned aliases alongside justified aliases.
+        /// </summary>
+        [Fact]
+        public void FigletText_AlignedAliases_MapToExpectedJustification()
+        {
+            using (var scope = new ConsoleDriverScope(40))
+            {
+                new FigletText("I").Width(12).LeftAligned().Pad(true).Render();
+                new FigletText("I").Width(12).RightAligned().Pad(true).Render();
+
+                Assert.Contains(scope.Driver.Lines, line => line == "###         ");
+                Assert.Contains(scope.Driver.Lines, line => line == "         ###");
+                VisualAssert.NoOverflow(scope.Driver);
+            }
+        }
+
+        /// <summary>
         /// Spectre-style padding control avoids expanding each rendered glyph line to the requested width.
         /// </summary>
         [Fact]

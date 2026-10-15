@@ -17,7 +17,7 @@ namespace ConsoulLibrary
         /// <summary>
         /// Initializes a new instance of the <see cref="Rule"/> class.
         /// </summary>
-        public Rule() : this(null)
+        public Rule() : this((string)null)
         {
         }
 
@@ -30,11 +30,29 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Rule"/> class with a renderable title.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the rule title.</param>
+        public Rule(IConsoulRenderable title) : this(FormatTitle(title))
+        {
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Rule"/> class with a title and justification.
         /// </summary>
         /// <param name="title">Optional title rendered within the rule.</param>
         /// <param name="justification">Title justification to apply.</param>
         public Rule(string title, Justify justification) : this(title)
+        {
+            Options.Alignment = JustifyMap.ToRuleTitleAlignment(justification);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Rule"/> class with a renderable title and justification.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the rule title.</param>
+        /// <param name="justification">Title justification to apply.</param>
+        public Rule(IConsoulRenderable title, Justify justification) : this(title)
         {
             Options.Alignment = JustifyMap.ToRuleTitleAlignment(justification);
         }
@@ -56,12 +74,45 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Rule"/> class with a renderable title color and optional justification.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the rule title.</param>
+        /// <param name="titleColor">Title foreground color.</param>
+        /// <param name="justification">Optional title justification.</param>
+        public Rule(IConsoulRenderable title, ConsoleColor titleColor, Justify? justification = null) : this(title)
+        {
+            Options.TitleScheme = Scheme(titleColor);
+
+            if (justification.HasValue)
+            {
+                Options.Alignment = JustifyMap.ToRuleTitleAlignment(justification.Value);
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Rule"/> class with a Spectre-style title color and optional justification.
         /// </summary>
         /// <param name="title">Optional title rendered within the rule.</param>
         /// <param name="titleColor">Title foreground color.</param>
         /// <param name="justification">Optional title justification.</param>
         public Rule(string title, SpectreColor titleColor, Justify? justification = null)
+            : this(title)
+        {
+            ApplyTitleStyle(new Style(titleColor));
+
+            if (justification.HasValue)
+            {
+                Options.Alignment = JustifyMap.ToRuleTitleAlignment(justification.Value);
+            }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Rule"/> class with a renderable title, Spectre-style title color, and optional justification.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the rule title.</param>
+        /// <param name="titleColor">Title foreground color.</param>
+        /// <param name="justification">Optional title justification.</param>
+        public Rule(IConsoulRenderable title, SpectreColor titleColor, Justify? justification = null)
             : this(title)
         {
             ApplyTitleStyle(new Style(titleColor));
@@ -90,11 +141,37 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Rule"/> class with a renderable title, RGB title color, and optional justification.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the rule title.</param>
+        /// <param name="titleColor">Title foreground color mapped to Consoul's console palette.</param>
+        /// <param name="justification">Optional title justification.</param>
+        public Rule(IConsoulRenderable title, RgbColor titleColor, Justify? justification = null)
+            : this(title)
+        {
+            ApplyTitleStyle(new Style(titleColor));
+
+            if (justification.HasValue)
+            {
+                Options.Alignment = JustifyMap.ToRuleTitleAlignment(justification.Value);
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Rule"/> class with explicit render options.
         /// </summary>
         /// <param name="title">Optional title rendered within the rule.</param>
         /// <param name="options">Optional rendering options for the rule.</param>
         public Rule(string title, RuleOptions options) : base(title, options)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Rule"/> class with a renderable title and explicit render options.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the rule title.</param>
+        /// <param name="options">Optional rendering options for the rule.</param>
+        public Rule(IConsoulRenderable title, RuleOptions options) : base(FormatTitle(title), options)
         {
         }
 
@@ -166,11 +243,32 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Sets the rule title from a renderable component.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the rule title.</param>
+        /// <returns>The current <see cref="Rule"/> instance.</returns>
+        public Rule TitleText(IConsoulRenderable title)
+        {
+            Title = FormatTitle(title);
+            return this;
+        }
+
+        /// <summary>
         /// Sets the rule title using Spectre-style builder vocabulary.
         /// </summary>
         /// <param name="title">The rule title.</param>
         /// <returns>The current <see cref="Rule"/> instance.</returns>
         public Rule RuleTitle(string title)
+        {
+            return TitleText(title);
+        }
+
+        /// <summary>
+        /// Sets the rule title from a renderable component using Spectre-style builder vocabulary.
+        /// </summary>
+        /// <param name="title">Renderable title captured or adapted for the rule title.</param>
+        /// <returns>The current <see cref="Rule"/> instance.</returns>
+        public Rule RuleTitle(IConsoulRenderable title)
         {
             return TitleText(title);
         }
@@ -218,6 +316,15 @@ namespace ConsoulLibrary
         }
 
         /// <summary>
+        /// Aligns the title near the left side of the rule using table/text alignment vocabulary.
+        /// </summary>
+        /// <returns>The current <see cref="Rule"/> instance.</returns>
+        public Rule LeftAligned()
+        {
+            return LeftJustified();
+        }
+
+        /// <summary>
         /// Centers the title inside the rule.
         /// </summary>
         /// <returns>The current <see cref="Rule"/> instance.</returns>
@@ -235,6 +342,15 @@ namespace ConsoulLibrary
         {
             Options.Alignment = RuleTitleAlignment.Right;
             return this;
+        }
+
+        /// <summary>
+        /// Aligns the title near the right side of the rule using table/text alignment vocabulary.
+        /// </summary>
+        /// <returns>The current <see cref="Rule"/> instance.</returns>
+        public Rule RightAligned()
+        {
+            return RightJustified();
         }
 
         /// <summary>
@@ -390,6 +506,26 @@ namespace ConsoulLibrary
             Options.TitleDecoration = style?.Decoration ?? Decoration.None;
             Options.TitleForegroundRgb = style?.ForegroundRgb;
             Options.TitleBackgroundRgb = style?.BackgroundRgb;
+        }
+
+        private static string FormatTitle(IConsoulRenderable title)
+        {
+            if (title == null)
+            {
+                throw new ArgumentNullException(nameof(title));
+            }
+
+            if (title is MarkupEntry markup)
+            {
+                return markup.Markup;
+            }
+
+            if (title is TextBlockEntry textBlock)
+            {
+                return textBlock.Content;
+            }
+
+            return RenderActionContent.Capture(title, 80, 20).Trim();
         }
 
         private static ColorScheme Scheme(ConsoleColor color)

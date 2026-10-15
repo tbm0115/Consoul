@@ -93,7 +93,7 @@ Known emoji shortcodes are replaced in markup strings using the same `:name:` sh
 
 ## Spectre-Style Entry Points
 
-If you are moving examples from Spectre.Console, `AnsiConsole` provides familiar method names over Consoul's existing core. These wrappers are dependency-free and intentionally return Consoul result types for prompts, so cancellation and empty selections stay explicit while your screens can still graduate into MVC-style `StaticView` or `DynamicView<TModel>` classes.
+If you are moving examples from Spectre.Console, `AnsiConsole` provides familiar method names over Consoul's existing core. These wrappers are dependency-free and intentionally return Consoul result types for prompts, so cancellation and empty selections stay explicit while your screens can still graduate into MVC-style `StaticView` or `DynamicView<TModel>` classes. Static shortcuts such as `AnsiConsole.Select(...)`, `AnsiConsole.MultiSelect(...)`, `AnsiConsole.SelectEnum<TEnum>(...)`, and `AnsiConsole.MultiSelectEnum<TEnum>(...)` use the same result-first path as their injectable `IAnsiConsole` counterparts.
 
 ```csharp
 AnsiConsole.MarkupLine("[cyan]Deployment[/] [green]ready[/]");
@@ -142,7 +142,7 @@ SelectionResult<DeployTarget> target = await AnsiConsole.PromptAsync(targetPromp
 
 When a service or reusable POC component should avoid static calls, depend on `IAnsiConsole` and pass `AnsiConsole.Console` by default. The injected facade tracks the same migration-helper method names as the static `AnsiConsole` facade, including output, prompts, panels, rules, tables, trees, lists, grids, layouts, calendars, canvases, canvas images, validation/property summaries, metrics, charts, status/progress/live scopes, cursor/profile access, and capture. It still uses the active Consoul console driver, so tests can install a virtual driver and production code can use the real terminal. For Spectre-style test setup, `AnsiConsole.Console` is assignable; static facade helpers route through the assigned facade until you restore the previous value:
 
-Primitive, formatted, and renderable output overloads are available on `IAnsiConsole` as extension methods, so injected services can keep simple migrated calls such as `console.Write(42)`, `console.WriteLine(false)`, `console.WriteLine(new Panel("Ready"))`, and `console.Write(CultureInfo.InvariantCulture, "Port {0}", port)` without leaving the same driver-backed rendering path.
+Primitive, formatted, renderable output, quick panel, and result-first selection overloads are available on `IAnsiConsole` as extension methods, so injected services can keep simple migrated calls such as `console.Write(42)`, `console.WriteLine(false)`, `console.WriteLine(new Panel("Ready"))`, `console.Write(CultureInfo.InvariantCulture, "Port {0}", port)`, `console.Panel("Ready", title: "Status", width: 32)`, `console.Select("Action", false, "Build", "Deploy")`, `console.MultiSelect("Checks", false, "Build", "Test")`, and enum-backed `console.SelectEnum<WorkflowState>("State")` / `console.MultiSelectEnum<WorkflowState>("States")` without leaving the same driver-backed rendering path.
 
 ```csharp
 public sealed class DeploymentScreen
@@ -211,7 +211,7 @@ if (testConsole.Profile.Capabilities.ColorSystem == ColorSystem.TrueColor)
 }
 ```
 
-Typed prompts support migration-friendly aliases such as `Title(...)`, `PromptStyle(...)`, `InstructionsText(...)`, `AddChoice(...)`, `AddChoices(...)`, `AddChoiceGroup(...)`, `AddGroup(...)`, `AddChild(...)`, `UseConverter(...)`, `SearchEnabled(...)`, `EnableSearch(...)`, `UseKeyboardNavigation(...)`, `UseWrapAround(...)`/`WrapAround(...)`, `WithPageSize(...)`/`PageSize(...)`, `WithMoreChoicesText(...)`/`MoreChoicesText(...)`, `WithSearchPlaceholderText(...)`/`SearchPlaceholderText(...)`, `FilterCommandPrefix(...)`, `FilterHelpText(...)`, `ActiveFilterText(...)`, `NoFilterMatchesText(...)`, `KeyboardNavigationHelpText(...)`, `KeyboardFilterHelpText(...)`, `WithInvalidSelectionMessage(...)`/`InvalidSelectionMessage(...)`, `DefaultValue(...)`, `Select(...)`, `SelectAll()`, `OnCancel(...)`, the `CancelResult` property, `DisabledStyle(...)`, `SearchHighlightStyle(...)`, `ParseWith(...)`, `ValidationErrorMessage(...)`, `InvalidChoiceMessage(...)`, `AllowEmpty()`, `NotRequired()`, `NotEmpty(...)`, `MinimumLength(...)`, `MaximumLength(...)`, `LengthBetween(...)`, `Choices(...)`, `ShowChoices(...)`, `HideChoices()`, `ShowDefaultValue(...)`, `HideDefaultValue()`, `EditableDefaultValue(...)`, `ClearOnFinish(...)`, `Secret(...)`, `Mask(...)`, `MaskStyle(...)`, `ChoicesSeparator(...)`, `ChoicesStyle(...)`, `DefaultValueStyle(...)`, and `Culture(...)` while still returning MVC-friendly domain objects. On selection and multi-selection prompts, `InvalidChoiceMessage(...)` aliases invalid-selection feedback for pasted Spectre-style snippets. `TextPrompt<T>.Validate(...)` accepts message, predicate, and `PromptValidationResult.Success()` / `PromptValidationResult.Error(...)` delegates for structured POC form rules. Prompt color helpers accept `ConsoleColor` values, reusable `Style` objects, `Color` / `RgbColor` palette values, and foreground style strings:
+Typed prompts support migration-friendly aliases such as `Title(...)`, `PromptStyle(...)`, `InstructionsText(...)`, `AddChoice(...)`, `AddChoices(...)`, `AddChoiceGroup(...)`, `AddGroup(...)`, `AddChild(...)`, `UseConverter(...)`, `SearchEnabled(...)`, `EnableSearch(...)`, `UseKeyboardNavigation(...)`, `UseWrapAround(...)`/`WrapAround(...)`, `WithPageSize(...)`/`PageSize(...)`, `WithMoreChoicesText(...)`/`MoreChoicesText(...)`, `WithSearchPlaceholderText(...)`/`SearchPlaceholderText(...)`, `FilterCommandPrefix(...)`, `FilterHelpText(...)`, `ActiveFilterText(...)`, `NoFilterMatchesText(...)`, `KeyboardNavigationHelpText(...)`, `KeyboardFilterHelpText(...)`, `WithInvalidSelectionMessage(...)`/`InvalidSelectionMessage(...)`, `DefaultValue(...)`, `Select(...)`, `SelectAll()`, `OnCancel(...)`, the `CancelResult` property, `DisabledStyle(...)`, `SearchHighlightStyle(...)`, `ParseWith(...)`, `ValidationErrorMessage(...)`, `InvalidChoiceMessage(...)`, `AllowEmpty()`, `NotRequired()`, `NotEmpty(...)`, `MinimumLength(...)`, `MaximumLength(...)`, `LengthBetween(...)`, `Choices(...)`, `ShowChoices(...)`, `HideChoices()`, `ShowDefaultValue(...)`, `HideDefaultValue()`, `EditableDefaultValue(...)`, `ClearOnFinish(...)`, `Secret(...)`, `Mask(...)`, `MaskStyle(...)`, `ChoicesSeparator(...)`, `ChoicesStyle(...)`, `DefaultValueStyle(...)`, and `Culture(...)` while still returning MVC-friendly domain objects. On selection and multi-selection prompts, `InvalidChoiceMessage(...)` aliases invalid-selection feedback for pasted Spectre-style snippets. `TextPrompt<T>.Validate(...)` accepts message, predicate, and `PromptValidationResult.Success()` / `PromptValidationResult.Error(...)` delegates for structured POC form rules. Prompt color helpers accept `ConsoleColor` values, reusable `Style` objects, `Color` / `RgbColor` palette values, and foreground style strings; scalar prompts (`TextPrompt<T>`, `SecretPrompt`, and `ConfirmPrompt`) expose direct palette overloads so instance-style snippets preserve RGB/hex metadata instead of falling back through `ConsoleColor` conversions:
 
 ```csharp
 var development = new DeployTarget("Development", "dev");
@@ -236,6 +236,23 @@ target.AddChoice(development);
 target.AddChoice(production);
 
 SelectionResult<DeployTarget> selected = AnsiConsole.Prompt(target);
+
+TextPromptResult<string> environment = AnsiConsole.Prompt(
+    new TextPrompt<string>("Environment")
+        .PromptStyle(Color.FromHex("#22c55e"))
+        .InvalidStyle(RgbColor.FromHex("#ef4444"))
+        .AddChoices("dev", "prod"));
+
+SecretResult apiKey = AnsiConsole.Prompt(
+    new SecretPrompt("API key")
+        .PromptStyle(Color.Aqua)
+        .Mask('#')
+        .MaskStyle(RgbColor.FromHex("#778899")));
+
+ConfirmResult approval = AnsiConsole.Prompt(
+    new ConfirmPrompt("Deploy?")
+        .PromptStyle(Color.Yellow)
+        .InvalidStyle(RgbColor.Red));
 ```
 
 Plain output snippets can use Spectre-style value and format overloads without leaving Consoul's console-driver path:
@@ -252,7 +269,7 @@ AnsiConsole.WriteAnsi(() => AnsiConsole.Write("\u001b[2K"));
 
 Object overloads use normal `ToString()` formatting for plain values. Boxed Consoul renderables still render through `IConsoulRenderable`; the Spectre-style `IRenderable` alias is also recognized, so visual components do not fall back to their type name when routed through generic helper code.
 
-Renderable snippets can use `new Markup(...)` and `new Rule(...)` while still flowing through Consoul's markup and rule renderers. Rule titles can also contain raw Spectre-style markup, which is measured by visible text and rendered with parsed title colors, ANSI decorations, and RGB/hex metadata on capable terminals:
+Renderable snippets can use `new Markup(...)` and `new Rule(...)` while still flowing through Consoul's markup and rule renderers. Rule titles can be strings or reusable renderables such as `new Markup(...)`, `new Text(...)`, or `Consoul.Renderable(...)`; raw Spectre-style markup is measured by visible text and rendered with parsed title colors, ANSI decorations, and RGB/hex metadata on capable terminals:
 
 ```csharp
 AnsiConsole.Write(new Markup("[green]Ready[/]").Append(" for [cyan]prod[/]").NewLine());
@@ -260,9 +277,13 @@ AnsiConsole.Render(new Panel("Renderable alias").Header("Render"));
 AnsiConsole.Console.Render(new Markup("[cyan]Injected console alias[/]").NewLine());
 
 AnsiConsole.Write(new Rule("Checks")
-    .Justify(Justify.Left)
+    .LeftAligned()
     .RuleStyle("grey")
     .TitleStyle("cyan"));
+
+AnsiConsole.Write(new Rule(new Markup("[cyan]Renderable[/] [green]title[/]"), Justify.Left)
+    .Width(40)
+    .RuleStyle("grey"));
 
 AnsiConsole.Write(new Rule("Deploy", ConsoleColor.Cyan, Justify.Right)
     .RuleStyle("grey"));
@@ -270,6 +291,9 @@ AnsiConsole.Write(new Rule("Deploy", ConsoleColor.Cyan, Justify.Right)
 AnsiConsole.Write(new Rule("Deploy", Color.Aqua, Justify.Right)
     .RuleColor(RgbColor.Green)
     .TitleColor(Color.Yellow));
+
+AnsiConsole.Rule("Procedural", Justify.Right, width: 40, color: ConsoleColor.Cyan);
+AnsiConsole.Console.Rule("Injected", Justify.Center, width: 40);
 
 AnsiConsole.Write(new Rule
 {
@@ -279,7 +303,7 @@ AnsiConsole.Write(new Rule
 }.TitleStyle("aqua"));
 ```
 
-Common fluent color helpers also accept Spectre-style style strings and reusable `Style` objects, so pasted snippets can use names, aliases, backgrounds, hex colors, and decoration words such as `bold`, `dim`, `italic`, `underline`, or `strike` before a screen graduates into MVC-style views. Text path segment colors, canvas drawing helpers, composition rows/cells/panes, model-summary values, and per-item factories for lists, charts, metrics, timelines, shortcut bars, and calendars use the same inputs, which keeps diagnostics and quick diagrams on the shared palette. Builders that align content also accept `Justify.Left`, `Justify.Center`, and `Justify.Right` as migration-friendly aliases over Consoul's existing alignment enums. Use `Style.Parse(...)`, `Style.ParseColor(...)`, `Style.Plain.WithForeground(...)`, or `Style.Bold.WithBackground(...)` when you need the same parsing or immutable style composition outside a builder chain; parsed styles preserve RGB/hex and decoration metadata so style-aware text, panel, rule, table-title/caption, and markup paths can emit 24-bit or 256-color ANSI on capable terminals while falling back to readable foreground/background console colors elsewhere. Add `using ConsoulLibrary.Color;` when ported snippets use `Color.Red`, `Color.FromHex(...)`, `Color.Rgb(...)`, `RgbColor.Red`, `RgbColor.FromHex(...)`, or `Colors.Grey`; `Color` mirrors the pasted-snippet shape while `RgbColor` keeps the underlying RGB channels and maps to the nearest `ConsoleColor` when extended ANSI color is unavailable.
+Common fluent color helpers also accept Spectre-style style strings and reusable `Style` objects, so pasted snippets can use names, aliases, backgrounds, hex colors, and decoration words such as `bold`, `dim`, `italic`, `underline`, or `strike` before a screen graduates into MVC-style views. Text path segment colors, canvas drawing helpers, composition rows/cells/panes, model-summary values, and per-item factories for lists, charts, metrics, timelines, shortcut bars, and calendars use the same inputs, which keeps diagnostics and quick diagrams on the shared palette. Builders and procedural helpers that align content also accept `Justify.Left`, `Justify.Center`, and `Justify.Right` as migration-friendly aliases over Consoul's existing alignment enums, and `Rule` supports `LeftAligned()` / `RightAligned()` alongside the older justified names. Use `Style.Parse(...)`, `Style.ParseColor(...)`, `Style.Plain.WithForeground(...)`, or `Style.Bold.WithBackground(...)` when you need the same parsing or immutable style composition outside a builder chain; parsed styles preserve RGB/hex and decoration metadata so style-aware text, panel, rule, table-title/caption, and markup paths can emit 24-bit or 256-color ANSI on capable terminals while falling back to readable foreground/background console colors elsewhere. Add `using ConsoulLibrary.Color;` when ported snippets use `Color.Red`, `Color.FromHex(...)`, `Color.Rgb(...)`, `RgbColor.Red`, `RgbColor.FromHex(...)`, or `Colors.Grey`; `Color` mirrors the pasted-snippet shape while `RgbColor` keeps the underlying RGB channels and maps to the nearest `ConsoleColor` when extended ANSI color is unavailable.
 
 ```csharp
 AnsiConsole.Write(new Text("Ready").Color("white on navy"));
@@ -346,7 +370,7 @@ var table = new Table()
     .HideFooter()
     .FooterColor(RgbColor.Magenta)
     .AddColumn(new TableColumn("Job").Width(14).Padding(2, 1))
-    .AddColumn("State", column => column.Centered())
+    .AddColumn(new Markup("[yellow]State[/]"), Justify.Center)
     .AddColumn(new TableColumn("Retries").RightJustified().Width(8).PadRight(2).Footer("2"))
     .AddRow("Build", "Queued", 0)
     .AddEmptyRow()
@@ -361,13 +385,12 @@ Manual panels follow the same pattern for Spectre-style snippets while still ren
 
 ```csharp
 var panel = new Panel("Build complete")
-    .Header("Status")
-    .Footer("Esc to close")
+    .Title("Status", Color.Aqua)
+    .TitleAlignment(Justify.Center)
+    .Footer("Esc to close", "grey", Justify.Right)
     .Border(BoxBorder.Rounded)
     .Width(36)
-    .Padding(1)
-    .HeaderAlignment(Justify.Center)
-    .FooterAlignment(Justify.Right);
+    .Padding(1);
 
 AnsiConsole.Write(panel);
 
@@ -389,11 +412,13 @@ Charts and trees can use builder aliases while remaining reusable renderables fo
 
 ```csharp
 var tree = new Tree("Deployment")
-    .Guide(TreeGuide.Ascii);
+    .Guide(TreeGuide.Ascii)
+    .Style("white on navy")
+    .BranchColor("grey");
 
 tree.AddNodes("Docs", "Scripts");
 tree.AddNodes("Build #", 42, new Markup("[green]Ready[/]"));
-tree.AddNode("Checks").AddNode("Build");
+tree.AddNode("Checks").Style("bold yellow").AddNode("Build").Color(ConsoleColor.Cyan);
 tree.AddNode(new Markup("[green]Release[/]"));
 tree.AddNode(new Panel("Ready").Border(BoxBorder.Ascii).Width(18), "yellow");
 tree.AddNode("Archived").Collapse().AddNode("Hidden legacy target");
@@ -449,10 +474,10 @@ AnsiConsole.Write(new BreakdownChart()
     .AddItem("Failed", 1, Color.Red)
     .AddItems(jobs, job => job.Name + " styled", job => job.Count, job => job.StyleText));
 
-`BarChart` and `BreakdownChart` label, segment/bar, value, and item style helpers preserve RGB/hex colors and ANSI decorations on capable terminals while still mapping to readable `ConsoleColor` values for simpler hosts. Chart aliases such as `BarChart.MaxValue(...)`, `WithMaxValue(...)`, `UseValueFormatter(...)`, `ShowValue()`, `HideValue()`, `BreakdownChart.UseValueFormatter(...)`, and `UsePercentageFormatter(...)` keep copied snippets terse while routing through the same MVC-friendly option model.
+`BarChart` and `BreakdownChart` label, segment/bar, value, and item style helpers preserve RGB/hex colors and ANSI decorations on capable terminals while still mapping to readable `ConsoleColor` values for simpler hosts. Chainable chart aliases such as `BarChart.Add(...)`, `BreakdownChart.Add(...)`, `BarChart.MaxValue(...)`, `WithMaxValue(...)`, `UseValueFormatter(...)`, `ShowValue()`, `HideValue()`, `BreakdownChart.UseValueFormatter(...)`, `UsePercentageFormatter(...)`, `Expand()`, and `Collapse()` keep copied snippets terse while routing through the same MVC-friendly option model. Use `Collapse()` for compact dashboard cards and `Expand()` when a chart should fill the active terminal width.
 ```
 
-Dashboard widgets use the same renderable-builder pattern for quick POC status screens. Metric labels, values, units, and notes, timeline titles/descriptions, and sparkline labels can contain raw markup while still wrapping, padding, and truncating by visible text. Metric colors, timeline title/description/marker/connector colors, and sparkline label, line, and range colors accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values; Metrics, Timeline, and Sparkline preserve RGB/hex colors and ANSI decorations on capable terminals. Prepared dashboard item params such as `Metrics.AddMetrics(metric1, metric2)`, `Timeline.AddSteps(step1, step2)`, `ShortcutBar.AddShortcuts(shortcut1, shortcut2)`, `Calendar.AddCalendarEvents(releaseDay, freezeDay)`, and `ViewHelpEntry.AddItems(deployHelp, docsHelp)` keep small MVC-style view summaries terse, and `BarChart.AddItems(bar1, bar2)` / `BreakdownChart.AddItems(slice1, slice2)` do the same for quick model-backed chart cards. Sparkline accepts immediate value params such as `Sparkline.AddValues(12, 10, 14)` or `Consoul.Sparkline(line => line.AddRange(12, 10, 14))` alongside selector-backed model projections. Sparkline aliases such as `MinValue(...)`, `MaxValue(...)`, `WithMinValue(...)`, `WithMaxValue(...)`, and `UseValueFormatter(...)` route copied snippets through the same range and formatter options:
+Dashboard widgets use the same renderable-builder pattern for quick POC status screens. Metric labels, values, units, and notes, timeline titles/descriptions, and sparkline labels can contain raw markup while still wrapping, padding, and truncating by visible text. Metric colors, timeline title/description/marker/connector colors, and sparkline label, line, and range colors accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values; Metrics, Timeline, and Sparkline preserve RGB/hex colors and ANSI decorations on capable terminals. Chainable dashboard aliases such as `Metrics.Add(...)`, `Timeline.Add(...)`, and `ShortcutBar.Add(...)` mirror the longer `AddMetrics(...)`, `AddSteps(...)`, and `AddShortcuts(...)` helpers for terse MVC-style view summaries. Prepared dashboard item params such as `Metrics.Add(metric1, metric2)` / `Metrics.AddMetrics(metric1, metric2)`, `Timeline.Add(step1, step2)` / `Timeline.AddSteps(step1, step2)`, `ShortcutBar.Add(shortcut1, shortcut2)` / `ShortcutBar.AddShortcuts(shortcut1, shortcut2)`, `Calendar.AddCalendarEvents(releaseDay, freezeDay)`, and `ViewHelpEntry.AddItems(deployHelp, docsHelp)` keep small MVC-style view summaries terse, and `BarChart.Add(...)`, `BarChart.AddItems(...)`, `BreakdownChart.Add(...)`, and `BreakdownChart.AddItems(...)` do the same for quick model-backed chart cards. Bar and breakdown charts also accept `Collapse()` for measured compact cards and `Expand()` for terminal-width dashboard rows. Calendar display aliases such as `UseCulture(...)`, `ShowTitle()` / `HideTitle()`, `ShowWeekdays()` / `HideWeekdays()`, `ShowAdjacentDays()` / `HideAdjacentDays()`, and `ShowToday()` / `HideToday()` keep schedule widgets readable when they are embedded in compact dashboard sections. Sparkline accepts immediate value params such as `Sparkline.AddValues(12, 10, 14)` or `Consoul.Sparkline(line => line.AddRange(12, 10, 14))` alongside selector-backed model projections. Sparkline aliases such as `MinValue(...)`, `MaxValue(...)`, `WithMinValue(...)`, `WithMaxValue(...)`, and `UseValueFormatter(...)` route copied snippets through the same range and formatter options:
 
 ```csharp
 AnsiConsole.Write(new Metrics()
@@ -473,9 +498,9 @@ var health = new[]
 
 AnsiConsole.Write(new Metrics()
     .Width(40)
-    .AddMetrics(health, item => item.Name, item => item.Count, item => item.Unit, item => item.Note, item => item.Kind)
-    .AddMetrics(health, item => item.Name + " color", item => item.Count, item => item.LabelColor, item => item.LabelColor, item => item.LabelColor, unitSelector: item => item.Unit, noteSelector: item => item.Note, kindSelector: item => item.Kind)
-    .AddMetrics(health, item => item.Name + " rgb", item => item.Count, item => item.Rgb, item => item.Rgb, item => item.Rgb, unitSelector: item => item.Unit, noteSelector: item => item.Note, kindSelector: item => item.Kind)
+    .Add(health, item => item.Name, item => item.Count, item => item.Unit, item => item.Note, item => item.Kind)
+    .Add(health, item => item.Name + " color", item => item.Count, item => item.LabelColor, item => item.LabelColor, item => item.LabelColor, unitSelector: item => item.Unit, noteSelector: item => item.Note, kindSelector: item => item.Kind)
+    .Add(health, item => item.Name + " rgb", item => item.Count, item => item.Rgb, item => item.Rgb, item => item.Rgb, unitSelector: item => item.Unit, noteSelector: item => item.Note, kindSelector: item => item.Kind)
     .AddMetricsStyled(health, item => item.Name + " styled", item => item.Count, item => item.Unit, item => item.Note, item => item.Kind, item => item.LabelStyle, item => item.ValueStyle, item => item.NoteStyle));
 
 AnsiConsole.Write(new Sparkline(new[] { 12d, 10d, 11d, 8d, 7d, 9d })
@@ -519,9 +544,9 @@ var workflow = new[]
 AnsiConsole.Write(new Timeline()
     .Width(40)
     .TimestampFormat("HH:mm")
-    .AddSteps(workflow, step => step.Name, step => step.State, step => step.Detail, step => (DateTimeOffset?)step.At)
-    .AddSteps(workflow, step => step.Name + " color", step => step.Color, step => step.Color, step => step.Color, stateSelector: step => step.State, descriptionSelector: step => step.Detail, timestampSelector: step => (DateTimeOffset?)step.At)
-    .AddSteps(workflow, step => step.Name + " rgb", step => step.Rgb, step => step.Rgb, step => step.Rgb, stateSelector: step => step.State, descriptionSelector: step => step.Detail, timestampSelector: step => (DateTimeOffset?)step.At)
+    .Add(workflow, step => step.Name, step => step.State, step => step.Detail, step => (DateTimeOffset?)step.At)
+    .Add(workflow, step => step.Name + " color", step => step.Color, step => step.Color, step => step.Color, stateSelector: step => step.State, descriptionSelector: step => step.Detail, timestampSelector: step => (DateTimeOffset?)step.At)
+    .Add(workflow, step => step.Name + " rgb", step => step.Rgb, step => step.Rgb, step => step.Rgb, stateSelector: step => step.State, descriptionSelector: step => step.Detail, timestampSelector: step => (DateTimeOffset?)step.At)
     .AddStepsStyled(workflow, step => step.Name + " styled", step => step.State, step => step.Detail, step => (DateTimeOffset?)step.At, step => step.TitleStyle, step => step.MarkerStyle, step => step.DescriptionStyle));
 
 var actions = new[]
@@ -532,10 +557,10 @@ var actions = new[]
 
 AnsiConsole.Write(new ShortcutBar()
     .Width(40)
-    .AddShortcut("Enter", "Select", "white on navy", "grey")
-    .AddShortcut("Esc", "Back")
-    .AddShortcuts(actions, action => action.Key, action => action.Description, action => action.Disabled)
-    .AddShortcuts(actions, action => action.Key, action => action.Description, action => action.KeyStyle, action => action.DescriptionStyle));
+    .Add("Enter", "Select", "white on navy", "grey")
+    .Add("Esc", "Back")
+    .Add(actions, action => action.Key, action => action.Description, action => action.Disabled)
+    .Add(actions, action => action.Key, action => action.Description, action => action.KeyStyle, action => action.DescriptionStyle));
 ```
 
 The facade also forwards Consoul's helper-style calls for developers adapting procedural Spectre-style snippets:
@@ -553,7 +578,7 @@ AnsiConsole.ValidationSummary(
     new ValidationSummaryOptions { Width = 48 }.InvalidColor(Color.Red).IssueColor(RgbColor.Yellow));
 ```
 
-Composition builders make quick dashboard layouts readable without leaving the renderable path. Their color helpers accept `ConsoleColor`, reusable `Style` objects, Spectre-style style strings, `Color`, and `RgbColor` values, and item-level row, cell, column, and pane overloads can use the same palette vocabulary so branded POC regions share colors with tables, prompts, and status widgets. `Padder.Color(...)` and `Align.Color(...)` keep wrapper components on that same shared-palette path, preserving RGB/hex colors and ANSI decorations across padded or aligned text and spacing on capable terminals. `Rows`, `Columns`, and `Grid` can mix plain values, configured row/cell objects, strings, and reusable renderables, which keeps quick MVC-style diagnostic layouts from needing adapter code. Aligned text, padded text, row text, column content, grid headers, grid cell text, layout pane titles, and layout pane content can contain raw markup and still wrap, collapse, pad, align, and render by visible text. `Rows.AddRows(...)`, `Columns.AddColumns(...)`, `Grid.AddRows(new[] { "API", "Ready" }, new[] { "Worker", "Queued" })`, and `Grid.AddCells(...)` accept text, renderable, and mixed object params as well as enumerables for pasted fluent snippets; selector-backed overloads such as `Rows.AddRows(models, item => item.Summary, item => item.StyleText)`, `Columns.AddColumns(models, item => item.Panel, item => item.Title, item => item.StyleText)`, `Grid.AddCells(models, item => item.Value, item => item.Label, item => item.StyleText)`, and `Layout.AddPanes(models, item => item.Content, item => item.Title, item => item.StyleText)` keep model-backed dashboard sections out of hand-written adapter loops. Row, column, cell, and pane selectors preserve `Style` decorations and RGB/hex metadata on capable terminals, and their color selectors can return `Color` or `RgbColor` directly when the view model owns palette objects. `new Layout(panes)` and `Layout.AddPanes(panes)` accept prepared `LayoutPane` collections, while selector-backed `Layout.AddPanes(...)` can return plain values, reusable renderables, render actions, configured `LayoutPane` instances, or nested `Layout` regions. `Layout.SplitColumns(renderable1, renderable2)` and `SplitRows(...)` also accept reusable renderables directly for static dashboard composition, while named nested layouts keep mutable MVC-style view regions addressable. `Align` accepts `LeftJustified()` and `RightJustified()` aliases alongside `LeftAligned()`, `Centered()`, and `RightAligned()`, so dashboard snippets use the same alignment vocabulary as text, rules, and figlet titles. Captured `Align` and `Padder` content stays plain text after capture, while direct text parses raw markup. `Grid.AddColumn(column => ...)` and `Grid.AddColumns(columns)` accept configured `GridColumn` metadata from inline builders or model-projected collections; `GridColumn` accepts `LeftAligned()`, `Centered()`, and `RightAligned()` helpers alongside `Justify(...)`, so compact model-state grids use the same fluent alignment names as table columns. Named layouts can use `Size(...)`, `Ratio(...)`, `MinimumSize(...)`, `Visible(...)`, and `Invisible()` hints while still being updated as MVC-style view regions.
+Composition builders make quick dashboard layouts readable without leaving the renderable path. Their color helpers accept `ConsoleColor`, reusable `Style` objects, Spectre-style style strings, `Color`, and `RgbColor` values, and item-level row, cell, column, and pane overloads can use the same palette vocabulary so branded POC regions share colors with tables, prompts, and status widgets. `Rows.AddRow(...)`, `Columns.AddColumn(...)`, `Grid.AddCell(...)`, `Layout.AddPane(...)`, `LayoutEntry.Add(...)`, `LayoutPane.Create(...)`, `LayoutPane.Update(...)`, `RowsItem.Create(...)`, and `GridCell.Create(...)` accept direct `Color` and `RgbColor` values for single-item dashboard sketches without `new Style(...)` wrappers. `Layout.TitleColor(...)` and `Layout.ContentColor(...)` also accept direct palette values so MVC-style view regions can share one model-owned palette. `Padder.Color(...)` and `Align.Color(...)` keep wrapper components on that same shared-palette path, preserving RGB/hex colors and ANSI decorations across padded or aligned text and spacing on capable terminals. `Rows`, `Columns`, and `Grid` can mix plain values, configured row/cell objects, strings, and reusable renderables, which keeps quick MVC-style diagnostic layouts from needing adapter code. Aligned text, padded text, row text, column content, grid headers, grid cell text, layout pane titles, and layout pane content can contain raw markup and still wrap, collapse, pad, align, and render by visible text. `Rows.AddRows(...)`, `Columns.AddColumns(...)`, `Grid.AddRows(new[] { "API", "Ready" }, new[] { "Worker", "Queued" })`, and `Grid.AddCells(...)` accept text, renderable, and mixed object params as well as enumerables for pasted fluent snippets; selector-backed overloads such as `Rows.AddRows(models, item => item.Summary, item => item.StyleText)`, `Columns.AddColumns(models, item => item.Panel, item => item.Title, item => item.StyleText)`, `Grid.AddCells(models, item => item.Value, item => item.Label, item => item.StyleText)`, and `Layout.AddPanes(models, item => item.Content, item => item.Title, item => item.StyleText)` keep model-backed dashboard sections out of hand-written adapter loops. Row, column, cell, and pane selectors preserve `Style` decorations and RGB/hex metadata on capable terminals, and their color selectors can return `Color` or `RgbColor` directly when the view model owns palette objects. `new Layout(panes)` and `Layout.AddPanes(panes)` accept prepared `LayoutPane` collections, while selector-backed `Layout.AddPanes(...)` can return plain values, reusable renderables, render actions, configured `LayoutPane` instances, or nested `Layout` regions. `Layout.SplitColumns(renderable1, renderable2)` and `SplitRows(...)` also accept reusable renderables directly for static dashboard composition, while named nested layouts keep mutable MVC-style view regions addressable. `Align` and `Rule` accept `LeftJustified()` and `RightJustified()` aliases alongside `LeftAligned()`, `Centered()`, and `RightAligned()`, so dashboard snippets use the same alignment vocabulary as text, rules, and figlet titles. Captured `Align` and `Padder` content stays plain text after capture, while direct text parses raw markup. `Grid.AddColumn(column => ...)` and `Grid.AddColumns(columns)` accept configured `GridColumn` metadata from inline builders or model-projected collections; `GridColumn` accepts `LeftAligned()`, `Centered()`, and `RightAligned()` helpers alongside `Justify(...)`, so compact model-state grids use the same fluent alignment names as table columns. Named layouts can use `Size(...)`, `Ratio(...)`, `MinimumSize(...)`, `Visible(...)`, and `Invisible()` hints while still being updated as MVC-style view regions.
 
 ```csharp
 AnsiConsole.Rows(
@@ -600,8 +625,9 @@ AnsiConsole.Write(new Rows()
         status => new Markup(status.Warning ? "[yellow]" + status.Name + ": " + status.State + "[/]" : "[green]" + status.Name + ": " + status.State + "[/]")));
 
 AnsiConsole.Write(new Columns()
-    .ColumnCount(2)
+    .ColumnCount(3)
     .AddColumn(new Panel("Ready").Header("API"))
+    .AddEmptyColumn("Gap")
     .AddColumn("Retries: 2"));
 
 var serviceColumns = new List<IConsoulRenderable>
@@ -618,13 +644,9 @@ AnsiConsole.Write(new Columns()
         status => new Markup(status.Warning ? "[yellow]" + status.State + "[/]" : "[green]" + status.State + "[/]"),
         status => status.Name));
 
-var dashboardGridColumns = new[]
-{
-    new GridColumn().RightAligned()
-};
 AnsiConsole.Write(new Grid()
-    .AddColumn(column => column.Width(14).Padding(1, 1).NoWrap())
-    .AddColumns(dashboardGridColumns)
+    .AddColumn(14)
+    .AddColumn(10, Justify.Right)
     .Collapse()
     .AddRows(
         new[] { "Build", "Ready" },
@@ -645,17 +667,19 @@ AnsiConsole.Write(new Padder(new Panel("Ready").Header("Status"))
     Expand = true
 }.Color(RgbColor.Green));
 
-AnsiConsole.Write(new Align(new Panel("Centered summary").Header("Overview"), HorizontalAlignment.Center)
+AnsiConsole.Write(Align.Center(new Panel("Centered summary").Header("Overview"))
     .Width(48)
     .Color(Color.Aqua));
+
+// Align.Left(...), Align.Center(...), and Align.Right(...) also accept text, render actions, and row collections.
 
 var target = new Tree("Deploy");
 target.AddNode("Production");
 
 var summaryPanes = new[]
 {
-    LayoutPane.Create("Ready", "Status", "green").Size(12),
-    LayoutPane.Create("Jobs: 4", "Metrics", "aqua")
+    LayoutPane.Create("Ready", "Status", Color.Green).Size(12),
+    LayoutPane.Create("Jobs: 4", "Metrics", RgbColor.Aqua)
 };
 AnsiConsole.Write(new Layout(summaryPanes).Width(36).ColumnCount(2));
 
@@ -671,6 +695,8 @@ AnsiConsole.Write(new Layout("Snapshot")
                 new[] { "Deploy", "Waiting" })));
 
 var layout = new Layout("Dashboard")
+    .TitleColor(Color.Aqua)
+    .ContentColor(RgbColor.White)
     .SplitRows(
         new Layout("Header").Size(3),
         new Layout("Body").SplitColumns(
@@ -678,14 +704,14 @@ var layout = new Layout("Dashboard")
             new Layout("Target").Ratio(1),
             new Layout("Debug").Invisible()));
 
-layout["Header"].Update(new Panel("POC deployment view").Header("Dashboard"));
+layout["Header"].Update("POC deployment view", Color.Aqua);
 layout["Tests"].Update(new BarChart().AddItem("Passing", 8));
 layout["Target"].Update(target);
 
 AnsiConsole.Write(layout);
 ```
 
-Text and terminal-art builders cover quick labels, splash text, schedules, and small diagrams. `Text`, `Paragraph`, `HeadlineOptions`, and `FigletText` color helpers accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values while preserving RGB/hex colors and ANSI decorations on capable terminals. Their content can include raw markup such as `[green]Ready[/]`; the text-block renderer wraps, aligns, crops, and ellipsizes by visible text while preserving parsed colors and RGB/hex metadata:
+Text and terminal-art builders cover quick labels, splash text, schedules, and small diagrams. `Text`, `Paragraph`, `HeadlineOptions`, and `FigletText` color helpers accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values while preserving RGB/hex colors and ANSI decorations on capable terminals. `Text`, `Paragraph`, and `FigletText` also accept `LeftAligned()`, `Centered()`, and `RightAligned()` alongside `LeftJustified()` and `RightJustified()`, so copied snippets use the same alignment vocabulary as grids, tables, rules, and alignment wrappers. Their content can include raw markup such as `[green]Ready[/]`; the text-block renderer wraps, aligns, crops, and ellipsizes by visible text while preserving parsed colors and RGB/hex metadata:
 
 ```csharp
 AnsiConsole.Write(new Text("Ready", ConsoleColor.Green));
@@ -713,7 +739,10 @@ AnsiConsole.Write(new FigletText("Consoul")
     .Color("bold #22c55e"));
 
 AnsiConsole.Write(new Calendar(new DateTime(2026, 6, 1))
-    .Culture(System.Globalization.CultureInfo.InvariantCulture)
+    .UseCulture(System.Globalization.CultureInfo.InvariantCulture)
+    .FirstDayOfWeek(DayOfWeek.Monday)
+    .ShowAdjacentDays()
+    .HideToday()
     .HeaderStyle("cyan")
     .HighlightStyle("yellow")
     .AddCalendarEvent("Release", 2026, 6, 15, new Style(ConsoleColor.Green))
@@ -726,7 +755,9 @@ var schedule = new[]
 };
 
 AnsiConsole.Write(new Calendar(new DateTime(2026, 6, 1))
-    .Culture(System.Globalization.CultureInfo.InvariantCulture)
+    .UseCulture("en-US")
+    .HideTitle()
+    .HideWeekdays()
     .AddCalendarEvents(schedule, item => item.Date, item => item.Name, item => item.Color)
     .AddCalendarEventsStyled(schedule, item => item.Date, item => item.Name, item => item.StyleText));
 
@@ -755,9 +786,9 @@ AnsiConsole.Write(new CanvasImage(thumbnail)
     .BicubicResampler());
 ```
 
-`Canvas` is still the best fit for MVC-style console diagrams with labels, lines, and boxes. It also accepts Spectre-style `SetPixel(...)` calls for compact half-block pixel sketches; call `Scale(false)` when you want a clipped top-left preview instead of scaled sampling.
+`Canvas` is still the best fit for MVC-style console diagrams with labels, lines, and boxes. It also accepts Spectre-style `SetPixel(...)` calls for compact half-block pixel sketches; call `Scale(false)` or `NoScale()` when you want a clipped top-left preview instead of scaled sampling.
 
-`CanvasImage` renders in-memory pixels or `ConsoleColor` matrices as terminal half-blocks without adding image-decoding dependencies to the core package. Keep PNG/JPEG loading in an optional companion package or application adapter, then pass the decoded pixels into `CanvasImage` when the screen needs a quick thumbnail or status image.
+`CanvasImage` renders in-memory pixels or `ConsoleColor` matrices as terminal half-blocks without adding image-decoding dependencies to the core package. Use `Scale(false)` or `NoScale()` when a diagnostic thumbnail should clip the top-left source pixels instead of resampling. Keep PNG/JPEG loading in an optional companion package or application adapter, then pass the decoded pixels into `CanvasImage` when the screen needs a quick thumbnail or status image.
 
 Status and list builders keep dashboards scannable. Their marker, label, content, border, separator, key, and disabled color helpers accept `ConsoleColor`, style strings, reusable `Style` objects, `Color`, and `RgbColor` values. Badge labels, breadcrumb labels, bullet-list item text, checklist labels/descriptions, timeline titles/descriptions, property-list labels/values, and shortcut-bar keys/descriptions can also contain raw markup such as `[green]Ready[/]` or `[white on navy]Approval[/]`; rendering wraps by visible text and preserves parsed colors, RGB/hex metadata, and ANSI-capable text decorations. Callout border/title/content helpers, Breadcrumb item/current/separator helpers and selector-backed breadcrumb segment styles, ShortcutBar key/description/separator/disabled helpers, and selector-backed shortcut styles preserve RGB/hex colors and ANSI decorations on capable terminals, and Calendar header, weekday, day, today, marked-day, and event styles preserve the same metadata. `Breadcrumb.AddItems("Home", "Deploy")` accepts quick params labels for controller/view navigation hints, `Breadcrumb.AddItems(models, item => item.Label)` projects model-backed navigation trails, `BulletList.AddItems("Build", "Test")` and `BulletListItem.AddItems("Lint", "Sign")` accept quick params labels, `AddItems(IEnumerable<BulletListItem>)` accepts reusable nested item models, `Checklist.AddItems(item1, item2)` accepts prepared readiness items, and bullet lists/checklists accept selector-based `AddItems(...)` overloads for model-backed MVC status views. Breadcrumb, bullet-list, and checklist item projections also accept per-item style strings, such as `Breadcrumb.AddItems(models, item => item.Label, item => item.StyleText)`, `BulletList.AddItems(models, item => item.Label, item => item.StyleText)`, or `Checklist.AddItems(models, item => item.Label, item => item.State, item => item.Description, item => item.StyleText)`. Breadcrumb, bullet-list, and checklist palette selectors can return `Color` or `RgbColor` directly, with breadcrumb selectors preserving true-color metadata on capable terminals when the view model owns palette objects. Calendar events, property-list label/value rows, shortcut key/description rows, and tree nodes support the same direct `Color` / `RgbColor` selector shape, so quick status notes can keep palette choices in the view model:
 
@@ -966,7 +997,7 @@ public sealed class CounterModel
 }
 ```
 
-Use `Separator(...)` when larger MVC menus need grouped action regions without changing selectable option indexes. Use `DescribeLastOption(...)` when a short action label needs context; the description is evaluated each render and participates in prompt filtering. Use `SearchLastOption(...)` for hidden aliases that should match filters or command palettes without changing the rendered controller-style action label. Use `ShortcutLastOption(...)` when frequent actions should be selectable by typed routine input or by key press in keyboard-enabled prompts. Use `OptionWhen(...)` when an action should stay visible but unavailable until model state is ready. Disabled options render with a reason and become selectable on the next render when the predicate returns true. Use `ConfirmOption(...)`, `DynamicView<TModel>.AddConfirmOption(...)`, or `StaticView.AddConfirmOption(...)` for actions that should ask for yes/no confirmation before running, such as saving settings, deleting data, or deploying to a shared environment. `OptionWhen(...)`, `OptionWhenValid(...)`, and `ConfirmOption(...)` all accept quick `Func<Task>` or `Func<TModel, Task>` async handlers when they do not need the cancellation token. Model-backed style selectors such as `model => new Style(model.Accent, Decoration.Bold)` keep RGB/hex colors and decorations through prompts, command palettes, and generated help.
+Use `Separator(...)` when larger MVC menus need grouped action regions without changing selectable option indexes. Use `DescribeLastOption(...)` when a short action label needs context; the description is evaluated each render and participates in prompt filtering. Use `SearchLastOption(...)` for hidden aliases that should match filters or command palettes without changing the rendered controller-style action label. Use `ShortcutLastOption(...)` when frequent actions should be selectable by typed routine input or by key press in keyboard-enabled prompts. Use `OptionWhen(...)` when an action should stay visible but unavailable until model state is ready. Disabled options render with a reason and become selectable on the next render when the predicate returns true. Use `ConfirmOption(...)`, `DynamicView<TModel>.AddConfirmOption(...)`, or `StaticView.AddConfirmOption(...)` for actions that should ask for yes/no confirmation before running, such as saving settings, deleting data, or deploying to a shared environment. `OptionWhen(...)`, `OptionWhenValid(...)`, and `ConfirmOption(...)` all accept quick `Func<Task>` or `Func<TModel, Task>` async handlers when they do not need the cancellation token. Direct `Color` / `RgbColor` values work on named sections, separators, options, help, navigation, command palettes, and edit-model entries, while model-backed style selectors such as `model => new Style(model.Accent, Decoration.Bold)` keep RGB/hex colors and decorations through prompts, command palettes, generated help, and section titles.
 
 Add `.HelpOption()` to give exploratory users a built-in help screen generated from the current view's labels, descriptions, shortcuts, separators, disabled reasons, and Go Back action. The help surface is also reusable as `view.CreateHelp()` or `ViewHelpEntry`, so it can be captured into panels, layouts, tests, or documentation output. Manual help items and separators accept `ConsoleColor`, reusable `Style` objects, Spectre-style style strings, `Color`, and `RgbColor`; `ViewHelpOptions` also exposes title, label, shortcut, description, disabled, and separator style metadata. Help labels, descriptions, disabled reasons, and separator labels can contain raw markup and still wrap by visible text; shortcuts remain literal so key text such as `[F5]` or `[green]` is never parsed as styling. Style strings, RGB colors, and option metadata preserve RGB/hex colors and ANSI decorations on capable terminals while falling back to readable console colors.
 
@@ -974,7 +1005,7 @@ Add `.HelpOption()` to give exploratory users a built-in help screen generated f
 Consoul.View("Deployment Tools", settings)
     .ShowBreadcrumbs()
     .ShowShortcuts()
-    .Section("Summary", model => Consoul.PropertyList(model), new Style(ConsoleColor.Cyan))
+    .Section("Summary", model => Consoul.PropertyList(model), Color.Aqua)
     .Option("Preview", model => Preview(model), new Style(ConsoleColor.Cyan))
     .DescribeLastOption("Runs validation without changing the target environment.")
     .ShortcutLastOption("p")
@@ -1004,7 +1035,7 @@ Consoul.View("Counter", counter)
     .Render();
 ```
 
-When a screen needs more than one dashboard chunk, append named sections. Sections render after the primary model renderer and before the option prompt, and they are re-evaluated every time an option mutates the model. Use `PropertyListSection(...)` for the common read-only model summary, `TableSection(...)` when the view model owns a collection that should render as a responsive table, `MetricsSection(...)` when the model owns compact KPI or health-state values, `RowsSection(...)`, `ColumnsSection(...)`, and `GridSection(...)` when the model owns composed dashboard rows, side-by-side summaries, or responsive cells, `LayoutSection(...)` when the model owns dashboard panes or nested layout regions, `TextBlockSection(...)` when the model owns wrapped explanatory text, `PanelSection(...)` when the model owns framed detail text, `CalloutSection(...)` when the model owns a status, warning, success, or error message, `ExceptionSection(...)` when the model owns a last error or diagnostic exception, `BreadcrumbSection(...)` when the model owns navigation context, `ShortcutBarSection(...)` when the model owns action hints or shortcut metadata, `BulletListSection(...)` for notes or nested diagnostics, `ChecklistSection(...)` for readiness or workflow checks, `CalendarSection(...)` when the model owns schedule state, `SparklineSection(...)` when the model owns trend samples, `BarChartSection(...)` / `BreakdownChartSection(...)` when dashboard collections should render as responsive charts, `TreeSection(...)` when the model owns nested diagnostic or dependency state, and `TimelineSection(...)` for workflow/history state:
+When a screen needs more than one dashboard chunk, append named sections. Sections render after the primary model renderer and before the option prompt, and they are re-evaluated every time an option mutates the model. `Section(...)` and `SectionWhen(...)` accept `Justify.Left`, `Justify.Center`, and `Justify.Right` for rule-title alignment while staying on the same MVC-style dynamic view surface. Use `PropertyListSection(...)` for the common read-only model summary, `TableSection(...)` when the view model owns a collection that should render as a responsive table, `MetricsSection(...)` when the model owns compact KPI or health-state values, `RowsSection(...)`, `ColumnsSection(...)`, and `GridSection(...)` when the model owns composed dashboard rows, side-by-side summaries, or responsive cells, `LayoutSection(...)` when the model owns dashboard panes or nested layout regions, `TextBlockSection(...)` when the model owns wrapped explanatory text, `PanelSection(...)` when the model owns framed detail text, `CalloutSection(...)` when the model owns a status, warning, success, or error message, `ExceptionSection(...)` when the model owns a last error or diagnostic exception, `BreadcrumbSection(...)` when the model owns navigation context, `ShortcutBarSection(...)` when the model owns action hints or shortcut metadata, `BulletListSection(...)` for notes or nested diagnostics, `ChecklistSection(...)` for readiness or workflow checks, `CalendarSection(...)` when the model owns schedule state, `SparklineSection(...)` when the model owns trend samples, `BarChartSection(...)` / `BreakdownChartSection(...)` when dashboard collections should render as responsive charts, `TreeSection(...)` when the model owns nested diagnostic or dependency state, and `TimelineSection(...)` for workflow/history state:
 
 ```csharp
 Consoul.View("Deployment", deployment)
@@ -1164,7 +1195,8 @@ Consoul.View("Counter", counter)
     }))
     .Section(
         model => $"Audit {model.Count}",
-        model => Consoul.TextBlock($"Mutation count {model.Count}", width: 48))
+        model => Consoul.TextBlock($"Mutation count {model.Count}", width: 48),
+        Justify.Right)
     .Option("Increment", model => model.Count++)
     .Render();
 ```
@@ -1178,7 +1210,8 @@ Consoul.View("Counter", counter)
         model => $"Audit {model.Count}",
         model => Consoul.Panel($"Changed {model.Count} time(s)", title: "Audit", width: 42),
         model => model.Count > 0,
-        model => ConsoleColor.Yellow)
+        model => ConsoleColor.Yellow,
+        Justify.Right)
     .Option("Increment", model => model.Count++)
     .Render();
 ```
@@ -1228,7 +1261,7 @@ Consoul.Calendar(new DateTime(2026, 6, 1), calendar =>
     calendar.Add(new DateTime(2026, 6, 25), ConsoleColor.Yellow, "Freeze");
 }, new CalendarOptions { Width = 32 });
 
-Consoul.Rule("Current Build", alignment: RuleTitleAlignment.Left);
+Consoul.Rule("Current Build", Justify.Left);
 Consoul.TextBlock(
     "Build and deployment status for the current model.",
     width: 64,
@@ -1382,15 +1415,15 @@ Consoul.Columns(columns =>
     columns.Add("Deployment is waiting for approval.", "Next step", ConsoleColor.Yellow);
 }, new ColumnsOptions { Columns = 2 });
 
-Consoul.Rows(rows =>
-{
-    rows.Add(() => Consoul.Rule("Checks", width: 40));
-    rows.Add(() => Consoul.PropertyList(list =>
+AnsiConsole.Write(new Rows()
+    .Width(44)
+    .Spacing(0)
+    .AddRule("Checks", width: 40)
+    .AddRow(() => Consoul.PropertyList(list =>
     {
         list.Add("Database", "Ready", ConsoleColor.Green);
         list.Add("Feature flags", "Ready", ConsoleColor.Green);
-    }, new PropertyListOptions { Width = 40 }));
-}, new RowsOptions { Width = 44, Spacing = 0 });
+    }, new PropertyListOptions { Width = 40 })));
 
 Consoul.Pad(
     () => Consoul.Panel("Ready for release", title: "Status", width: 36),
@@ -1510,7 +1543,7 @@ Consoul.WriteException(
     });
 ```
 
-Trees are useful for nested model state, command plans, dependency graphs, and quick diagnostics. Fluent tree builders also support `TreeGuide` presets, `TextColor(...)`, `BranchColor(...)`, `AddNodes(...)`, `AddTree(...)` recursive model projections, mixed scalar/existing-node/renderable labels, collapsed branches, renderable node labels, and raw markup labels for migration-friendly snippets. Node, default text, and branch color helpers accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values; style strings, captured markup labels, and RGB selectors preserve decoration plus RGB/hex metadata on capable terminals while still falling back to readable console colors elsewhere.
+Trees are useful for nested model state, command plans, dependency graphs, and quick diagnostics. Fluent tree builders also support `TreeGuide` presets, `TextColor(...)`, `Style(...)`, `Color(...)`, `BranchColor(...)`, `AddNodes(...)`, `AddTree(...)` recursive model projections, mixed scalar/existing-node/renderable labels, collapsed branches, renderable node labels, post-creation node styling through `TreeNode.Style(...)` / `TreeNode.Color(...)`, and raw markup labels for migration-friendly snippets. Node, default text, and branch color helpers accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values; style strings, captured markup labels, and RGB selectors preserve decoration plus RGB/hex metadata on capable terminals while still falling back to readable console colors elsewhere.
 
 ```csharp
 Consoul.Tree("[cyan]Deployment[/]", root =>
@@ -1526,6 +1559,7 @@ Consoul.Tree("[cyan]Deployment[/]", root =>
 
 Consoul.Write(new Tree("Dependencies")
     .AsciiGuide()
+    .Style("bold #22c55e")
     .AddTree(nodes, node => node.Name, node => node.Children, node => node.Style));
 ```
 
@@ -1612,7 +1646,7 @@ string htmlTranscript = AnsiConsole.ExportHtml();
 ## Composing Render Helpers
 
 `Consoul.Panel(...)`, `Consoul.Callout(...)`, `Consoul.Align(...)`, `Consoul.Pad(...)`, `Padder`, `Align`, `RowsEntry`, `GridEntry`, `ColumnsEntry`, and `LayoutEntry` can capture existing Consoul render helpers or reusable `IConsoulRenderable` objects as framed content, intent-colored callouts, aligned content, padded content, rows, cells, columns, or panes. If migrated helper code returns only the Spectre-style `IRenderable` alias, pass it to `Consoul.Renderable(...)` before composing it. This lets POC dashboards compose banners, markup messages, badges, panels, charts, validation summaries, property lists, tables, and text blocks without manual string capture.
-Panel frames can use `PanelBorderStyle.Rounded`, `Square`, `Ascii`, `Heavy`, `Double`, or `None`, and can render aligned title/footer text through `PanelOptions`. For migration-friendly snippets, `new Panel("...")` wraps `PanelEntry` with fluent `Header(...)`, `Header(new PanelHeader(...))`, inline `Header(...)` overloads for `ConsoleColor`, `Style`, style strings, `Color`, and `RgbColor`, `Footer(...)`, `Footer(new PanelHeader(...))`, matching inline `Footer(...)` overloads, `Border(BoxBorder.Rounded)`, `Border(BoxBorder.None)`, `Border(BoxBorder.Safe)`, `Border(BoxBorder.Ascii2)`, `Border(BoxBorder.AsciiDoubleHead)`, `Border(BoxBorder.Markdown)`, `Border(BoxBorder.SimpleHeavy)`, `Border(BoxBorder.Minimal)`, `Border(BoxBorder.HeavyEdge)`, `Border(BoxBorder.HeavyHead)`, `Border(BoxBorder.DoubleEdge)`, `RoundedBorder()`, `AsciiBorder()`, `DoubleBorder()`, `NoBorder()`, `Collapse()`, `Expand()`, `Width(...)`, `Padding(all)`, `Padding(horizontal, vertical)`, four-side `Padding(...)`, alignment, and color helpers such as `BorderColor(...)`, `ContentColor(...)`, `HeaderColor(...)`, and `FooterColor(...)`. Those color helpers accept the same shared palette inputs, so MVC-style view models can keep palette values as `Color` or `RgbColor` without adapter loops. Spectre-style aliases map to the closest existing panel renderer. Set `PanelOptions.Expand = false` or call `Collapse()` when a compact POC widget should size to content instead of filling the terminal. `new Panel(renderable)` and `new Panel(() => { ... })` capture reusable renderables or render actions at render time, so later `Width(...)`, `Collapse()`, and `Padding(...)` calls still shape the captured inner content.
+Panel frames can use `PanelBorderStyle.Rounded`, `Square`, `Ascii`, `Heavy`, `Double`, or `None`, and can render aligned title/footer text through `PanelOptions`. For migration-friendly snippets, `new Panel("...")` wraps `PanelEntry` with fluent `Header(...)`, `Header(new PanelHeader(...))`, `Header(new Markup("[cyan]Status[/]"))`, inline `Header(...)` overloads for `ConsoleColor`, `Style`, style strings, `Color`, and `RgbColor`, `Title(renderable)`, `Footer(...)`, `Footer(new PanelHeader(...))`, `Footer(new Markup("[grey]Esc[/]"))`, matching inline `Footer(...)` overloads, `Border(BoxBorder.Rounded)`, `Border(BoxBorder.None)`, `Border(BoxBorder.Safe)`, `Border(BoxBorder.Ascii2)`, `Border(BoxBorder.AsciiDoubleHead)`, `Border(BoxBorder.Markdown)`, `Border(BoxBorder.SimpleHeavy)`, `Border(BoxBorder.Minimal)`, `Border(BoxBorder.HeavyEdge)`, `Border(BoxBorder.HeavyHead)`, `Border(BoxBorder.DoubleEdge)`, `RoundedBorder()`, `AsciiBorder()`, `Ascii2Border()`, `AsciiDoubleHeadBorder()`, `MarkdownBorder()`, `SafeBorder()`, `HeavyBorder()`, `HeavyEdgeBorder()`, `HeavyHeadBorder()`, `DoubleBorder()`, `DoubleEdgeBorder()`, `NoBorder()`, `MinimalBorder()`, `MinimalHeavyHeadBorder()`, `MinimalDoubleHeadBorder()`, `HorizontalBorder()`, `SimpleHeavyBorder()`, `Collapse()`, `Expand()`, `Width(...)`, `Padding(all)`, `Padding(horizontal, vertical)`, four-side `Padding(...)`, alignment, and color helpers such as `BorderColor(...)`, `ContentColor(...)`, `HeaderColor(...)`, and `FooterColor(...)`. Those color helpers accept the same shared palette inputs, so MVC-style view models can keep palette values as `Color` or `RgbColor` without adapter loops. Spectre-style aliases map to the closest existing panel renderer. Set `PanelOptions.Expand = false` or call `Collapse()` when a compact POC widget should size to content instead of filling the terminal. `new Panel(renderable)` and `new Panel(() => { ... })` capture reusable renderables or render actions at render time, so later `Width(...)`, `Collapse()`, and `Padding(...)` calls still shape the captured inner content.
 
 ```csharp
 Consoul.Panel(
@@ -1628,8 +1662,8 @@ var statusBadge = new BadgeEntry("ready", BadgeKind.Success);
 Consoul.Panel(statusBadge, title: "Status", width: 24);
 
 AnsiConsole.Write(new Panel("Ready")
-    .Header("Status", Color.Aqua, Justify.Center)
-    .Footer("Esc", RgbColor.Yellow, Justify.Right)
+    .Header(new Markup("[aqua]Status[/]"), Justify.Center)
+    .Footer(new Markup("[white on navy]Esc[/]"), Justify.Right)
     .Border(BoxBorder.Rounded)
     .BorderColor(Color.Green)
     .ContentColor(RgbColor.White)
@@ -1645,11 +1679,11 @@ Consoul.Columns(columns =>
     }, new PropertyListOptions { Width = 32 }), "Details");
 }, new ColumnsOptions { Columns = 2, MinimumColumnWidth = 18 });
 
-Consoul.Rows(rows =>
-{
-    rows.Add(() => Consoul.Rule("Checks", width: 40));
-    rows.Add(() => Consoul.TextBlock("Ready for deployment.", width: 40, color: ConsoleColor.Green));
-}, new RowsOptions { Width = 44, Spacing = 0 });
+AnsiConsole.Write(new Rows()
+    .Width(44)
+    .Spacing(0)
+    .AddRule("Checks", width: 40)
+    .AddRow(() => Consoul.TextBlock("Ready for deployment.", width: 40, color: ConsoleColor.Green)));
 
 var summary = new PanelEntry(
     "Build complete",
@@ -2037,7 +2071,7 @@ TextPromptResult<string> environment = Consoul.Text<string>("Environment")
     .Render();
 ```
 
-Use the Spectre-shaped `Choices(...)` alias or direct `AddChoice(...)` / `AddChoices(...)` methods when adapting pasted snippets. Set `ShowChoices = false` or call `HideChoices()` for quieter prompts, use `HideDefaultValue()` when Enter should still accept a default without rendering it, call `EditableDefaultValue()` when keyboard users should start from an editable default buffer, and call `ClearOnFinish()` when a transient POC form should not leave the prompt text on screen after a successful entry. Call `Secret(...)` or set `IsSecret` when a typed prompt should mask input but still parse through `TextPrompt<T>`. Change `ChoicesSeparator(...)`, `ChoicesStyle(...)`, `DefaultValueStyle(...)`, or `MaskStyle(...)` when a view needs different hint styling; prompt style helpers accept reusable `Style` objects, color names, `Color`, and `RgbColor`. On ANSI-capable terminals, text, secret, confirm, and confirmation prompts preserve RGB/hex foregrounds and text decorations for prompt, invalid, accepted-choice, and default-value styling instead of flattening them to the nearest `ConsoleColor`. Pass a `StringComparer` to the `TextPrompt<T>` constructor when accepted choice text should be case-sensitive or use a custom comparer. For object choices, `UseConverter(...)` controls both rendered labels and display-text choice lookup, while `InvalidChoiceMessage(...)` customizes copy for unmatched display text. Set `Culture` or call `Culture(...)` when decimal, date, or duration input should parse and render defaults with a specific locale.
+Use the Spectre-shaped `Choices(...)` alias or direct `AddChoice(...)` / `AddChoices(...)` methods when adapting pasted snippets. Set `ShowChoices = false` or call `HideChoices()` for quieter prompts, use `HideDefaultValue()` when Enter should still accept a default without rendering it, call `EditableDefaultValue()` when keyboard users should start from an editable default buffer, and call `ClearOnFinish()` when a transient POC form should not leave the prompt text on screen after a successful entry. Call `Secret(...)` or set `IsSecret` when a typed prompt should mask input but still parse through `TextPrompt<T>`. Change `ChoicesSeparator(...)`, `ChoicesStyle(...)`, `DefaultValueStyle(...)`, or `MaskStyle(...)` when a view needs different hint styling; prompt style helpers accept reusable `Style` objects, color names, `Color`, and `RgbColor`. On ANSI-capable terminals, text, secret, confirm, and confirmation prompts preserve RGB/hex foregrounds and text decorations for prompt, invalid, accepted-choice, default-value, and mask styling instead of flattening them to the nearest `ConsoleColor`; `TextPrompt<T>`, `SecretPrompt`, and `ConfirmPrompt` include direct `Color` / `RgbColor` overloads for `PromptStyle(...)`, `Style(...)`, `InvalidStyle(...)`, and mask helpers. Pass a `StringComparer` to the `TextPrompt<T>` constructor when accepted choice text should be case-sensitive or use a custom comparer. For object choices, `UseConverter(...)` controls both rendered labels and display-text choice lookup, while `InvalidChoiceMessage(...)` customizes copy for unmatched display text. Set `Culture` or call `Culture(...)` when decimal, date, or duration input should parse and render defaults with a specific locale.
 
 For POC commands that need files or folders, use the path prompt factories. They return the same result-first `TextPromptResult<string>` shape, trim pasted quotes, and can require the target to exist:
 
@@ -2047,6 +2081,33 @@ TextPromptResult<string> script = Consoul.FilePath("Deployment script", mustExis
 
 TextPromptResult<string> output = Consoul.DirectoryPath("Output directory")
     .Render();
+```
+
+Controller-style POC code can ask through the Spectre-shaped facade instead of calling static `Consoul` APIs directly:
+
+```csharp
+public sealed class DeploymentController
+{
+    private readonly IAnsiConsole _console;
+
+    public DeploymentController(IAnsiConsole console)
+    {
+        _console = console;
+    }
+
+    public void Configure()
+    {
+        TextPromptResult<string> script = _console.FilePath("Deployment script", mustExist: true);
+        TextPromptResult<string> output = _console.DirectoryPath("Output directory", mustExist: true);
+
+        if (!script.HasValue || !output.HasValue)
+        {
+            return;
+        }
+
+        _console.MarkupLineInterpolated($"Using [cyan]{script.Value}[/]");
+    }
+}
 ```
 
 For masked secret input, use `Consoul.Secret(...)` or the immediate `Consoul.ReadSecret(...)` helper:
@@ -2173,7 +2234,7 @@ if (selectedJobs.HasSelection)
 
 Set `TableRenderOptions.Title` and `Caption` when a table should keep its own heading in panels, grids, captured diagnostics, or model-rendered views. `TitleAlignment`, `CaptionAlignment`, `TitleScheme`, and `CaptionScheme` keep those labels bounded to the table width. The older `table.Render("Jobs", ConsoleColor.Cyan)` overload still works as a per-render title and takes precedence over the configured title.
 
-For Spectre-style manual snippets, use `Table`. It wraps `TableView` with fluent `Title(...)`, `Title(new TableTitle(...))`, `Caption(...)`, `Caption(new TableTitle(...))`, `Caption(new TableCaption(...))`, inline title/caption style overloads, `Width(...)`, `Expand()`, `Collapse()`, named border helpers such as `Border(TableBorder.Rounded)`, `Border(TableBorder.None)`, `Border(TableBorder.Minimal)`, `Border(TableBorder.HeavyHead)`, `RoundedBorder()`, and `DoubleBorder()`, table-wide alignment/color helpers, row separators, row numbers, `AddColumns(...)`, configurable columns through `AddColumn("Name", column => column.RightAligned())`, synchronized post-add metadata through `table.Columns[index]`, object-friendly `AddRow(...)`, inline manual rows through `AddRows(new[] { "API", "Ready" }, new[] { "Worker", "Queued" })`, model-backed `AddRows(items, item => item.Name, ...)`, optional detail columns through `AddOptionalColumn(...)`, key/value diagnostic helpers through `AddKeyValueRows(...)`, and `TableColumn` padding helpers such as `Padding(...)`, `PadLeft(...)`, and `PadRight(...)`. Horizontal padding adjusts cell content; top and bottom padding render bounded blank table rows around content while preserving column alignment. `Table` and `TableColumn` both accept `LeftJustified()` and `RightJustified()` aliases alongside the aligned naming used by table examples. Use `Collapse()` for content-sized diagnostic tables and `Expand()` or `Width(...)` when an MVC view should intentionally fill its terminal layout. Common Spectre-style border names such as `Ascii2`, `AsciiDoubleHead`, `Markdown`, `SimpleHeavy`, `MinimalHeavyHead`, `MinimalDoubleHead`, `Horizontal`, `HeavyEdge`, `DoubleEdge`, and `Safe` map to the closest existing Consoul renderer. Add `using ConsoulLibrary.Color;` when you want aliases such as `Color.Grey`, `Color.Aqua`, `Color.FromHex(...)`, `Colors.Grey`, or `RgbColor.Red`.
+For Spectre-style manual snippets, use `Table`. It wraps `TableView` with fluent `Title(...)`, `Title(new TableTitle(...))`, `Title(new Markup("[cyan]Status[/]"))`, `Caption(...)`, `Caption(new TableTitle(...))`, `Caption(new TableCaption(...))`, `Caption(renderable)`, inline title/caption style overloads, `Width(...)`, `Expand()`, `Collapse()`, named border helpers such as `Border(TableBorder.Rounded)`, `Border(TableBorder.None)`, `Border(TableBorder.Minimal)`, `Border(TableBorder.HeavyHead)`, `RoundedBorder()`, `DoubleBorder()`, `SafeBorder()`, `MarkdownBorder()`, `AsciiDoubleHeadBorder()`, `MinimalBorder()`, `MinimalHeavyHeadBorder()`, `HorizontalBorder()`, and `HeavyHeadBorder()`, table-wide alignment/color helpers, row separators, row numbers, `AddColumns(...)`, renderable headers through `AddColumn(new Markup("[yellow]Status[/]"), Justify.Center)` and `AddColumns(renderableHeaders)`, direct alignment columns through `AddColumn("Retries", Justify.Right)`, configurable columns through `AddColumn("Name", column => column.RightAligned())`, synchronized post-add metadata through `table.Columns[index]`, object-friendly `AddRow(...)`, inline manual rows through `AddRows(new[] { "API", "Ready" }, new[] { "Worker", "Queued" })`, model-backed `AddRows(items, item => item.Name, ...)`, optional detail columns through `AddOptionalColumn("Latency", values, Justify.Right)` or `AddOptionalColumn(renderableHeader, values, Justify.Right)`, key/value diagnostic helpers through `AddKeyValueRows(...)`, and `TableColumn` padding and cell-style helpers such as `Padding(...)`, `PadLeft(...)`, `PadRight(...)`, `HeaderColor(...)`, `HeaderStyle(...)`, `FooterColor(...)`, and `FooterStyle(...)`. Horizontal padding adjusts cell content; top and bottom padding render bounded blank table rows around content while preserving column alignment. Raw markup strings in title/caption text, headers, and cells are measured by visible text and preserve foreground/background colors, RGB/hex metadata, and ANSI-capable text decorations, while title/caption overloads and cell/header helpers capture reusable `IConsoulRenderable` values such as `Markup`, `Text`, `Panel`, and nested `Table` instances into bounded text. `Table` and `TableColumn` both accept `LeftJustified()` and `RightJustified()` aliases alongside the aligned naming used by table examples. Use `Collapse()` for content-sized diagnostic tables and `Expand()` or `Width(...)` when an MVC view should intentionally fill its terminal layout. Common Spectre-style border names such as `Ascii2`, `AsciiDoubleHead`, `Markdown`, `SimpleHeavy`, `MinimalHeavyHead`, `MinimalDoubleHead`, `Horizontal`, `HeavyEdge`, `HeavyHead`, `DoubleEdge`, and `Safe` map to the closest existing Consoul renderer and matching `...Border()` helpers. Add `using ConsoulLibrary.Color;` when you want aliases such as `Color.Grey`, `Color.Aqua`, `Color.FromHex(...)`, `Colors.Grey`, or `RgbColor.Red`.
 
 ```csharp
 var manual = new Table()
@@ -2185,13 +2246,14 @@ var manual = new Table()
     .FooterColor(ConsoleColor.Gray)
     .ShowRowNumbers()
     .RowNumberHeader("No")
-    .AddColumn(new TableColumn("Job").Width(14).Padding(2, 1))
-    .AddColumn("State", column => column.Centered())
-    .AddColumn(new TableColumn("Retries").RightJustified().Width(8).PadRight(2).Footer("2"))
+    .AddColumn(new TableColumn("Job").Width(14).Padding(2, 1).HeaderStyle("bold #facc15"))
+    .AddColumn("State", Justify.Center)
+    .AddColumn(new TableColumn("Retries").RightJustified().Width(8).PadRight(2).HeaderColor(Colors.Aqua).Footer("2").FooterStyle("bold grey"))
     .AddRow("Build", "Ready", 0)
     .AddRow("Deploy", "Waiting", 2);
 
 manual.Columns[2].Footer = new Text("2", new Style(foreground: Colors.Yellow, decoration: Decoration.Bold));
+manual.Columns[2].FooterCellStyle = Style.Bold.WithForeground(Colors.Yellow);
 
 AnsiConsole.Write(manual);
 ```
@@ -2421,7 +2483,7 @@ using var bar = new ProgressBar("[green]Starting[/] [[prod]]");
 bar.Update(0.5, "[cyan]Halfway[/] [[prod]]", Color.Aqua, RgbColor.Green);
 ```
 
-Static `AnsiConsole` and injected `IAnsiConsole` async helpers accept quick `Func<..., Task>` delegates for first-run POCs and token-aware `(context, cancellationToken) => ...` delegates when work should observe the active cancellation token. `StatusContext` supports property-style `Status`, `Spinner`, and `SpinnerStyle` updates plus direct `Succeed(...)` / `Fail(...)` completion helpers for copied Spectre-style status snippets. `StatusScope.Update(...)`, `StatusScope.Status(...)`, `StatusContext.Status(...)`, and `ProgressBar.Update(...)` accept `ConsoleColor`, `Color`, and `RgbColor` values for direct palette changes; `Color`/`RgbColor` and `UpdateStyled(...)` preserve RGB/hex metadata and ANSI decorations on capable terminals while keeping console-color fallbacks. `RefreshRate(...)` helpers on status builders/scopes and spinner builders/scopes accept milliseconds or `TimeSpan` values, `Frames(...)` helpers and reusable `Spinner` constructors accept pasted params frames or generated `IEnumerable<string>` frame collections, and `SpinnerStyle(...)` helpers on status and spinner builders/scopes accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values.
+Static `AnsiConsole` and injected `IAnsiConsole` async helpers accept quick `Func<..., Task>` delegates for first-run POCs and token-aware `(context, cancellationToken) => ...` delegates when work should observe the active cancellation token. `StatusContext` supports property-style `Status`, `Spinner`, and `SpinnerStyle` updates plus direct `Succeed(...)` / `Fail(...)` completion helpers for copied Spectre-style status snippets. `StatusScope.Update(...)`, `StatusScope.Status(...)`, `StatusContext.Status(...)`, and `ProgressBar.Update(...)` accept `ConsoleColor`, `Color`, and `RgbColor` values for direct palette changes; `Color`/`RgbColor` and `UpdateStyled(...)` preserve RGB/hex metadata and ANSI decorations on capable terminals while keeping console-color fallbacks. `RefreshRate(...)`, `AutoRefresh()`, `ManualRefresh()`, and the existing boolean `AutoRefresh(...)` helpers on status builders/scopes and spinner builders/scopes keep throttled manual-refresh POCs consistent with progress contexts. `Frames(...)` helpers and reusable `Spinner` constructors accept pasted params frames or generated `IEnumerable<string>` frame collections, and `SpinnerStyle(...)` helpers on status and spinner builders/scopes accept `ConsoleColor`, reusable `Style` objects, style strings, `Color`, and `RgbColor` values.
 
 Use `ProgressContext` when a workflow has several task rows:
 
@@ -2512,10 +2574,13 @@ progress.RemoveTask(build);
 progress.Refresh();
 ```
 
-Configured progress columns now control the rendered row order and content, including compact text-only rows and operational metrics. `ProgressContext.Columns(...)` accepts either pasted params columns or generated `IEnumerable<ProgressColumn>` collections, so MVC-style workflow code can choose columns from model or environment state without adapter arrays.
+Configured progress columns now control the rendered row order and content, including compact text-only rows and operational metrics. `ProgressContext.Columns(...)` accepts either pasted params columns or generated `IEnumerable<ProgressColumn>` collections, so MVC-style workflow code can choose columns from model or environment state without adapter arrays. `AddColumn(...)` and `AddColumns(...)` append optional model-driven columns without replacing prior configuration, while `AutoRefresh()`, `ManualRefresh()`, `AutoClear()`, `HideCompleted()`, and `ShowCompleted()` keep POC setup readable.
 
 ```csharp
 int processed = AnsiConsole.Progress()
+    .ActiveStyle("bold #112233")
+    .CompleteColor(RgbColor.Green)
+    .FailureColor(Color.Red)
     .Columns(
         new TaskDescriptionColumn(),
         new ProgressBarColumn { Width = 24 }
@@ -2542,14 +2607,14 @@ int processed = AnsiConsole.Progress()
     });
 ```
 
-Available columns include `TaskDescriptionColumn`, `ProgressBarColumn`, `PercentageColumn`, `SpinnerColumn`, `TextColumn`, `DownloadedColumn`, `TransferSpeedColumn`, `RemainingTimeColumn`, and `ElapsedTimeColumn`. `TextColumn` renders literal text or task templates such as `{task.Description}`, `{task.Value}`, `{task.MaxValue}`, `{task.Percentage}`, `{task.State}`, `{task.ElapsedTime}`, `{task.RemainingTime}`, `{task.Speed}`, and `{task.Tag}`; the text can contain raw markup and still shrinks inside narrow terminals. `ProgressBarColumn.Width` is a preferred bar width that stays responsive. `CompleteStyle`/`CompletedStyle`, `FinishedStyle`, `RemainingStyle`, `IndeterminateStyle`, `TextColumn.Style`, and `SpinnerColumn.Style` are honored for Spectre-style initializer snippets, and `CompleteColor(...)`, `FinishedColor(...)`, `RemainingColor(...)`, `IndeterminateColor(...)`, `TextColor(...)`, and `SpinnerStyle(...)` accept `ConsoleColor`, `Color`, and `RgbColor` values for quick MVC-style palette wiring. `UseRenderHook(...)` receives the generated row renderable and current task list, may return a replacement renderable, and is captured back into the fixed progress row width so custom rows remain terminal-safe.
+Available columns include `TaskDescriptionColumn`, `ProgressBarColumn`, `PercentageColumn`, `SpinnerColumn`, `TextColumn`, `DownloadedColumn`, `TransferSpeedColumn`, `RemainingTimeColumn`, and `ElapsedTimeColumn`. `TextColumn` renders literal text or task templates such as `{task.Description}`, `{task.Value}`, `{task.MaxValue}`, `{task.Percentage}`, `{task.State}`, `{task.ElapsedTime}`, `{task.RemainingTime}`, `{task.Speed}`, and `{task.Tag}`; the text can contain raw markup and still shrinks inside narrow terminals. `ProgressBarColumn.Width` is a preferred bar width that stays responsive. Row-level `ActiveColor(...)`, `ActiveStyle(...)`, `CompleteColor(...)` / `CompletedColor(...)`, `CompleteStyle(...)` / `CompletedStyle(...)`, `FailedColor(...)` / `FailureColor(...)`, and `FailedStyle(...)` / `FailureStyle(...)` helpers accept `ConsoleColor`, `Color`, `RgbColor`, reusable `Style` objects, and Spectre-style style strings, so MVC-style workflow controllers can carry the same active/success/failure palette used by tables, prompts, and validation. `CompleteStyle`/`CompletedStyle`, `FinishedStyle`, `RemainingStyle`, `IndeterminateStyle`, `TextColumn.Style`, and `SpinnerColumn.Style` are honored for Spectre-style initializer snippets, and `CompleteColor(...)`, `FinishedColor(...)`, `RemainingColor(...)`, `IndeterminateColor(...)`, `TextColor(...)`, and `SpinnerStyle(...)` accept `ConsoleColor`, `Color`, and `RgbColor` values for quick per-column palette wiring. Column helpers also accept style strings through `Complete(...)`, `Completed(...)`, `Finished(...)`, `Remaining(...)`, `Indeterminate(...)`, `TextColumn("...", "grey")`, `TextStyle(...)`, `TextColor(...)`, and `SpinnerStyle(...)`, preserving RGB/hex colors and ANSI decorations on capable terminals. Progress contexts returned from an injected `IAnsiConsole` keep using that console's driver for later `Start(...)`, task updates, refreshes, and clears, which keeps writer-backed tests and POC services isolated from the process console. `UseRenderHook(...)` receives the generated row renderable and current task list, may return a replacement renderable, and is captured back into the fixed progress row width so custom rows remain terminal-safe.
 
 ```csharp
 AnsiConsole.Progress()
     .Columns(
         new TaskDescriptionColumn(),
-        new TextColumn("[grey]{task.Value}/{task.MaxValue}[/]"),
-        new ProgressBarColumn(),
+        new TextColumn("{task.Value}/{task.MaxValue}", "grey"),
+        new ProgressBarColumn().Complete("green").Remaining("grey").Finished("aqua"),
         new PercentageColumn())
     .Start(progress =>
     {
@@ -2600,7 +2665,7 @@ Consoul.Live(live =>
 }, new LiveDisplayOptions { Title = "Queue" });
 ```
 
-For migration-friendly dashboard snippets, pass a renderable target to `AnsiConsole.Live(...)`, mutate that target or replace it with `UpdateTarget(...)`, then call `Refresh()` when a mutable target changes. Overflow options crop captured renderable output inside the active terminal while the default visible mode keeps the existing direct rendering behavior.
+For migration-friendly dashboard snippets, pass a renderable target to `AnsiConsole.Live(...)`, mutate that target or replace it with `UpdateTarget(...)`, then call `Refresh()` when a mutable target changes. Overflow options crop captured renderable output inside the active terminal while the default visible mode keeps the existing direct rendering behavior. `AutoClear()`, `NoAutoClear()`, and `ClearOnDispose(...)` mirror the progress context vocabulary while still mapping to the same live-display cleanup option. `TitleColor(...)`, `TitleStyle(...)`, `SuccessColor(...)`, `SuccessStyle(...)`, `FailureColor(...)`, and `FailureStyle(...)` accept `ConsoleColor`, `Color`, `RgbColor`, reusable `Style` objects, and Spectre-style style strings so MVC-style dashboard views can reuse the same palette as tables, prompts, validation, and status widgets.
 
 ```csharp
 var status = new Table()
@@ -2610,9 +2675,12 @@ var status = new Table()
     .AddRow("API", "Starting");
 
 int refreshes = AnsiConsole.Live(status)
+    .Title("Deploy")
+    .TitleStyle("bold #22c55e")
+    .SuccessColor(RgbColor.Green)
     .Overflow(VerticalOverflow.Crop)
     .Cropping(VerticalOverflowCropping.Top)
-    .AutoClear(true)
+    .AutoClear()
     .Start(live =>
     {
         status.Rows.Update(0, 1, new Markup("[green]Ready[/]"));
@@ -2636,15 +2704,15 @@ var dashboard = new Layout("Dashboard")
             new Layout("Metrics").Ratio(1),
             new Layout("Debug").Invisible()));
 
-dashboard["Header"].Update("Starting");
+dashboard["Header"].Update("Starting", Color.Aqua);
 dashboard["Status"].Update(status);
-dashboard["Metrics"].Update("Jobs: 1");
+dashboard["Metrics"].Update("Jobs: 1", RgbColor.Yellow);
 
 AnsiConsole.Live(dashboard).Start(live =>
 {
     status.Rows.Update(0, 1, new Markup("[green]Ready[/]"));
-    dashboard["Header"].Update("Running");
-    dashboard["Metrics"].Update("Jobs: 2");
+    dashboard["Header"].Update("Running", Color.Green);
+    dashboard["Metrics"].Update("Jobs: 2", RgbColor.Green);
     live.Refresh();
 });
 ```

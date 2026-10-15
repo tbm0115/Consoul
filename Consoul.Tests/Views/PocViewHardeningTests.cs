@@ -835,6 +835,109 @@ namespace ConsoulLibrary.Tests.Views
         }
 
         /// <summary>
+        /// Model-backed dynamic view sections accept Spectre-style Justify aliases without leaving the MVC section API.
+        /// </summary>
+        [Fact]
+        public void DynamicModelView_Sections_AcceptJustifyAlignmentAliases()
+        {
+            using (var scope = new ConsoleDriverScope(72))
+            {
+                InitializeRoutine("back");
+                var model = new CounterModel();
+                Func<CounterModel, IConsoulRenderable> factory = counter => new Text("Factory body " + counter.Count);
+                Func<CounterModel, IConsoulRenderable> visibleFactory = counter => new Text("Visible factory body " + counter.Count);
+
+                try
+                {
+                    DynamicView<CounterModel> view = Consoul.View("Counter", model)
+                        .Section(
+                            "Left Action",
+                            counter => Consoul.Write("Left body " + counter.Count, ConsoleColor.White),
+                            Justify.Left)
+                        .Section(
+                            "Right Action",
+                            counter => Consoul.Write("Right body " + counter.Count, ConsoleColor.White),
+                            ConsoleColor.Cyan,
+                            Justify.Right)
+                        .Section(
+                            "Styled Center",
+                            counter => Consoul.Write("Styled body " + counter.Count, ConsoleColor.White),
+                            "aqua",
+                            Justify.Center)
+                        .Section(
+                            "Renderable Right",
+                            new Text("Renderable body"),
+                            Justify.Right)
+                        .Section(
+                            "Rgb Renderable",
+                            new Text("RGB renderable body"),
+                            RgbColor.FromHex("#22c55e"),
+                            Justify.Center)
+                        .Section(
+                            "Factory Left",
+                            factory,
+                            SpectreColor.Aqua,
+                            Justify.Left)
+                        .Section(
+                            counter => "Dynamic Right " + counter.Count,
+                            counter => Consoul.Write("Dynamic body " + counter.Count, ConsoleColor.White),
+                            counter => ConsoleColor.Yellow,
+                            Justify.Right)
+                        .SectionWhen(
+                            "Visible Right",
+                            counter => Consoul.Write("Visible body " + counter.Count, ConsoleColor.White),
+                            counter => true,
+                            Justify.Right)
+                        .SectionWhen(
+                            "Visible Styled",
+                            counter => Consoul.Write("Visible styled body " + counter.Count, ConsoleColor.White),
+                            counter => true,
+                            "yellow",
+                            Justify.Center)
+                        .SectionWhen(
+                            "Visible Renderable",
+                            new Text("Visible renderable body"),
+                            counter => true,
+                            Justify.Right)
+                        .SectionWhen(
+                            "Visible Factory",
+                            visibleFactory,
+                            counter => true,
+                            SpectreColor.Green,
+                            Justify.Center);
+
+                    view.Render();
+
+                    Assert.True(view.GoBackRequested);
+                    VisualAssert.WroteText(scope.Driver, "Left body 0");
+                    VisualAssert.WroteText(scope.Driver, "Right body 0");
+                    VisualAssert.WroteText(scope.Driver, "Styled body 0");
+                    VisualAssert.WroteText(scope.Driver, "Renderable body");
+                    VisualAssert.WroteText(scope.Driver, "RGB renderable body");
+                    VisualAssert.WroteText(scope.Driver, "Factory body 0");
+                    VisualAssert.WroteText(scope.Driver, "Dynamic body 0");
+                    VisualAssert.WroteText(scope.Driver, "Visible body 0");
+                    VisualAssert.WroteText(scope.Driver, "Visible styled body 0");
+                    VisualAssert.WroteText(scope.Driver, "Visible renderable body");
+                    VisualAssert.WroteText(scope.Driver, "Visible factory body 0");
+                    Assert.Contains(scope.Driver.Lines, line => line.Contains("Left Action") && line.IndexOf("Left Action", StringComparison.Ordinal) < 8);
+                    Assert.Contains(scope.Driver.Lines, line => line.Contains("Right Action") && line.IndexOf("Right Action", StringComparison.Ordinal) > 40);
+                    Assert.Contains(scope.Driver.Lines, line => line.Contains("Dynamic Right 0") && line.IndexOf("Dynamic Right 0", StringComparison.Ordinal) > 40);
+                    Assert.Contains(scope.Driver.Lines, line => line.Contains("Visible Right") && line.IndexOf("Visible Right", StringComparison.Ordinal) > 40);
+                    AssertColoredWrite(scope.Driver, "Right Action", ConsoleColor.Cyan);
+                    AssertColoredWrite(scope.Driver, "Styled Center", ConsoleColor.Cyan);
+                    AssertColoredWrite(scope.Driver, "Dynamic Right 0", ConsoleColor.Yellow);
+                    AssertColoredWrite(scope.Driver, "Visible Styled", ConsoleColor.Yellow);
+                    VisualAssert.NoOverflow(scope.Driver);
+                }
+                finally
+                {
+                    ClearRoutine();
+                }
+            }
+        }
+
+        /// <summary>
         /// Model-backed dynamic views can generate read-only property-list sections from the active model metadata.
         /// </summary>
         [Fact]
@@ -4830,6 +4933,18 @@ namespace ConsoulLibrary.Tests.Views
                             release => Consoul.Write("Summary body", ConsoleColor.White),
                             "bold #112233")
                         .Section(
+                            "Direct Color Summary",
+                            release => Consoul.Write("Direct color body", ConsoleColor.White),
+                            SpectreColor.FromHex("#223344"))
+                        .Section(
+                            "Direct Rgb Renderable",
+                            new Text("Direct renderable body"),
+                            RgbColor.FromHex("#334455"))
+                        .Section(
+                            "Direct Rgb Factory",
+                            release => new Text("Direct factory body"),
+                            RgbColor.FromHex("#556677"))
+                        .Section(
                             release => "Model Style",
                             release => new Text("Renderable body"),
                             release => new Style(release.Accent, Decoration.Italic))
@@ -4841,16 +4956,37 @@ namespace ConsoulLibrary.Tests.Views
                             release => "Visible Rgb",
                             release => Consoul.Write("Visible body", ConsoleColor.White),
                             release => true,
-                            release => RgbColor.FromHex("#abcdef"));
+                            release => RgbColor.FromHex("#abcdef"))
+                        .SectionWhen(
+                            "Direct Visible Color",
+                            release => Consoul.Write("Direct visible body", ConsoleColor.White),
+                            release => true,
+                            SpectreColor.FromHex("#667788"))
+                        .SectionWhen(
+                            "Direct Visible Renderable",
+                            new Text("Visible renderable body"),
+                            release => true,
+                            RgbColor.FromHex("#8899aa"))
+                        .SectionWhen(
+                            "Direct Visible Factory",
+                            release => new Text("Visible factory body"),
+                            release => true,
+                            SpectreColor.FromHex("#99aabb"));
 
                     view.Render();
 
                     string output = writer.ToString();
                     Assert.True(view.GoBackRequested);
                     Assert.Contains("\u001b[1;38;2;17;34;51mStyled Summary", output);
+                    Assert.Contains("\u001b[38;2;34;51;68mDirect Color Summary", output);
+                    Assert.Contains("\u001b[38;2;51;68;85mDirect Rgb Renderable", output);
+                    Assert.Contains("\u001b[38;2;85;102;119mDirect Rgb Factory", output);
                     Assert.Contains("\u001b[3;38;2;68;85;102mModel Style", output);
                     Assert.Contains("\u001b[38;2;119;136;153mRgb Title", output);
                     Assert.Contains("\u001b[38;2;171;205;239mVisible Rgb", output);
+                    Assert.Contains("\u001b[38;2;102;119;136mDirect Visible Color", output);
+                    Assert.Contains("\u001b[38;2;136;153;170mDirect Visible Renderable", output);
+                    Assert.Contains("\u001b[38;2;153;170;187mDirect Visible Factory", output);
                 }
                 finally
                 {
