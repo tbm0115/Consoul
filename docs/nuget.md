@@ -126,9 +126,17 @@ Required publisher configuration:
 
 | Setting | Purpose |
 | --- | --- |
-| Repository secret `NUGET_API_KEY` | NuGet.org API key authorized to push the five package IDs (and create IDs if they do not exist). It is read only in the release publication step. |
+| NuGet.org Trusted Publishing policy | For package owner `tbm0115`, trust repository owner `tbm0115`, repository `Consoul`, workflow file `dotnetcore.yml`, and environment `production`. Authorize the five package IDs and creation of new IDs where needed. |
+| GitHub Actions environment `production` | The publication job declares this environment to match the NuGet policy. Any environment protection rules must permit the release tag and be satisfied before publishing. |
+| NuGet account `tbm0115` and job permission `id-token: write` | `NuGet/login@v1` exchanges the publishing job's GitHub OIDC token for a temporary NuGet API key immediately before the pushes. No repository `NUGET_API_KEY` secret is required. |
 | Automatic `GITHUB_TOKEN` with job permission `packages: write` | Publishes packages associated with this repository. Repository/organization policy and existing package access must permit the workflow to write each package. |
 | Repository owner | Determines `https://nuget.pkg.github.com/<owner>/index.json`; the current owner is `tbm0115`. No `GPR_URI` or `GPR_USERNAME` secret is needed. |
+
+The NuGet login step's `user` is the NuGet account username, not an email address. Its `NUGET_API_KEY` output supplies both package and symbol pushes; the workflow no longer reads a stored NuGet API key. Only the publication job can request an OIDC token. The policy's workflow filename and environment must match the job; creating the policy alone does not update workflow authentication. See [NuGet Trusted Publishing](https://learn.microsoft.com/en-us/nuget/nuget-org/trusted-publishing) and the [NuGet login action](https://github.com/NuGet/login).
+
+GitHub [creates a referenced environment automatically](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments) if it does not exist. To require reviewers or restrict release tags, configure `production` under repository **Settings > Environments** before the publishing job runs.
+
+For a release that failed before this workflow change, use a new release tag whose commit includes the updated workflow, shared package version, and matching release notes. For example, move the package version to `3.0.0-preview.2` before publishing GitHub prerelease `v3.0.0-preview.2`. Keep the existing tag unchanged. [Re-running an old workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs) uses its original commit and ref, so it will still use the old authentication. Manual dispatch remains validation-only.
 
 The GitHub publication step creates a temporary runner configuration containing only a named `github` source URL. Its `NuGetPackageSourceCredentials_github` environment variable supplies the actor and `GITHUB_TOKEN` for Basic authentication when NuGet reads the service index; the same token is passed as the publishing API key. This avoids relying on a push API key alone to authenticate feed discovery. The temporary file contains no token. [NuGet documents this environment credential convention](https://learn.microsoft.com/en-us/nuget/consume-packages/consuming-packages-authenticated-feeds).
 
